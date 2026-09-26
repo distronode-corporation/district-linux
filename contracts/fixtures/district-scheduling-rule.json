@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "data": {
+    "id": "rule-contract-2",
+    "event_type_id": null,
+    "day_of_week": 3,
+    "start_time": "10:30",
+    "end_time": "15:00"
+  }
+}

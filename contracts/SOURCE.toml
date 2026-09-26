@@ -1,0 +1,378 @@
+# Where contracts/fixtures/ came from. Written by scripts/sync-contracts.py; change
+# the script and re-run it rather than editing this file.
+#
+# Each fixture is a JSON body recorded from the District AI server's own route
+# handlers by a test in the server repository, laid out as that test writes it
+# (JSON.stringify(body, null, 2) plus a newline). The files here are those bytes
+# except for the substitutions below, which replace data that must not appear in a
+# public repository. A phone, email or host substitution names its original by
+# `original_sha256`, the SHA-256 of "<kind>:<original>" (the lowercase address or
+# host name, or the eleven digits of a North American number), so the original
+# never appears here. A phone substitution keeps the format it found: E.164, the
+# spaced international form, the (NPA) NXX-XXXX national form, or bare digits.
+#
+# contracts/SHA256SUMS holds a digest of every file under fixtures/; from
+# contracts/, `sha256sum -c SHA256SUMS` checks them.
+
+[source]
+commit = "9a02975e2e4f6844c2adb686e383ce97320c2498"
+fixtures_dir = "district-android/contracts"
+fixtures_dir_clean = true
+generator = "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts"
+
+[sync]
+date = "2026-09-26"
+file_count = 177
+checksums = "SHA256SUMS"
+
+[[substitution]]
+kind = "phone"
+original_sha256 = "da624dd9d311d5fc6f92bfdeeb818e6525a505be2793a2c45083be744a9b1ee3"
+replacement = "+14165550142"
+reason = "the recurring caller across the call, contact, message, desk and booking fixtures; outside the fictional range"
+count = 27
+
+[substitution.files]
+"district-admin-messages.json" = 1
+"district-call-detail.json" = 3
+"district-calls.json" = 3
+"district-contact-detail.json" = 3
+"district-contacts.json" = 1
+"district-conversations.json" = 2
+"district-desk-ticket-create.json" = 1
+"district-desk-ticket-reply.json" = 1
+"district-desk-ticket-status.json" = 1
+"district-desk-ticket.json" = 1
+"district-desk-tickets.json" = 1
+"district-message-send-media.json" = 1
+"district-message-send.json" = 1
+"district-message-thread.json" = 1
+"district-overview.json" = 3
+"district-scheduling-booking.json" = 1
+"district-scheduling-bookings.json" = 1
+"district-scheduling-event-types.json" = 1
+
+[[substitution]]
+kind = "phone"
+original_sha256 = "c33fce29b76bb9d1770311320605fd9764c6198eb3130756abd2ccd08d03a7b6"
+replacement = "+14165550161"
+reason = "a busy caller in the call feed; outside the fictional range"
+count = 8
+
+[substitution.files]
+"district-calls.json" = 4
+"district-overview.json" = 4
+
+[[substitution]]
+kind = "phone"
+original_sha256 = "11ec3c877ff91b9937cb8fa2e87e79807bcacc94d1912869ccb9ac518f5130e3"
+replacement = "+14165550171"
+reason = "an outbound call's dialled number in the call feed; outside the fictional range"
+count = 2
+
+[substitution.files]
+"district-calls.json" = 1
+"district-overview.json" = 1
+
+[[substitution]]
+kind = "phone"
+original_sha256 = "064b497210b7f9471be6c38cc91136d5521501c0a4ea54794871bc459e16d038"
+replacement = "+14165550181"
+reason = "an unanswered outbound call and an unknown texter; outside the fictional range"
+count = 7
+
+[substitution.files]
+"district-calls.json" = 1
+"district-conversations.json" = 4
+"district-drafts-list.json" = 1
+"district-overview.json" = 1
+
+[[substitution]]
+kind = "phone"
+original_sha256 = "64f16667d7709f6587b011a0978310b5812d6b3853ebccc2f70b35fb39c692cf"
+replacement = "+14165550191"
+reason = "a missed caller in the call feed; outside the fictional range"
+count = 8
+
+[substitution.files]
+"district-calls.json" = 4
+"district-overview.json" = 4
+
+[[substitution]]
+kind = "email"
+original_sha256 = "767ccefb5496543e5390b4b087d6091bdbb69b385fda5489023e40c3a9027799"
+replacement = "ada@example.com"
+reason = "a contact's address in the contact, conversation and message fixtures"
+count = 10
+
+[substitution.files]
+"district-admin-overview.json" = 2
+"district-admin-user-patch.json" = 1
+"district-contact-detail.json" = 1
+"district-contacts.json" = 1
+"district-conversations.json" = 4
+"district-message-send-email.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "c243836ef71cc711199f40740461b705f8ca46de9fa93bfdfb5b8602811e55cd"
+replacement = "assistant@example.com"
+reason = "the sender of outbound email, at a host under the service's domain"
+count = 1
+
+[substitution.files]
+"district-message-send-email.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "00499f241eb9d2aa3da01eedb30c30901ccb415797219c3843fd83ff3164edcf"
+replacement = "auditor@example.com"
+reason = "a workspace member's address in the members list"
+count = 1
+
+[substitution.files]
+"district-members.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "36028836a123c0f283be7142d83f792b14ef6f1a74510387bcd2625c2c446f97"
+replacement = "billing@example.com"
+reason = "the billing contact in the billing and desk fixtures"
+count = 2
+
+[substitution.files]
+"district-billing.json" = 1
+"district-desk-tickets.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "dcc0919766d84ff05fff8ef1359d528da65a55910410d92a4219ec082d89651b"
+replacement = "caldav@example.com"
+reason = "a CalDAV account's user name in the scheduling calendar fixtures"
+count = 2
+
+[substitution.files]
+"district-scheduling-caldav-connect.json" = 1
+"district-scheduling-calendar-status.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "a88fe18f9e3a13e03ebff96d67c33b37aaf32ad25c0396a235966527753bf791"
+replacement = "caller@example.com"
+reason = "the requester of the help desk ticket fixtures"
+count = 5
+
+[substitution.files]
+"district-desk-ticket-create.json" = 1
+"district-desk-ticket-reply.json" = 1
+"district-desk-ticket-status.json" = 1
+"district-desk-ticket.json" = 1
+"district-desk-tickets.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "6af1521778a24650da09dc7de13bcc62b197fb2694f55a1b508aa84fd3992404"
+replacement = "contract@example.com"
+reason = "the scheduling account's own user in the scheduling fixtures"
+count = 8
+
+[substitution.files]
+"district-scheduling-calendar-status.json" = 1
+"district-scheduling-calendars.json" = 1
+"district-scheduling-event-types.json" = 1
+"district-scheduling-hosts.json" = 1
+"district-scheduling-me.json" = 1
+"district-scheduling-teams.json" = 1
+"district-scheduling-test-email.json" = 1
+"district-scheduling-users.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "a66c7ea317292b0acdeaf4fc25b555afeb46a5112abacd5d69e2b95c7b5d9dc7"
+replacement = "dana@example.com"
+reason = "a booking attendee in the scheduling booking fixtures"
+count = 3
+
+[substitution.files]
+"district-scheduling-booking.json" = 1
+"district-scheduling-bookings.json" = 1
+"district-scheduling-user-upcoming.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "6e62e177ad390388ea79c9a3358fcfad57db9eeba06464719877a7d9de0e0f13"
+replacement = "followup@example.com"
+reason = "a call's follow-up email in the call and overview fixtures"
+count = 3
+
+[substitution.files]
+"district-call-detail.json" = 1
+"district-calls.json" = 1
+"district-overview.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "e14c0225c305e8ad416fc0165954f60ed75f5333ab8d93b6fcff0b93628cf7a2"
+replacement = "founder@example.com"
+reason = "a workspace member's address in the members list"
+count = 1
+
+[substitution.files]
+"district-members.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "c921e912c34c775639044a430fda120f829d59e4c43fcf7200b931fe55f9f28d"
+replacement = "gone@example.com"
+reason = "a removed user in the scheduling user list"
+count = 1
+
+[substitution.files]
+"district-scheduling-users.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "30381464c9b6151cf3ad1477a37d4a2b0db48213b11d9d8ae1455e9aa0686ee2"
+replacement = "grace@example.com"
+reason = "a user and message recipient in the admin fixtures"
+count = 3
+
+[substitution.files]
+"district-admin-messages.json" = 1
+"district-admin-overview.json" = 2
+
+[[substitution]]
+kind = "email"
+original_sha256 = "3dfb33d6df973ad1bb70be396dfa5ceea441b63e569723a79906cc4ccd0079a6"
+replacement = "hello@example.com"
+reason = "a message sender in the admin message feed"
+count = 1
+
+[substitution.files]
+"district-admin-messages.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "24dc04b75b5360285731a45e8cac814c20e9ec889d23401c2c157efe1acf283d"
+replacement = "holidays@example.com"
+reason = "a shared holiday calendar's address-shaped id in the scheduling calendar list"
+count = 1
+
+[substitution.files]
+"district-scheduling-calendars.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "9decc0335b8c753ca87736b419cc20dec619ec047cc0d7cacf57f489b6f7e0f2"
+replacement = "member@example.com"
+reason = "a workspace member's address in the admin fixtures"
+count = 3
+
+[substitution.files]
+"district-admin-overview.json" = 1
+"district-admin-workspace-patch.json" = 1
+"district-admin-workspace-sync.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "71c9f49e8f284d69cfcf4c703aa878c78557ede007dbf8c43ff28a3b05acd432"
+replacement = "newcomer@example.com"
+reason = "the member added by the member-add fixture"
+count = 1
+
+[substitution.files]
+"district-member-add.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "2890d0be96aa7857beebb30dc8c7c2b528d31bcc4cfffdf057e704c7f64efca3"
+replacement = "operator@example.com"
+reason = "a workspace member's address in the member fixtures"
+count = 2
+
+[substitution.files]
+"district-member-role-patch.json" = 1
+"district-members.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "1959fa7670fd11a9447e36d0d677463ce5f6e0b8e809ce1e7c5918664b8127a2"
+replacement = "other@example.com"
+reason = "an event type owner in the scheduling event type fixture"
+count = 1
+
+[substitution.files]
+"district-scheduling-event-type.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "a9df6dad4eb2f7ee85f76174887d22ceb0a5f6b1d3ef46f73a72ff563aea1f56"
+replacement = "rotation@example.com"
+reason = "a round-robin host in the scheduling host and team fixtures"
+count = 2
+
+[substitution.files]
+"district-scheduling-hosts.json" = 1
+"district-scheduling-teams.json" = 1
+
+[[substitution]]
+kind = "email"
+original_sha256 = "f310f9d00a146bc476cbe2663f4d222f9a218f63e270ece7653c7f9ba9a2fb89"
+replacement = "sparse@example.com"
+reason = "the sparsely filled contact in the contact list"
+count = 1
+
+[substitution.files]
+"district-contacts.json" = 1
+
+[[substitution]]
+kind = "host"
+original_sha256 = "0742f7355697974551a2c75b6ecc0fc0fb42f4a011ab7f7399d0da55c2204fad"
+replacement = "booking.example.com"
+reason = "an internal test host that serves booking pages and scheduling media"
+count = 13
+
+[substitution.files]
+"district-scheduling-branding.json" = 2
+"district-scheduling-enable.json" = 1
+"district-scheduling-hosts.json" = 1
+"district-scheduling-me.json" = 1
+"district-scheduling-slots.json" = 1
+"district-scheduling-status-error.json" = 1
+"district-scheduling-status-provisioning.json" = 1
+"district-scheduling-status-ready.json" = 2
+"district-scheduling-teams.json" = 1
+"district-scheduling-upload.json" = 1
+"district-scheduling-users.json" = 1
+
+[[substitution]]
+kind = "host"
+original_sha256 = "32ca8563ef65ed5c4ce3f28255954bfd1b433b329dcc0250dd56138ef0c02981"
+replacement = "media.example.com"
+reason = "the real-time media server's host, in the call and room token fixtures"
+count = 5
+
+[substitution.files]
+"district-call-answer.json" = 1
+"district-dial.json" = 1
+"district-persona-preview-token.json" = 1
+"district-room-token-viewer.json" = 1
+"district-room-token.json" = 1
+
+[[substitution]]
+kind = "text"
+original = " \u2014 "
+replacement = " - "
+reason = "the em dash is not allowed in this repository; the fixtures use it as a spaced separator"
+count = 15
+
+[substitution.files]
+"district-ai-draft.json" = 1
+"district-conversations.json" = 1
+"district-draft-put.json" = 1
+"district-draft.json" = 1
+"district-drafts-list.json" = 1
+"district-member-last-agency.json" = 1
+"district-message-send-email.json" = 1
+"district-persona-options.json" = 7
+"district-timeline.json" = 1

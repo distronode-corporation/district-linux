@@ -1,0 +1,5 @@
+{
+  "success": false,
+  "error": "That email is already a member of this workspace",
+  "code": "member_exists"
+}

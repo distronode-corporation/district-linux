@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "usage": {
+    "month": "2026-08",
+    "provider": "twilio",
+    "smsOutbound": 412,
+    "smsInbound": 87,
+    "mmsOutbound": 6,
+    "whatsappOutbound": 0,
+    "callMinutesOutbound": 318.5,
+    "callMinutesInbound": 1204.25,
+    "numberCount": 3,
+    "videoMinutes": 42,
+    "lastUpdated": "2026-08-15T14:30:00.000Z"
+  }
+}

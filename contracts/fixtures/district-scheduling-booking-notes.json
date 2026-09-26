@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "data": {
+    "exists": true,
+    "content": "Dana wants a quote for twelve seats.",
+    "status": "ready",
+    "updated_at": "2026-09-14T13:35:00Z"
+  }
+}

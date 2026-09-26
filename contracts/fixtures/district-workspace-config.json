@@ -1,0 +1,85 @@
+{
+  "success": true,
+  "config": {
+    "aiPersona": {
+      "name": "Ada",
+      "voice": "aura-2-asteria-en",
+      "greeting": "Thanks for calling Contract Test. How can I help?",
+      "personality": "Warm, concise, and never oversells.",
+      "temperature": 0.7,
+      "voiceStyle": "en-GB-Studio-B",
+      "modelId": "deepgram-pipeline",
+      "responseLength": {
+        "deepgram-pipeline": "concise",
+        "openai-pipeline": "balanced"
+      },
+      "preemptiveTts": true,
+      "language": "en-US",
+      "videoEnabled": false,
+      "videoModelId": "inherit",
+      "dgiEnabled": true
+    },
+    "toolConfig": {
+      "allowedTools": [
+        "search_knowledge_base",
+        "transfer_to_agent",
+        "book_appointment",
+        "transfer_to_creator",
+        "leave_message",
+        "dispatch_email"
+      ],
+      "calendarId": "primary",
+      "calendarProvider": "google",
+      "supportPhoneNumber": "+14165550123",
+      "customEmailSenderName": "Contract Test"
+    },
+    "routingRules": [
+      {
+        "id": "rule-contract-1",
+        "match": "billing",
+        "action": "transfer",
+        "target": "+14165550188"
+      },
+      {
+        "id": "rule-contract-2",
+        "match": "support",
+        "action": "knowledge",
+        "target": null
+      },
+      {
+        "id": "rule-contract-3",
+        "field": "industry",
+        "operator": "contains",
+        "value": "tech",
+        "voice": "Fenrir",
+        "instruction": "Speak with high energy and use technical terminology.",
+        "model": ""
+      }
+    ],
+    "callDirectory": [
+      {
+        "name": "Ops desk",
+        "phoneNumber": "+14165550177"
+      },
+      {
+        "name": "On-call engineer",
+        "phoneNumber": "+14165550166",
+        "extension": "402"
+      }
+    ],
+    "messagingConfig": {
+      "activeProvider": "twilio",
+      "providerConfig": {
+        "accountSid": "AC_contract"
+      }
+    },
+    "campaignSettings": {
+      "infiniteSdrEnabled": true,
+      "dailyCap": 25
+    },
+    "creatorCellNumber": "+14165550101",
+    "plan": "studio",
+    "subscriptionTier": "studio",
+    "updatedAt": "2026-08-15T14:30:00.000Z"
+  }
+}

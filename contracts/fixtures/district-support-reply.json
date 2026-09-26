@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "message": {
+    "id": "support_msg_reply",
+    "role": "customer",
+    "author": "You",
+    "body": "Still failing as of this morning.",
+    "createdAt": "2026-09-06T12:30:00.000Z"
+  }
+}

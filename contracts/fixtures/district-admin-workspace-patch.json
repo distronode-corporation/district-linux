@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "workspace": {
+    "id": "ws-admin-1",
+    "name": "Contract Agency",
+    "slug": "contract-agency",
+    "plan": "voicepro",
+    "subscriptionTier": "VoicePro",
+    "subscriptionStatus": "active",
+    "allowedVoiceIds": [
+      "voice-a",
+      "voice-b"
+    ],
+    "allowedModelIds": [
+      "gemini-3.5-flash-lite"
+    ],
+    "memberIds": [
+      "member@example.com"
+    ]
+  }
+}

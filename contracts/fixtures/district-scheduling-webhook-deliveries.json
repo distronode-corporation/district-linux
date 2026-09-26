@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "data": {
+    "items": [
+      {
+        "id": "whd-contract-1",
+        "webhook_id": "wh-contract-1",
+        "event": "booking.created",
+        "status": "delivered",
+        "attempt_count": 1,
+        "booking_id": "bk-contract-1",
+        "response_status": 200,
+        "last_attempted_at": "2026-09-10T09:00:02Z"
+      },
+      {
+        "id": "whd-contract-2",
+        "webhook_id": "wh-contract-1",
+        "event": "recording.completed",
+        "status": "failed",
+        "attempt_count": 5,
+        "last_attempted_at": "2026-09-10T09:30:00Z"
+      }
+    ]
+  }
+}

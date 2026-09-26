@@ -1,0 +1,39 @@
+{
+  "success": true,
+  "numbers": [
+    {
+      "phoneNumber": "+14165550100",
+      "friendlyName": "Main line",
+      "capabilities": [
+        "sms",
+        "voice"
+      ],
+      "type": "local",
+      "status": "in-use",
+      "smsUrl": "https://www.distronode.test/api/webhooks/twilio/sms",
+      "voiceUrl": "https://www.distronode.test/api/webhooks/twilio/voice",
+      "provider": "twilio",
+      "monthlyPrice": 1.15,
+      "managed": false
+    },
+    {
+      "phoneNumber": "+14165550199",
+      "capabilities": [
+        "voice"
+      ],
+      "type": "local",
+      "status": "active",
+      "provider": "telnyx",
+      "monthlyPrice": 2.5,
+      "managed": true
+    },
+    {
+      "phoneNumber": "+18005550188",
+      "capabilities": [],
+      "type": "local",
+      "status": "active",
+      "provider": "telnyx",
+      "managed": true
+    }
+  ]
+}

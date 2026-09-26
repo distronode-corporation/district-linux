@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "contact": {
+    "id": "contact_contract_1",
+    "workspaceId": "ws-contract-test",
+    "name": "Contract Test Caller",
+    "phoneNumber": "14165550142",
+    "email": "ada@example.com",
+    "socialHandles": {
+      "linkedin": "ada-l"
+    },
+    "company": {
+      "name": "Analytical Engines",
+      "domain": "engines.test",
+      "industry": "compute"
+    },
+    "intelligence": {
+      "summary": "Interested in Thursday."
+    },
+    "visualMemory": [
+      "https://images.contract.test/1.png"
+    ],
+    "latestContextSummary": "Booked an appointment.",
+    "dgiStatus": "complete",
+    "dgiError": null,
+    "budget": "10k",
+    "timeline": "Q4",
+    "website": "https://engines.test",
+    "lastUpdated": "2026-08-15T14:30:00.000Z",
+    "createdAt": "2026-08-15T14:30:00.000Z"
+  },
+  "phoneIntel": {
+    "country": "CA",
+    "countryName": "Canada",
+    "nationalFormat": "(416) 555-0142",
+    "internationalFormat": "+1 416 555 0142",
+    "region": {
+      "code": "ON",
+      "name": "Ontario"
+    },
+    "lineType": null,
+    "carrier": null
+  }
+}

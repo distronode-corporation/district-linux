@@ -1,0 +1,13 @@
+{
+  "eligible": true,
+  "canManage": true,
+  "tenant": {
+    "status": "ready",
+    "publicHost": "booking.example.com",
+    "region": "us",
+    "lastReadyAt": "2026-09-06T11:20:00.000Z",
+    "lastError": null,
+    "hasCredentials": true,
+    "bookingUrl": "https://booking.example.com/book/phone-consultation"
+  }
+}

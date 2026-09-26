@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "provider": "twilio",
+  "numbers": [
+    {
+      "phoneNumber": "+14165550111",
+      "locality": "Toronto",
+      "region": "ON",
+      "capabilities": [
+        "sms",
+        "voice"
+      ],
+      "type": "local",
+      "monthlyPrice": 1.15,
+      "setupPrice": 0,
+      "currency": "USD"
+    },
+    {
+      "phoneNumber": "+18005550122",
+      "capabilities": [
+        "sms",
+        "voice"
+      ],
+      "type": "tollFree"
+    }
+  ]
+}

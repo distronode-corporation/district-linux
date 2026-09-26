@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "data": {
+    "sent": true,
+    "to": "contract@example.com"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "billing": {
+    "subscriptionTier": null,
+    "subscriptionStatus": "past_due",
+    "plan": "voicestarter",
+    "overagePolicy": "hard_cap",
+    "overageCapExceeded": true,
+    "usage": null
+  }
+}

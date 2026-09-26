@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "data": {
+    "items": [
+      {
+        "id": "wh-contract-1",
+        "url": "https://hooks.contract.test/bookings",
+        "events": [
+          "booking.created",
+          "booking.cancelled"
+        ],
+        "fields": [
+          "attendee_name",
+          "attendee_email"
+        ],
+        "is_active": true,
+        "created_at": "2026-09-05T11:00:00Z"
+      },
+      {
+        "id": "wh-contract-2",
+        "url": "https://hooks.contract.test/recordings",
+        "events": [
+          "recording.completed"
+        ],
+        "fields": null,
+        "is_active": false,
+        "created_at": "2026-09-06T11:00:00Z"
+      }
+    ]
+  }
+}

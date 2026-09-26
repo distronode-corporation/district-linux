@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "data": {
+    "group_id": "grp-contract-2",
+    "reason": "out_of_office",
+    "start": "2026-12-24",
+    "end": "2026-12-31",
+    "days": 8
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "data": {
+    "connected": true,
+    "account_email": "caldav@example.com"
+  }
+}

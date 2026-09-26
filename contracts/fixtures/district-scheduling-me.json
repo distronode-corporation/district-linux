@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "data": {
+    "id": "sched-user-contract",
+    "email": "contract@example.com",
+    "name": "Contract Member",
+    "timezone": "America/Toronto",
+    "time_format": "24h",
+    "week_start": 1,
+    "date_format": "ymd",
+    "is_admin": true,
+    "is_owner": false,
+    "role": "admin",
+    "notify_confirmation": true,
+    "notify_cancellation": true,
+    "notify_reschedule": false,
+    "notify_reminder": true,
+    "notify_host_booking": true,
+    "notify_host_cancel": false,
+    "notify_host_reschedule": true,
+    "avatar_url": "https://booking.example.com/media/avatars/contract.png"
+  }
+}

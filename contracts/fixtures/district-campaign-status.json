@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "campaign": {
+    "infiniteSdrEnabled": true,
+    "sdrBatchSize": 25,
+    "sdrCampaignGoal": "Book demos with lapsed trials"
+  }
+}

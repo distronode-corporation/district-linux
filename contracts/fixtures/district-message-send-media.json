@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "message": {
+    "id": "msg_contract_sent_mms",
+    "messageSid": "SM_contract",
+    "workspaceId": "ws-contract-test",
+    "from": "+16475550100",
+    "to": "+14165550142",
+    "body": "Here is the roof after the repair.",
+    "direction": "outbound",
+    "type": "sms",
+    "status": "queued",
+    "createdAt": "2026-08-15T14:30:00.000Z",
+    "externalId": "SM_contract",
+    "provider": "twilio",
+    "accountId": "acct_contract"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": {
+    "id": "msg_contract_sent_email",
+    "messageSid": "pm_contract_1",
+    "workspaceId": "ws-contract-test",
+    "from": "District AI <assistant@example.com>",
+    "to": "ada@example.com",
+    "body": "Friday at 2pm works - I have moved the appointment.",
+    "subject": "Re: Thursday appointment",
+    "direction": "outbound",
+    "type": "email",
+    "status": "sent",
+    "createdAt": "2026-08-15T14:30:00.000Z",
+    "provider": "postmark"
+  }
+}

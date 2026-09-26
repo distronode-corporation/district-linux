@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "data": {
+    "slots": [
+      {
+        "start": "2026-09-14T13:00:00Z",
+        "end": "2026-09-14T13:30:00Z",
+        "host_ids": [
+          "sched-user-contract"
+        ]
+      },
+      {
+        "start": "2026-09-14T14:00:00Z",
+        "end": "2026-09-14T14:30:00Z",
+        "host_ids": null
+      }
+    ],
+    "hosts": {
+      "sched-user-contract": {
+        "name": "Contract Member",
+        "avatar_url": "https://booking.example.com/media/avatars/contract.png"
+      }
+    },
+    "taken": [
+      {
+        "start": "2026-09-14T15:00:00Z",
+        "end": "2026-09-14T15:30:00Z",
+        "host_ids": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "executed": true,
+  "tool": "update_persona",
+  "args": {
+    "greeting": "Good afternoon, thanks for calling Analytical Engines."
+  },
+  "result": {
+    "ok": true,
+    "updated": [
+      "greeting"
+    ]
+  }
+}

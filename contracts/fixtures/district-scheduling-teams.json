@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "data": {
+    "items": [
+      {
+        "id": "team-contract-1",
+        "name": "Sales",
+        "slug": "sales",
+        "created_at": "2026-09-01T09:30:00Z",
+        "member_count": 2,
+        "members": [
+          {
+            "id": "sched-user-contract",
+            "name": "Contract Member",
+            "email": "contract@example.com",
+            "avatar_url": "https://booking.example.com/media/avatars/contract.png",
+            "routing_priority": 0,
+            "archived": false
+          },
+          {
+            "id": "sched-user-rotation",
+            "name": "Rotation Host",
+            "email": "rotation@example.com",
+            "routing_priority": 5,
+            "archived": false
+          }
+        ]
+      },
+      {
+        "id": "team-contract-2",
+        "name": "Support",
+        "slug": "support",
+        "created_at": "2026-09-02T09:30:00Z",
+        "member_count": 0,
+        "members": null
+      }
+    ]
+  }
+}

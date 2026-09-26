@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "answer": "I've proposed a new greeting. Confirm it below and it will take effect.",
+  "needsConfirmation": true,
+  "pendingWrite": {
+    "tool": "update_persona",
+    "args": {
+      "greeting": "Good afternoon, thanks for calling Analytical Engines."
+    },
+    "summary": "Update the AI receptionist persona (greeting → \"Good afternoon, thanks for calling Analytical Engines.\")."
+  }
+}

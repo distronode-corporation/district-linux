@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "campaign": {
+    "infiniteSdrEnabled": false,
+    "sdrBatchSize": null,
+    "sdrCampaignGoal": null
+  }
+}

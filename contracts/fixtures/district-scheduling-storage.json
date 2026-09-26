@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "data": {
+    "recordings_enabled": true,
+    "recordings_storage_ready": true,
+    "recordings_prefix": "tenants/contract/recordings"
+  }
+}

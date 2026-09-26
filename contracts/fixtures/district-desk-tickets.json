@@ -1,0 +1,53 @@
+{
+  "success": true,
+  "tickets": [
+    {
+      "id": "desk_ticket_open",
+      "reference": 41,
+      "displayReference": "T-41",
+      "subject": "Reschedule Thursday's appointment",
+      "status": "open",
+      "source": "manual",
+      "contactId": "contact_contract_1",
+      "requesterName": "Contract Test Caller",
+      "requesterEmail": "caller@example.com",
+      "requesterPhone": "+14165550142",
+      "createdAt": "2026-09-04T09:15:00.000Z",
+      "updatedAt": "2026-09-06T16:40:00.000Z",
+      "resolvedAt": null,
+      "messageCount": 3
+    },
+    {
+      "id": "desk_ticket_waiting",
+      "reference": 42,
+      "displayReference": "T-42",
+      "subject": "Caller could not complete a booking",
+      "status": "waiting",
+      "source": "voice-call",
+      "contactId": null,
+      "requesterName": null,
+      "requesterEmail": null,
+      "requesterPhone": null,
+      "createdAt": "2026-09-04T09:15:00.000Z",
+      "updatedAt": "2026-09-06T16:40:00.000Z",
+      "resolvedAt": null,
+      "messageCount": 1
+    },
+    {
+      "id": "desk_ticket_resolved",
+      "reference": 43,
+      "displayReference": "T-43",
+      "subject": "Invoice question",
+      "status": "resolved",
+      "source": "manual",
+      "contactId": null,
+      "requesterName": null,
+      "requesterEmail": "billing@example.com",
+      "requesterPhone": null,
+      "createdAt": "2026-09-04T09:15:00.000Z",
+      "updatedAt": "2026-09-06T16:40:00.000Z",
+      "resolvedAt": "2026-09-06T16:40:00.000Z",
+      "messageCount": 4
+    }
+  ]
+}

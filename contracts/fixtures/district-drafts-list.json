@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "drafts": [
+    {
+      "threadKey": "contact:contact_contract_1",
+      "body": "Thanks - Thursday at 2pm works. Confirming now.",
+      "subject": "Re: Thursday appointment",
+      "mediaUrls": [
+        "https://www.distronode.test/api/media/media_contract_roof"
+      ],
+      "updatedAt": "2026-08-15T14:30:00.000Z"
+    },
+    {
+      "threadKey": "addr:14165550181",
+      "body": "Following up on your quote.",
+      "subject": null,
+      "mediaUrls": [],
+      "updatedAt": "2026-08-15T09:00:00.000Z"
+    }
+  ]
+}

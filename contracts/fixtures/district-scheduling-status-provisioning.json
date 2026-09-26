@@ -1,0 +1,13 @@
+{
+  "eligible": true,
+  "canManage": true,
+  "tenant": {
+    "status": "provisioning",
+    "publicHost": "booking.example.com",
+    "region": "us",
+    "lastReadyAt": null,
+    "lastError": null,
+    "hasCredentials": false,
+    "bookingUrl": null
+  }
+}

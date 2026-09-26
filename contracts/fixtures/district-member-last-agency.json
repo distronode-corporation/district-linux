@@ -1,0 +1,5 @@
+{
+  "success": false,
+  "error": "Cannot demote the last agency member - the workspace would have no administrator",
+  "code": "last_agency_member"
+}

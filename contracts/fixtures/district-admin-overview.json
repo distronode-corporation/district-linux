@@ -1,0 +1,138 @@
+{
+  "stats": {
+    "totalUsers": 2,
+    "totalWorkspaces": 2,
+    "byokCount": 1,
+    "managedCount": 0,
+    "twilioCount": 1,
+    "sinchCount": 0,
+    "telnyxCount": 0,
+    "plansBreakdown": {
+      "VoicePro": 1,
+      "free": 1
+    }
+  },
+  "users": [
+    {
+      "id": "user_admin_contract_1",
+      "email": "ada@example.com",
+      "displayName": "Ada Lovelace",
+      "firstName": "Ada",
+      "lastName": "Lovelace",
+      "emailVerified": true,
+      "subscription": {
+        "tier": "voicepro",
+        "status": "active",
+        "stripeCustomerId": "cus_contract_admin",
+        "stripeSubscriptionId": "sub_contract_admin"
+      },
+      "districtAccess": true,
+      "dgiAccess": false,
+      "associatedWorkspaces": [
+        "Contract Agency"
+      ],
+      "createdAt": "2026-08-01T09:00:00.000Z"
+    },
+    {
+      "id": "user_admin_contract_2",
+      "email": "grace@example.com",
+      "displayName": "Grace Hopper",
+      "firstName": "Grace",
+      "lastName": "Hopper",
+      "emailVerified": false,
+      "subscription": null,
+      "districtAccess": false,
+      "dgiAccess": false,
+      "associatedWorkspaces": [
+        "Contract Client"
+      ],
+      "createdAt": "2026-07-20T09:00:00.000Z"
+    }
+  ],
+  "workspaces": [
+    {
+      "id": "ws-admin-1",
+      "name": "Contract Agency",
+      "slug": "contract-agency",
+      "ownerId": "ada@example.com",
+      "plan": "voicepro",
+      "subscriptionTier": "VoicePro",
+      "subscriptionStatus": "active",
+      "stripeCustomerId": "cus_contract_admin",
+      "stripeSubscriptionId": "sub_contract_admin",
+      "memberIds": [
+        "member@example.com"
+      ],
+      "allowedVoiceIds": [
+        "voice-a",
+        "voice-b"
+      ],
+      "allowedModelIds": [
+        "gemini-3.5-flash-lite"
+      ],
+      "activeProvider": "twilio",
+      "credentialSource": "byok",
+      "configuredProviders": [
+        "twilio",
+        "sinch"
+      ],
+      "phoneNumbers": [
+        "14165550100"
+      ],
+      "phoneCount": 1,
+      "createdAt": "2026-08-01T10:00:00.000Z"
+    },
+    {
+      "id": "ws-admin-2",
+      "name": "Contract Client",
+      "slug": "contract-client",
+      "ownerId": "grace@example.com",
+      "plan": "free",
+      "subscriptionTier": null,
+      "subscriptionStatus": null,
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "memberIds": [],
+      "allowedVoiceIds": [],
+      "allowedModelIds": [],
+      "activeProvider": "none",
+      "credentialSource": "none",
+      "configuredProviders": [],
+      "phoneNumbers": [],
+      "phoneCount": 0,
+      "createdAt": "2026-07-20T10:00:00.000Z"
+    }
+  ],
+  "billingStats": [
+    {
+      "workspaceId": "ws-admin-1",
+      "totalSms": 200,
+      "totalMinutes": 100,
+      "totalVideoMinutes": 10,
+      "estimatedCost": 6.7
+    },
+    {
+      "workspaceId": "ws-admin-2",
+      "totalSms": 100,
+      "totalMinutes": 0,
+      "totalVideoMinutes": 0,
+      "estimatedCost": 0.5
+    }
+  ],
+  "activeAvatarSessions": null,
+  "phoneNumbers": [
+    {
+      "phoneNumber": "14165550100",
+      "fullPhoneNumber": "+14165550100",
+      "workspaceId": "ws-admin-1",
+      "provider": "twilio",
+      "status": "active",
+      "capabilities": [
+        "voice",
+        "sms"
+      ],
+      "monthlyPrice": 1.15,
+      "numberType": "local"
+    }
+  ]
+}

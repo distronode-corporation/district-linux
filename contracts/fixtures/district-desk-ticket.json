@@ -1,0 +1,39 @@
+{
+  "success": true,
+  "ticket": {
+    "id": "desk_ticket_open",
+    "reference": 41,
+    "displayReference": "T-41",
+    "subject": "Reschedule Thursday's appointment",
+    "status": "open",
+    "source": "manual",
+    "contactId": "contact_contract_1",
+    "requesterName": "Contract Test Caller",
+    "requesterEmail": "caller@example.com",
+    "requesterPhone": "+14165550142",
+    "createdAt": "2026-09-04T09:15:00.000Z",
+    "updatedAt": "2026-09-06T16:40:00.000Z",
+    "resolvedAt": null,
+    "messageCount": 3,
+    "messages": [
+      {
+        "id": "desk_msg_customer",
+        "authorType": "customer",
+        "body": "I need to move Thursday's appointment to next week.",
+        "createdAt": "2026-09-04T09:15:00.000Z"
+      },
+      {
+        "id": "desk_msg_assistant",
+        "authorType": "assistant",
+        "body": "Raised from a call the assistant could not complete.",
+        "createdAt": "2026-09-04T09:15:00.000Z"
+      },
+      {
+        "id": "desk_msg_team",
+        "authorType": "team",
+        "body": "Moved to Tuesday at 10am. Anything else?",
+        "createdAt": "2026-09-06T16:40:00.000Z"
+      }
+    ]
+  }
+}

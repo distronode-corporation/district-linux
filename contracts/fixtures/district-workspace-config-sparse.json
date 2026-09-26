@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "config": {
+    "aiPersona": null,
+    "toolConfig": null,
+    "routingRules": [],
+    "callDirectory": [],
+    "messagingConfig": null,
+    "campaignSettings": null,
+    "creatorCellNumber": null,
+    "plan": null,
+    "subscriptionTier": null,
+    "updatedAt": "2026-08-15T14:30:00.000Z"
+  }
+}

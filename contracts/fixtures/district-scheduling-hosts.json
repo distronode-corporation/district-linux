@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "data": {
+    "items": [
+      {
+        "user_id": "sched-user-contract",
+        "name": "Contract Member",
+        "email": "contract@example.com",
+        "avatar_url": "https://booking.example.com/media/avatars/contract.png",
+        "role": "required",
+        "priority": 0,
+        "archived": false
+      },
+      {
+        "user_id": "sched-user-rotation",
+        "name": "Rotation Host",
+        "email": "rotation@example.com",
+        "role": "rotation",
+        "priority": 2,
+        "archived": true
+      }
+    ]
+  }
+}

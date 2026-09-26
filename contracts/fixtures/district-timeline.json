@@ -1,0 +1,59 @@
+{
+  "success": true,
+  "timeline": [
+    {
+      "id": "call_contract_missed",
+      "type": "call",
+      "timestamp": "2026-08-15T13:10:00.000Z",
+      "direction": "missed",
+      "body": "AI call completed.",
+      "status": "no-answer",
+      "duration": 0,
+      "hasTranscript": false
+    },
+    {
+      "id": "call_contract_answered",
+      "type": "call",
+      "timestamp": "2026-08-15T13:40:00.000Z",
+      "direction": "inbound",
+      "body": "Caller booked an appointment for Thursday.",
+      "status": "completed",
+      "duration": 65,
+      "summary": "Caller booked an appointment for Thursday.",
+      "hasTranscript": true
+    },
+    {
+      "id": "msg_timeline_sms_out",
+      "type": "sms",
+      "timestamp": "2026-08-15T14:05:00.000Z",
+      "direction": "outbound",
+      "body": "Confirmed for Thursday at 2pm.",
+      "status": "delivered"
+    },
+    {
+      "id": "msg_timeline_mms",
+      "type": "sms",
+      "timestamp": "2026-08-15T14:10:00.000Z",
+      "direction": "inbound",
+      "body": "Here is the photo of the roof.",
+      "status": "received",
+      "mediaUrls": [
+        "https://media.contract.test/roof.jpg"
+      ]
+    },
+    {
+      "id": "msg_timeline_email",
+      "type": "email",
+      "timestamp": "2026-08-15T14:20:00.000Z",
+      "direction": "inbound",
+      "body": "Following up by email - could we move Thursday to Friday?",
+      "status": "received",
+      "subject": "Re: Thursday appointment"
+    }
+  ],
+  "pageInfo": {
+    "hasMore": false,
+    "oldest": "2026-08-15T13:10:00.000Z",
+    "oldestId": "call_contract_missed"
+  }
+}

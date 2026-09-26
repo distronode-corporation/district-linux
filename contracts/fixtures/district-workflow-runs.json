@@ -1,0 +1,74 @@
+{
+  "success": true,
+  "runs": [
+    {
+      "id": "run_contract_success",
+      "workflowId": "wf_contract_active",
+      "trigger": "call_ended_unanswered",
+      "status": "success",
+      "startedAt": "2026-08-18T11:30:00.000Z",
+      "finishedAt": "2026-08-18T11:30:00.700Z",
+      "actionResults": [
+        {
+          "type": "send_sms",
+          "outcome": "ok"
+        },
+        {
+          "type": "add_crm_tag",
+          "outcome": "ok"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "run_contract_partial",
+      "workflowId": "wf_contract_active",
+      "trigger": "call_ended_unanswered",
+      "status": "partial",
+      "startedAt": "2026-08-18T10:15:00.000Z",
+      "finishedAt": "2026-08-18T10:15:01.100Z",
+      "actionResults": [
+        {
+          "type": "send_sms",
+          "outcome": "ok"
+        },
+        {
+          "type": "send_email",
+          "outcome": "skipped",
+          "reason": "contact has no email address"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "run_contract_failed",
+      "workflowId": "wf_contract_active",
+      "trigger": "call_ended_unanswered",
+      "status": "failed",
+      "startedAt": "2026-08-17T16:40:00.000Z",
+      "finishedAt": null,
+      "actionResults": [],
+      "error": "notify_ops webhook returned 502"
+    },
+    {
+      "id": "run_contract_skipped",
+      "workflowId": "wf_contract_active",
+      "trigger": "call_ended_unanswered",
+      "status": "skipped",
+      "startedAt": "2026-08-17T09:05:00.000Z",
+      "finishedAt": "2026-08-17T09:05:00.050Z",
+      "actionResults": [
+        {
+          "type": "send_sms",
+          "outcome": "skipped",
+          "reason": "contact is on the DNC list"
+        }
+      ],
+      "error": null
+    }
+  ],
+  "total": 9,
+  "limit": 4,
+  "offset": 0,
+  "hasMore": true
+}

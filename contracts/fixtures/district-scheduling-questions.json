@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "data": {
+    "items": [
+      {
+        "id": "q-contract-1",
+        "event_type_id": "et-contract-1",
+        "label": "Which product are you asking about?",
+        "type": "select",
+        "options": [
+          "District",
+          "Ledger",
+          "Something else"
+        ],
+        "required": true,
+        "position": 0
+      },
+      {
+        "id": "q-contract-2",
+        "event_type_id": "et-contract-1",
+        "label": "Anything we should read first?",
+        "type": "text",
+        "options": null,
+        "required": false,
+        "position": 1
+      }
+    ]
+  }
+}

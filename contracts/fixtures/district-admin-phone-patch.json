@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "phoneNumber": {
+    "phoneNumber": "14165550100",
+    "fullPhoneNumber": "+14165550100",
+    "workspaceId": "ws-admin-2",
+    "provider": "twilio",
+    "status": "active",
+    "capabilities": [
+      "voice",
+      "sms"
+    ],
+    "monthlyPrice": 1.15,
+    "numberType": "local",
+    "tfvSid": null,
+    "createdAt": "2026-08-01T10:00:00.000Z",
+    "updatedAt": "2026-08-15T14:30:00.000Z"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "settings": {
+    "enabled": false,
+    "notifyCustomersByEmail": true,
+    "publicBrandName": null,
+    "publicLogoUrl": null
+  }
+}

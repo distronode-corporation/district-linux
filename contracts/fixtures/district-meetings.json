@@ -1,0 +1,26 @@
+[
+  {
+    "id": "meeting_contract_live",
+    "roomName": "meet_ws-contract-test_standup",
+    "title": null,
+    "status": "in-progress",
+    "startedAt": "2026-08-15T14:30:00.000Z",
+    "endedAt": null,
+    "createdAt": "2026-08-15T14:30:00.000Z",
+    "durationSec": 0,
+    "summaryPreview": null,
+    "participantCount": 0
+  },
+  {
+    "id": "meeting_contract_completed",
+    "roomName": "meet_ws-contract-test_weekly-review",
+    "title": "Weekly review",
+    "status": "completed",
+    "startedAt": "2026-08-14T15:00:00.000Z",
+    "endedAt": "2026-08-14T15:42:00.000Z",
+    "createdAt": "2026-08-14T15:00:00.000Z",
+    "durationSec": 2520,
+    "summaryPreview": "The team reviewed Thursday's inbound volume and agreed to move the after-hours overflow onto the second attendant. Ada took the carrier follow-up, Grace is rewriting the greeting, and the routing change lands before the ",
+    "participantCount": 2
+  }
+]

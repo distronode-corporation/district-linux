@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "settings": {
+    "enabled": true,
+    "notifyCustomersByEmail": true,
+    "publicBrandName": "Contract Test Desk",
+    "publicLogoUrl": null
+  },
+  "objectRemoved": true
+}

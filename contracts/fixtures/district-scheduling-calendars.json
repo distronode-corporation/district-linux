@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "data": {
+    "calendars": [
+      {
+        "id": "contract@example.com",
+        "name": "Contract Member",
+        "primary": true,
+        "writable": true,
+        "check_conflicts": true,
+        "is_destination": true
+      },
+      {
+        "id": "holidays@example.com",
+        "name": "Statutory holidays"
+      }
+    ]
+  }
+}
