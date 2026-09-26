@@ -1,0 +1,49 @@
+version: 2
+
+# Two ecosystems, and one of them is easy to forget: the action SHAs. Every `uses:`
+# in the workflows is pinned to a commit with a `# vX.Y.Z` comment, which is right
+# for supply-chain safety and wrong for noticing a security fix, because a pinned
+# SHA never moves on its own. `github-actions` here is what turns each pin into a
+# pull request; Dependabot rewrites both the SHA and the version comment.
+#
+# `cargo` opens pull requests against Cargo.lock, which CI enforces with `--locked`,
+# so a bump that does not build fails in its pull request rather than in someone's
+# checkout.
+#
+# `cooldown` holds a version update back until the release is a week old, so a
+# compromised publish that is yanked within days never reaches a pull request here.
+# It does not delay security updates, which Dependabot opens as soon as an advisory
+# lands.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      # One pull request for the routine bumps. A major version usually needs a
+      # workflow edit, so it is deliberately left on its own.
+      actions-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      # The gtk-rs crates release together and each one names the others' minor
+      # versions, so bumping one alone leaves two copies of gtk4 or glib in the tree
+      # and their types stop matching. Listed first because a dependency joins the
+      # first group that matches it, and with no `update-types` so that the
+      # breaking 0.x bumps land here too, as one pull request.
+      gtk-rs:
+        patterns:
+          - gtk4
+          - libadwaita
+          - glib
+          - gio
+      cargo-minor:
+        update-types: [minor, patch]

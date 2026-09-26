@@ -1,0 +1,244 @@
+name: CI
+
+# `rust` formats, lints and tests the whole workspace, the GTK app included. `msrv`
+# compiles it at the declared minimum Rust version and `repo` runs the two
+# repository checks under scripts/. `cargo-deny`, `dependency-review` (pull
+# requests only) and `zizmor` are the supply chain: advisories and licences for the
+# dependency tree, and the workflows themselves.
+#
+# Everything runs on ubuntu-24.04 because it ships GTK 4.14 and libadwaita 1.5,
+# the floor the app targets (the gtk4 `v4_14` and libadwaita `v1_5` features in
+# Cargo.toml). Building here is what proves the app still links against the
+# oldest distribution the .deb supports. Moving the runner is a user-visible
+# change.
+#
+# One Linux job per concern and no matrix: this is a Linux-only app, and runner
+# minutes are metered while the repository is private.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege at the top level, so a job added later starts read-only instead
+# of inheriting the repository's default token scope. Nothing in CI writes.
+permissions:
+  contents: read
+
+# Per ref, and only pull requests cancel in flight: a superseded pull request run
+# is waste, a superseded main run is history.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  # The GTK 4 and libadwaita development files. district-app links against them,
+  # and its -sys crates find them through pkg-config at BUILD time, so clippy fails
+  # without them, not only a release build. No libssl-dev: HTTPS is rustls, and
+  # neither openssl-sys nor native-tls is in Cargo.lock.
+  LINUX_DEPS: >-
+    pkg-config
+    libgtk-4-dev
+    libadwaita-1-dev
+
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # rustup is preinstalled on every GitHub-hosted image, and rust-toolchain.toml
+      # already names the channel and components, so no third-party action is
+      # needed. The install is explicit anyway (it also updates a stale preinstalled
+      # stable), because rustup releases have gone back and forth on auto-installing
+      # from the toolchain file.
+      - name: Install the stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal -c rustfmt -c clippy
+          rustc --version
+
+      # First, because it needs neither the system packages nor a build, so a
+      # formatting slip fails in seconds.
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: Install the GTK 4 and libadwaita development files
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2086 # deliberate word splitting into one package per arg
+          sudo apt-get install -y --no-install-recommends $LINUX_DEPS
+
+      # Caches are written from main only. A pull request still restores main's
+      # cache, but does not spend time uploading one of its own that nothing else
+      # would read.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      # `--locked` on every cargo call that resolves: it fails if Cargo.lock would
+      # have to change. `--all-targets` so the tests are linted too.
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      # `--workspace`, not a list of packages: a crate never named here runs zero
+      # tests and looks identical to a crate whose tests all pass.
+      - name: cargo test
+        run: cargo test --workspace --locked
+
+  # The declared Rust floor, compiled at the floor. Without this job `rust-version`
+  # is a comment: `rust` builds on stable, so a feature stabilised after the declared
+  # version compiles green forever and only a user on the floor finds out.
+  msrv:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the GTK 4 and libadwaita development files
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2086 # deliberate word splitting into one package per arg
+          sudo apt-get install -y --no-install-recommends $LINUX_DEPS
+
+      # One source of truth: the floor is read out of the manifest rather than
+      # duplicated here, so bumping Cargo.toml bumps this job.
+      - name: Read the declared MSRV
+        id: msrv
+        run: |
+          msrv="$(python3 -c 'import tomllib;print(tomllib.load(open("Cargo.toml","rb"))["workspace"]["package"]["rust-version"])')"
+          echo "msrv=$msrv" >> "$GITHUB_OUTPUT"
+          echo "declared rust-version: $msrv"
+
+      # INSTALLING THE FLOOR IS NOT ENOUGH ON ITS OWN, AND THE FAILURE IS SILENT.
+      # rustup's override order puts rust-toolchain.toml (which pins `stable`) above
+      # the default toolchain, so every cargo call here would run on stable and the
+      # job would pass while proving nothing. RUSTUP_TOOLCHAIN outranks the file;
+      # exporting it through $GITHUB_ENV applies it to the cache action too.
+      - name: Install the MSRV toolchain and pin it above rust-toolchain.toml
+        env:
+          MSRV: ${{ steps.msrv.outputs.msrv }}
+        run: |
+          rustup toolchain install "$MSRV" --profile minimal
+          echo "RUSTUP_TOOLCHAIN=$MSRV" >> "$GITHUB_ENV"
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: msrv-${{ steps.msrv.outputs.msrv }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      # And assert it rather than trusting it.
+      - name: The active compiler really is the floor
+        env:
+          MSRV: ${{ steps.msrv.outputs.msrv }}
+        run: |
+          have="$(rustc --version | cut -d' ' -f2)"
+          case "$have" in
+            "$MSRV" | "$MSRV".*)
+              echo "rustc $have honours the declared MSRV $MSRV" ;;
+            *)
+              echo "::error::rustc is $have, but the declared MSRV is $MSRV. The toolchain pin is not taking effect."
+              exit 1 ;;
+          esac
+
+      # `check`, not `build`: MSRV is a question about the language and the
+      # dependency manifests, and `--all-targets` extends it to the tests.
+      - name: cargo check at the MSRV
+        run: cargo check --workspace --all-targets --locked
+
+  # Seconds of runtime. Both scripts need Python 3.11 or newer (tomllib), which
+  # ubuntu-24.04 ships.
+  repo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The version agrees across the workspace and CHANGELOG.md
+        run: python3 scripts/check-version.py
+
+      # Before the scan, so that a rule which has stopped matching anything fails
+      # here instead of letting the scan pass quietly.
+      - name: The public-hygiene rules still catch what they claim to
+        run: python3 scripts/check-public-hygiene.py --self-test
+
+      - name: Public hygiene (dashes, phone numbers, host names, email addresses)
+        run: python3 scripts/check-public-hygiene.py
+
+  # RustSec advisories, the licence allow-list, banned crates and allowed sources,
+  # all read from deny.toml. RustSec often has an advisory days before GitHub's
+  # database, so this is not a duplicate of Dependabot. The binary is the upstream
+  # release, checked against a pinned SHA-256 rather than a third-party install
+  # action, so the list of actions this repository trusts stays short.
+  #
+  # The install step is a deliberate copy of audit.yml's. A cargo-deny bump changes
+  # the version and the digest in BOTH files.
+  cargo-deny:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CARGO_DENY_VERSION: 0.20.2
+      CARGO_DENY_SHA256: 9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install cargo-deny
+        run: |
+          set -euo pipefail
+          name="cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl"
+          curl -fsSL -o "$RUNNER_TEMP/deny.tgz" \
+            "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/${name}.tar.gz"
+          echo "${CARGO_DENY_SHA256}  $RUNNER_TEMP/deny.tgz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/deny.tgz" -C "$RUNNER_TEMP"
+          install -m 0755 "$RUNNER_TEMP/${name}/cargo-deny" "$HOME/.cargo/bin/cargo-deny"
+          cargo deny --version
+
+      - name: cargo deny check
+        run: cargo deny --locked check
+
+  # Pull requests only: fails a pull request that ADDS a dependency (a crate or an
+  # action) with a known moderate-or-worse vulnerability, or under a licence this
+  # Apache-2.0 project cannot ship. Mostly a guard on Dependabot's own pull requests.
+  # cargo-deny holds the complete licence allow-list; this is a backstop.
+  #
+  # Skipped while the repository is private: dependency review on a private
+  # repository needs GitHub Code Security, and without it the action fails every
+  # pull request. It starts running by itself when the repository is made public.
+  dependency-review:
+    if: github.event_name == 'pull_request' && !github.event.repository.private
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SSPL-1.0, BUSL-1.1
+
+  # Static analysis of these workflows: template injection, over-broad token
+  # permissions, credential persistence, cache poisoning, unpinned actions.
+  # Suppressions are inline `# zizmor: ignore[...]` comments with a reason.
+  #
+  # Annotations mode, not SARIF: uploading SARIF to code scanning needs GitHub
+  # Code Security on a private repository, so here zizmor reports as annotations
+  # and FAILS the job on a finding, on pushes and pull requests alike.
+  zizmor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          version: 1.30.1
+          advanced-security: false
+          annotations: true

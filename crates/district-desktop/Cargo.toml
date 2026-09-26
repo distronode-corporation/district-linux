@@ -1,0 +1,16 @@
+[package]
+name = "district-desktop"
+description = "Linux desktop adapters for District AI for Linux: secret storage, device id, settings and autostart. GTK-free."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+oo7 = { workspace = true }
+
+[lints]
+workspace = true

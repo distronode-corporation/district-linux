@@ -1,0 +1,57 @@
+name: Audit
+
+# A weekly re-check of the dependency tree against the RustSec advisory database,
+# because an advisory is published against code that did not change. ci.yml's
+# `cargo-deny` job runs only on a push or a pull request, so it goes quiet exactly
+# when nothing is happening; a quiet week should still produce an answer.
+#
+# Advisories only. Licences, bans and sources are properties of Cargo.lock and
+# deny.toml, which cannot change without a push, and ci.yml checks those.
+#
+# Alerting is the run status and nothing else: a failed scheduled run sends
+# GitHub's own failure email. Nothing here opens an issue or posts anywhere. If
+# this workflow is red on a Monday, something in the tree has a new advisory.
+#
+# GitHub disables a scheduled workflow in a public repository after 60 days
+# without repository activity, and emails the owner when it does. Re-enable it
+# from the Actions tab (or push anything).
+on:
+  schedule:
+    # Weekly, Monday, 30 minutes after scorecard.yml's '17 6 * * 1' so the two
+    # weekly jobs do not queue against each other.
+    - cron: '47 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # The install step is a deliberate copy of ci.yml's `cargo-deny` job. A
+  # cargo-deny bump changes the version and the digest in BOTH files, or the two
+  # jobs test with different binaries.
+  cargo-deny:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CARGO_DENY_VERSION: 0.20.2
+      CARGO_DENY_SHA256: 9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install cargo-deny
+        run: |
+          set -euo pipefail
+          name="cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl"
+          curl -fsSL -o "$RUNNER_TEMP/deny.tgz" \
+            "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/${name}.tar.gz"
+          echo "${CARGO_DENY_SHA256}  $RUNNER_TEMP/deny.tgz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/deny.tgz" -C "$RUNNER_TEMP"
+          install -m 0755 "$RUNNER_TEMP/${name}/cargo-deny" "$HOME/.cargo/bin/cargo-deny"
+          cargo deny --version
+
+      # `--locked`: the answer is about the tree that is committed, so a run that
+      # quietly resolved a different Cargo.lock would be answering another question.
+      - name: cargo deny check advisories
+        run: cargo deny --locked check advisories

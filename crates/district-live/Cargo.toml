@@ -1,0 +1,16 @@
+[package]
+name = "district-live"
+description = "The District AI live telemetry WebSocket client."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+district-model = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,16 @@
+# Rust
+/target
+**/*.rs.bk
+
+# Python bytecode from the scripts under scripts/
+__pycache__/
+
+# Local environment and secrets. Never commit a real token.
+.env
+.env.*
+!.env.example
+
+# Editors
+.idea/
+.vscode/
+*.swp

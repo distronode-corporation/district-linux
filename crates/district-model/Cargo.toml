@@ -1,0 +1,23 @@
+[package]
+name = "district-model"
+description = "Serde data types for the District AI API and its live telemetry envelopes. No IO."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+
+[features]
+# For the contract tests. As data types land here, this adds
+# `#[serde(deny_unknown_fields)]` to each of them, so a test fails on a field the
+# server sends that this crate does not know about. A shipped build leaves it off
+# and tolerates such a field, so an older app keeps working against a newer server.
+strict-contracts = []
+
+[lints]
+workspace = true

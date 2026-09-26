@@ -1,0 +1,78 @@
+[workspace]
+resolver = "3"
+members = [
+  "crates/district-model",
+  "crates/district-api",
+  "crates/district-auth",
+  "crates/district-live",
+  "crates/district-core",
+  "crates/district-desktop",
+  "crates/district-call",
+  "crates/district-app",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+# NOT 1.85, WHICH IS WHAT EDITION 2024 ALONE WOULD IMPLY. The floor is the highest
+# `rust_version` any crate in the resolved dependency graph declares, and today that
+# is 1.92: gtk4 0.11, the gtk-rs 0.22 crates under it (glib, gio, pango and the
+# rest) and oo7 0.6 all declare it. Re-derive it after any Cargo.lock change rather
+# than trusting this comment:
+#
+#   cargo metadata --format-version 1 --locked | python3 -c 'import json,sys; m=json.load(sys.stdin); ws=set(m["workspace_members"]); print(max((tuple(map(int, p["rust_version"].split("."))), p["name"]) for p in m["packages"] if p["id"] not in ws and p.get("rust_version")))'
+#
+# It prints the highest version and one crate that declares it. The result is the
+# same with `--filter-platform x86_64-unknown-linux-gnu`, the only target shipped.
+# Resolver 3 is MSRV-aware: `cargo update` prefers dependency versions that support
+# this number, so the floor moves only when a manifest change forces it, and the
+# `msrv` job in .github/workflows/ci.yml, which compiles the workspace at exactly
+# this version, is what fails when it does.
+rust-version = "1.92"
+license = "Apache-2.0"
+repository = "https://github.com/distronode-corporation/district-linux"
+authors = ["Distronode Corporation"]
+# None of these crates is published to crates.io. They are one application split
+# along its seams, and their APIs change whenever the application needs them to.
+publish = false
+
+[workspace.dependencies]
+# The workspace's own crates. Path only: nothing here is published, so there is no
+# registry version to keep in step (deny.toml's `allow-wildcard-paths` relies on
+# `publish = false` above).
+district-model = { path = "crates/district-model" }
+district-api = { path = "crates/district-api" }
+district-auth = { path = "crates/district-auth" }
+district-live = { path = "crates/district-live" }
+district-core = { path = "crates/district-core" }
+district-desktop = { path = "crates/district-desktop" }
+district-call = { path = "crates/district-call" }
+
+serde = { version = "1.0.229", features = ["derive"] }
+# rustls, not native-tls: no OpenSSL at build time or at run time. No `cookies`
+# feature, so the client has no cookie store at all; the session is the bearer
+# token and nothing else.
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
+# The Secret Service client, which inside a Flatpak sandbox goes through the
+# secret portal instead. Features are spelled out rather than inherited from
+# `default`, so a change of upstream defaults cannot swap in another async runtime
+# or OpenSSL.
+oo7 = { version = "0.6.0", default-features = false, features = ["tokio", "native_crypto"] }
+# GTK 4.14 and libadwaita 1.5 are the floor because they are what Ubuntu 24.04
+# ships, and Debian 13 ships newer. Raising either feature raises the oldest
+# distribution the .deb can install on.
+gtk4 = { version = "0.11.5", features = ["v4_14"] }
+libadwaita = { version = "0.9.2", features = ["v1_5"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+
+[profile.release]
+lto = "thin"
+strip = true

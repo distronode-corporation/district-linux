@@ -1,0 +1,27 @@
+[package]
+name = "district-app"
+description = "District AI for Linux, the GTK 4 and libadwaita desktop application."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "district-ai"
+path = "src/main.rs"
+
+[dependencies]
+district-api = { workspace = true }
+district-auth = { workspace = true }
+district-call = { workspace = true }
+district-core = { workspace = true }
+district-desktop = { workspace = true }
+district-live = { workspace = true }
+gtk4 = { workspace = true }
+libadwaita = { workspace = true }
+
+[lints]
+workspace = true

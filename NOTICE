@@ -1,0 +1,14 @@
+District AI for Linux
+Copyright 2026 Distronode Corporation
+
+This product includes software developed by Distronode Corporation, licensed
+under the Apache License, Version 2.0. The full licence text is in LICENSE.
+
+The distributed binaries statically link a number of third-party Rust crates.
+Those crates keep their own licences, which are declared in Cargo.toml and
+Cargo.lock and are not restated here.
+
+Third-party notices for native libraries bundled with a release (for example in
+a Flatpak or a .deb) are listed in this file when such a library is added.
+
+"District AI" and "Distronode" are names used by Distronode Corporation.

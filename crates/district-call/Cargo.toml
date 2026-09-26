@@ -1,0 +1,22 @@
+[package]
+name = "district-call"
+description = "The District AI call engine. The LiveKit implementation sits behind the optional `livekit` feature."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+district-core = { workspace = true }
+
+[features]
+# The LiveKit call engine. Off by default, so a default build compiles no WebRTC
+# stack. Empty for now: the LiveKit dependency is added here, as an optional
+# dependency this feature enables, when the engine is written.
+livekit = []
+
+[lints]
+workspace = true

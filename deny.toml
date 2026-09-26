@@ -1,0 +1,67 @@
+# cargo-deny policy, run by the `cargo-deny` job in .github/workflows/ci.yml
+# (`cargo deny --locked check`) and weekly, advisories only, by audit.yml.
+# Four checks: RustSec advisories, licences, banned crates, allowed sources.
+
+[graph]
+# Only the target a release ships. Without this, crates that only ever build on
+# Windows or macOS are judged too, including licences this project never
+# distributes.
+targets = ["x86_64-unknown-linux-gnu"]
+# Optional features included, so the policy covers what `--features livekit`
+# would ship, not just the default build.
+all-features = true
+
+[advisories]
+# Unmaintained and unsound notices for the WHOLE tree, not only direct
+# dependencies, so a new one anywhere is a decision rather than noise.
+unmaintained = "all"
+unsound = "all"
+# Every vulnerability and unmaintained or unsound notice fails the check unless it
+# is listed here with the reason it is tolerated and what would retire it. Remove an
+# entry the day it can go.
+ignore = []
+
+[licenses]
+# The project is Apache-2.0. Permissive licences only; no copyleft reaches a
+# shipped binary. MPL-2.0 is file-level copyleft and compatible with distributing
+# an Apache-2.0 binary unmodified.
+#
+# The GTK and libadwaita C libraries themselves are LGPL, and they are linked
+# dynamically from the system (or the Flatpak runtime), not compiled into the
+# binary. This list governs the Rust crates, whose bindings are MIT.
+#
+# The list is the same one the organisation's other Rust projects use. A few
+# entries match nothing in today's tree, and cargo-deny prints a
+# `license-not-encountered` warning for each (a warning, not a failure); they stay
+# so the policy is decided once rather than reopened each time a dependency brings
+# one of them in.
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "MIT",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "Unicode-3.0",
+  "Unlicense",
+  "CC0-1.0",
+  "MPL-2.0",
+  "0BSD",
+]
+confidence-threshold = 0.9
+
+[licenses.private]
+# The workspace's own crates are not published to crates.io (`publish = false`).
+ignore = true
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+# Path dependencies inside the workspace carry no version and are not wildcards.
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
