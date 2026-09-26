@@ -35,7 +35,8 @@ pub struct NativeDevice {
     /// The name the app gave when it signed in, for display only. `None` when it
     /// gave none.
     pub device_name: Option<String>,
-    /// The app's platform, for example `android` or `ios`.
+    /// The app's platform: `android`, `ios` or `linux`. A plain string, so show a
+    /// value this client does not know as it is.
     #[serde(default)]
     pub platform: String,
     /// When the installation last renewed its sign-in, as an ISO 8601 instant.
