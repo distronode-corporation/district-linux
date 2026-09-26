@@ -373,7 +373,11 @@ dependencies = [
 name = "district-model"
 version = "0.1.0"
 dependencies = [
+ "district-model",
  "serde",
+ "serde_json",
+ "sha2",
+ "syn 3.0.6",
 ]
 
 [[package]]
