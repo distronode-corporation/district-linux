@@ -15,9 +15,11 @@ skipped. Four rules:
     host   A host name under distronode.com or distronode.ca other than the public
            website (www.distronode.com, distronode.com, distronode.ca,
            www.distronode.ca).
-    email  An email address other than the project's contact addresses and the
+    email  An email address other than the project's contact addresses, the
            commit-attribution forms (noreply@anthropic.com, and GitHub's
-           noreply@github.com and *@users.noreply.github.com).
+           noreply@github.com and *@users.noreply.github.com), and addresses at
+           example.com, which RFC 2606 reserves for examples and which the
+           vendored contract fixtures under contracts/ use.
 
 `--self-test` plants a violation of each rule, and look-alikes that must NOT trip
 one, and fails unless every rule answers as expected. It also builds a throwaway
@@ -73,6 +75,9 @@ ALLOWED_EMAILS = {
     "noreply@github.com",
 }
 ALLOWED_EMAIL_SUFFIXES = ("@users.noreply.github.com",)
+# The whole domain, compared exactly, so a subdomain of example.com, a look-alike
+# domain, or a longer domain that merely starts with example.com is still a finding.
+ALLOWED_EMAIL_DOMAINS = {"example.com"}
 
 
 @dataclass(frozen=True)
@@ -100,7 +105,11 @@ def fictional_phone(match: str) -> bool:
 
 def allowed_email(address: str) -> bool:
     address = address.lower()
-    return address in ALLOWED_EMAILS or address.endswith(ALLOWED_EMAIL_SUFFIXES)
+    return (
+        address in ALLOWED_EMAILS
+        or address.endswith(ALLOWED_EMAIL_SUFFIXES)
+        or address.rpartition("@")[2] in ALLOWED_EMAIL_DOMAINS
+    )
 
 
 def scan_text(text: str, path: str = "<text>") -> list[Finding]:
@@ -176,6 +185,7 @@ def self_test() -> int:
             "Mail opensource@distronode.com or distronode@distronode.com.",
             "Co-Authored-By: someone <noreply@anthropic.com>",
             "12345+someone@users.noreply.github.com and noreply@github.com",
+            "Fixture addresses: ada@example.com, Caller@Example.com.",
         ]
     )
 
@@ -194,6 +204,9 @@ def self_test() -> int:
         ("personal address", f"someone{at}example.org", {"email"}),
         ("other address at the domain", f"security{at}{zone}", {"email"}),
         ("address at a subdomain", f"ops{at}mail.{zone}", {"email", "host"}),
+        ("address at a look-alike of example.com", f"ada{at}notexample.com", {"email"}),
+        ("address under example.com", f"ada{at}example.com.attacker.test", {"email"}),
+        ("address at a subdomain of example.com", f"ada{at}mail.example.com", {"email"}),
     ]
 
     failures = 0

@@ -79,8 +79,9 @@ things in any tracked or new file:
   555-0199 (for example +1 212 555 0142) in tests, fixtures and docs.
 - A host name under distronode.com or distronode.ca other than the public
   website's.
-- An email address other than the project's own contact addresses and the
-  commit-attribution forms.
+- An email address other than the project's own contact addresses, the
+  commit-attribution forms, and addresses at example.com (for tests, fixtures
+  and docs).
 
 `--self-test` proves each rule still catches what it claims to. If a rule gets in
 the way of a legitimate change, change the rule in the same pull request and say
