@@ -24,7 +24,10 @@ crates/district-call/     The call engine. The LiveKit implementation is behind 
                           optional `livekit` feature, off by default.
 crates/district-app/      The GTK 4 and libadwaita binary, `district-ai`. The only
                           crate that links GTK.
-scripts/                  check-version.py and check-public-hygiene.py, run by CI.
+contracts/                The server's recorded responses, vendored and sanitised
+                          by scripts/sync-contracts.py. See "Contract fixtures".
+scripts/                  check-version.py and check-public-hygiene.py, run by CI,
+                          and sync-contracts.py, run by hand.
 ```
 
 Dependencies point one way: `district-app` sits on top, `district-model` at the
@@ -86,6 +89,25 @@ things in any tracked or new file:
 `--self-test` proves each rule still catches what it claims to. If a rule gets in
 the way of a legitimate change, change the rule in the same pull request and say
 why.
+
+## Contract fixtures
+
+`contracts/fixtures/` holds JSON bodies recorded from the District AI server's own
+route handlers. `crates/district-model` decodes them in its tests with unknown
+fields refused (the `strict-contracts` feature, which its tests always enable), so
+a field the server renames or adds fails here rather than in the app. The files
+are a snapshot: `contracts/SOURCE.toml` says which server commit they came from
+and lists every substitution made to keep real-looking data out of this public
+repository, and `contracts/SHA256SUMS` pins their bytes. Do not edit them by hand;
+maintainers with access to the server repository re-run
+
+```
+python3 scripts/sync-contracts.py --monorepo <path to the server repository>
+```
+
+The fixture manifest in `crates/district-model/tests/contracts/manifest.rs`
+accounts for every file: each is decoded by a data type, recorded as not yet
+modelled (a list that may only shrink), or excluded by a stated decision.
 
 ## Commits and pull requests
 
