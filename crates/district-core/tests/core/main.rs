@@ -11,6 +11,7 @@ mod contacts;
 mod devices;
 mod failure;
 mod inbox;
+mod live;
 mod overview;
 mod role;
 mod route;

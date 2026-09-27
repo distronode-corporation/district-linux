@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use district_api::{ApiError, ErrorDetail};
+use district_api::{ApiError, ErrorDetail, ReauthReason, UnauthorizedReason};
 use district_auth::AccessClaims;
 use district_core::{
     CoreConfig, Effect, Event, Model, OverviewContent, OverviewScreen, SessionState, SignedIn,
@@ -113,12 +113,34 @@ pub fn pick(effects: &[Effect], wanted: fn(&Effect) -> bool) -> Ticket {
     }
 }
 
+/// Whether `effects` holds one that `wanted` picks.
+pub fn has(effects: &[Effect], wanted: fn(&Effect) -> bool) -> bool {
+    effects.iter().any(wanted)
+}
+
+/// A recorded server response from `contracts/desktop/`.
+pub fn desktop_fixture<T: DeserializeOwned>(name: &str) -> T {
+    let file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../contracts/desktop")
+        .join(name);
+    let text = fs::read_to_string(&file)
+        .unwrap_or_else(|error| panic!("cannot read {}: {error}", file.display()));
+    serde_json::from_str(&text).unwrap_or_else(|error| panic!("{name}: {error}"))
+}
+
 /// A failure the service could answer for anything: a server error.
 pub fn server_error() -> ApiError {
     ApiError::Server {
         status: 503,
         detail: ErrorDetail::default(),
     }
+}
+
+/// The refusal of a session that has ended.
+pub fn signed_out_error() -> ApiError {
+    ApiError::Unauthorized(UnauthorizedReason::SignInRequired(
+        ReauthReason::RefreshRejected,
+    ))
 }
 
 /// The service's refusal, with its own words.
