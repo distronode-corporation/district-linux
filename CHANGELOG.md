@@ -605,6 +605,61 @@ date, and bump `[workspace.package] version` to match.
   decoders are linked in although the app has no video. No build with calls has
   been distributed.
 - Dependabot opens the LiveKit SDK's crates as one pull request.
+- The app's fifth screens: calls on the desktop, drawn from `district-core` as
+  the others are, for a build with the `voice` feature (a default build offers
+  none of them, and still says why a room or an audition cannot start).
+  - The dialler (`Route::Dialer`), below the call log's "Place a call", which a
+    role that cannot dial is never shown: a keypad (a `gtk::Grid` whose keys
+    type at the cursor, and a key that deletes), the box the number is typed
+    or pasted into, kept exactly as typed, and above it the number as it reads
+    (`DialerScreen::formatted`), with `HINT`, `MICROPHONE_NOTE` and, while a
+    call, a meeting or an audition holds the microphone, `BUSY_NOTE`. Call, or
+    Enter in the box, works only when `can_place_call` says so.
+  - A strip under every signed-in screen, outside the page stack so it stays
+    as the member moves about: the call from `SignedIn::active_call` (who,
+    `status()` with the running duration, mute and hang up, and once over how
+    it ended, `ENDED_NOTE` when it was answered, and Dismiss), with the call's
+    `MediaSession::notice()` (reconnecting, audio that could not be decrypted,
+    a microphone that could not be used) as a banner above it.
+  - The ring, in the same strip: "Incoming call" and where it came from, never
+    who, with Answer and Decline as `can_answer` and `can_decline` allow, a
+    spinner while the answer is on its way, a ring behind a call waiting there
+    without a sound with Decline only, and a ring that ended (missed, ended
+    before it was answered, refused) saying so until it is put away. While the
+    window is hidden the core's urgent notification and the ringtone are the
+    ring, and the notification's Answer and Decline reach the same events.
+  - Keyboard shortcuts: Ctrl+D turns the microphone of the call, room or
+    audition under way on or off, and Ctrl+Shift+H hangs up the call, each
+    working only while there is something for it to do and named in the
+    buttons' tooltips and accessible shortcuts.
+  - "Ring on this computer" (`PresenceState::SETTING_LABEL`, `SETTING_BODY`)
+    on the account screen, with the reason calls cannot ring here when the
+    registration fails.
+  - The persona's audition joined and heard: connecting, on the call, Stop,
+    and the wait before another.
+  - The machine going to sleep and waking: the app tells the core
+    (`Event::Suspending`, `Event::Resumed`) and holds the sleep until what the
+    core asks for has run (`Effects::settle`), through `UiCommand::Suspending`
+    and `UiCommand::Resumed` on the bridge, which is the watcher's
+    `SleepHandler`.
+  - The smoke test runs as a build with calls and plays the call engine itself,
+    and drives the dialler, a placed call through dialling, ringing, answered,
+    muted from the strip and the keyboard, resumed, hung up (and hung up while
+    still dialling) and refused, rings in the window and hidden, answered from
+    the notification, declined, missed, waiting and taken elsewhere, a room
+    waiting for a call, the ring setting failing and registered, the audition
+    refused, connected and stopped, and the machine sleeping mid-call and
+    waking, and draws each, light and dark.
+- `district-desktop`: `watch_sleep`, the suspend and resume protocol: a delay
+  inhibitor held while the machine is awake, released once the app is ready
+  to sleep or `SLEEP_HOLD` (three seconds, under logind's own five) has passed,
+  and taken again on waking before the app is told. `Logind` is logind's side
+  of it on the system bus (`Inhibit` for "sleep" in "delay" mode, and the
+  `PrepareForSleep` signal, anything else on it ignored), tested against a
+  private bus with a stand-in logind, the inhibitor's release included; the
+  protocol is tested with a scripted source and handler. Inside a Flatpak it
+  needs `--system-talk-name=org.freedesktop.login1` (see "Packaging notes" in
+  CONTRIBUTING.md).
 
 ### Changed
 
@@ -628,6 +683,10 @@ date, and bump `[workspace.package] version` to match.
   this build of District AI."), which a call or an audition also shows as its
   failure.
 - `district-app`'s coverage floor is 97, measured by the smoke test, up from 0.
+- `district-app`'s coverage floor is 98, up from 97, with the call screens
+  measured by the smoke test.
+- Every route has its screen, so the placeholder saying a screen arrives in a
+  later build is gone.
 - `district-core`: `format_phone_number` reads a North American number stored as
   bare digits (eleven, the first a `1`) with its `+`, as it reads the same number
   stored in E.164: both are `+1 416 555 0142`. Nothing else gains a `+`.

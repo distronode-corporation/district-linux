@@ -199,7 +199,22 @@ servers, the web client and the Android app in a real room is not yet proven.
   time, and one that arrives after a later one was sent is dropped, so a renewal
   already on its way cannot register a desktop that just unregistered or signed
   out. An app that is killed leaves a registration that lapses within ten
-  minutes, during which the service may hold a caller for it.
+  minutes, during which the service may hold a caller for it. The setting is
+  per computer, on the account screen, and a build without calls does not show
+  it.
+- The app learns that the machine is about to sleep from logind, on the system
+  bus. While the machine is awake it holds a sleep inhibitor in delay mode
+  (`systemd-inhibit --list` shows it as District AI's), which never stops the
+  machine sleeping: when logind announces the sleep (`PrepareForSleep`), the
+  app unregisters the presence and ends any call, meeting or audition under way
+  (a placed call at the carrier too), and releases the inhibitor once that has
+  run, or after three seconds, whichever is first. On waking it takes the
+  inhibitor again and registers again. It asks logind for nothing else and
+  tells it nothing about the user. Inside a Flatpak this needs
+  `--system-talk-name=org.freedesktop.login1`; without it, or without logind,
+  a sleeping desktop's registration lapses by itself, as a killed app's does.
+  Quitting (closing the window, or Quit) unregisters too, waiting up to two
+  seconds for it.
 - A call is rung on the desktop by a `call_ringing` event on the workspace's live
   socket. It carries ids only: the call, and the user ids of the members it
   rings through a desktop. It reaches every socket open on the workspace, so
@@ -209,7 +224,9 @@ servers, the web client and the Android app in a real room is not yet proven.
   answer.
 - The ring's notification says "Incoming call" and where it came from, and
   nothing about the caller, as the notification for a new message says nothing
-  about it. Its Answer and Decline actions carry the call's id only.
+  about it. Its Answer and Decline actions carry the call's id only. The ring
+  in the window, a strip under every screen with Answer and Decline, says the
+  same and no more; so does an answered call, which is shown as "Caller".
 - Answering asks the service for the call's media credential, which is also what
   tells the receptionist a person took the call, so it is asked for only when the
   member answers, once. Declining, or letting the ring run out, sends nothing:

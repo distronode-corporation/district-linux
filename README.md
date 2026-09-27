@@ -12,12 +12,14 @@ receptionist from Distronode.
 > each meeting's record, the workspace settings (the receptionist's persona, its
 > capabilities, the transfer directory, the routing rules, call handling and your
 > availability, the knowledge base, the carrier accounts, and the members and the
-> workspace's name), your account and the devices signed in to it. A default
-> build cannot take or place calls, join a meeting room or play a persona's
-> audition; a build with the `voice` feature has the call engine that does,
-> tested against a local media server and not yet against District AI's own.
-> There are no releases or packages yet. Screenshots will follow with the first
-> release.
+> workspace's name), your account and the devices signed in to it. A build
+> with the `voice` feature also rings for calls handed to you (in the window,
+> or as a notification with Answer and Decline while it is hidden), places
+> calls from a dialler, joins meeting rooms and plays a persona's audition,
+> with the call's duration, mute and hang up under every screen; its call
+> engine is tested against a local media server and not yet against District
+> AI's own. A default build does none of that, and says so. There are no
+> releases or packages yet. Screenshots will follow with the first release.
 
 ## What it will do
 

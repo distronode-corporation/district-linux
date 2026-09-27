@@ -22,8 +22,9 @@ crates/district-core/     App state with no GTK and no IO of its own: the sessio
                           effect runner with the traits the app implements,
                           `CallEngine` among them.
 crates/district-desktop/  Linux adapters with no GTK in them: secret storage (oo7),
-                          device id, the settings file; autostart through the
-                          portals to come.
+                          device id, the settings file, and the machine going to
+                          sleep and waking (logind, on the system bus); autostart
+                          through the portals to come.
 crates/district-call/     The call engine: `LiveKitCallEngine`, behind the
                           optional `livekit` feature (the app's `voice`), off by
                           default because it links libwebrtc; without it a build
@@ -159,6 +160,18 @@ every test stays on it: an ordinary desktop or CI runner has one, and a containe
 started with `--network none` needs a dummy interface added
 (`ip link add lan0 type dummy`, an address, `up`).
 
+## Packaging notes
+
+Nothing is packaged yet. What a package needs beyond the binary, the desktop
+entry, the D-Bus service file, the AppStream metadata and the icons:
+
+- **Flatpak:** `--system-talk-name=org.freedesktop.login1` in `finish-args`.
+  The app holds a delay inhibitor and listens for `PrepareForSleep` so that a
+  laptop closing its lid stops ringing at once and ends a call under way;
+  without the permission it cannot reach logind, and a sleeping desktop keeps
+  its registration (and a caller can be held for it) until the registration
+  lapses ten minutes later. It needs nothing else from the system bus.
+
 ## The smoke test
 
 The app's own tests include a smoke test, `crates/district-app/tests/smoke.rs`,
@@ -176,10 +189,17 @@ campaign's question, booking pages and the hand-off to the web, the help desk
 picked in the file chooser), support requests (raising one, a reply, closing one),
 the meeting rooms lobby and a meeting's record, the workspace settings (each
 section read, failing, edited, saved, saved without its read back and failing to
-save, the question before leaving changes, the audition failing in a build
-without calls, and the carrier form with its keys), each as a viewer where it
+save, the question before leaving changes, the audition refused, connected and
+stopped, and the carrier form with its keys), each as a viewer where it
 differs, live updates and a message's notification, the account, the devices and
-the question before each sign-out, a narrow window, signing out. It needs a display
+the question before each sign-out, calls on the desktop ("ring on this computer"
+failing and registered, the dialler typed, pasted and busy, a call placed,
+muted, resumed, hung up and refused, rings answered from the notification,
+declined, missed, waiting behind a call and taken elsewhere, the machine going
+to sleep mid-call and waking), a narrow window, signing out. It is built as a
+build with calls (`calls_available: true`), and the script plays the call
+engine: it answers each `ConnectMedia` with the reports an engine would send,
+so no libwebrtc is needed. It needs a display
 and a session bus, so it is built only with the `gtk-tests` feature and runs
 under Xvfb, as CI runs it (the packages are `xvfb`, `xauth` and `dbus`):
 
@@ -273,8 +293,8 @@ What the floors mean:
   Secret Service and portal calls, live media and the GTK main loop cannot all run
   in CI, so each floor is what the tests reached when it was set, rounded down.
   The app's is measured by its smoke test under Xvfb; what it cannot reach is the
-  start-up wiring (the keyring, the network, the runtime) and the effect
-  runner's thread, which only the real app runs.
+  start-up wiring (the keyring, the network, the runtime, logind's sleep signal)
+  and the effect runner's thread, which only the real app runs.
 - There is no exclusion list. Code CI cannot run stays in the measurement and
   holds its crate's floor down, where everyone can see it.
 - A crate whose optional feature builds code the default build does not has a
