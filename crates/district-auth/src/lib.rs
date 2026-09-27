@@ -45,11 +45,16 @@
 
 #![forbid(unsafe_code)]
 
+mod api;
 mod claims;
 mod login;
 mod pkce;
 mod tokens;
 
+pub use api::{
+    ExchangeOutcome, MAX_DEVICE_NAME_UNITS, NativeAuthApi, PLATFORM, REFRESH_PATH, REVOKE_PATH,
+    RefreshApi, RefreshOutcome, RevokeApi, RevokeOutcome, TOKEN_PATH,
+};
 pub use claims::{AccessClaims, ClaimsError};
 pub use district_api::{AccessToken, ReauthReason, TokenError, TokenSource};
 pub use login::{
