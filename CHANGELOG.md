@@ -664,7 +664,7 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   CONTRIBUTING.md).
 - Packages, both x86_64 and built with calls. A Flatpak
   (`packaging/flatpak/com.distronode.DistrictAI.yml`, on GNOME 51 with the
-  rust-stable SDK extension), built offline from the crates Cargo.lock names
+  rust-stable and llvm22 SDK extensions), built offline from the crates Cargo.lock names
   (`packaging/flatpak/cargo-sources.json`, written by
   `scripts/flatpak-cargo-sources.sh` with a pinned, checksummed
   flatpak-cargo-generator) and the pinned libwebrtc, with the network, IPC,

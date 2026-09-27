@@ -219,8 +219,9 @@ packages, and runs `district-ai --version` there.
 ### The Flatpak
 
 The manifest is `packaging/flatpak/com.distronode.DistrictAI.yml`: GNOME 51,
-whose SDK's clang (LLVM 22.1) is new enough for libwebrtc, and the rust-stable SDK
-extension. The build is offline. The crates come from
+with the rust-stable SDK extension and the llvm22 one, whose clang (LLVM 22.1)
+is new enough for libwebrtc; the SDK itself has no clang to run. The build is
+offline. The crates come from
 `packaging/flatpak/cargo-sources.json`, each checked against the SHA-256
 Cargo.lock records, and libwebrtc from the same pinned archive
 `scripts/fetch-libwebrtc.sh` names, which the build unpacks with that script.

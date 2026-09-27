@@ -16,14 +16,16 @@
 # licensing has been reviewed. .github/workflows/release.yml enforces that.
 id: com.distronode.DistrictAI
 runtime: org.gnome.Platform
-# GNOME 51, on the freedesktop SDK 26.08. Its clang is LLVM 22.1, above the 21.1
-# the prebuilt libwebrtc's own libc++ needs (webrtc-sys's build checks and
-# refuses anything older), so no LLVM extension is needed. Its GTK and
-# libadwaita are well above the app's floor of 4.14 and 1.5.
+# GNOME 51, on the freedesktop SDK 26.08, whose GTK and libadwaita are well
+# above the app's floor of 4.14 and 1.5.
 runtime-version: "51"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
+  # clang. The SDK has LLVM's libraries but no clang++ to run, and webrtc-sys
+  # compiles against the libc++ inside libwebrtc, which only clang 21.1 or
+  # newer may do (its build checks, and refuses GCC). This is LLVM 22.1.
+  - org.freedesktop.Sdk.Extension.llvm22
 command: district-ai
 finish-args:
   # The District AI service, its live updates socket and a call's media.
@@ -52,14 +54,14 @@ modules:
   - name: district-ai
     buildsystem: simple
     build-options:
-      append-path: /usr/lib/sdk/rust-stable/bin
+      append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm22/bin
+      prepend-ld-library-path: /usr/lib/sdk/llvm22/lib
       env:
         # Where cargo-sources.json puts the crates and the configuration that
         # makes Cargo read them instead of the network.
         CARGO_HOME: /run/build/district-ai/cargo
         CARGO_NET_OFFLINE: "true"
-        # webrtc-sys compiles against the libc++ inside libwebrtc, which only
-        # clang may do.
+        # The llvm22 extension's, for webrtc-sys (see sdk-extensions).
         CXX: clang++
     build-commands:
       - clang++ --version
