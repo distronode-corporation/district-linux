@@ -1,0 +1,108 @@
+# District AI for Linux as a Flatpak, built with calls (the app's `voice`
+# feature). .github/workflows/flatpak.yml builds it into a bundle and runs the
+# built app's --version inside the sandbox; CONTRIBUTING.md ("Packaging") has
+# the commands to build it locally.
+#
+# The build is offline and takes nothing it has not checked: the crates are the
+# sources in cargo-sources.json (written from Cargo.lock by
+# scripts/flatpak-cargo-sources.sh, each against the SHA-256 Cargo.lock
+# records), and libwebrtc is the archive below, against the same SHA-256
+# scripts/fetch-libwebrtc.sh pins. The build runs that script on the archive
+# flatpak-builder has already checked, so it checks it again, unpacks it, and
+# refuses a Cargo.lock whose webrtc-sys-build wants another libwebrtc; with the
+# network closed it cannot fetch one either.
+#
+# NOTICE applies: no build with calls may be distributed until libwebrtc's
+# licensing has been reviewed. .github/workflows/release.yml enforces that.
+id: com.distronode.DistrictAI
+runtime: org.gnome.Platform
+# GNOME 51, on the freedesktop SDK 26.08. Its clang is LLVM 22.1, above the 21.1
+# the prebuilt libwebrtc's own libc++ needs (webrtc-sys's build checks and
+# refuses anything older), so no LLVM extension is needed. Its GTK and
+# libadwaita are well above the app's floor of 4.14 and 1.5.
+runtime-version: "51"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: district-ai
+finish-args:
+  # The District AI service, its live updates socket and a call's media.
+  - --share=network
+  # Shared memory with the X server, which GTK needs under X11 and XWayland.
+  - --share=ipc
+  - --socket=wayland
+  # X11 only where there is no Wayland.
+  - --socket=fallback-x11
+  # The GPU, for GTK's renderer.
+  - --device=dri
+  # A call's microphone and speakers (libwebrtc's audio module talks
+  # PulseAudio, which pipewire-pulse serves on most desktops) and the ringtone
+  # (GTK's GStreamer backend plays it through the same server).
+  - --socket=pulseaudio
+  # logind on the system bus: the app holds a delay inhibitor and listens for
+  # PrepareForSleep, so a machine going to sleep stops ringing and ends a call
+  # at once instead of leaving its registration to lapse. It needs nothing else
+  # from the system bus.
+  - --system-talk-name=org.freedesktop.login1
+  # Nothing else. The keyring is the Secret portal (oo7 keeps an encrypted
+  # file whose key the portal gives it), notifications, links, the file
+  # chooser and autostart are portals too, and the app owns its own D-Bus name
+  # without asking.
+modules:
+  - name: district-ai
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+      env:
+        # Where cargo-sources.json puts the crates and the configuration that
+        # makes Cargo read them instead of the network.
+        CARGO_HOME: /run/build/district-ai/cargo
+        CARGO_NET_OFFLINE: "true"
+        # webrtc-sys compiles against the libc++ inside libwebrtc, which only
+        # clang may do.
+        CXX: clang++
+    build-commands:
+      - clang++ --version
+      - cargo --version
+      - |
+        set -eu
+        webrtc="$(bash scripts/fetch-libwebrtc.sh "$PWD/libwebrtc")"
+        LK_CUSTOM_WEBRTC="$webrtc" cargo build --release --locked --offline \
+          -p district-app --features voice
+        install -Dm755 target/release/district-ai -t "$FLATPAK_DEST/bin"
+        data=crates/district-app/data
+        install -Dm644 "$data/$FLATPAK_ID.desktop" -t "$FLATPAK_DEST/share/applications"
+        install -Dm644 "$data/$FLATPAK_ID.metainfo.xml" -t "$FLATPAK_DEST/share/metainfo"
+        install -Dm644 "$data/icons/hicolor/scalable/apps/$FLATPAK_ID.svg" \
+          -t "$FLATPAK_DEST/share/icons/hicolor/scalable/apps"
+        install -Dm644 "$data/icons/hicolor/symbolic/apps/$FLATPAK_ID-symbolic.svg" \
+          -t "$FLATPAK_DEST/share/icons/hicolor/symbolic/apps"
+        # The D-Bus service from its template, naming this package's binary.
+        # Flatpak rewrites the exported copy to start it inside the sandbox.
+        mkdir -p "$FLATPAK_DEST/share/dbus-1/services"
+        sed "s|@bindir@|$FLATPAK_DEST/bin|" "$data/$FLATPAK_ID.service.in" \
+          > "$FLATPAK_DEST/share/dbus-1/services/$FLATPAK_ID.service"
+        # The licence and NOTICE, and libwebrtc's licence texts, which NOTICE
+        # says must travel with a build that links it.
+        licences="$FLATPAK_DEST/share/licenses/$FLATPAK_ID"
+        install -Dm644 LICENSE NOTICE -t "$licences"
+        install -Dm644 "$webrtc/LICENSE.md" "$licences/libwebrtc-LICENSE.md"
+    sources:
+      # The checkout this manifest sits in, without what a build leaves in it.
+      - type: dir
+        path: ../..
+        skip:
+          - .git
+          - target
+          - .flatpak-builder
+          # CONTRIBUTING.md's build directory, and flatpak.yml's build
+          # directory and repository.
+          - build-dir
+          - flatpak_app
+          - repo
+      - cargo-sources.json
+      # The pin in scripts/fetch-libwebrtc.sh. Moving it moves both.
+      - type: file
+        url: https://github.com/livekit/rust-sdks/releases/download/webrtc-89d790b/webrtc-linux-x64-release.zip
+        sha256: b167adad5291cea0e4d66a0454d9d52d2ad714e6b0ed70f4410317d3ebde70c5
+        dest: libwebrtc

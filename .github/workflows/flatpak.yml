@@ -1,0 +1,117 @@
+name: Flatpak
+
+# Builds District AI for Linux as a Flatpak bundle, with calls, from
+# packaging/flatpak/com.distronode.DistrictAI.yml, installs the bundle and runs
+# the built app's --version inside the sandbox, and keeps the bundle for a week
+# as this run's artifact. release.yml calls it to build the release's bundle.
+#
+# Run by hand, from release.yml, and on pull requests that change what the
+# Flatpak is built from (the manifest and cargo-sources.json, which moves with
+# every Cargo.lock change, and the files the manifest installs or runs). Minutes
+# are metered while the repository is private, and a build with calls is long,
+# so it is one job and never runs on a push to main.
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    paths:
+      - "packaging/**"
+      - "crates/district-app/data/com.distronode.DistrictAI.*"
+      - "scripts/fetch-libwebrtc.sh"
+      - ".github/workflows/flatpak.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      # Flathub's build image with the GNOME 51 Platform and SDK installed from
+      # Flathub, the runtime the manifest names. Pinned by digest, because the
+      # SDK in it compiles what a release ships and the tag moves twice a week.
+      # To move it, read the digest of the tag's current index:
+      #   curl -sI -H "Authorization: Bearer $(curl -s 'https://ghcr.io/token?scope=repository:flathub-infra/flatpak-github-actions:pull' | jq -r .token)" \
+      #     -H 'Accept: application/vnd.oci.image.index.v1+json' \
+      #     https://ghcr.io/v2/flathub-infra/flatpak-github-actions/manifests/gnome-51
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51@sha256:78d969b18225ae107ca29497bf09c4a3f791e5f1838a9a912a529d0024fb6210
+      # flatpak-builder builds and flatpak runs inside bubblewrap sandboxes,
+      # which a default container may not create; the image's documentation
+      # asks for this.
+      options: --privileged
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the version
+        id: version
+        run: |
+          version="$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "building $version"
+
+      # The rust-stable SDK extension comes from Flathub at build time
+      # (--install-deps-from). No cache: every crate and libwebrtc are
+      # downloaded and checked against their pinned digests on every run, and a
+      # release must never be built from a restored build directory.
+      - name: Build the bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@79327416609af08178ad73b352877e51450790b3 # v6.8
+        with:
+          manifest-path: packaging/flatpak/com.distronode.DistrictAI.yml
+          bundle: district-ai.flatpak
+          cache: false
+          upload-artifact: false
+
+      # The bundle as a user installs it, beside the runtime it names (the
+      # image's GNOME 51 Platform, installed system-wide, which is where this
+      # installs too), and run in the sandbox with exactly the manifest's
+      # permissions. --version touches no display, keyring or network, and says
+      # whether the build has calls, which a release must.
+      - name: The installed bundle runs, with calls
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          flatpak install --system --noninteractive --bundle district-ai.flatpak
+          flatpak info --system com.distronode.DistrictAI
+          flatpak info --system --show-permissions com.distronode.DistrictAI
+          XDG_RUNTIME_DIR="$(mktemp -d)"
+          export XDG_RUNTIME_DIR
+          got="$(flatpak run --system com.distronode.DistrictAI --version)"
+          want="district-ai $VERSION (with calls)"
+          echo "$got"
+          if [ "$got" != "$want" ]; then
+            echo "::error::the bundle's --version said '$got', not '$want'"
+            exit 1
+          fi
+
+      - name: Name the bundle for the release
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p staging
+          mv district-ai.flatpak "staging/district-ai_${VERSION}_x86_64.flatpak"
+          ls -l staging
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: district-ai-flatpak
+          path: staging/
+          if-no-files-found: error
+          retention-days: 7
+          # Already compressed.
+          compression-level: 0
+
+      # Flathub's own checks, which are stricter than a bundle needs (a
+      # screenshot, a build from a published tag, no local directory as a
+      # source). Reported here for the Flathub submission and never fatal.
+      - name: Flathub's linter (report only)
+        run: |
+          flatpak-builder-lint manifest packaging/flatpak/com.distronode.DistrictAI.yml || true
+          flatpak-builder-lint repo repo || true

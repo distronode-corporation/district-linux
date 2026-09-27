@@ -1,6 +1,11 @@
 # Rust
 /target
 **/*.rs.bk
+
+# What flatpak-builder leaves in the checkout: its state (downloads and build
+# cache) and the build directory CONTRIBUTING.md's command names.
+/.flatpak-builder/
+/build-dir/
 # Raw coverage profiles. A test run under the coverage environment writes these
 # into whatever directory the test starts in when the profile path is not set.
 *.profraw

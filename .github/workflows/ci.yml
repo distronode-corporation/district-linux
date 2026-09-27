@@ -232,6 +232,13 @@ jobs:
       - name: The version agrees across the workspace, CHANGELOG.md and the AppStream metadata
         run: python3 scripts/check-version.py
 
+      # The Flatpak build's crates are listed in cargo-sources.json, written
+      # from Cargo.lock, so a change to the lock file (a Dependabot bump
+      # included) must bring the regenerated list with it. Downloads the pinned
+      # generator and its hash-pinned packages.
+      - name: packaging/flatpak/cargo-sources.json is current with Cargo.lock
+        run: scripts/flatpak-cargo-sources.sh --check
+
       # Before the scan, so that a rule which has stopped matching anything fails
       # here instead of letting the scan pass quietly.
       - name: The public-hygiene rules still catch what they claim to
