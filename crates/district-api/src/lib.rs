@@ -36,6 +36,9 @@
 //!   and the rest);
 //! - the call log ([`ApiClient::calls`], [`ApiClient::call_detail`],
 //!   [`ApiClient::call_transcript`]);
+//! - calls on the desktop ([`ApiClient::dial`], [`ApiClient::answer_call`],
+//!   [`ApiClient::hang_up_call`]) and this desktop's presence
+//!   ([`ApiClient::register_presence`], [`ApiClient::unregister_presence`]);
 //! - the inbox ([`ApiClient::conversations`], [`ApiClient::timeline`],
 //!   [`ApiClient::send_message`] and the rest);
 //! - contacts ([`ApiClient::contacts`], [`ApiClient::contact`],
@@ -110,6 +113,7 @@ mod messaging;
 mod methods;
 mod numbers;
 mod persona;
+mod presence;
 mod rooms;
 mod scheduling;
 mod settings;

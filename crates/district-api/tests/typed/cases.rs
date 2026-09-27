@@ -13,9 +13,9 @@ use district_model::{
     KnowledgeMode, MeetRoomName, MemberRole, MessagingAccountSave, MessagingChannel,
     MessagingCreatorCell, MessagingCredentialSource, MessagingCredentials, MessagingDelete,
     MessagingSetChannelDefault, MessagingSetDefault, NumberSearch, PersonaEngineChoice,
-    PersonaPatch, PersonaPreviewForm, RoutingRule, RoutingRuleField, SendMessageRequest,
-    SupportRequestDraft, SupportRequestKind, ThreadRef, TwilioCredentials, UpdateContactRequest,
-    WorkspaceConfig, WorkspaceConfigResponse,
+    PersonaPatch, PersonaPreviewForm, PresenceRegistration, RoutingRule, RoutingRuleField,
+    SendMessageRequest, SupportRequestDraft, SupportRequestKind, ThreadRef, TwilioCredentials,
+    UpdateContactRequest, WorkspaceConfig, WorkspaceConfigResponse,
 };
 use serde_json::{Value, json};
 
@@ -534,6 +534,41 @@ pub fn cases() -> Vec<Case> {
             path: "/api/district/calls/call_contract_answered/transcript",
             query: vec![("workspaceId", WS)],
             body: Sent::Nothing,
+        },
+        // Calls on the desktop.
+        Case {
+            name: "dial",
+            endpoint: Endpoint::CallDial,
+            retried: false,
+            answer: fixture("district-dial.json"),
+            // As typed: the service normalises the number itself.
+            call: call!(c => c.dial(WS, "+1 (212) 555-0142")),
+            method: "POST",
+            path: "/api/district/calls/dial",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS, "to": "+1 (212) 555-0142"})),
+        },
+        Case {
+            name: "answer_call",
+            endpoint: Endpoint::CallAnswer,
+            retried: false,
+            answer: fixture("district-call-answer.json"),
+            call: call!(c => c.answer_call(WS, "call_contract_ringing")),
+            method: "POST",
+            path: "/api/district/calls/call_contract_ringing/answer",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS})),
+        },
+        Case {
+            name: "hang_up_call",
+            endpoint: Endpoint::CallHangUp,
+            retried: false,
+            answer: desktop_fixture("district-call-hangup.json"),
+            call: call!(c => c.hang_up_call(WS, "CAabababababababababababababababab")),
+            method: "POST",
+            path: "/api/district/calls/CAabababababababababababababababab/hangup",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS})),
         },
         // Contacts.
         Case {
@@ -1541,6 +1576,38 @@ pub fn cases() -> Vec<Case> {
             path: "/api/district/workspace/rename",
             query: vec![],
             body: Sent::Json(json!({"workspaceId": WS, "name": "Renamed Workspace"})),
+        },
+        // This desktop's presence.
+        Case {
+            name: "register_presence",
+            endpoint: Endpoint::PushRegister,
+            retried: false,
+            answer: desktop_fixture("district-device-register-desktop.json"),
+            call: call!(c => c.register_presence(&PresenceRegistration::desktop("install-nonce-contract"))),
+            method: "POST",
+            path: "/api/district/devices/register",
+            query: vec![],
+            // Android registers its push token, `{token}`; a desktop registers
+            // presence instead, the pair the route requires together, and no
+            // device id, which the route takes from the bearer.
+            body: Sent::Json(json!({
+                "token": "install-nonce-contract",
+                "platform": "linux",
+                "kind": "desktop",
+            })),
+        },
+        Case {
+            name: "unregister_presence",
+            endpoint: Endpoint::PushUnregister,
+            retried: false,
+            answer: fixture("district-device-unregister.json"),
+            call: call!(c => c.unregister_presence()),
+            method: "POST",
+            path: "/api/district/devices/unregister",
+            query: vec![],
+            // Android sends `{}` only because its HTTP library needs a body on a
+            // POST; the route reads none.
+            body: Sent::Nothing,
         },
     ]
 }

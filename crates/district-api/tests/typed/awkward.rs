@@ -669,3 +669,115 @@ async fn an_owner_without_a_membership_cannot_be_made_available() {
         Some(AVAILABILITY_REASON_NO_MEMBER_ROW)
     );
 }
+
+/// The dial's recorded refusals are error envelopes, each read with the
+/// service's sentence, which is what the dialler shows: an opted-out number
+/// (403, its code in the header because its body is pinned), a dormant
+/// workspace (403, its code in the body) and a subscription that is not active
+/// (402, with its code).
+#[tokio::test]
+async fn the_dial_refusals_arrive_as_errors_with_the_services_sentence_and_code() {
+    let server = MockServer::start().await;
+    Mock::given(any())
+        .respond_with(
+            ResponseTemplate::new(403)
+                .insert_header("X-Distronode-Error-Code", "do_not_call")
+                .set_body_json(fixture("district-dial-dnc.json")),
+        )
+        .mount(&server)
+        .await;
+    let opted_out = client(&server)
+        .dial(WS, "+1 212 555 0142")
+        .await
+        .unwrap_err();
+    let ApiError::Forbidden(detail) = &opted_out else {
+        panic!("{opted_out:?}");
+    };
+    assert!(detail.display_message().contains("(DNC)"), "{detail:?}");
+    assert_eq!(detail.code.as_deref(), Some("do_not_call"));
+
+    let server = answering(403, fixture("district-dial-dormant.json")).await;
+    let dormant = client(&server)
+        .dial(WS, "+1 212 555 0142")
+        .await
+        .unwrap_err();
+    assert!(matches!(dormant, ApiError::Forbidden(_)), "{dormant:?}");
+    assert_eq!(dormant.code(), Some("workspace_dormant"));
+
+    let server = answering(402, fixture("district-dial-subscription.json")).await;
+    let unpaid = client(&server)
+        .dial(WS, "+1 212 555 0142")
+        .await
+        .unwrap_err();
+    let ApiError::Envelope {
+        status: 402,
+        code,
+        detail,
+    } = &unpaid
+    else {
+        panic!("{unpaid:?}");
+    };
+    assert_eq!(code, "subscription_inactive");
+    assert!(
+        detail.display_message().contains("subscription"),
+        "{detail:?}"
+    );
+}
+
+/// A call that ended while it rang: a 404 for a call the workspace cannot see,
+/// a 409 for one that is no longer answerable.
+#[tokio::test]
+async fn an_answer_to_a_call_that_ended_is_not_found_or_a_conflict() {
+    let server = answering(
+        404,
+        json!({"success": false, "error": "Call not found", "code": "call_not_found"}),
+    )
+    .await;
+    let gone = client(&server)
+        .answer_call(WS, "call_contract_ringing")
+        .await
+        .unwrap_err();
+    assert!(matches!(gone, ApiError::NotFound(_)), "{gone:?}");
+
+    let server = answering(
+        409,
+        json!({
+            "success": false,
+            "error": "Call is not answerable (status: completed)",
+            "code": "invalid_request",
+        }),
+    )
+    .await;
+    let over = client(&server)
+        .answer_call(WS, "call_contract_ringing")
+        .await
+        .unwrap_err();
+    assert!(matches!(over, ApiError::Conflict(_)), "{over:?}");
+}
+
+/// A hang-up for a call already over is a success that says so, and one for a
+/// call this desktop did not place is a conflict.
+#[tokio::test]
+async fn a_hang_up_of_a_call_already_over_is_a_success_and_of_another_kind_a_conflict() {
+    let server = answering(200, json!({"success": true, "ended": false})).await;
+    let over = client(&server)
+        .hang_up_call(WS, "CAabababababababababababababababab")
+        .await
+        .unwrap();
+    assert!(over.success && !over.ended);
+
+    let server = answering(
+        409,
+        json!({
+            "success": false,
+            "error": "This call is not a direct softphone call and cannot be hung up here.",
+            "code": "call_not_direct_dial",
+        }),
+    )
+    .await;
+    let inbound = client(&server)
+        .hang_up_call(WS, "call_contract_ringing")
+        .await
+        .unwrap_err();
+    assert_eq!(inbound.code(), Some("call_not_direct_dial"), "{inbound:?}");
+}
