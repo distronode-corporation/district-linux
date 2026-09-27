@@ -23,5 +23,7 @@ date, and bump `[workspace.package] version` to match.
   `contracts/` by `scripts/sync-contracts.py` with real-looking data swapped for
   fictional values, and tests that decode each one strictly (unknown fields
   refused), encode it back and compare, and account for every recording.
+- `district-api`: the HTTP client and the table of the endpoints it calls, held to the
+  Android app's endpoint list by a parity test.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main
