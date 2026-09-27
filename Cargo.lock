@@ -448,7 +448,12 @@ dependencies = [
 name = "district-call"
 version = "0.1.0"
 dependencies = [
+ "district-auth",
  "district-core",
+ "district-model",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
