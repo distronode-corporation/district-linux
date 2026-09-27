@@ -131,6 +131,19 @@ glib-build-tools = "0.22.8"
 # threads: the core's events, and the few calls only the main thread may make
 # (opening a link, a notification, the ringtone, the window).
 async-channel = "2.5.0"
+# The call engine's media library, and only behind district-call's optional
+# `livekit` feature: a default build compiles no WebRTC. `native` is the Tokio
+# transport; `rustls-tls-native-roots` gives the signalling socket rustls and the
+# operating system's certificates (no OpenSSL, and no bundled root list).
+# Its build script links libwebrtc, a prebuilt static library; see
+# scripts/fetch-libwebrtc.sh, which is pinned to the libwebrtc this version's
+# webrtc-sys-build names, and CONTRIBUTING.md for building with calls.
+livekit = { version = "0.9.3", default-features = false, features = ["native", "rustls-tls-native-roots"] }
+# Test only, both already in the tree through oo7: the call engine's tests sign
+# their media server credentials (HS256) and derive the room key the way
+# libwebrtc does, to look for it in what the engine logs.
+hmac = "0.12.1"
+pbkdf2 = { version = "0.12.2", default-features = false, features = ["hmac"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

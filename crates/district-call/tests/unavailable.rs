@@ -1,6 +1,9 @@
 //! The engine of a build without calls, driven the way the app drives it: a
 //! meeting room started on a model, its `ConnectMedia` run through the engine,
-//! and the engine's reports fed back to the model.
+//! and the engine's reports fed back to the model. Only in a build without the
+//! `livekit` feature, which is the only build that has it.
+
+#![cfg(not(feature = "livekit"))]
 
 use std::fs;
 use std::path::PathBuf;
@@ -155,4 +158,27 @@ async fn the_microphone_and_leaving_do_nothing_and_a_closed_receiver_is_no_error
     engine.connect(session, credential, false).await;
     let shown = format!("{engine:?}");
     assert!(shown.starts_with("UnavailableCallEngine"), "{shown}");
+}
+
+#[tokio::test]
+async fn this_builds_engine_is_the_one_that_joins_nothing() {
+    let (_, session, connect) = room_started();
+    // What the app builds.
+    let (engine, mut reports) = district_call::engine();
+    let Effect::ConnectMedia { credential, .. } = connect else {
+        unreachable!("room_started returns a ConnectMedia");
+    };
+    engine.connect(session, credential, true).await;
+    let mut events = Vec::new();
+    while let Ok(update) = reports.try_recv() {
+        assert_eq!(update.session, session);
+        events.push(update.event);
+    }
+    assert_eq!(
+        events,
+        [
+            MediaEvent::Connecting,
+            MediaEvent::Disconnected(DisconnectReason::Unavailable),
+        ]
+    );
 }
