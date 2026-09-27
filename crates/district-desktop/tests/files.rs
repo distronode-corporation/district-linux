@@ -42,21 +42,26 @@ fn strays(dir: &Path, keep: &str) -> Vec<String> {
 fn xdg_variables_win_and_home_is_the_fallback() {
     let dirs = XdgDirs::from_lookup(lookup(&[
         ("HOME", "/home/ada"),
+        ("XDG_CONFIG_HOME", "/config"),
         ("XDG_DATA_HOME", "/data"),
         ("XDG_STATE_HOME", "/state"),
     ]))
     .unwrap();
+    assert_eq!(dirs.config_home, Path::new("/config"));
     assert_eq!(dirs.data_home, Path::new("/data"));
     assert_eq!(dirs.state_home, Path::new("/state"));
+    assert_eq!(dirs.app_config_dir(), Path::new("/config").join(APP_ID));
     assert_eq!(dirs.app_data_dir(), Path::new("/data").join(APP_ID));
     assert_eq!(dirs.app_state_dir(), Path::new("/state").join(APP_ID));
 
     // A relative value is invalid by the specification and ignored.
     let dirs = XdgDirs::from_lookup(lookup(&[
         ("HOME", "/home/ada"),
+        ("XDG_CONFIG_HOME", "relative/config"),
         ("XDG_DATA_HOME", "relative/data"),
     ]))
     .unwrap();
+    assert_eq!(dirs.config_home, Path::new("/home/ada/.config"));
     assert_eq!(dirs.data_home, Path::new("/home/ada/.local/share"));
     assert_eq!(dirs.state_home, Path::new("/home/ada/.local/state"));
     assert_eq!(APP_ID, "com.distronode.DistrictAI");
@@ -64,12 +69,18 @@ fn xdg_variables_win_and_home_is_the_fallback() {
 
 #[test]
 fn without_a_home_only_explicit_directories_will_do() {
-    let explicit = lookup(&[("XDG_DATA_HOME", "/data"), ("XDG_STATE_HOME", "/state")]);
+    let explicit = lookup(&[
+        ("XDG_CONFIG_HOME", "/config"),
+        ("XDG_DATA_HOME", "/data"),
+        ("XDG_STATE_HOME", "/state"),
+    ]);
     assert!(XdgDirs::from_lookup(explicit).is_ok());
     for vars in [
         vec![],
         vec![("HOME", "relative")],
-        vec![("XDG_DATA_HOME", "/data")],
+        vec![("XDG_DATA_HOME", "/data"), ("XDG_STATE_HOME", "/state")],
+        vec![("XDG_CONFIG_HOME", "/config"), ("XDG_STATE_HOME", "/state")],
+        vec![("XDG_CONFIG_HOME", "/config"), ("XDG_DATA_HOME", "/data")],
     ] {
         assert_eq!(
             XdgDirs::from_lookup(lookup(&vars)),
@@ -98,6 +109,7 @@ fn from_env_reads_the_process_environment() {
 fn the_marker_holds_a_fingerprint_never_the_token() {
     let temp = tempfile::tempdir().unwrap();
     let dirs = XdgDirs {
+        config_home: temp.path().join("config"),
         data_home: temp.path().join("data"),
         state_home: temp.path().join("state"),
     };
@@ -172,6 +184,7 @@ fn marker_failures_are_reported_and_leave_no_temporary_file() {
 fn the_device_id_is_made_once_and_kept() {
     let temp = tempfile::tempdir().unwrap();
     let dirs = XdgDirs {
+        config_home: temp.path().join("config"),
         data_home: temp.path().join("data"),
         state_home: temp.path().join("state"),
     };

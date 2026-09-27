@@ -8,13 +8,15 @@ use std::path::PathBuf;
 /// stores is named after it.
 pub const APP_ID: &str = "com.distronode.DistrictAI";
 
-/// The two XDG base directories this crate uses.
+/// The three XDG base directories this crate uses.
 ///
 /// Every type here takes its directory as a constructor argument, so tests (and
 /// anything else) can point it anywhere without touching the environment.
 /// [`from_env`](Self::from_env) is for the app.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct XdgDirs {
+    /// `$XDG_CONFIG_HOME`: the user's preferences, such as the settings file.
+    pub config_home: PathBuf,
     /// `$XDG_DATA_HOME`: data that should survive, such as the device id.
     pub data_home: PathBuf,
     /// `$XDG_STATE_HOME`: state that may be lost without harm to the user's
@@ -35,9 +37,10 @@ impl XdgDirs {
     }
 
     /// The directories from `lookup`, which answers an environment variable's
-    /// value. The XDG specification says a relative path in `XDG_DATA_HOME` or
-    /// `XDG_STATE_HOME` is invalid and must be ignored, so such a value falls
-    /// back to the default under `$HOME` like an unset one does.
+    /// value. The XDG specification says a relative path in `XDG_CONFIG_HOME`,
+    /// `XDG_DATA_HOME` or `XDG_STATE_HOME` is invalid and must be ignored, so
+    /// such a value falls back to the default under `$HOME` like an unset one
+    /// does.
     pub fn from_lookup(lookup: impl Fn(&str) -> Option<OsString>) -> Result<Self, NoHomeDirectory> {
         let absolute = |name: &str| {
             lookup(name)
@@ -51,9 +54,15 @@ impl XdgDirs {
                 .ok_or(NoHomeDirectory)
         };
         Ok(Self {
+            config_home: or_home("XDG_CONFIG_HOME", ".config")?,
             data_home: or_home("XDG_DATA_HOME", ".local/share")?,
             state_home: or_home("XDG_STATE_HOME", ".local/state")?,
         })
+    }
+
+    /// `$XDG_CONFIG_HOME/com.distronode.DistrictAI`.
+    pub fn app_config_dir(&self) -> PathBuf {
+        self.config_home.join(APP_ID)
     }
 
     /// `$XDG_DATA_HOME/com.distronode.DistrictAI`.

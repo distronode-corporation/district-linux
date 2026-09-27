@@ -11,6 +11,8 @@ publish.workspace = true
 
 [dependencies]
 district-auth = { workspace = true }
+# For the `Settings` trait `SettingsFile` implements.
+district-core = { workspace = true }
 oo7 = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -18,6 +20,8 @@ thiserror = { workspace = true }
 # `rt` for moving blocking file writes (with their fsyncs) off the async threads.
 tokio = { workspace = true, features = ["rt"] }
 uuid = { workspace = true }
+# The settings file.
+toml = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

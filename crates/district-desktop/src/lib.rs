@@ -11,13 +11,15 @@
 //!   `$XDG_DATA_HOME`.
 //! - [`device_name`]: the operating system's name, for the signed-in devices
 //!   list. Never the host name.
+//! - [`SettingsFile`]: the app's preferences ("ring on this computer", the
+//!   last workspace) in a small TOML file under `$XDG_CONFIG_HOME`, the
+//!   `district_core::Settings` the effect runner reads and writes.
 //!
 //! Every type takes its directory, or its keyring, as a constructor argument,
 //! so the tests never touch the real user's directories or keyring.
 //! [`XdgDirs::from_env`] is where the app gets the real ones.
 //!
-//! Settings and starting at login (through the background portal) land in
-//! later changes.
+//! Starting at login (through the background portal) lands in a later change.
 
 #![forbid(unsafe_code)]
 
@@ -26,6 +28,7 @@ mod dirs;
 mod files;
 mod marker;
 mod secret_store;
+mod settings;
 
 pub use device::{
     DEVICE_ID_FILE, DeviceIdentity, FALLBACK_DEVICE_NAME, device_name, device_name_in,
@@ -36,3 +39,4 @@ pub use secret_store::{
     ATTRIBUTE_APPLICATION, ATTRIBUTE_FINGERPRINT, ATTRIBUTE_KIND, KIND_REVOKE_OUTBOX, KIND_SESSION,
     Oo7SessionStore, kind_of,
 };
+pub use settings::{Preferences, SETTINGS_FILE, SettingsFile};

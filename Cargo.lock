@@ -478,12 +478,14 @@ name = "district-desktop"
 version = "0.1.0"
 dependencies = [
  "district-auth",
+ "district-core",
  "oo7",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror",
  "tokio",
+ "toml",
  "uuid",
 ]
 
