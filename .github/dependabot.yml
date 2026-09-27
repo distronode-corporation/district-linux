@@ -45,5 +45,16 @@ updates:
           - libadwaita
           - glib
           - gio
+      # The LiveKit SDK's crates release together, and webrtc-sys-build names the
+      # prebuilt libwebrtc that scripts/fetch-libwebrtc.sh is pinned to. A bump
+      # that moves that libwebrtc fails voice.yml until the script's pin moves in
+      # the same pull request, which is the point: see the script's header.
+      livekit:
+        patterns:
+          - livekit
+          - livekit-*
+          - libwebrtc
+          - webrtc-sys
+          - webrtc-sys-build
       cargo-minor:
         update-types: [minor, patch]
