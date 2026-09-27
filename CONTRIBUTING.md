@@ -109,20 +109,25 @@ website's repository: a maintainer with access refreshes
 The app's own tests include a smoke test, `crates/district-app/tests/smoke.rs`,
 that builds the real window against a scripted stand-in for the effect runner
 and drives it the way a person would: signing in (with the browser's answer
-arriving through the desktop), the overview, the account, the devices and the
-question before each sign-out, a narrow window, signing out. It needs a display
+arriving through the desktop), the overview, the inbox (search, a thread, its
+older messages, the composer with Enter to send, a reply written on request and
+an image picked through the file chooser), the call log and a call's transcript,
+contacts (adding, editing, research, blocking, deleting, each question) and the
+blocked callers, live updates and a message's notification, the account, the
+devices and the question before each sign-out, a narrow window, signing out. It needs a display
 and a session bus, so it is built only with the `gtk-tests` feature and runs
 under Xvfb, as CI runs it (the packages are `xvfb`, `xauth` and `dbus`):
 
 ```
-GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none GTK_MEDIA=none \
+GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none GTK_MEDIA=none GSETTINGS_BACKEND=memory \
   xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
   cargo test -p district-app --locked --features gtk-tests
 ```
 
 The environment makes it the same everywhere: the software renderer, X11 under
-Xvfb, no accessibility bus, and no media backend (a missing GStreamer plugin
-aborts GTK rather than failing the ringtone). Set `DISTRICT_SMOKE_SHOTS` to a
+Xvfb, no accessibility bus, no media backend (a missing GStreamer plugin
+aborts GTK rather than failing the ringtone), and settings kept in memory, so
+the file chooser the test opens does not save its own into yours. Set `DISTRICT_SMOKE_SHOTS` to a
 directory to have it save every screen there as a PNG, light and dark; look at
 them after changing a page. Keep decisions out of the widgets: a page reads the
 core's state and sends events, and what it shows is tested in `district-core`
@@ -173,7 +178,7 @@ window is measured too):
 source <(cargo llvm-cov show-env --sh)
 cargo llvm-cov clean --workspace
 cargo test --workspace --locked --exclude district-app
-GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none GTK_MEDIA=none \
+GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none GTK_MEDIA=none GSETTINGS_BACKEND=memory \
   xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
   cargo test -p district-app --locked --features gtk-tests
 cargo llvm-cov report --json --summary-only --output-path target/coverage.json

@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- One contact: who, how to reach them, what research found, and the
+     changes a member may make, each after a question where the core asks one.
+     src/pages/contact.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictContactView" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">loading</property>
+            <property name="child">
+              <object class="GtkSpinner" id="loading_spinner">
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="width-request">32</property>
+                <property name="height-request">32</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">status</property>
+            <property name="child">
+              <object class="AdwStatusPage" id="status">
+                <property name="icon-name">x-office-address-book-symbolic</property>
+                <property name="child">
+                  <object class="GtkButton" id="retry_button">
+                    <property name="label">Try again</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">contact</property>
+            <property name="child">
+              <object class="AdwPreferencesPage">
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">8</property>
+                        <child>
+                          <object class="AdwAvatar" id="avatar">
+                            <property name="size">72</property>
+                            <property name="halign">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="name">
+                            <property name="wrap">True</property>
+                            <property name="justify">center</property>
+                            <property name="use-markup">False</property>
+                            <property name="selectable">True</property>
+                            <style>
+                              <class name="title-2"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="reach">
+                            <property name="wrap">True</property>
+                            <property name="justify">center</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="blocked_label">
+                            <property name="label">Blocked</property>
+                            <property name="halign">center</property>
+                            <property name="visible">False</property>
+                            <style>
+                              <class name="blocked-chip"/>
+                              <class name="caption-heading"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="actions">
+                            <property name="spacing">8</property>
+                            <property name="halign">center</property>
+                            <property name="margin-top">10</property>
+                            <child>
+                              <object class="GtkButton" id="edit_button">
+                                <property name="label">Edit</property>
+                                <style>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="block_button">
+                                <property name="label">Block</property>
+                                <style>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="delete_button">
+                                <property name="label">Delete</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="destructive-action"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="read_only_label">
+                            <property name="label">You have read-only access to this workspace, so you cannot change contacts.</property>
+                            <property name="visible">False</property>
+                            <property name="wrap">True</property>
+                            <property name="justify">center</property>
+                            <property name="margin-top">6</property>
+                            <style>
+                              <class name="dim-label"/>
+                              <class name="caption"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="busy_box">
+                            <property name="spacing">8</property>
+                            <property name="halign">center</property>
+                            <property name="visible">False</property>
+                            <property name="margin-top">6</property>
+                            <child>
+                              <object class="GtkSpinner" id="busy_spinner"/>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="busy_label">
+                                <style>
+                                  <class name="dim-label"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="failure_box">
+                            <property name="spacing">6</property>
+                            <property name="visible">False</property>
+                            <property name="margin-top">6</property>
+                            <style>
+                              <class name="card"/>
+                              <class name="composer-failure"/>
+                            </style>
+                            <child>
+                              <object class="GtkLabel" id="failure_label">
+                                <property name="xalign">0</property>
+                                <property name="hexpand">True</property>
+                                <property name="wrap">True</property>
+                                <property name="use-markup">False</property>
+                                <property name="margin-start">12</property>
+                                <property name="margin-top">8</property>
+                                <property name="margin-bottom">8</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="failure_dismiss">
+                                <property name="icon-name">window-close-symbolic</property>
+                                <property name="tooltip-text">Dismiss</property>
+                                <property name="valign">center</property>
+                                <property name="margin-end">6</property>
+                                <accessibility>
+                                  <property name="label">Dismiss</property>
+                                </accessibility>
+                                <style>
+                                  <class name="flat"/>
+                                  <class name="circular"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="details_group">
+                    <property name="title">Details</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="number_group">
+                    <property name="title">Phone number</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="research_group">
+                    <property name="title">Research</property>
+                    <property name="description">Research looks this contact up on the web and writes a summary. Each run is billed.</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="research_actions">
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">8</property>
+                        <child>
+                          <object class="GtkButton" id="research_button">
+                            <property name="label">Run research</property>
+                            <style>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="clear_button">
+                            <property name="label">Clear research</property>
+                            <style>
+                              <class name="pill"/>
+                              <class name="flat"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

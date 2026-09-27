@@ -4,14 +4,18 @@
 use std::cell::{OnceCell, RefCell};
 
 use district_core::{
-    Capabilities, Event, Model, Route, SessionState, SignedIn, Workspaces, WorkspacesState,
+    CallLog, Capabilities, ContactList, ConversationList, Event, LiveStatus, Model, Route,
+    SessionState, SignedIn, ThreadHistory, Workspaces, WorkspacesState,
 };
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::{AccountPage, DevicesPage, OverviewPage, Sends, SessionPage};
+use crate::pages::{
+    AccountPage, CallsPage, ContactsPage, DevicesPage, InboxPage, OverviewPage, Sends, SessionPage,
+    in_contacts,
+};
 use crate::routes::{self, Entry, Section};
 use crate::sink::EventSink;
 
@@ -62,6 +66,8 @@ mod imp {
         #[template_child]
         pub content_page: TemplateChild<adw::NavigationPage>,
         #[template_child]
+        pub content_header: TemplateChild<adw::HeaderBar>,
+        #[template_child]
         pub back_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub refresh_button: TemplateChild<gtk::Button>,
@@ -70,6 +76,8 @@ mod imp {
         #[template_child]
         pub notice_banner: TemplateChild<adw::Banner>,
         #[template_child]
+        pub live_banner: TemplateChild<adw::Banner>,
+        #[template_child]
         pub page_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub overview_page: TemplateChild<OverviewPage>,
@@ -77,6 +85,12 @@ mod imp {
         pub account_page: TemplateChild<AccountPage>,
         #[template_child]
         pub devices_page: TemplateChild<DevicesPage>,
+        #[template_child]
+        pub inbox_page: TemplateChild<InboxPage>,
+        #[template_child]
+        pub calls_page: TemplateChild<CallsPage>,
+        #[template_child]
+        pub contacts_page: TemplateChild<ContactsPage>,
         #[template_child]
         pub later_page: TemplateChild<adw::StatusPage>,
         pub sink: OnceCell<EventSink>,
@@ -100,6 +114,9 @@ mod imp {
             OverviewPage::static_type();
             AccountPage::static_type();
             DevicesPage::static_type();
+            InboxPage::static_type();
+            CallsPage::static_type();
+            ContactsPage::static_type();
             klass.bind_template();
         }
 
@@ -115,6 +132,7 @@ mod imp {
             window.build_sidebar();
             self.keyring_banner.set_use_markup(false);
             self.notice_banner.set_use_markup(false);
+            self.live_banner.set_use_markup(false);
             let weak = window.downgrade();
             self.back_button.connect_clicked(move |_| {
                 if let Some(window) = weak.upgrade() {
@@ -147,11 +165,24 @@ mod imp {
                     }
                 });
             let weak = window.downgrade();
-            self.split_view.connect_collapsed_notify(move |_| {
+            self.live_banner.connect_button_clicked(move |_| {
                 if let Some(window) = weak.upgrade() {
-                    window.draw_back_button();
+                    window.send(Event::Refresh);
                 }
             });
+            for split in [
+                self.split_view.get(),
+                self.inbox_page.split_view(),
+                self.calls_page.split_view(),
+                self.contacts_page.split_view(),
+            ] {
+                let weak = window.downgrade();
+                split.connect_collapsed_notify(move |_| {
+                    if let Some(window) = weak.upgrade() {
+                        window.draw_chrome();
+                    }
+                });
+            }
         }
     }
 
@@ -184,14 +215,19 @@ impl DistrictWindow {
         imp.overview_page.set_sink(sink.clone());
         imp.account_page.set_sink(sink.clone());
         imp.devices_page.set_sink(sink.clone());
+        imp.inbox_page.set_sink(sink.clone());
+        imp.calls_page.set_sink(sink.clone());
+        imp.contacts_page.set_sink(sink.clone());
         imp.sink.set(sink).ok();
         window
     }
 
-    /// Shows `text` briefly over the window.
+    /// Shows `text` briefly over the window, in place of any toast showing:
+    /// the newest outcome is the one that matters.
     pub(crate) fn toast(&self, text: &str) {
         let toast = adw::Toast::new(text);
         toast.set_use_markup(false);
+        toast.set_priority(adw::ToastPriority::High);
         self.imp().toasts.add_toast(toast);
     }
 
@@ -251,6 +287,8 @@ impl DistrictWindow {
                 imp.session_stack.set_visible_child_name("session");
                 imp.session_page.update(other);
                 imp.devices_page.ask(None);
+                imp.inbox_page.leave();
+                imp.contacts_page.leave();
             }
         }
     }
@@ -338,16 +376,7 @@ impl DistrictWindow {
         let imp = self.imp();
         let route = &signed_in.route;
         imp.route.replace(Some(route.clone()));
-        imp.content_page.set_title(routes::title(route));
-        self.draw_back_button();
-        let (refreshable, refreshing) = match route {
-            Route::Overview => (
-                !matches!(signed_in.workspaces, WorkspacesState::Loading),
-                OverviewPage::refreshing(signed_in),
-            ),
-            Route::Devices => (true, signed_in.devices.refreshing),
-            _ => (false, false),
-        };
+        let (refreshable, refreshing) = refresh_state(signed_in);
         imp.refresh_button.set_visible(refreshable && !refreshing);
         imp.refresh_spinner.set_visible(refreshing);
         imp.refresh_spinner.set_spinning(refreshing);
@@ -355,8 +384,21 @@ impl DistrictWindow {
         imp.notice_banner
             .set_title(notice.as_deref().unwrap_or_default());
         imp.notice_banner.set_revealed(notice.is_some());
+        let live = signed_in.live.status.message();
+        imp.live_banner
+            .set_title(live.as_deref().unwrap_or_default());
+        imp.live_banner.set_button_label(
+            matches!(signed_in.live.status, LiveStatus::Stopped(_)).then_some("Refresh"),
+        );
+        imp.live_banner.set_revealed(live.is_some());
         if *route != Route::Devices {
             imp.devices_page.ask(None);
+        }
+        if !matches!(route, Route::Inbox | Route::Thread { .. }) {
+            imp.inbox_page.leave();
+        }
+        if !in_contacts(route) {
+            imp.contacts_page.leave();
         }
         match route {
             Route::Overview => {
@@ -372,6 +414,20 @@ impl DistrictWindow {
                 imp.page_stack.set_visible_child_name("devices");
                 imp.devices_page.update(&signed_in.devices);
             }
+            Route::Inbox | Route::Thread { .. } => {
+                imp.page_stack.set_visible_child_name("inbox");
+                imp.inbox_page.update(signed_in);
+            }
+            Route::Calls | Route::CallDetail { .. } => {
+                imp.page_stack.set_visible_child_name("calls");
+                imp.calls_page.update(signed_in);
+            }
+            route if in_contacts(route) => {
+                imp.page_stack.set_visible_child_name("contacts");
+                if let Some(outcome) = imp.contacts_page.update(signed_in) {
+                    self.toast(outcome);
+                }
+            }
             other => {
                 imp.page_stack.set_visible_child_name("later");
                 imp.later_page.set_title(routes::title(other));
@@ -379,20 +435,82 @@ impl DistrictWindow {
                 imp.later_page.set_icon_name(Some(routes::icon(other)));
             }
         }
+        self.draw_chrome();
     }
 
-    /// The back button leads to a screen's parent, for a screen below a
-    /// sidebar row. It is hidden while the split view is collapsed, whose own
-    /// back button leads to the sidebar.
-    fn draw_back_button(&self) {
+    /// The split view inside the section `route` shows, for a section with a
+    /// list beside its detail.
+    fn section_split(&self, route: &Route) -> Option<adw::NavigationSplitView> {
         let imp = self.imp();
-        let below_a_row = imp
-            .route
-            .borrow()
-            .as_ref()
-            .is_some_and(|route| !routes::is_sidebar_row(route));
-        imp.back_button
-            .set_visible(below_a_row && !imp.split_view.is_collapsed());
+        match route {
+            Route::Inbox | Route::Thread { .. } => Some(imp.inbox_page.split_view()),
+            Route::Calls | Route::CallDetail { .. } => Some(imp.calls_page.split_view()),
+            route if in_contacts(route) => Some(imp.contacts_page.split_view()),
+            _ => None,
+        }
+    }
+
+    /// The header over the page: its title and its back button.
+    ///
+    /// A screen below a sidebar row has a back button to its parent, hidden
+    /// while the sidebar is folded away, whose own back button leads to the
+    /// sidebar. In a section with its list beside its detail (a thread, a
+    /// call, a contact, the blocked callers), the list is the way back while
+    /// both show; once they fold into one pane, the back button leads from
+    /// the detail to the list, in place of the one leading to the sidebar.
+    fn draw_chrome(&self) {
+        let imp = self.imp();
+        let Some(route) = imp.route.borrow().clone() else {
+            return;
+        };
+        let below_a_row = !routes::is_sidebar_row(&route);
+        let split = self.section_split(&route).filter(|_| below_a_row);
+        let (back, sidebar_back, title) = match split {
+            Some(split) if split.is_collapsed() => (true, false, routes::title(&route)),
+            Some(_) => (false, true, routes::title(&routes::highlighted(&route))),
+            None => (
+                below_a_row && !imp.split_view.is_collapsed(),
+                true,
+                routes::title(&route),
+            ),
+        };
+        imp.back_button.set_visible(back);
+        imp.content_header.set_show_back_button(sidebar_back);
+        imp.content_page.set_title(title);
+    }
+}
+
+/// Whether the screen showing can be read again from the header, and whether
+/// it is being read again now, with what it showed still there.
+fn refresh_state(signed_in: &SignedIn) -> (bool, bool) {
+    match &signed_in.route {
+        Route::Overview => (
+            !matches!(signed_in.workspaces, WorkspacesState::Loading),
+            OverviewPage::refreshing(signed_in),
+        ),
+        Route::Devices => (true, signed_in.devices.refreshing),
+        Route::Inbox => (
+            true,
+            matches!(&signed_in.inbox.list, ConversationList::Ready(list) if list.refreshing),
+        ),
+        Route::Thread { .. } => (
+            true,
+            signed_in.thread.as_ref().is_some_and(|screen| {
+                matches!(&screen.history, ThreadHistory::Ready(events) if events.refreshing)
+            }),
+        ),
+        Route::Calls => (
+            true,
+            matches!(&signed_in.calls, CallLog::Ready(rows) if rows.refreshing),
+        ),
+        Route::Contacts => (
+            true,
+            matches!(&signed_in.contacts.list, ContactList::Ready(rows) if rows.refreshing),
+        ),
+        Route::CallDetail { .. } | Route::ContactDetail { .. } | Route::BlockedContacts => {
+            (true, false)
+        }
+        _ => (false, false),
     }
 }
 

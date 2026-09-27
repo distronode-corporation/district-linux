@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- One thread: its history, older messages on request, and the composer, or
+     why there is no composer. src/pages/thread.rs fills it from the core. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictThreadView" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">loading</property>
+            <property name="child">
+              <object class="GtkSpinner" id="loading_spinner">
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="width-request">32</property>
+                <property name="height-request">32</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">status</property>
+            <property name="child">
+              <object class="AdwStatusPage" id="status">
+                <property name="icon-name">mail-unread-symbolic</property>
+                <property name="child">
+                  <object class="GtkButton" id="retry_button">
+                    <property name="label">Try again</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">thread</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox" id="heading">
+                    <property name="spacing">12</property>
+                    <property name="margin-start">18</property>
+                    <property name="margin-end">18</property>
+                    <property name="margin-top">12</property>
+                    <property name="margin-bottom">12</property>
+                    <child>
+                      <object class="AdwAvatar" id="avatar">
+                        <property name="size">40</property>
+                        <property name="show-initials">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="valign">center</property>
+                        <property name="hexpand">True</property>
+                        <child>
+                          <object class="GtkLabel" id="title">
+                            <property name="xalign">0</property>
+                            <property name="ellipsize">end</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="heading"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="subtitle">
+                            <property name="xalign">0</property>
+                            <property name="ellipsize">end</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="caption"/>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSeparator"/>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="refresh_failure">
+                    <property name="visible">False</property>
+                    <property name="wrap">True</property>
+                    <property name="xalign">0</property>
+                    <property name="use-markup">False</property>
+                    <property name="margin-start">18</property>
+                    <property name="margin-end">18</property>
+                    <property name="margin-top">6</property>
+                    <style>
+                      <class name="error"/>
+                      <class name="caption"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow" id="scroller">
+                    <property name="vexpand">True</property>
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="child">
+                      <object class="AdwClamp">
+                        <property name="maximum-size">760</property>
+                        <property name="tightening-threshold">560</property>
+                        <property name="child">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">12</property>
+                            <property name="margin-start">12</property>
+                            <property name="margin-end">12</property>
+                            <property name="margin-top">12</property>
+                            <property name="margin-bottom">12</property>
+                            <child>
+                              <object class="GtkBox" id="older_box">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">6</property>
+                                <property name="halign">center</property>
+                                <child>
+                                  <object class="GtkButton" id="older_button">
+                                    <property name="label">Older messages</property>
+                                    <property name="halign">center</property>
+                                    <style>
+                                      <class name="pill"/>
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkSpinner" id="older_spinner">
+                                    <property name="halign">center</property>
+                                    <property name="visible">False</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="older_failure">
+                                    <property name="visible">False</property>
+                                    <property name="wrap">True</property>
+                                    <property name="justify">center</property>
+                                    <property name="use-markup">False</property>
+                                    <style>
+                                      <class name="error"/>
+                                      <class name="caption"/>
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="start_label">
+                                <property name="label">The start of this conversation</property>
+                                <property name="halign">center</property>
+                                <style>
+                                  <class name="dim-label"/>
+                                  <class name="caption"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkBox" id="events_box">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">10</property>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSeparator"/>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="read_only_label">
+                    <property name="visible">False</property>
+                    <property name="wrap">True</property>
+                    <property name="justify">center</property>
+                    <property name="use-markup">False</property>
+                    <property name="margin-start">18</property>
+                    <property name="margin-end">18</property>
+                    <property name="margin-top">14</property>
+                    <property name="margin-bottom">14</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwClamp" id="composer">
+                    <property name="maximum-size">760</property>
+                    <property name="tightening-threshold">560</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">8</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-top">10</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkBox" id="failure_box">
+                            <property name="spacing">6</property>
+                            <property name="visible">False</property>
+                            <style>
+                              <class name="card"/>
+                              <class name="composer-failure"/>
+                            </style>
+                            <child>
+                              <object class="GtkLabel" id="failure_label">
+                                <property name="xalign">0</property>
+                                <property name="hexpand">True</property>
+                                <property name="wrap">True</property>
+                                <property name="use-markup">False</property>
+                                <property name="margin-start">12</property>
+                                <property name="margin-top">8</property>
+                                <property name="margin-bottom">8</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="failure_dismiss">
+                                <property name="icon-name">window-close-symbolic</property>
+                                <property name="tooltip-text">Dismiss</property>
+                                <property name="valign">center</property>
+                                <property name="margin-end">6</property>
+                                <accessibility>
+                                  <property name="label">Dismiss</property>
+                                </accessibility>
+                                <style>
+                                  <class name="flat"/>
+                                  <class name="circular"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkFlowBox" id="attachments">
+                            <property name="visible">False</property>
+                            <property name="halign">start</property>
+                            <property name="homogeneous">False</property>
+                            <property name="selection-mode">none</property>
+                            <property name="column-spacing">6</property>
+                            <property name="row-spacing">6</property>
+                            <property name="max-children-per-line">5</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="spacing">8</property>
+                            <child>
+                              <object class="GtkButton" id="attach_button">
+                                <property name="icon-name">mail-attachment-symbolic</property>
+                                <property name="tooltip-text">Attach an image</property>
+                                <property name="valign">end</property>
+                                <accessibility>
+                                  <property name="label">Attach an image</property>
+                                </accessibility>
+                                <style>
+                                  <class name="flat"/>
+                                  <class name="circular"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkScrolledWindow">
+                                <property name="hexpand">True</property>
+                                <property name="hscrollbar-policy">never</property>
+                                <property name="propagate-natural-height">True</property>
+                                <property name="max-content-height">160</property>
+                                <style>
+                                  <class name="card"/>
+                                  <class name="composer-box"/>
+                                </style>
+                                <property name="child">
+                                  <object class="GtkTextView" id="text">
+                                    <property name="wrap-mode">word-char</property>
+                                    <property name="accepts-tab">False</property>
+                                    <property name="top-margin">8</property>
+                                    <property name="bottom-margin">8</property>
+                                    <property name="left-margin">10</property>
+                                    <property name="right-margin">10</property>
+                                    <property name="input-hints">spellcheck|emoji</property>
+                                    <accessibility>
+                                      <property name="label">Reply</property>
+                                    </accessibility>
+                                  </object>
+                                </property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="send_button">
+                                <property name="icon-name">go-up-symbolic</property>
+                                <property name="tooltip-text">Send (Enter)</property>
+                                <property name="valign">end</property>
+                                <accessibility>
+                                  <property name="label">Send</property>
+                                </accessibility>
+                                <style>
+                                  <class name="suggested-action"/>
+                                  <class name="circular"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="spacing">8</property>
+                            <child>
+                              <object class="GtkButton" id="draft_button">
+                                <property name="tooltip-text">Writes a suggested reply into the box for you to read before sending. Each suggestion is billed.</property>
+                                <property name="child">
+                                  <object class="AdwButtonContent">
+                                    <property name="icon-name">document-edit-symbolic</property>
+                                    <property name="label">Draft a reply with AI</property>
+                                  </object>
+                                </property>
+                                <style>
+                                  <class name="flat"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkSpinner" id="busy_spinner">
+                                <property name="visible">False</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="busy_label">
+                                <property name="visible">False</property>
+                                <property name="xalign">0</property>
+                                <style>
+                                  <class name="caption"/>
+                                  <class name="dim-label"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="keys_hint">
+                                <property name="label">Shift+Enter for a new line</property>
+                                <property name="hexpand">True</property>
+                                <property name="xalign">1</property>
+                                <property name="ellipsize">end</property>
+                                <style>
+                                  <class name="caption"/>
+                                  <class name="dim-label"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

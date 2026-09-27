@@ -114,10 +114,12 @@ jobs:
       # tests and looks identical to a crate whose tests all pass. The app is the
       # one crate taken apart, to run under a virtual display: its smoke test
       # (tests/smoke.rs, the `gtk-tests` feature) builds the real window, drives
-      # it through signing in and the first screens, and draws each one. The
+      # it through signing in and every screen this build has, and draws each
+      # one. The
       # software renderer (GSK_RENDERER), X11 under Xvfb, no accessibility bus and
       # no media backend (a missing GStreamer plugin aborts GTK) keep it the same
-      # on every runner; the session bus is a private one, and nothing reaches a
+      # on every runner; the session bus is a private one, settings are kept in
+      # memory (the file chooser it opens saves its own), and nothing reaches a
       # network or a keyring. Every other crate's tests run without a display, as
       # they always have.
       #
@@ -135,6 +137,7 @@ jobs:
           GDK_BACKEND: x11
           GTK_A11Y: none
           GTK_MEDIA: none
+          GSETTINGS_BACKEND: memory
         run: |
           set -euo pipefail
           cargo llvm-cov show-env --sh > "$RUNNER_TEMP/llvm-cov.env"

@@ -9,6 +9,14 @@
     <file>ui/overview-page.ui</file>
     <file>ui/account-page.ui</file>
     <file>ui/devices-page.ui</file>
+    <file>ui/inbox-page.ui</file>
+    <file>ui/thread-view.ui</file>
+    <file>ui/calls-page.ui</file>
+    <file>ui/call-view.ui</file>
+    <file>ui/contacts-page.ui</file>
+    <file>ui/contact-view.ui</file>
+    <file>ui/contact-form.ui</file>
+    <file>ui/blocked-view.ui</file>
     <file>style.css</file>
     <file>sounds/ringtone.wav</file>
     <file alias="icons/scalable/apps/com.distronode.DistrictAI.svg">icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg</file>

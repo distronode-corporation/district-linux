@@ -4,7 +4,7 @@ use std::cell::{OnceCell, RefCell};
 
 use district_core::{
     Event, FINISH_SETUP_ACTION, FINISH_SETUP_BODY, FINISH_SETUP_TITLE, OverviewContent,
-    OverviewScreen, SignedIn, WorkspacesState,
+    OverviewScreen, Route, SignedIn, WorkspacesState,
 };
 use district_model::CallSummary;
 
@@ -12,6 +12,8 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::pages::calls::call_row;
+use crate::pages::shared::now;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -66,16 +68,6 @@ pub(crate) fn shown(signed_in: &SignedIn) -> Shown<'_> {
     }
 }
 
-/// The icon for a call of `call_type`, as the service names it.
-pub(crate) fn call_icon(call_type: &str) -> &'static str {
-    match call_type {
-        "inbound" => "call-incoming-symbolic",
-        "outbound" => "call-outgoing-symbolic",
-        "missed" => "call-missed-symbolic",
-        _ => "call-start-symbolic",
-    }
-}
-
 /// The four figures, in the order the tiles show them: each with its caption.
 pub(crate) fn metrics(content: &OverviewContent) -> [(String, &'static str); 4] {
     let figures = &content.overview.metrics;
@@ -124,6 +116,8 @@ mod imp {
         pub values: RefCell<Vec<(gtk::Label, gtk::Label)>>,
         /// The calls the list was last built from.
         pub recent: RefCell<Option<Vec<CallSummary>>>,
+        /// Each recent call's row and id, to open the call it shows.
+        pub rows: RefCell<Vec<(gtk::ListBoxRow, String)>>,
     }
 
     #[glib::object_subclass]
@@ -150,6 +144,21 @@ mod imp {
             self.setup_button.set_label(FINISH_SETUP_ACTION);
             on_click(&self.setup_button, &*page, || Event::OpenFinishSetup);
             on_click(&self.retry_button, &*page, || Event::Refresh);
+            let weak = page.downgrade();
+            self.recent_list.connect_row_activated(move |_, row| {
+                let Some(page) = weak.upgrade() else {
+                    return;
+                };
+                let id = page
+                    .imp()
+                    .rows
+                    .borrow()
+                    .iter()
+                    .find_map(|(listed, id)| (listed == row).then(|| id.clone()));
+                if let Some(call_id) = id {
+                    page.send(Event::Navigate(Route::CallDetail { call_id }));
+                }
+            });
             let mut values = self.values.borrow_mut();
             for _ in 0..4 {
                 let value = gtk::Label::builder()
@@ -238,47 +247,19 @@ impl OverviewPage {
         if imp.recent.borrow().as_ref() == Some(calls) {
             return;
         }
-        while let Some(row) = imp.recent_list.first_child() {
-            imp.recent_list.remove(&row);
-        }
+        imp.recent_list.remove_all();
+        let now = now();
+        let mut rows = Vec::new();
         for call in calls {
-            imp.recent_list.append(&call_row(call));
+            let row = call_row(call, now.as_ref());
+            imp.recent_list.append(&row);
+            rows.push((row.upcast(), call.id.clone()));
         }
+        imp.rows.replace(rows);
         imp.recent_list.set_visible(!calls.is_empty());
         imp.recent_empty.set_visible(calls.is_empty());
         imp.recent.replace(Some(calls.clone()));
     }
-}
-
-/// One recent call: who, the summary, and when. Every text is shown as it
-/// is, never read as markup: a caller's name is the caller's to choose.
-fn call_row(call: &CallSummary) -> adw::ActionRow {
-    let row = adw::ActionRow::builder()
-        .use_markup(false)
-        .title(&call.number)
-        .subtitle(&call.ai_summary)
-        .title_lines(1)
-        .subtitle_lines(2)
-        .build();
-    row.add_prefix(&gtk::Image::from_icon_name(call_icon(&call.call_type)));
-    let when = gtk::Box::builder()
-        .orientation(gtk::Orientation::Vertical)
-        .valign(gtk::Align::Center)
-        .build();
-    for (text, classes) in [
-        (&call.time, &["caption"][..]),
-        (&call.duration, &["caption", "dim-label"][..]),
-    ] {
-        when.append(
-            &gtk::Label::builder()
-                .label(text.as_str())
-                .xalign(1.0)
-                .css_classes(classes.to_vec())
-                .build(),
-        );
-    }
-    row.add_suffix(&when);
-    row
 }
 
 #[cfg(test)]
@@ -360,13 +341,5 @@ mod tests {
         };
         assert_eq!(title, FAILED_TITLE);
         assert!(retry);
-    }
-
-    #[test]
-    fn each_kind_of_call_has_its_icon() {
-        assert_eq!(call_icon("inbound"), "call-incoming-symbolic");
-        assert_eq!(call_icon("outbound"), "call-outgoing-symbolic");
-        assert_eq!(call_icon("missed"), "call-missed-symbolic");
-        assert_eq!(call_icon("voicemail"), "call-start-symbolic");
     }
 }

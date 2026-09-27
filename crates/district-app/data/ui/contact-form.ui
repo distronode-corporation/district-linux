@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The form that adds a contact or changes one, as a dialog. Closing it
+     asks the core, which keeps it open while a save is on its way.
+     src/pages/contact_form.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictContactForm" parent="AdwDialog">
+    <property name="content-width">420</property>
+    <property name="can-close">False</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="show-start-title-buttons">False</property>
+            <property name="show-end-title-buttons">False</property>
+            <child type="start">
+              <object class="GtkButton" id="cancel_button">
+                <property name="label">Cancel</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="submit_button">
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkSpinner" id="spinner">
+                <property name="visible">False</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="description">A contact needs a name, and a phone number or an email address.</property>
+                <child>
+                  <object class="AdwEntryRow" id="name_row">
+                    <property name="title">Name</property>
+                    <property name="use-markup">False</property>
+                    <property name="input-hints">no-spellcheck|uppercase-words</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwEntryRow" id="phone_row">
+                    <property name="title">Phone number</property>
+                    <property name="use-markup">False</property>
+                    <property name="input-purpose">phone</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwEntryRow" id="email_row">
+                    <property name="title">Email address</property>
+                    <property name="use-markup">False</property>
+                    <property name="input-purpose">email</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup">
+                <child>
+                  <object class="GtkLabel" id="hint_label">
+                    <property name="visible">False</property>
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="failure_label">
+                    <property name="visible">False</property>
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

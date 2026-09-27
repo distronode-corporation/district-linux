@@ -42,6 +42,8 @@ district-live = { workspace = true }
 district-model = { workspace = true }
 gtk4 = { workspace = true }
 libadwaita = { workspace = true }
+# A contact's research dossier is free-form JSON, shown as the text it holds.
+serde_json = { workspace = true }
 # The runtime the effect runner, the sign-in and the live updates run on,
 # beside the GTK main loop: its own threads, a timer, and the one-shot replies
 # from the main thread.
@@ -54,7 +56,6 @@ glib-build-tools = { workspace = true }
 # Test only: the smoke test answers the app's effects with the recorded server
 # responses under contracts/.
 serde = { workspace = true }
-serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
 
 [lints]

@@ -90,6 +90,17 @@ pub(crate) mod testing {
         serde_json::from_str(&text).unwrap_or_else(|error| panic!("{name}: {error}"))
     }
 
+    /// What a screen says about a failure: `message`, with a retry when
+    /// `retryable`.
+    pub(crate) fn failure(message: &str, retryable: bool) -> district_core::FailureText {
+        district_core::FailureText {
+            message: message.to_owned(),
+            degraded_regions: Vec::new(),
+            session_ended: None,
+            retryable,
+        }
+    }
+
     pub(crate) fn server_error() -> ApiError {
         ApiError::Server {
             status: 503,
