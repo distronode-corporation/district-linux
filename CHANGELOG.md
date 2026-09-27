@@ -261,6 +261,11 @@ date, and bump `[workspace.package] version` to match.
   because usage, billing and number prices are fractional. When a fresh overview
   narrows the member's role, the screen the role may no longer read is left, and its
   state dropped, rather than hidden behind the overview.
+- `district-model`: a stored persona temperature (`AiPersona::temperature`) is read
+  whether the row holds a JSON number or the same number written as text, which
+  stored rows may hold depending on what wrote them, and is always written back as a
+  number. Text that is not a finite number is still refused. Before, a row holding the
+  text form failed the whole settings read, and every settings section with it.
 - The contract gate's unknown-field probe plants a string rather than `true`, so a
   map keyed by data (answer lengths per engine, starting voices, each channel's
   sender) takes the planted key as data and has to be named, with its reason,

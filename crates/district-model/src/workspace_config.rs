@@ -14,8 +14,10 @@
 //! prompt.
 
 use std::collections::BTreeMap;
+use std::fmt;
 
-use serde::{Deserialize, Serialize};
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 
 /// `GET /api/district/workspace/config`: the workspace's settings, with its
@@ -130,7 +132,15 @@ pub struct AiPersona {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personality: Option<String>,
     /// How freely the model answers, from 0 to 1.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ///
+    /// Stored rows hold either a JSON number or the same number written as
+    /// text, depending on what wrote them, and both are read. It is always
+    /// written back as a number.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "number_or_numeric_text"
+    )]
     pub temperature: Option<f64>,
     /// The speaking style, used by the Gemini Live engine only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -202,6 +212,58 @@ pub struct AiPersona {
     /// turned it off.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dgi_enabled: Option<bool>,
+}
+
+/// Reads a stored number that may have been written as a JSON number or as a
+/// number in text (`0.7` or `"0.7"`), and `null` as nothing.
+///
+/// Refusing the text form would not only lose the one field: the whole settings
+/// row would fail to read, and every settings section with it. Text that is not
+/// a finite number is still refused, because reading it as nothing would show a
+/// default the workspace never chose.
+fn number_or_numeric_text<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<f64>, D::Error> {
+    deserializer.deserialize_any(NumberOrNumericText)
+}
+
+/// The visitor behind [`number_or_numeric_text`].
+struct NumberOrNumericText;
+
+impl<'de> Visitor<'de> for NumberOrNumericText {
+    type Value = Option<f64>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a number, a number written as text, or null")
+    }
+
+    fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+        Ok(None)
+    }
+
+    fn visit_f64<E: de::Error>(self, value: f64) -> Result<Self::Value, E> {
+        Ok(Some(value))
+    }
+
+    fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
+        // A stored temperature is a small number; the conversion is exact for
+        // every value it can hold.
+        Ok(Some(value as f64))
+    }
+
+    fn visit_i64<E: de::Error>(self, value: i64) -> Result<Self::Value, E> {
+        Ok(Some(value as f64))
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+        value
+            .trim()
+            .parse::<f64>()
+            .ok()
+            .filter(|number| number.is_finite())
+            .map(Some)
+            .ok_or_else(|| E::invalid_value(de::Unexpected::Str(value), &self))
+    }
 }
 
 /// What the receptionist may do on a call, and the accounts it does it with.
@@ -509,6 +571,51 @@ mod tests {
             })
         );
         assert_eq!(rules[0].as_json()["match"], "billing");
+    }
+
+    fn temperature(stored: Value) -> Result<Option<f64>, serde_json::Error> {
+        serde_json::from_value::<AiPersona>(json!({"temperature": stored}))
+            .map(|persona| persona.temperature)
+    }
+
+    #[test]
+    fn a_stored_temperature_is_read_as_a_number_or_as_numeric_text() {
+        assert_eq!(temperature(json!(0.7)).unwrap(), Some(0.7));
+        assert_eq!(temperature(json!(1)).unwrap(), Some(1.0));
+        assert_eq!(temperature(json!(-1)).unwrap(), Some(-1.0));
+        assert_eq!(temperature(json!("0.4")).unwrap(), Some(0.4));
+        assert_eq!(temperature(json!(" 1 ")).unwrap(), Some(1.0));
+        assert_eq!(temperature(Value::Null).unwrap(), None);
+        let absent: AiPersona = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(absent.temperature, None);
+    }
+
+    #[test]
+    fn a_temperature_that_is_not_a_finite_number_is_refused() {
+        for stored in [
+            json!("warm"),
+            json!("NaN"),
+            json!("inf"),
+            json!(""),
+            json!(true),
+        ] {
+            let error = temperature(stored.clone()).expect_err("refused");
+            assert!(
+                error
+                    .to_string()
+                    .contains("a number, a number written as text, or null"),
+                "{stored}: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_temperature_read_as_text_is_written_back_as_a_number() {
+        let persona: AiPersona = serde_json::from_value(json!({"temperature": "0.25"})).unwrap();
+        assert_eq!(
+            serde_json::to_value(&persona).unwrap(),
+            json!({"temperature": 0.25})
+        );
     }
 
     #[test]
