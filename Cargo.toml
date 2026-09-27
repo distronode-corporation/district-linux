@@ -81,6 +81,26 @@ tempfile = "3.27.0"
 tokio = { version = "1.53.1", default-features = false }
 # Test only: an HTTP server the tests point the API client at.
 wiremock = "0.6.5"
+# The live telemetry socket. tokio-tungstenite is the WebSocket protocol only (the
+# `handshake` feature, none of its TLS or connect features): district-live opens
+# the connection itself, with TLS from rustls through tokio-rustls and the
+# operating system's trust store through rustls-platform-verifier, which is what
+# reqwest's `rustls` feature uses, so the socket and the API client trust exactly
+# the same certificates. rustls is named directly only to pick the same crypto
+# provider reqwest does (aws-lc-rs).
+tokio-tungstenite = { version = "0.30.0", default-features = false, features = ["handshake"] }
+tokio-rustls = { version = "0.26.5", default-features = false, features = ["tls12"] }
+rustls = { version = "0.23.45", default-features = false, features = ["aws_lc_rs", "std", "tls12"] }
+rustls-platform-verifier = "0.7.1"
+futures-util = { version = "0.3.34", default-features = false }
+# NOT for logging: nothing in this workspace logs. `max_level_debug` compiles every
+# `trace!` in every crate of the build out of the binary. tungstenite logs the
+# whole handshake request (which carries the telemetry token in
+# Sec-WebSocket-Protocol) and the text of every message it receives (call events
+# are customer data) at trace level, and a logger configured for trace must not
+# be able to turn that on. The cap is set by district-live because it is the
+# crate that brings those log lines in.
+log = { version = "0.4.34", features = ["max_level_debug"] }
 # The Secret Service client, which inside a Flatpak sandbox goes through the
 # secret portal instead. Features are spelled out rather than inherited from
 # `default`, so a change of upstream defaults cannot swap in another async runtime
