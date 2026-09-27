@@ -28,14 +28,15 @@ use district_model::{
     DeskTicketCreateResponse, DeskTicketResponse, DeskTicketStatusResponse, DeskTicketsResponse,
     DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
     DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
-    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
-    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse,
-    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
-    SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
-    SupportRequestCreateResponse, SupportRequestResponse, SupportRequestsResponse,
-    TelemetryEnvelope, TelemetryToken, TimelineResponse, UnreadCountResponse, UsageHistoryResponse,
-    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
-    WorkspaceBillingResponse, WorkspaceListResponse,
+    MediaUploadResponse, MeetingDetail, MeetingSummary, MessageThreadResponse,
+    NativeRevokeResponse, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse, PkceVector,
+    PushRegistrationResponse, RoomTokenResponse, SchedulingEnableResponse,
+    SchedulingHandOffResponse, SchedulingStatusResponse, SendMessageResponse, SetupResponse,
+    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse,
+    SupportRequestResponse, SupportRequestsResponse, TelemetryEnvelope, TelemetryToken,
+    TimelineResponse, UnreadCountResponse, UsageHistoryResponse, UsageResponse,
+    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -224,6 +225,10 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-hq-pending-write.json", codec::<HqPromptResponse>),
     // POST /api/district/messages/media: an uploaded attachment.
     ("district-media-upload.json", codec::<MediaUploadResponse>),
+    // GET /api/district/meetings/{meetingId}: the whole row, no envelope.
+    ("district-meeting-detail.json", codec::<MeetingDetail>),
+    // GET /api/district/meetings: a bare array, a running and an ended meeting.
+    ("district-meetings.json", codec::<Vec<MeetingSummary>>),
     // POST /api/district/messages/mark-read.
     ("district-message-mark-read.json", codec::<MarkReadResponse>),
     // POST /api/district/messages/send, the email branch.
@@ -271,6 +276,13 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // POST /api/auth/native/revoke-all: every device signed out.
     ("district-revoke-all.json", codec::<DeviceRevokeResponse>),
+    // POST /api/district/calls/token for a viewer: no guest invitation.
+    (
+        "district-room-token-viewer.json",
+        codec::<RoomTokenResponse>,
+    ),
+    // POST /api/district/calls/token for a meeting room.
+    ("district-room-token.json", codec::<RoomTokenResponse>),
     // POST /api/district/scheduling/enable.
     (
         "district-scheduling-enable.json",
@@ -363,7 +375,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 40;
+pub const NOT_YET_MODELLED_BASELINE: usize = 36;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -382,8 +394,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-knowledge-mode-patch.json",
     "district-knowledge-mode.json",
     "district-knowledge.json",
-    "district-meeting-detail.json",
-    "district-meetings.json",
     "district-member-add.json",
     "district-member-duplicate.json",
     "district-member-last-agency.json",
@@ -403,8 +413,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-persona-patch.json",
     "district-persona-preview-token.json",
     "district-rename.json",
-    "district-room-token-viewer.json",
-    "district-room-token.json",
     "district-routing-patch.json",
     "district-tools-patch.json",
     "district-workspace-config-sparse.json",

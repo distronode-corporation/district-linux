@@ -17,16 +17,16 @@ use district_model::{
     DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse,
     DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
     DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
-    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
-    OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, OverviewResponse, OwnedNumbersResponse,
-    PkceVector, PushRegistrationResponse, SETUP_STEP_DONE, SETUP_STEP_TODO,
-    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
-    SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
-    SupportRequestCreateResponse, SupportRequestFiling, SupportRequestResponse,
-    SupportRequestsResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef,
-    TimelineResponse, UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse,
-    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
-    WorkspaceBillingResponse, WorkspaceListResponse,
+    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageThreadResponse,
+    NativeRevokeResponse, NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP,
+    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse,
+    RoomTokenResponse, SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingEnableResponse,
+    SchedulingHandOffResponse, SchedulingStatusResponse, SendMessageResponse, SetupResponse,
+    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse, SupportRequestFiling,
+    SupportRequestResponse, SupportRequestsResponse, TelemetryEnvelope, TelemetryEventType,
+    TelemetryToken, ThreadRef, TimelineResponse, UnreadCountResponse, UpdateContactRequest,
+    UsageHistoryResponse, UsageResponse, WorkflowListResponse, WorkflowRunsResponse,
+    WorkflowToggleResponse, WorkspaceBillingResponse, WorkspaceListResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -924,6 +924,55 @@ fn support_requests_cover_filed_unfiled_and_done() {
     assert_eq!(replied.message.role, "customer");
     let closed: SupportCloseResponse = decode("district-support-close.json");
     assert!(closed.success && !closed.status_name.is_empty());
+}
+
+// Rooms.
+
+#[test]
+fn meetings_cover_one_running_and_one_ended_and_the_detail_is_not_the_row() {
+    let list: Vec<MeetingSummary> = decode("district-meetings.json");
+    let running = list.iter().find(|m| m.ended_at.is_none()).expect("running");
+    assert!(running.summary_preview.is_none() && running.duration_sec == 0);
+    assert!(running.title.is_none());
+    let ended = list.iter().find(|m| m.ended_at.is_some()).expect("ended");
+    assert!(ended.summary_preview.is_some() && ended.participant_count > 0);
+    for meeting in &list {
+        let name = MeetRoomName::display_name(&meeting.room_name);
+        assert_ne!(name, meeting.room_name, "a meeting room's suffix");
+    }
+
+    let detail: MeetingDetail = decode("district-meeting-detail.json");
+    assert_eq!(detail.id, ended.id);
+    let summary = detail.summary.as_deref().expect("the minutes");
+    let preview = ended.summary_preview.as_deref().unwrap();
+    assert!(summary.len() > preview.len() && summary.starts_with(preview.trim_end()));
+    assert!(detail.transcript.is_some() && detail.room_sid.is_some());
+    assert!(
+        detail
+            .action_items
+            .as_ref()
+            .is_some_and(serde_json::Value::is_array)
+    );
+}
+
+#[test]
+fn a_room_credential_carries_the_guest_invitation_only_for_a_member_who_may_speak() {
+    let member: RoomTokenResponse = decode("district-room-token.json");
+    let viewer: RoomTokenResponse = decode("district-room-token-viewer.json");
+    assert!(member.guest_invite.is_some() && member.guest_path.is_some());
+    assert!(viewer.guest_invite.is_none() && viewer.guest_path.is_none());
+    for answer in [&member, &viewer] {
+        assert!(answer.success && answer.url.starts_with("wss://"));
+        let e2ee = answer.e2ee.as_ref().expect("a meeting room is encrypted");
+        assert!(!e2ee.key.trim().is_empty());
+    }
+    assert_eq!(
+        member.e2ee, viewer.e2ee,
+        "the key is the room's, not the seat's"
+    );
+    let invite = member.guest_invite.as_ref().unwrap();
+    let path = member.guest_path.as_deref().unwrap();
+    assert!(path.contains(&invite.exp.to_string()) && path.contains(&invite.sig));
 }
 
 // PKCE vectors.

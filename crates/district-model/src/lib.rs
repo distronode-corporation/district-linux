@@ -49,6 +49,7 @@ mod overview;
 mod phone;
 mod pkce;
 mod push;
+mod rooms;
 mod scheduling;
 mod setup;
 mod support;
@@ -102,6 +103,9 @@ pub use overview::{OverviewMetrics, OverviewResponse};
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;
 pub use push::PushRegistrationResponse;
+pub use rooms::{
+    GuestInvite, MeetRoomName, MeetingDetail, MeetingSummary, RoomE2ee, RoomTokenResponse,
+};
 pub use scheduling::{
     SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse, SchedulingTenant,
 };

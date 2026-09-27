@@ -272,6 +272,9 @@ const HQ_ARGS: &str = "HQ arguments: chosen by the model, shaped by whichever wr
 const HQ_RESULT: &str = "HqConfirmResponse::result: whatever the applied write returned, for \
                          diagnostics only";
 
+const MEETING_JSON: &str = "MeetingDetail: action items and participants are written by the \
+                            meeting assistant in a shape nothing enforces";
+
 /// The objects the unknown-field probe leaves alone, because the type carries them
 /// as plain JSON on purpose. An entry must still be opaque, or the probe fails it
 /// as stale: a type that starts modelling one of these gets the probe back.
@@ -335,6 +338,16 @@ pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
         fixture: "fixtures/district-hq-pending-write.json",
         path: "$.pendingWrite.args",
         reason: HQ_ARGS,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-meeting-detail.json",
+        path: "$.actionItems",
+        reason: MEETING_JSON,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-meeting-detail.json",
+        path: "$.participants",
+        reason: MEETING_JSON,
     },
     OpaqueObject {
         fixture: "desktop/telemetry-event-call-ended-row.json",
