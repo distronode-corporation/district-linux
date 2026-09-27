@@ -735,7 +735,7 @@ dependencies = [
 name = "district-auth"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "district-api",
  "district-model",
  "getrandom 0.4.3",
@@ -754,7 +754,7 @@ dependencies = [
 name = "district-call"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "district-auth",
  "district-core",
  "district-model",
@@ -775,7 +775,7 @@ dependencies = [
 name = "district-core"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "district-api",
  "district-auth",
  "district-live",
