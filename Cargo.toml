@@ -96,14 +96,23 @@ tokio-rustls = { version = "0.26.5", default-features = false, features = ["tls1
 rustls = { version = "0.23.45", default-features = false, features = ["aws_lc_rs", "std", "tls12"] }
 rustls-platform-verifier = "0.7.1"
 futures-util = { version = "0.3.34", default-features = false }
-# NOT for logging: nothing in this workspace logs. `max_level_debug` compiles every
-# `trace!` in every crate of the build out of the binary. tungstenite logs the
-# whole handshake request (which carries the telemetry token in
-# Sec-WebSocket-Protocol) and the text of every message it receives (call events
-# are customer data) at trace level, and a logger configured for trace must not
-# be able to turn that on. The cap is set by district-live because it is the
-# crate that brings those log lines in.
-log = { version = "0.4.34", features = ["max_level_debug"] }
+# NOT for logging: nothing in this workspace logs. `max_level_warn` compiles every
+# `info!`, `debug!` and `trace!` in every crate of the build out of the binary, so
+# no logger, however it is configured, can bring any of them back:
+#
+# - tungstenite logs the whole handshake request (which carries the telemetry
+#   token in Sec-WebSocket-Protocol) and the text of every message it receives
+#   (call events are customer data) at trace level;
+# - with the call engine, the LiveKit SDK forwards every line libwebrtc logs, at
+#   debug level, and libwebrtc logs an encrypted room's key (the passphrase's
+#   bytes and the key derived from them) when it derives it, and participants'
+#   identities (which can be a caller's phone number) when it has no key for
+#   them; the SDK itself logs identities at info level.
+#
+# What is left, warn and error, carries none of those (read, for the LiveKit
+# crates, at the versions in Cargo.lock). Set by district-live and district-call,
+# the two crates that bring those lines in.
+log = { version = "0.4.34", features = ["max_level_warn"] }
 # The Secret Service client, which inside a Flatpak sandbox goes through the
 # secret portal instead. Features are spelled out rather than inherited from
 # `default`, so a change of upstream defaults cannot swap in another async runtime

@@ -14,7 +14,7 @@ district-api = { workspace = true }
 district-model = { workspace = true }
 futures-util = { workspace = true }
 getrandom = { workspace = true }
-# Only for its `max_level_debug` feature: see the workspace manifest.
+# Only for its `max_level_warn` feature: see the workspace manifest.
 log = { workspace = true }
 rustls = { workspace = true }
 rustls-platform-verifier = { workspace = true }

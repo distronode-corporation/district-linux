@@ -93,8 +93,8 @@ fn the_system_clock_reads_the_wall_clock_in_milliseconds() {
 #[test]
 fn trace_logging_is_compiled_out_of_the_build() {
     // tungstenite logs the handshake request, credential included, and every
-    // message's text at trace level. The workspace turns on `max_level_debug`, so
+    // message's text at trace level. The workspace turns on `max_level_warn`, so
     // no logger configuration can bring those lines back.
-    assert!(log::STATIC_MAX_LEVEL <= log::LevelFilter::Debug);
+    assert!(log::STATIC_MAX_LEVEL <= log::LevelFilter::Warn);
     assert!(!log::log_enabled!(log::Level::Trace));
 }

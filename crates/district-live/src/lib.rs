@@ -40,7 +40,7 @@
 //! Call events are customer data and the credential is a bearer secret. Nothing
 //! in this crate logs; no error or update carries the credential or a message's
 //! content, and a message that cannot be read is dropped unread. The workspace
-//! manifest caps `log` at debug level for the whole build, because the WebSocket
+//! manifest caps `log` at warn level for the whole build, because the WebSocket
 //! library logs the handshake request, credential included, and every message's
 //! text at trace level.
 //!
