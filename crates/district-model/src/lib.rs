@@ -34,7 +34,9 @@
 
 mod auth;
 mod calls;
+mod compose;
 mod devices;
+mod inbox;
 mod overview;
 mod phone;
 mod pkce;
@@ -45,7 +47,19 @@ mod workspace;
 
 pub use auth::AuthMeResponse;
 pub use calls::{CallAnalysis, CallFollowUp, CallHangUpResponse, CallSummary};
+pub use compose::{
+    AiDraftResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest,
+    MarkReadResponse, MediaUploadResponse, MessageDraft, SendMessageRequest, SendMessageResponse,
+    SentMessage, UploadedMedia,
+};
 pub use devices::{DeviceListResponse, DeviceRevokeResponse, NativeDevice, NativeRevokeResponse};
+pub use inbox::{
+    CHANNEL_EMAIL, CHANNEL_SMS, ConversationLastMessage, ConversationSummary,
+    ConversationsResponse, MESSAGE_SEARCH_MIN_QUERY_LENGTH, MessageSearchHit,
+    MessageSearchResponse, MessageThreadMessage, MessageThreadResponse, MessageThreadTarget,
+    ReplyTarget, ThreadRef, TimelineCursor, TimelineEvent, TimelinePageInfo, TimelineResponse,
+    UnreadCountResponse,
+};
 pub use overview::{OverviewMetrics, OverviewResponse};
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;

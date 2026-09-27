@@ -9,9 +9,13 @@
 use std::collections::BTreeSet;
 
 use district_model::{
-    CallHangUpResponse, DeviceListResponse, DeviceRevokeResponse, NativeRevokeResponse,
-    OverviewResponse, PkceVector, SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingHandOffResponse,
-    SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, WorkspaceListResponse,
+    AiDraftResponse, CHANNEL_EMAIL, CHANNEL_SMS, CallHangUpResponse, ConversationsResponse,
+    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
+    DraftResponse, MarkReadResponse, MediaUploadResponse, MessageThreadResponse,
+    NativeRevokeResponse, OverviewResponse, PkceVector, SETUP_STEP_DONE, SETUP_STEP_TODO,
+    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
+    TelemetryEventType, TelemetryToken, ThreadRef, TimelineResponse, UnreadCountResponse,
+    WorkspaceListResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -256,6 +260,177 @@ fn signing_out_confirms_nothing_beyond_success() {
         error.to_string().contains("unknown field `revoked`"),
         "{error}"
     );
+}
+
+// The inbox.
+
+#[test]
+fn the_thread_list_folds_a_contacts_channels_and_keeps_a_bare_address() {
+    let list: ConversationsResponse = decode("district-conversations.json");
+    assert!(list.success);
+    assert!(!list.may_be_incomplete(), "well inside the scan window");
+    let threads = &list.conversations;
+    let folded = threads
+        .iter()
+        .find(|t| t.contact_id.is_some())
+        .expect("a contact's thread");
+    assert!(
+        folded.channels.iter().any(|c| c == CHANNEL_SMS)
+            && folded.channels.iter().any(|c| c == CHANNEL_EMAIL),
+        "one thread holding both channels"
+    );
+    assert!(
+        folded.match_keys.len() > 1,
+        "both of the contact's addresses"
+    );
+    assert_eq!(
+        folded.thread_ref(),
+        folded.contact_id.clone().map(ThreadRef::Contact)
+    );
+    let bare = threads
+        .iter()
+        .find(|t| t.contact_id.is_none())
+        .expect("a thread with no contact");
+    assert!(matches!(bare.thread_ref(), Some(ThreadRef::Address(_))));
+    assert!(
+        bare.can_sms && !bare.can_email,
+        "the service decides each channel"
+    );
+    assert!(threads.iter().any(|t| t.has_unread()) && threads.iter().any(|t| !t.has_unread()));
+    for thread in threads {
+        let target = thread
+            .reply_target()
+            .expect("every thread here can be answered");
+        assert!(
+            !target.to.starts_with("contact:"),
+            "a reply goes to an address"
+        );
+    }
+}
+
+#[test]
+fn a_thread_interleaves_calls_and_messages_of_every_channel() {
+    let thread: TimelineResponse = decode("district-timeline.json");
+    assert!(thread.success);
+    let events = &thread.timeline;
+    let covers = |what: &str, found: bool| assert!(found, "the thread must cover {what}");
+    covers("a missed call", events.iter().any(|e| e.is_missed_call()));
+    covers(
+        "an answered call with a transcript",
+        events
+            .iter()
+            .any(|e| !e.is_message() && e.has_transcript == Some(true)),
+    );
+    covers(
+        "a call without a transcript",
+        events
+            .iter()
+            .any(|e| !e.is_message() && e.has_transcript == Some(false)),
+    );
+    covers(
+        "a text message with an attachment",
+        events
+            .iter()
+            .any(|e| e.event_type == "sms" && !e.media_urls.is_empty()),
+    );
+    covers(
+        "a text message without one",
+        events
+            .iter()
+            .any(|e| e.event_type == "sms" && e.media_urls.is_empty()),
+    );
+    covers(
+        "an email with a subject",
+        events
+            .iter()
+            .any(|e| e.event_type == "email" && e.subject.is_some()),
+    );
+    assert!(
+        events
+            .iter()
+            .filter(|e| e.is_message())
+            .all(|e| e.has_transcript.is_none() && e.duration.is_none()),
+        "call-only keys never ride on a message"
+    );
+    assert!(
+        events.windows(2).all(|w| w[0].timestamp <= w[1].timestamp),
+        "oldest first"
+    );
+    assert!(!thread.page_info.has_more);
+    assert_eq!(thread.page_info.older_page(), None);
+    assert_eq!(
+        thread.page_info.oldest_id.as_deref(),
+        Some(events[0].id.as_str())
+    );
+}
+
+#[test]
+fn a_full_page_hands_back_the_cursor_for_the_one_before_it() {
+    let page: TimelineResponse = decode("district-timeline-page.json");
+    let ids: BTreeSet<&str> = page.timeline.iter().map(|e| e.id.as_str()).collect();
+    assert_eq!(ids.len(), page.timeline.len(), "no repeated ids");
+    let cursor = page
+        .page_info
+        .older_page()
+        .expect("a page that filled its window");
+    assert_eq!(cursor.before(), page.timeline[0].timestamp);
+    assert_eq!(cursor.before_id(), page.timeline[0].id);
+}
+
+#[test]
+fn both_send_branches_are_recorded_with_their_own_keys() {
+    let sms: SendMessageResponse = decode("district-message-send.json");
+    let sms = sms.message.expect("the stored message");
+    assert_eq!(sms.message_type, CHANNEL_SMS);
+    assert!(sms.external_id.is_some() && sms.account_id.is_some() && sms.subject.is_none());
+    let email: SendMessageResponse = decode("district-message-send-email.json");
+    let email = email.message.expect("the stored message");
+    assert_eq!(email.message_type, CHANNEL_EMAIL);
+    assert!(email.subject.is_some() && email.external_id.is_none() && email.account_id.is_none());
+    assert_ne!(sms.status, email.status, "each provider's own word");
+    let media: SendMessageResponse = decode("district-message-send-media.json");
+    assert!(media.success && media.message.is_some());
+}
+
+#[test]
+fn the_small_inbox_answers_carry_real_values() {
+    let marked: MarkReadResponse = decode("district-message-mark-read.json");
+    assert!(marked.success && marked.marked > 0);
+    let unread: UnreadCountResponse = decode("district-messages-unread-count.json");
+    assert!(unread.success && unread.count > 0 && !unread.workspace_id.is_empty());
+    let found: MessageThreadResponse = decode("district-message-thread.json");
+    assert!(found.success);
+    assert_eq!(found.message.read_at, None, "an unread message");
+    assert!(ThreadRef::from_thread_key(&found.thread.thread_key).is_some());
+    let upload: MediaUploadResponse = decode("district-media-upload.json");
+    let media = upload.media.expect("the stored attachment");
+    assert!(media.url.starts_with("https://") && media.mime_type.starts_with("image/"));
+    assert!(media.size_bytes > 0);
+}
+
+#[test]
+fn the_draft_fixtures_cover_a_saved_reply_none_and_a_bare_one() {
+    let saved: DraftResponse = decode("district-draft.json");
+    let draft = saved.draft.expect("a saved reply");
+    assert!(!draft.body.trim().is_empty() && !draft.media_urls.is_empty());
+    let put: DraftResponse = decode("district-draft-put.json");
+    assert_eq!(put.draft, Some(draft), "a save answers with what it stored");
+    let none: DraftResponse = decode("district-draft-null.json");
+    assert!(
+        none.success && none.draft.is_none(),
+        "no saved reply is a success"
+    );
+    let list: DraftListResponse = decode("district-drafts-list.json");
+    assert!(
+        list.drafts
+            .iter()
+            .any(|d| d.subject.is_none() && d.media_urls.is_empty()),
+        "a text reply with nothing attached"
+    );
+    let deleted: DraftDeleteResponse = decode("district-draft-delete.json");
+    assert!(deleted.success);
+    let written: AiDraftResponse = decode("district-ai-draft.json");
+    assert!(written.success && !written.draft.is_empty());
 }
 
 // PKCE vectors.

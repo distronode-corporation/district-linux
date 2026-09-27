@@ -21,9 +21,11 @@
 use std::collections::BTreeMap;
 
 use district_model::{
-    CallHangUpResponse, DeviceListResponse, DeviceRevokeResponse, NativeRevokeResponse,
-    OverviewResponse, PkceVector, SchedulingHandOffResponse, SetupResponse, TelemetryEnvelope,
-    TelemetryToken, WorkspaceListResponse,
+    AiDraftResponse, CallHangUpResponse, ConversationsResponse, DeviceListResponse,
+    DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, MarkReadResponse,
+    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
+    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
+    TelemetryToken, TimelineResponse, UnreadCountResponse, WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -74,10 +76,54 @@ pub const EXPECTED_FIXTURE_COUNT: usize = 177;
 /// Fixtures decoded by a type in this crate: the fixture's name and the decoder
 /// for its type. Sorted by name.
 pub const IMPLEMENTED: &[(&str, Codec)] = &[
+    // POST /api/district/messages/draft: a reply written by a model.
+    ("district-ai-draft.json", codec::<AiDraftResponse>),
+    // GET /api/district/conversations: a mixed-channel contact thread and a bare
+    // address thread.
+    (
+        "district-conversations.json",
+        codec::<ConversationsResponse>,
+    ),
     // POST /api/auth/native/devices/revoke: one device signed out.
     ("district-device-revoke.json", codec::<DeviceRevokeResponse>),
     // GET /api/auth/native/devices: a device of each nullability.
     ("district-devices.json", codec::<DeviceListResponse>),
+    // DELETE /api/district/messages/drafts.
+    ("district-draft-delete.json", codec::<DraftDeleteResponse>),
+    // GET /api/district/messages/drafts for a thread with no saved reply.
+    ("district-draft-null.json", codec::<DraftResponse>),
+    // PUT /api/district/messages/drafts.
+    ("district-draft-put.json", codec::<DraftResponse>),
+    // GET /api/district/messages/drafts for a thread with a saved reply.
+    ("district-draft.json", codec::<DraftResponse>),
+    // GET /api/district/messages/drafts without a thread: every saved reply.
+    ("district-drafts-list.json", codec::<DraftListResponse>),
+    // POST /api/district/messages/media: an uploaded attachment.
+    ("district-media-upload.json", codec::<MediaUploadResponse>),
+    // POST /api/district/messages/mark-read.
+    ("district-message-mark-read.json", codec::<MarkReadResponse>),
+    // POST /api/district/messages/send, the email branch.
+    (
+        "district-message-send-email.json",
+        codec::<SendMessageResponse>,
+    ),
+    // POST /api/district/messages/send, a text message with an attachment.
+    (
+        "district-message-send-media.json",
+        codec::<SendMessageResponse>,
+    ),
+    // POST /api/district/messages/send, the text-message branch.
+    ("district-message-send.json", codec::<SendMessageResponse>),
+    // GET /api/district/messages/{messageId}: the thread a message belongs to.
+    (
+        "district-message-thread.json",
+        codec::<MessageThreadResponse>,
+    ),
+    // GET /api/district/messages/unread-count.
+    (
+        "district-messages-unread-count.json",
+        codec::<UnreadCountResponse>,
+    ),
     // POST /api/auth/native/revoke: this installation signing itself out.
     ("district-native-revoke.json", codec::<NativeRevokeResponse>),
     // GET /api/district/overview.
@@ -88,6 +134,10 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-revoke-all.json", codec::<DeviceRevokeResponse>),
     // GET /api/district/setup.
     ("district-setup.json", codec::<SetupResponse>),
+    // GET /api/district/timeline, an older page that fills its window.
+    ("district-timeline-page.json", codec::<TimelineResponse>),
+    // GET /api/district/timeline: messages of each channel and calls, interleaved.
+    ("district-timeline.json", codec::<TimelineResponse>),
     // GET /api/district/workspace/list, with one region not answering.
     (
         "district-workspace-list-partial.json",
@@ -104,14 +154,13 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 108;
+pub const NOT_YET_MODELLED_BASELINE: usize = 92;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
 /// Shrink-only. Nothing may be added here: a new fixture needs a type, or a
 /// decision recorded in [`EXCLUDED_BY_DECISION`].
 pub const NOT_YET_MODELLED: &[&str] = &[
-    "district-ai-draft.json",
     "district-analytics-new-workspace.json",
     "district-analytics.json",
     "district-billing-no-customer.json",
@@ -129,7 +178,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-contact-detail.json",
     "district-contact-update.json",
     "district-contacts.json",
-    "district-conversations.json",
     "district-desk-logo-delete.json",
     "district-desk-logo.json",
     "district-desk-settings-patch.json",
@@ -146,11 +194,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-dial-subscription.json",
     "district-dial.json",
     "district-directory-patch.json",
-    "district-draft-delete.json",
-    "district-draft-null.json",
-    "district-draft-put.json",
-    "district-draft.json",
-    "district-drafts-list.json",
     "district-enrich-disabled.json",
     "district-enrich.json",
     "district-hq-answer.json",
@@ -161,7 +204,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-knowledge-mode-patch.json",
     "district-knowledge-mode.json",
     "district-knowledge.json",
-    "district-media-upload.json",
     "district-meeting-detail.json",
     "district-meetings.json",
     "district-member-add.json",
@@ -170,12 +212,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-member-remove.json",
     "district-member-role-patch.json",
     "district-members.json",
-    "district-message-mark-read.json",
-    "district-message-send-email.json",
-    "district-message-send-media.json",
-    "district-message-send.json",
-    "district-message-thread.json",
-    "district-messages-unread-count.json",
     "district-messaging-channel-default.json",
     "district-messaging-delete.json",
     "district-messaging-meta.json",
@@ -205,8 +241,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-support-request-create.json",
     "district-support-request.json",
     "district-support-requests.json",
-    "district-timeline-page.json",
-    "district-timeline.json",
     "district-tools-patch.json",
     "district-usage-empty.json",
     "district-usage-history.json",
