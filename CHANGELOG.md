@@ -115,6 +115,41 @@ date, and bump `[workspace.package] version` to match.
 - `district-core`: the runner takes two more traits, `LiveUpdates` and `Notifier`, and
   `DistrictApi` has the inbox, call log and contacts methods, which `ApiClient`
   implements.
+- `district-model`: data types for the rest of the workspace's screens. District HQ
+  (a prompt's answer, the change it proposes as `HqPendingWrite`, and the
+  confirmation's answer, two types so a change being applied cannot be read as a
+  reply); call analytics over a window and metered usage for a month and its history
+  (fractional totals are `f64`, and a measure nothing metered stays `None`, not zero);
+  the phone numbers for sale and those held, a short list saying so; the workspace's
+  plan and the account's subscriptions and invoices in their three shapes, card and
+  address details kept as opaque JSON; workflows, their runs and the outbound
+  campaign's switch; the booking pages' status and turning them on; the help desk's
+  tickets, threads and settings (`DeskSettingsPatch` sends only what changed, and
+  `DeskBrandName::Clear` the `null` that clears the name) and support requests
+  (`SupportRequestCreateResponse::filing`); and meeting rooms. `MeetRoomName` is the
+  only way to name a room and always names a `meet_` room, so the other kind the
+  service accepts, a billed AI video avatar session, cannot be asked for, and
+  `RoomTokenResponse` prints none of its three secrets (the media credential, the
+  room's encryption passphrase, which is never decoded, and the guest link's
+  signature). 45 more of the server's recorded responses decode strictly and
+  round-trip, and the list of those not yet modelled shrinks from 81 to 36.
+- `district-api`: typed methods for District HQ (`hq_prompt`, and `hq_confirm`, which
+  sends back exactly the change the service proposed), analytics and usage
+  (`analytics`, `usage`, `usage_history`), phone numbers and billing, read only
+  (`number_search`, `owned_numbers`, `workspace_billing`, `account_billing`),
+  automations (`workflows`, `workflow_runs`, `set_workflow_active`,
+  `campaign_status`, `set_campaign_enabled`), booking pages (`scheduling_status`,
+  `enable_scheduling`, `scheduling_hand_off`), the help desk (`desk_settings`,
+  `save_desk_settings`, `upload_desk_logo`, `delete_desk_logo`, `desk_tickets`,
+  `create_desk_ticket`, `desk_ticket`, `reply_to_desk_ticket`,
+  `set_desk_ticket_status`), support requests (`support_requests`,
+  `create_support_request`, `support_request`, `reply_to_support_request`,
+  `close_support_request`) and meeting rooms (`meetings`, `meeting_detail`, and
+  `room_token`, which takes a `MeetRoomName`). Each sends what the Android app sends
+  for the same call. The writes are never repeated; the reads, and the room
+  credential, which signs and stores nothing, are repeated once after a refused
+  access token. An answer without a `success` flag refuses an empty body through its
+  required fields.
 
 ### Changed
 

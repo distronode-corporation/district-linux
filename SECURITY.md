@@ -108,6 +108,21 @@ The project is pre-release, and parts of this are not implemented yet.
   ids, and opening it asks the service for the message's thread under the app's
   own session.
 
+### Hand-offs and meeting rooms
+
+- Managing booking pages opens the web in the system browser through a link the
+  service mints on request. The link carries a code good for one sign-in within a
+  minute: it is asked for when the user asks to go, opened at once, and never
+  logged, stored or cached.
+- A meeting room is named only by `meet_<workspace>_<name>`, built in one place.
+  The service mints credentials for one other kind of room, an AI video avatar
+  session that is billed, and the client has no way to name one.
+- Joining a room returns a short-lived media credential, the room's end-to-end
+  encryption passphrase and, for a member who may speak, a signed guest link. All
+  three are kept in memory only and redacted from `Debug`. The passphrase is handed
+  to the media library as the text it is, never decoded, so every participant
+  derives the same key.
+
 ### Privileges
 
 The app runs as your user and never asks for or needs administrator rights. It
