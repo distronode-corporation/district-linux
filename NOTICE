@@ -11,6 +11,61 @@ Cargo.lock and are not restated here.
 Third-party notices for native libraries bundled with a release (for example in
 a Flatpak or a .deb) are listed in this file when such a library is added.
 
+libwebrtc
+---------
+
+A build with calls (district-call's `livekit` feature, which the app's `voice`
+feature turns on) statically links libwebrtc as LiveKit prebuilds it for its Rust
+SDK: release webrtc-89d790b of github.com/livekit/rust-sdks, the file
+webrtc-linux-x64-release.zip, SHA-256
+b167adad5291cea0e4d66a0454d9d52d2ad714e6b0ed70f4410317d3ebde70c5, which is the
+pin in scripts/fetch-libwebrtc.sh. The archive's LICENSE.md, which that script
+unpacks beside the library, holds the full licence text of every component
+below, and a distribution of such a build must ship it with the binary. The
+default build links none of this.
+
+  WebRTC            The WebRTC project authors                BSD-3-Clause
+  Abseil            The Abseil authors                        Apache-2.0
+  BoringSSL         The BoringSSL authors                     Apache-2.0, and
+                                                              BSD-style terms for
+                                                              older parts
+  dav1d             VideoLAN and the dav1d authors            BSD-2-Clause
+  FFmpeg            The FFmpeg developers                     see below
+  fft               Mark Olesen                               permissive notice
+  fiat-crypto       The fiat-crypto authors                   Apache-2.0
+  G.711, G.722      Steve Underwood (SpanDSP)                 public domain
+  libaom            Alliance for Open Media                   BSD-2-Clause
+  libc++, libc++abi,
+  llvm-libc         The LLVM project                          Apache-2.0 WITH
+                                                              LLVM-exception
+  libjpeg-turbo     The libjpeg-turbo authors and the IJG     IJG, BSD-3-Clause
+                                                              and zlib
+  libsrtp           Cisco Systems                             BSD-3-Clause
+  libvpx            The WebM project authors                  BSD-3-Clause
+  libyuv            The LibYuv project authors                BSD-3-Clause
+  NASM              The NASM authors                          BSD-2-Clause
+  Ooura FFT         Takuya Ooura                              permissive notice
+  OpenH264          Cisco Systems                             BSD-2-Clause
+  Opus              Xiph.Org, Skype, Octasic and others       BSD-3-Clause
+  Perfetto          The Chromium and Perfetto authors         Apache-2.0
+  PFFFT             Julien Pommier (after FFTPACK, NCAR)      FFTPACK licence
+                                                              (BSD-style)
+  Protocol Buffers  Google                                    BSD-3-Clause
+  RNNoise           Mozilla, Jean-Marc Valin, Xiph.Org and    BSD-3-Clause
+                    Mark Borgerding
+  spl_sqrt_floor    Wilco Dijkstra                            permissive grant
+  zlib              Jean-loup Gailly and Mark Adler           Zlib
+
+FFmpeg: the archive builds FFmpeg's H.264 and H.265 decoders into the library,
+and they are linked into a build with calls, as are the H.264, AV1, VP8 and VP9
+codecs above, although the app sends and receives no video. LICENSE.md's FFmpeg
+entry holds the texts of the GNU General Public License versions 2 and 3 and the
+GNU Lesser General Public License versions 2.1 and 3, and does not say which of
+them applies to the code linked. No build with calls has been distributed, and
+none should be until that, and the patent licensing of the H.264 and H.265
+decoders, has been reviewed. A libwebrtc built without them would remove the
+question.
+
 "District AI" and "Distronode" are names used by Distronode Corporation.
 
 The app's icons (crates/district-app/data/icons/) are the Distronode mark. The
