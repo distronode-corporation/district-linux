@@ -46,6 +46,7 @@ mod hq;
 mod inbox;
 mod numbers;
 mod overview;
+mod persona;
 mod phone;
 mod pkce;
 mod push;
@@ -57,6 +58,7 @@ mod telemetry;
 mod usage;
 mod workflows;
 mod workspace;
+mod workspace_config;
 
 pub use analytics::{
     AnalyticsMetrics, AnalyticsRange, AnalyticsResponse, CallVolumeDelta, DIRECTION_DOWN,
@@ -100,6 +102,12 @@ pub use numbers::{
     AvailableNumber, NumberSearch, NumberSearchResponse, OwnedNumber, OwnedNumbersResponse,
 };
 pub use overview::{OverviewMetrics, OverviewResponse};
+pub use persona::{
+    PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX, PersonaDefaults, PersonaEngineChoice,
+    PersonaEngineOption, PersonaLabelledValue, PersonaLanguages, PersonaOptionsResponse,
+    PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse, PersonaVoiceCatalog,
+    PersonaVoiceGroup,
+};
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;
 pub use push::PushRegistrationResponse;
@@ -125,6 +133,10 @@ pub use workflows::{
     WorkflowToggleResponse,
 };
 pub use workspace::{WorkspaceEntry, WorkspaceListResponse};
+pub use workspace_config::{
+    AiPersona, DirectoryEntry, ROUTING_FIELDS, ROUTING_OPERATORS, ROUTING_VOICES, RoutingRule,
+    RoutingRuleField, ToolConfig, WorkspaceConfig, WorkspaceConfigResponse, WorkspaceSaveResponse,
+};
 
 #[cfg(test)]
 mod tests {

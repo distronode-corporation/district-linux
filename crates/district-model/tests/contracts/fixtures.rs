@@ -19,14 +19,17 @@ use district_model::{
     DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
     MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageThreadResponse,
     NativeRevokeResponse, NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP,
-    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse,
-    RoomTokenResponse, SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingEnableResponse,
-    SchedulingHandOffResponse, SchedulingStatusResponse, SendMessageResponse, SetupResponse,
-    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse, SupportRequestFiling,
-    SupportRequestResponse, SupportRequestsResponse, TelemetryEnvelope, TelemetryEventType,
-    TelemetryToken, ThreadRef, TimelineResponse, UnreadCountResponse, UpdateContactRequest,
-    UsageHistoryResponse, UsageResponse, WorkflowListResponse, WorkflowRunsResponse,
-    WorkflowToggleResponse, WorkspaceBillingResponse, WorkspaceListResponse,
+    OverviewResponse, OwnedNumbersResponse, PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX,
+    PersonaLabelledValue, PersonaOptionsResponse, PersonaPreviewTokenResponse, PkceVector,
+    PushRegistrationResponse, RoomTokenResponse, RoutingRuleField, SETUP_STEP_DONE,
+    SETUP_STEP_TODO, SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
+    SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
+    SupportRequestCreateResponse, SupportRequestFiling, SupportRequestResponse,
+    SupportRequestsResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef,
+    TimelineResponse, UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse,
+    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
+    WorkspaceBillingResponse, WorkspaceConfigResponse, WorkspaceListResponse,
+    WorkspaceSaveResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -973,6 +976,133 @@ fn a_room_credential_carries_the_guest_invitation_only_for_a_member_who_may_spea
     let invite = member.guest_invite.as_ref().unwrap();
     let path = member.guest_path.as_deref().unwrap();
     assert!(path.contains(&invite.exp.to_string()) && path.contains(&invite.sig));
+}
+
+// Workspace settings.
+
+#[test]
+fn the_config_covers_every_section_and_both_shapes_of_a_routing_rule() {
+    let answer: WorkspaceConfigResponse = decode("district-workspace-config.json");
+    assert!(answer.success);
+    let config = &answer.config;
+    let persona = config.ai_persona.as_ref().expect("a persona");
+    assert!(persona.name.is_some() && persona.greeting.is_some() && persona.voice.is_some());
+    assert!(persona.dgi_enabled.is_some() && persona.temperature.is_some());
+    let lengths = persona.response_length.as_ref().expect("answer lengths");
+    assert!(lengths.len() > 1, "more than one engine's answer length");
+    assert!(
+        lengths.contains_key(persona.model_id.as_deref().unwrap()),
+        "the engine in use has one"
+    );
+
+    let tools = config.tool_config.as_ref().expect("a tool configuration");
+    let allowed = tools.allowed_tools.as_ref().expect("a stored list");
+    assert!(
+        allowed.iter().any(|tool| tool == "transfer_to_creator"),
+        "a retired tool id still stored, which a save must send back"
+    );
+    assert!(tools.support_phone_number.is_some() && tools.custom_email_domain.is_none());
+
+    let rules = config.routing_rule_entries().expect("editable rules");
+    assert!(
+        rules
+            .iter()
+            .any(|rule| rule.as_json().contains_key("match"))
+    );
+    assert!(
+        rules
+            .iter()
+            .any(|rule| !rule.get(RoutingRuleField::Voice).is_empty())
+    );
+    assert!(rules.iter().all(|rule| rule.id().is_some()));
+
+    let directory = config.directory_entries().expect("an editable directory");
+    assert!(directory.iter().all(|entry| !entry.is_incomplete()));
+    assert!(
+        directory.iter().any(|entry| entry.as_json().len() > 2),
+        "an entry with a key this client does not edit"
+    );
+    assert!(
+        config
+            .messaging_config
+            .as_ref()
+            .is_some_and(Value::is_object)
+    );
+    assert!(
+        config
+            .campaign_settings
+            .as_ref()
+            .is_some_and(Value::is_object)
+    );
+    assert!(config.creator_cell_number.is_some() && config.plan.is_some());
+}
+
+#[test]
+fn a_workspace_never_configured_has_every_key_and_empty_lists() {
+    let answer: WorkspaceConfigResponse = decode("district-workspace-config-sparse.json");
+    let config = answer.config;
+    assert!(config.ai_persona.is_none() && config.tool_config.is_none());
+    assert_eq!(config.directory_entries(), Some(Vec::new()));
+    assert_eq!(config.routing_rule_entries(), Some(Vec::new()));
+    assert!(config.messaging_config.is_none() && config.campaign_settings.is_none());
+    assert!(config.updated_at.is_some());
+}
+
+#[test]
+fn the_list_saves_answer_success_and_nothing_else() {
+    for name in [
+        "district-persona-patch.json",
+        "district-tools-patch.json",
+        "district-directory-patch.json",
+        "district-routing-patch.json",
+    ] {
+        let saved: WorkspaceSaveResponse = decode(name);
+        assert!(saved.success, "{name}");
+        assert_eq!(
+            read_fixture(name).trim(),
+            "{\n  \"success\": true\n}",
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn the_persona_options_keep_the_two_language_lists_apart() {
+    let options: PersonaOptionsResponse = decode("district-persona-options.json");
+    assert!(options.success && !options.region.is_empty());
+    let deepgram = options.languages_for(PERSONA_LANGUAGE_KEYED_ENGINE);
+    let general = options.languages_for("aws-pipeline");
+    let only_in = |a: &[PersonaLabelledValue], b: &[PersonaLabelledValue]| {
+        a.iter()
+            .any(|lang| b.iter().all(|other| other.value != lang.value))
+    };
+    assert!(
+        only_in(deepgram, general) && only_in(general, deepgram),
+        "neither contains the other"
+    );
+    for engine in &options.engines {
+        assert!(!engine.response_lengths.is_empty(), "{}", engine.id);
+        for language in options.languages_for(&engine.id) {
+            assert!(
+                !options.voice_groups(&engine.id, &language.value).is_empty(),
+                "voices for {} in {}",
+                engine.id,
+                language.value
+            );
+            assert!(options.default_voice(&engine.id, &language.value).is_some());
+        }
+    }
+    assert!(!options.voice_styles.is_empty());
+    assert!(options.defaults.temperature > 0.0 && !options.defaults.response_length.is_empty());
+}
+
+#[test]
+fn an_audition_is_an_encrypted_preview_room_on_a_named_server() {
+    let answer: PersonaPreviewTokenResponse = decode("district-persona-preview-token.json");
+    assert!(answer.success && answer.url.starts_with("wss://"));
+    assert!(answer.room_name.starts_with(PREVIEW_ROOM_PREFIX));
+    let e2ee = answer.e2ee.as_ref().expect("an audition is encrypted");
+    assert!(!e2ee.key.trim().is_empty() && !answer.token.is_empty());
 }
 
 // PKCE vectors.

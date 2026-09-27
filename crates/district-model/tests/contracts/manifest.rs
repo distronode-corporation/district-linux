@@ -29,14 +29,15 @@ use district_model::{
     DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
     DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
     MediaUploadResponse, MeetingDetail, MeetingSummary, MessageThreadResponse,
-    NativeRevokeResponse, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse, PkceVector,
-    PushRegistrationResponse, RoomTokenResponse, SchedulingEnableResponse,
-    SchedulingHandOffResponse, SchedulingStatusResponse, SendMessageResponse, SetupResponse,
-    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse,
-    SupportRequestResponse, SupportRequestsResponse, TelemetryEnvelope, TelemetryToken,
-    TimelineResponse, UnreadCountResponse, UsageHistoryResponse, UsageResponse,
-    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
-    WorkspaceListResponse,
+    NativeRevokeResponse, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse,
+    PersonaOptionsResponse, PersonaPreviewTokenResponse, PkceVector, PushRegistrationResponse,
+    RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageResponse, SetupResponse, SupportCloseResponse,
+    SupportReplyResponse, SupportRequestCreateResponse, SupportRequestResponse,
+    SupportRequestsResponse, TelemetryEnvelope, TelemetryToken, TimelineResponse,
+    UnreadCountResponse, UsageHistoryResponse, UsageResponse, WorkflowListResponse,
+    WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceConfigResponse, WorkspaceListResponse, WorkspaceSaveResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -205,6 +206,11 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // GET /api/auth/native/devices: a device of each nullability.
     ("district-devices.json", codec::<DeviceListResponse>),
+    // PATCH /api/district/workspace/directory: the whole list replaced.
+    (
+        "district-directory-patch.json",
+        codec::<WorkspaceSaveResponse>,
+    ),
     // DELETE /api/district/messages/drafts.
     ("district-draft-delete.json", codec::<DraftDeleteResponse>),
     // GET /api/district/messages/drafts for a thread with no saved reply.
@@ -262,6 +268,21 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // GET /api/district/overview.
     ("district-overview.json", codec::<OverviewResponse>),
+    // GET /api/district/workspace/persona/options.
+    (
+        "district-persona-options.json",
+        codec::<PersonaOptionsResponse>,
+    ),
+    // PATCH /api/district/workspace/persona.
+    (
+        "district-persona-patch.json",
+        codec::<WorkspaceSaveResponse>,
+    ),
+    // POST /api/district/workspace/persona/preview-token: an audition's credential.
+    (
+        "district-persona-preview-token.json",
+        codec::<PersonaPreviewTokenResponse>,
+    ),
     // The server's own PKCE derivations, test data for sign-in.
     ("district-pkce-vectors.json", codec::<Vec<PkceVector>>),
     // GET /api/district/workspace/provider/numbers with a carrier not answering.
@@ -283,6 +304,11 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // POST /api/district/calls/token for a meeting room.
     ("district-room-token.json", codec::<RoomTokenResponse>),
+    // POST /api/district/workspace/routing-rules: the whole list replaced.
+    (
+        "district-routing-patch.json",
+        codec::<WorkspaceSaveResponse>,
+    ),
     // POST /api/district/scheduling/enable.
     (
         "district-scheduling-enable.json",
@@ -333,6 +359,8 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-timeline-page.json", codec::<TimelineResponse>),
     // GET /api/district/timeline: messages of each channel and calls, interleaved.
     ("district-timeline.json", codec::<TimelineResponse>),
+    // PATCH /api/district/workspace/tools: the allowed tools replaced.
+    ("district-tools-patch.json", codec::<WorkspaceSaveResponse>),
     // GET /api/district/workspace/usage for a month with nothing metered.
     ("district-usage-empty.json", codec::<UsageResponse>),
     // GET /api/district/workspace/usage?history=true: months metered for
@@ -359,6 +387,16 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
         "district-workspace-billing.json",
         codec::<WorkspaceBillingResponse>,
     ),
+    // GET /api/district/workspace/config for a workspace never configured.
+    (
+        "district-workspace-config-sparse.json",
+        codec::<WorkspaceConfigResponse>,
+    ),
+    // GET /api/district/workspace/config: every section configured.
+    (
+        "district-workspace-config.json",
+        codec::<WorkspaceConfigResponse>,
+    ),
     // GET /api/district/workspace/list, with one region not answering.
     (
         "district-workspace-list-partial.json",
@@ -375,7 +413,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 36;
+pub const NOT_YET_MODELLED_BASELINE: usize = 28;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -387,7 +425,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-dial-dormant.json",
     "district-dial-subscription.json",
     "district-dial.json",
-    "district-directory-patch.json",
     "district-enrich-disabled.json",
     "district-knowledge-create.json",
     "district-knowledge-delete.json",
@@ -409,14 +446,7 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-messaging-unmanaged.json",
     "district-messaging-upsert.json",
     "district-messaging.json",
-    "district-persona-options.json",
-    "district-persona-patch.json",
-    "district-persona-preview-token.json",
     "district-rename.json",
-    "district-routing-patch.json",
-    "district-tools-patch.json",
-    "district-workspace-config-sparse.json",
-    "district-workspace-config.json",
     "district-workspace-list-degraded.json",
 ];
 

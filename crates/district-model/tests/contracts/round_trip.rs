@@ -241,7 +241,8 @@ fn object_at<'a>(value: &'a mut Value, path: &str) -> &'a mut Map<String, Value>
     current.as_object_mut().expect("the path names an object")
 }
 
-/// An object a type carries as plain JSON, which therefore accepts any key.
+/// An object that accepts any key: one a type carries as plain JSON, or reads as
+/// a map whose keys are data (engine ids, channel names) rather than fields.
 pub struct OpaqueObject {
     /// The fixture, by its path under `contracts/`.
     pub fixture: &'static str,
@@ -274,6 +275,19 @@ const HQ_RESULT: &str = "HqConfirmResponse::result: whatever the applied write r
 
 const MEETING_JSON: &str = "MeetingDetail: action items and participants are written by the \
                             meeting assistant in a shape nothing enforces";
+
+const RESPONSE_LENGTH: &str = "AiPersona::response_length: a map from engine id to answer \
+                               length, so every key is an engine";
+
+const STORED_LIST: &str = "WorkspaceConfig: routing rules and directory entries are stored \
+                           objects the service keeps whole, keys this client does not know \
+                           included, and are carried as JSON so a save gives every key back";
+
+const DISPLAY_ONLY: &str = "WorkspaceConfig: the messaging and campaign settings as stored, shown \
+                            and never written back";
+
+const VOICE_DEFAULTS: &str = "PersonaDefaults: starting voices keyed by engine id and by \
+                              language, so every key is data";
 
 /// The objects the unknown-field probe leaves alone, because the type carries them
 /// as plain JSON on purpose. An entry must still be opaque, or the probe fails it
@@ -350,6 +364,41 @@ pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
         reason: MEETING_JSON,
     },
     OpaqueObject {
+        fixture: "fixtures/district-persona-options.json",
+        path: "$.defaults.voiceByDeepgramLanguage",
+        reason: VOICE_DEFAULTS,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-persona-options.json",
+        path: "$.defaults.voiceByEngine",
+        reason: VOICE_DEFAULTS,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-workspace-config.json",
+        path: "$.config.aiPersona.responseLength",
+        reason: RESPONSE_LENGTH,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-workspace-config.json",
+        path: "$.config.callDirectory",
+        reason: STORED_LIST,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-workspace-config.json",
+        path: "$.config.campaignSettings",
+        reason: DISPLAY_ONLY,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-workspace-config.json",
+        path: "$.config.messagingConfig",
+        reason: DISPLAY_ONLY,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-workspace-config.json",
+        path: "$.config.routingRules",
+        reason: STORED_LIST,
+    },
+    OpaqueObject {
         fixture: "desktop/telemetry-event-call-ended-row.json",
         path: "$.data",
         reason: TELEMETRY_DATA,
@@ -407,11 +456,15 @@ fn within(path: &str, root: &str) -> bool {
 ///
 /// If this passes while `strict-contracts` is off, or while a nested type lacks the
 /// attribute, it does not pass. An object a type carries as opaque JSON (a
-/// `serde_json::Map` or `Value` field) accepts the key; each one is named in
+/// `serde_json::Map` or `Value` field), or reads as a map keyed by data (a
+/// `BTreeMap<String, String>`), accepts the key; each one is named in
 /// [`OPAQUE_OBJECTS`], where it must go on accepting it.
 #[test]
 fn an_unknown_field_is_rejected_in_every_object_of_every_implemented_fixture() {
     const PROBE: &str = "contractProbeUnknownField";
+    // A string, so that a map whose values are strings takes the key as data and
+    // must be named in OPAQUE_OBJECTS; a struct refuses the key whatever it holds.
+    const PROBE_VALUE: &str = "contractProbeValue";
     let mut probes = 0;
     let mut used = BTreeSet::new();
     let mut accepted = Vec::new();
@@ -423,7 +476,7 @@ fn an_unknown_field_is_rejected_in_every_object_of_every_implemented_fixture() {
             object_paths(&original, "$", &mut paths);
             for path in paths {
                 let mut planted = original.clone();
-                object_at(&mut planted, &path).insert(PROBE.to_owned(), Value::Bool(true));
+                object_at(&mut planted, &path).insert(PROBE.to_owned(), Value::from(PROBE_VALUE));
                 probes += 1;
                 let opaque = OPAQUE_OBJECTS
                     .iter()
