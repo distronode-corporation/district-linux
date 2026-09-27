@@ -29,9 +29,14 @@
 //! Response and request types live in `district-model`. This crate is generic
 //! over them: [`Request::send`] decodes into any `serde::de::DeserializeOwned`
 //! type, and [`Request::json`] takes any `serde::Serialize` one. The endpoints
-//! the first screens use also have typed methods on [`ApiClient`]
-//! ([`ApiClient::workspace_list`], [`ApiClient::overview`] and the rest), which
-//! decode into the model's types and check the response's `success` flag.
+//! the screens use also have typed methods on [`ApiClient`], which decode into
+//! the model's types and check the response's `success` flag: the first screens
+//! ([`ApiClient::workspace_list`], [`ApiClient::overview`] and the rest), the
+//! call log ([`ApiClient::calls`], [`ApiClient::call_detail`],
+//! [`ApiClient::call_transcript`]), the inbox ([`ApiClient::conversations`],
+//! [`ApiClient::timeline`], [`ApiClient::send_message`] and the rest) and
+//! contacts ([`ApiClient::contacts`], [`ApiClient::contact`],
+//! [`ApiClient::update_contact`] and the rest).
 //!
 //! ```no_run
 //! # async fn example(tokens: impl district_api::TokenSource) -> Result<(), Box<dyn std::error::Error>> {
@@ -50,11 +55,14 @@
 
 #![forbid(unsafe_code)]
 
+mod calls;
 mod client;
 mod config;
+mod contacts;
 mod endpoints;
 mod error;
 mod exclusions;
+mod inbox;
 mod methods;
 mod telemetry;
 mod token;
