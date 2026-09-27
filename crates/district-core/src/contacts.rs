@@ -23,6 +23,7 @@ use district_model::{
     UpdateContactRequest,
 };
 
+use crate::dialer::format_phone_number;
 use crate::failure::FailureText;
 use crate::model::{Effect, Slot, Ticket, Tickets};
 use crate::role::Capabilities;
@@ -235,6 +236,44 @@ impl ContactForm {
             ..UpdateContactRequest::from_contact(contact)
         }
     }
+}
+
+/// What a contact with no name, number or address is called on screen.
+pub const UNNAMED_CONTACT: &str = "Unnamed contact";
+
+/// What to call `contact` on screen: its name, else its phone number as a
+/// person reads it, else its email address, else [`UNNAMED_CONTACT`]. A name
+/// that says nothing (blank, or the `Unknown` the receptionist writes for a
+/// caller it could not identify) is no name.
+pub fn contact_label(contact: &Contact) -> String {
+    label(
+        contact.display_name(),
+        contact.phone_number.as_deref(),
+        contact.email.as_deref(),
+    )
+}
+
+/// What to call a blocked caller on screen, by the same rule as
+/// [`contact_label`].
+pub fn blocked_label(caller: &BlockedContact) -> String {
+    let name = Some(caller.name.as_str()).filter(|name| *name != UNKNOWN_NAME);
+    label(name, caller.phone_number.as_deref(), None)
+}
+
+/// The name the receptionist writes for a caller it could not identify.
+const UNKNOWN_NAME: &str = "Unknown";
+
+fn label(name: Option<&str>, phone_number: Option<&str>, email: Option<&str>) -> String {
+    given(name)
+        .map(str::to_owned)
+        .or_else(|| given(phone_number).map(format_phone_number))
+        .or_else(|| given(email).map(str::to_owned))
+        .unwrap_or_else(|| UNNAMED_CONTACT.to_owned())
+}
+
+/// `value` when it holds more than white space.
+fn given(value: Option<&str>) -> Option<&str> {
+    value.filter(|value| !value.trim().is_empty())
 }
 
 /// `value` trimmed, or `None` when it is blank.

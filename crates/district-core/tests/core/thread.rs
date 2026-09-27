@@ -142,6 +142,8 @@ fn opening_a_listed_thread_reads_it_restores_the_draft_and_marks_it_read() {
     assert_eq!(screen.title, "Contract Test Caller");
     let target = screen.reply_target.as_ref().expect("a reply target");
     assert_eq!((target.to.as_str(), target.channel), ("14165550142", "sms"));
+    let agency = signed_in(&model).capabilities();
+    assert_eq!(screen.read_only_note(&agency), None, "a composer instead");
     assert_eq!(screen.history, ThreadHistory::Loading);
     assert_eq!(signed_in(&model).route.tab(), district_core::Tab::Inbox);
     // Marked read on screen at once: the thread's two came off the badge.
@@ -199,6 +201,12 @@ fn a_viewer_opens_a_thread_read_only() {
         result: Ok(newest()),
     });
     assert_eq!(controls(&model), ThreadControls::default());
+    let viewer = signed_in(&model).capabilities();
+    assert_eq!(
+        screen(&model).read_only_note(&viewer),
+        Some(ThreadScreen::READ_ONLY_ROLE),
+        "the role is the reason, whatever the thread"
+    );
     for event in [
         ThreadEvent::Compose("hello".to_owned()),
         ThreadEvent::Send,
@@ -246,6 +254,11 @@ fn a_thread_outside_the_list_opens_read_only_with_the_best_title() {
     assert_eq!(screen(&model).title, "Grace");
     assert_eq!(screen(&model).reply_target, None);
     assert!(!controls(&model).can_reply);
+    let agency = signed_in(&model).capabilities();
+    assert_eq!(
+        screen(&model).read_only_note(&agency),
+        Some(ThreadScreen::NO_REPLY_TARGET)
+    );
 
     // An address: the address itself.
     model.update(Event::Back);

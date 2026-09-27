@@ -95,6 +95,33 @@ pub fn format_dial_entry(raw: &str) -> String {
     format!("{plus}{}", groups.join(" "))
 }
 
+/// `text` as a person reads it: a phone number grouped as the dialler groups
+/// it ([`format_dial_entry`]), so `+14165550142` reads `+1 416 555 0142`, and
+/// anything else as it is (a name, an email address, the service's `Unknown`,
+/// a short code).
+///
+/// For showing only. Wherever the value is sent, searched for or compared, the
+/// service's own text is what goes: grouping adds spaces and never removes a
+/// digit, but it is not the stored value.
+///
+/// Text counts as a phone number when it holds at least [`MIN_DIAL_DIGITS`]
+/// digits and nothing but digits, a leading `+`, and the spaces, brackets,
+/// dashes and dots people write numbers with. So `Ada 2` and
+/// `ada2@example.com` are left alone, and so is a four-digit code.
+pub fn format_phone_number(text: &str) -> String {
+    let trimmed = text.trim();
+    let digits = trimmed.chars().filter(char::is_ascii_digit).count();
+    let body = trimmed.strip_prefix('+').unwrap_or(trimmed);
+    let written_as_a_number = body
+        .chars()
+        .all(|c| c.is_ascii_digit() || matches!(c, ' ' | '(' | ')' | '-' | '.'));
+    if digits >= MIN_DIAL_DIGITS && written_as_a_number {
+        format_dial_entry(trimmed)
+    } else {
+        text.to_owned()
+    }
+}
+
 /// `digits` in groups of three, left to right.
 fn chunks(digits: &str) -> Vec<&str> {
     (0..digits.len())
@@ -204,6 +231,27 @@ mod tests {
         for raw in ["+1 212 555 0199", "12345678901234", "0"] {
             let digits = |s: &str| s.chars().filter(char::is_ascii_digit).collect::<String>();
             assert_eq!(digits(&format_dial_entry(raw)), digits(raw), "{raw}");
+        }
+    }
+
+    #[test]
+    fn a_phone_number_is_shown_grouped_and_anything_else_as_it_is() {
+        assert_eq!(format_phone_number("+14165550142"), "+1 416 555 0142");
+        assert_eq!(format_phone_number("14165550142"), "1 416 555 0142");
+        assert_eq!(format_phone_number(" (416) 555-0142 "), "416 555 0142");
+        assert_eq!(format_phone_number("416.555.0142"), "416 555 0142");
+        for kept in [
+            "Contract Test Caller",
+            "Unknown",
+            "ada2@example.com",
+            "Ada 2125550142",
+            "1+4165550142",
+            "+",
+            "611",
+            "2026",
+            "",
+        ] {
+            assert_eq!(format_phone_number(kept), kept, "{kept:?}");
         }
     }
 

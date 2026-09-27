@@ -143,7 +143,7 @@ pub use contacts::{
     BlockedList, BlockedScreen, CONTACT_PAGE_SIZE, ContactAction, ContactConfirmation,
     ContactControls, ContactDetailScreen, ContactDetails, ContactForm, ContactList, ContactRows,
     ContactView, ContactWrite, ContactWritten, ContactsEvent, ContactsScreen, CreateContact,
-    RESEARCH_POLL_INTERVAL,
+    RESEARCH_POLL_INTERVAL, UNNAMED_CONTACT, blocked_label, contact_label,
 };
 pub use desk::{
     DESK_MESSAGE_MAX, DESK_SUBJECT_MAX, DESK_SUBJECT_MIN, DeskCompose, DeskEvent, DeskQueue,
@@ -154,6 +154,7 @@ pub use desk::{
 pub use devices::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen};
 pub use dialer::{
     DialerEvent, DialerScreen, MIN_DIAL_DIGITS, format_call_duration, format_dial_entry,
+    format_phone_number,
 };
 pub use failure::FailureText;
 pub use hq::{HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqScreen, HqText};

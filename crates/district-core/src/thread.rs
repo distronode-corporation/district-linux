@@ -96,6 +96,27 @@ pub struct ThreadScreen {
 }
 
 impl ThreadScreen {
+    /// Said in place of the composer to a member whose role cannot reply.
+    pub const READ_ONLY_ROLE: &'static str =
+        "You have read-only access to this workspace, so you cannot reply here.";
+    /// Said in place of the composer on a thread with nothing to reply on, or
+    /// one opened from a search result for a thread the inbox list does not
+    /// hold, whose reply address the service has not published.
+    pub const NO_REPLY_TARGET: &'static str =
+        "Replies cannot be sent on this conversation from here.";
+
+    /// Why there is no composer, for a member with `capabilities`, or `None`
+    /// when there is one.
+    pub fn read_only_note(&self, capabilities: &Capabilities) -> Option<&'static str> {
+        if !capabilities.can_change {
+            Some(Self::READ_ONLY_ROLE)
+        } else if self.reply_target.is_none() {
+            Some(Self::NO_REPLY_TARGET)
+        } else {
+            None
+        }
+    }
+
     /// What the composer may offer, for a member with `capabilities`.
     pub fn controls(&self, capabilities: &Capabilities) -> ThreadControls {
         let ready = matches!(self.history, ThreadHistory::Ready(_));

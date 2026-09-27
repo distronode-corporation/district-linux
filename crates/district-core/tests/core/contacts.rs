@@ -6,7 +6,7 @@ use district_core::{
     BlockedList, BlockedScreen, CONTACT_PAGE_SIZE, ContactAction, ContactConfirmation,
     ContactControls, ContactDetailScreen, ContactForm, ContactList, ContactRows, ContactView,
     ContactWrite, ContactWritten, ContactsEvent, CreateContact, Effect, Event, FailureText, Model,
-    RESEARCH_POLL_INTERVAL, Route,
+    RESEARCH_POLL_INTERVAL, Route, UNNAMED_CONTACT, blocked_label, contact_label,
 };
 use district_model::{
     BlockedContact, BlockedContactsResponse, Contact, ContactBlockResponse, ContactDetailResponse,
@@ -1164,4 +1164,45 @@ fn an_unblock_on_its_way_is_forgotten_with_its_workspace() {
             .is_empty()
     );
     assert!(signed_in(&model).blocked.unblocking.is_empty());
+}
+
+/// A contact is called by its name, else its number as a person reads it,
+/// else its address; a name that says nothing is no name.
+#[test]
+fn a_contact_is_called_by_the_best_thing_it_holds() {
+    assert_eq!(contact_label(&contact(ADA, json!({}))), "Ada");
+    for nameless in ["Unknown", " ", ""] {
+        assert_eq!(
+            contact_label(&contact(ADA, json!({ "name": nameless }))),
+            "+1 212 555 0142",
+            "{nameless:?}"
+        );
+    }
+    assert_eq!(
+        contact_label(&contact(
+            ADA,
+            json!({ "name": "Unknown", "phoneNumber": " " })
+        )),
+        "ada@example.com"
+    );
+    assert_eq!(
+        contact_label(&contact(
+            ADA,
+            json!({ "name": "", "phoneNumber": null, "email": null })
+        )),
+        UNNAMED_CONTACT
+    );
+
+    let caller = |name: &str, phone_number: Option<&str>| BlockedContact {
+        contact_id: SPARSE.to_owned(),
+        name: name.to_owned(),
+        phone_number: phone_number.map(str::to_owned),
+        blocked_at: Some("2026-09-01T00:00:00.000Z".to_owned()),
+    };
+    assert_eq!(blocked_label(&caller("Grace", None)), "Grace");
+    assert_eq!(
+        blocked_label(&caller("Unknown", Some("14165550181"))),
+        "1 416 555 0181"
+    );
+    assert_eq!(blocked_label(&caller("", None)), UNNAMED_CONTACT);
 }
