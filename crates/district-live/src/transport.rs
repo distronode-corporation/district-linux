@@ -70,11 +70,16 @@ impl Transport for NetworkTransport {
             let tcp = TcpStream::connect((host, port)).await?;
             tcp.set_nodelay(true)?;
             if url.scheme() != "wss" {
-                return Ok(Box::new(tcp) as Box<dyn Io>);
+                return Ok(boxed(tcp));
             }
             let name = ServerName::try_from(host.to_owned()).map_err(io::Error::other)?;
-            let tls = self.tls.connect(name, tcp).await;
-            tls.map(|tls| Box::new(tls) as Box<dyn Io>)
+            self.tls.connect(name, tcp).await.map(boxed)
         })
     }
+}
+
+/// A stream as the trait object [`Transport::open`] returns. One function for
+/// both kinds, so the TLS path shares its code with the plain one.
+fn boxed(io: impl Io + 'static) -> Box<dyn Io> {
+    Box::new(io)
 }
