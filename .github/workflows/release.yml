@@ -1,0 +1,264 @@
+name: Release
+
+# Fires on a `vX.Y.Z` tag and publishes the two packages a user installs: the
+# .deb (Ubuntu 24.04, Debian 13 and newer) and the Flatpak bundle, both x86_64
+# and both built with calls.
+#
+# Three stages, and only the last can write anything:
+#
+# - `guard` refuses a tag that should not be built: one on a commit that is not
+#   on main (CI never tested it), one that the versions in Cargo.toml,
+#   CHANGELOG.md and the AppStream metadata do not all name, one without a
+#   CHANGELOG.md section to make the notes from, or a tree without the contract
+#   snapshot the app was tested against.
+# - `deb` and `flatpak` build the packages with deb.yml and flatpak.yml, the
+#   workflows pull requests run, read-only, with no caches and from the
+#   committed Cargo.lock, and test them (the .deb installed on each supported
+#   distribution, the bundle run in its sandbox).
+# - `publish` refuses unless libwebrtc's licensing has been cleared (below),
+#   then attests the packages' provenance, verifies the attestations, creates a
+#   DRAFT release with the notes from CHANGELOG.md, checks that GitHub holds
+#   exactly the two assets, and only then makes the release public.
+#
+# ⛔ THE LICENCE GATE. A build with calls statically links libwebrtc, whose
+# FFmpeg H.264 and H.265 decoders and other codecs have a licence and patent
+# position nobody has reviewed; NOTICE says no such build may be distributed
+# until someone has. Until the repository variable LIBWEBRTC_LICENCE_CLEARED is
+# exactly `true`, `publish` fails before it touches anything. The packages are
+# still built and tested, and kept for a week as this run's artifacts, which is
+# testing, not distribution.
+#
+# Artifact attestations need the repository to be public (or GitHub Enterprise
+# Cloud); in a private repository `publish` fails at the attestation.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+# Never cancel a release in flight: a cancelled publish can leave a draft with
+# only some of its assets, which the next run then has to clean up.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      body: ${{ steps.notes.outputs.body }}
+    steps:
+      # The whole history and every branch, for the ancestry check below.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # ⛔ A TAG IS NOT A BRANCH, AND CI DOES NOT RUN ON ONE. ci.yml runs on
+      # pushes to main and on pull requests, so a tag on a commit that never
+      # reached main (a local branch, an abandoned pull request, a detached HEAD)
+      # would be built, attested and released without a test having run on it.
+      - name: The tagged commit is on main
+        run: |
+          set -euo pipefail
+          if ! git rev-parse --verify --quiet refs/remotes/origin/main > /dev/null; then
+            echo "::error::the checkout has no origin/main to compare the tag with"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            echo "::error::$GITHUB_REF_NAME points at $GITHUB_SHA, which is not on main."
+            echo "CI never ran on this commit. Merge it to main first, then move the tag."
+            exit 1
+          fi
+          echo "$GITHUB_SHA is on main"
+
+      # Cargo.toml, CHANGELOG.md and the metainfo's newest release all name the
+      # tag's version, the CHANGELOG.md section exists and is dated, and the
+      # metainfo calls it a stable release of that date.
+      - name: Versions agree with the tag
+        run: python3 scripts/check-version.py "$GITHUB_REF_NAME"
+
+      # The server responses the app was tested against, and where they came
+      # from. A release built from a tree without them was built from a tree
+      # whose contract tests could not have run.
+      - name: The contract snapshot is present
+        run: |
+          if [ ! -s contracts/SOURCE.toml ]; then
+            echo "::error::contracts/SOURCE.toml is missing or empty"
+            exit 1
+          fi
+
+      - name: Expose the bare version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # The tag's section of CHANGELOG.md, so the release notes and the
+      # changelog cannot drift. Index-based rather than a `\[` regex so it is
+      # portable across awk flavours; it stops at the next heading or at the
+      # link definitions at the end.
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          awk -v tag="## [${version}]" '
+            index($0, tag)==1 {cap=1; next}
+            index($0, "## [")==1 && cap==1 {cap=0}
+            substr($0,1,1)=="[" && cap==1 {exit}
+            cap {print}
+          ' CHANGELOG.md > release-notes.md
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "::error::CHANGELOG.md's section for $version is empty"
+            exit 1
+          fi
+          # A random delimiter, so no line of the changelog can end the value
+          # early.
+          delim="body_$(openssl rand -hex 16)"
+          {
+            echo "body<<${delim}"
+            cat release-notes.md
+            echo "${delim}"
+          } >> "$GITHUB_OUTPUT"
+
+  # ⛔ READ-ONLY, DELIBERATELY. These run `cargo build`, which executes every
+  # build script in the dependency tree, so they hold no write permission and
+  # no token that could create a release; they only upload this run's artifacts.
+  deb:
+    needs: guard
+    permissions:
+      contents: read
+    uses: $/.github/workflows/deb.yml
+
+  flatpak:
+    needs: guard
+    permissions:
+      contents: read
+    uses: $/.github/workflows/flatpak.yml
+
+  # The only job that can write to the repository and the only one that can
+  # make a release public. It sees packages, never source, and runs no build.
+  publish:
+    needs: [guard, deb, flatpak]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      # Creating the release and uploading its assets.
+      contents: write
+      # Both only for the provenance attestation: id-token to obtain the OIDC
+      # token Sigstore signs against, attestations to store the result.
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # This job never checks out the repository, and `gh release` resolves its
+      # repository from the working directory's git remote unless told.
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.guard.outputs.version }}
+    steps:
+      # First, before anything is downloaded, attested or created.
+      - name: libwebrtc's licensing has been cleared for distribution
+        env:
+          CLEARED: ${{ vars.LIBWEBRTC_LICENCE_CLEARED }}
+        run: |
+          if [ "$CLEARED" != "true" ]; then
+            echo "::error::Refusing to publish: the repository variable LIBWEBRTC_LICENCE_CLEARED is '${CLEARED}', not 'true'."
+            echo "These packages are built with calls, which statically links libwebrtc, including FFmpeg's H.264 and H.265 decoders."
+            echo "NOTICE says no build with calls may be distributed until the licence and patent position of those codecs has been reviewed."
+            echo "Set the variable to true only once that review has cleared it. The packages this run built are its artifacts, for testing."
+            exit 1
+          fi
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: district-ai-*
+          merge-multiple: true
+          path: assets
+
+      # ⛔ BY NAME, NOT BY COUNT. A tree whose version drifted from the tag, or a
+      # package built for the wrong architecture, still makes two files. These
+      # are the names README.md tells users to download.
+      - name: The two release assets are exactly what was expected
+        run: |
+          set -euo pipefail
+          expected="$(printf '%s\n' \
+            "district-ai_${VERSION}-1_amd64.deb" \
+            "district-ai_${VERSION}_x86_64.flatpak" | sort)"
+          actual="$(cd assets && find . -type f -printf '%f\n' | sort)"
+          if [ "$expected" != "$actual" ]; then
+            echo "::error::the built assets are not the two names a release must carry"
+            diff <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") || true
+            exit 1
+          fi
+          printf '%s\n' "$actual"
+
+      # Signed provenance over the bytes a user downloads, verifiable with:
+      #   gh attestation verify district-ai_0.1.0-1_amd64.deb --repo distronode-corporation/district-linux
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: assets/*
+
+      # README.md promises every asset carries an attestation, and this is where
+      # that is tested, before anything is public.
+      - name: The attestations verify
+        run: |
+          set -euo pipefail
+          for f in assets/*; do
+            for attempt in 1 2 3 4 5; do
+              if gh attestation verify "$f" --repo "$GITHUB_REPOSITORY"; then
+                continue 2
+              fi
+              echo "attestation for $(basename "$f") not queryable yet (attempt $attempt)"
+              sleep 15
+            done
+            echo "::error::no verifiable attestation for $(basename "$f")"
+            exit 1
+          done
+
+      # A draft first: invisible to users and to the releases API's `latest`, so
+      # anything above or below can fail without a half-made release showing.
+      - name: Create the draft release
+        env:
+          NOTES: ${{ needs.guard.outputs.body }}
+        run: |
+          set -euo pipefail
+          # A leftover draft from a failed run is deleted and made again; a
+          # release that is already public is never touched. `gh release delete`
+          # leaves the tag alone.
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = "true" ]; then
+              echo "deleting a leftover draft for $TAG"
+              gh release delete "$TAG" --yes
+            else
+              echo "::error::$TAG is already published. Refusing to modify a public release."
+              exit 1
+            fi
+          fi
+          # The notes arrive through the environment, never interpolated into
+          # this script: they are changelog text.
+          printf '%s\n' "$NOTES" > release-notes.md
+          gh release create "$TAG" --draft --verify-tag \
+            --title "District AI for Linux $TAG" \
+            --notes-file release-notes.md assets/*
+
+      # The same names again, against what GitHub stored: the check above proves
+      # the files existed on this runner, this one that each upload succeeded.
+      - name: GitHub holds both assets
+        run: |
+          set -euo pipefail
+          expected="$(printf '%s\n' \
+            "district-ai_${VERSION}-1_amd64.deb" \
+            "district-ai_${VERSION}_x86_64.flatpak" | sort)"
+          actual="$(gh release view "$TAG" --json assets --jq '.assets[].name' | sort)"
+          if [ "$expected" != "$actual" ]; then
+            echo "::error::the draft does not hold the expected assets; leaving it as a draft"
+            diff <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") || true
+            exit 1
+          fi
+
+      - name: Publish
+        run: gh release edit "$TAG" --draft=false --latest

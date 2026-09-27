@@ -1,0 +1,13 @@
+# actionlint's configuration, for running it by hand (CI runs zizmor, not
+# actionlint):
+#
+#   docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -no-color
+paths:
+  .github/workflows/release.yml:
+    ignore:
+      # release.yml calls deb.yml and flatpak.yml with GitHub's self-repository
+      # syntax (`uses: $/...`, since July 2026: the calling workflow's own
+      # repository at the commit that is running), which zizmor asks for and
+      # actionlint 1.7.12, the newest release, predates. Only that message is
+      # ignored, and only in this file.
+      - 'reusable workflow call "\$/\.github/workflows/(deb|flatpak)\.yml" at "uses" is not following the format'
