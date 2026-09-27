@@ -11,6 +11,7 @@ use district_api::{
     ApiError, CODE_REGIONS_DEGRADED, FALLBACK_MESSAGE, RetryReason, TokenError, TransportKind,
     UnauthorizedReason,
 };
+use district_live::LiveError;
 
 use crate::session::SessionEnd;
 
@@ -35,6 +36,16 @@ const KEYRING_UNAVAILABLE: &str = "Your sign-in could not be read because no key
 const KEYRING_LOCKED: &str = "Your keyring is locked. Unlock it, then try again.";
 const STORAGE_FAILED: &str =
     "Your sign-in could not be read or saved on this computer. Please try again.";
+const LIVE_FORBIDDEN: &str = "Live updates are not available to you in this workspace. New \
+    calls and messages appear when you refresh.";
+const LIVE_UNUSABLE: &str = "Live updates could not be started, so new calls and messages \
+    appear when you refresh. Updating the app may fix it.";
+pub(crate) const TOO_MANY_ATTACHMENTS: &str = "You can attach up to 5 images to one message.";
+pub(crate) const UNSUPPORTED_ATTACHMENT: &str =
+    "Only JPEG, PNG, GIF or WebP images can be attached.";
+pub(crate) const ATTACHMENT_SIZE: &str = "Attachments must be between 1 byte and 5 MB.";
+pub(crate) const UNREADABLE_ATTACHMENT: &str =
+    "That image could not be read. Try picking it again.";
 
 /// What to tell the user about one failure.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -122,6 +133,19 @@ impl FailureText {
         })
     }
 
+    /// The text for live updates that stopped for good. Only the credential's
+    /// own failure can say more than "refresh by hand": the others need an update
+    /// of the app or a change of membership, which no retry brings about.
+    pub fn from_live_error(error: &LiveError) -> Self {
+        match error {
+            LiveError::Mint(error) => Self::from_api_error(error),
+            LiveError::Forbidden { .. } => Self::final_(LIVE_FORBIDDEN),
+            LiveError::InvalidGrant | LiveError::Endpoint(_) | LiveError::Protocol => {
+                Self::final_(LIVE_UNUSABLE)
+            }
+        }
+    }
+
     /// "Affected regions: EU, APAC", or `None` when no region was named.
     pub fn regions_line(&self) -> Option<String> {
         (!self.degraded_regions.is_empty())
@@ -138,8 +162,15 @@ impl FailureText {
         }
     }
 
+    /// A success that did not carry what a success carries: a call read with no
+    /// call in it, a create with no new id. The service and this build disagree
+    /// about the answer's shape.
+    pub(crate) fn unexpected() -> Self {
+        Self::final_(UNEXPECTED_RESPONSE)
+    }
+
     /// A failure a retry cannot fix.
-    fn final_(message: impl Into<String>) -> Self {
+    pub(crate) fn final_(message: impl Into<String>) -> Self {
         Self {
             retryable: false,
             ..Self::retryable(message)

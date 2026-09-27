@@ -842,6 +842,19 @@ fn a_signed_in_action_does_nothing_when_nobody_is_signed_in() {
         Event::DeleteAccount,
         Event::DismissNotice,
         Event::UrlOpenFailed,
+        Event::WindowVisible(false),
+        Event::Inbox(district_core::InboxEvent::Search("roof".to_owned())),
+        Event::Thread(district_core::ThreadEvent::Send),
+        Event::Calls(district_core::CallsEvent::LoadMore),
+        Event::Contacts(district_core::ContactsEvent::StartCreate),
+        Event::OpenNotification(district_core::NotificationTarget::Message {
+            workspace_id: "ws".to_owned(),
+            message_id: "m".to_owned(),
+        }),
+        Event::Live(district_live::WorkspaceUpdate {
+            workspace_id: "ws".to_owned(),
+            update: district_live::LiveUpdate::Connected,
+        }),
     ] {
         assert!(model.update(event.clone()).is_empty(), "{event:?}");
     }

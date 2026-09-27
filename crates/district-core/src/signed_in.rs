@@ -2,21 +2,32 @@
 //! list, the screen showing, and each screen's state.
 //!
 //! It all lives in one value that is dropped at sign-out, so nothing from one
-//! session can be shown in the next.
+//! session can be shown in the next. The screens of the open workspace are
+//! dropped with it too when another workspace is opened, so nothing from one
+//! workspace can be shown under another's name.
+//!
+//! The steps for each screen live beside its state (`inbox.rs`, `thread.rs`,
+//! `calls.rs`, `contacts.rs`, `live.rs`); this file holds what they share:
+//! navigation, the workspace switch and the overview.
 
 use district_api::ApiError;
 use district_model::{
-    DeviceListResponse, DeviceRevokeResponse, OverviewResponse, WorkspaceListResponse,
+    DeviceListResponse, DeviceRevokeResponse, OverviewResponse, ThreadRef, WorkspaceListResponse,
 };
 
 use crate::account::ACCOUNT_DELETION_PATH;
+use crate::calls::{CallDetailScreen, CallLog};
+use crate::contacts::{BlockedScreen, ContactDetailScreen, ContactsScreen};
 use crate::devices::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen};
 use crate::failure::FailureText;
-use crate::model::{CoreConfig, Effect, Slot, Ticket, Tickets};
+use crate::inbox::InboxScreen;
+use crate::live::LiveState;
+use crate::model::{CoreConfig, Effect, Slot, Ticket, Tickets, WORKSPACE_SLOTS};
 use crate::overview::{OverviewContent, OverviewScreen, SETUP_WEB_PATH, workspace_mismatch};
 use crate::role::Capabilities;
 use crate::route::Route;
-use crate::session::{Identity, Notice, SessionEnd, SignOutScope};
+use crate::session::{Identity, Notice, SignOutScope};
+use crate::thread::ThreadScreen;
 use crate::workspaces::{self, Resolved, WorkspacesState};
 
 /// The signed-in session and its screens.
@@ -34,25 +45,45 @@ pub struct SignedIn {
     pub devices: DevicesScreen,
     /// A notice over every screen until it is dismissed.
     pub notice: Option<Notice>,
+    /// How many messages in the open workspace nobody has read, for the inbox
+    /// badge. `None` until the count has been read: a count that could not be
+    /// read is no badge, never a zero.
+    pub unread: Option<i64>,
+    /// The inbox list and its search.
+    pub inbox: InboxScreen,
+    /// The open thread, while [`Route::Thread`] shows.
+    pub thread: Option<ThreadScreen>,
+    /// The call log.
+    pub calls: CallLog,
+    /// The open call, while [`Route::CallDetail`] shows.
+    pub call: Option<CallDetailScreen>,
+    /// The contacts list and the form that adds one.
+    pub contacts: ContactsScreen,
+    /// The open contact, while [`Route::ContactDetail`] shows.
+    pub contact: Option<ContactDetailScreen>,
+    /// The blocked callers.
+    pub blocked: BlockedScreen,
+    /// The open workspace's live updates.
+    pub live: LiveState,
+    /// Whether the main window is showing, as the app last reported it.
+    pub window_visible: bool,
 }
 
 /// What a signed-in step decided.
 pub(crate) enum Next {
     /// Stay signed in, and run these.
     Stay(Vec<Effect>),
-    /// The session ended.
-    End(SessionEnd),
     /// Sign out.
     SignOut(SignOutScope),
 }
 
 /// Nothing to do.
-fn stay() -> Next {
+pub(crate) fn stay() -> Next {
     Next::Stay(Vec::new())
 }
 
 impl SignedIn {
-    pub(crate) fn new(identity: Identity, notice: Option<Notice>) -> Self {
+    pub(crate) fn new(identity: Identity, notice: Option<Notice>, window_visible: bool) -> Self {
         Self {
             identity,
             workspaces: WorkspacesState::Loading,
@@ -60,6 +91,16 @@ impl SignedIn {
             overview: OverviewScreen::Loading,
             devices: DevicesScreen::default(),
             notice,
+            unread: None,
+            inbox: InboxScreen::default(),
+            thread: None,
+            calls: CallLog::default(),
+            call: None,
+            contacts: ContactsScreen::default(),
+            contact: None,
+            blocked: BlockedScreen::default(),
+            live: LiveState::default(),
+            window_visible,
         }
     }
 
@@ -88,39 +129,101 @@ impl SignedIn {
         if !open || !self.capabilities().allows(&route) {
             return stay();
         }
-        let effects = if route == Route::Devices {
-            // A fresh list every visit. A sign-out still being sent keeps the
-            // screen busy, so its answer lands on the new visit.
-            self.devices = DevicesScreen {
-                busy: self.devices.busy,
-                ..DevicesScreen::default()
+        if let Route::Thread { thread_key } = &route {
+            // A key of a form this build does not know names a thread it cannot
+            // read; opening it would show an empty thread, which reads as lost
+            // history.
+            let Some(thread) = ThreadRef::from_thread_key(thread_key) else {
+                return stay();
             };
-            self.load_devices(tickets)
-        } else {
-            Vec::new()
-        };
-        self.route = route;
-        Next::Stay(effects)
+            let mut effects = self.leave(&route, tickets);
+            effects.extend(self.open_thread(thread_key.clone(), thread, tickets));
+            self.route = route;
+            return Next::Stay(effects);
+        }
+        Next::Stay(self.show(route, tickets))
     }
 
-    pub(crate) fn back(&mut self) -> Next {
-        if let Some(parent) = self.route.parent() {
-            self.route = parent;
+    /// Leaves the current screen for `route` and reads what `route` shows.
+    pub(crate) fn show(&mut self, route: Route, tickets: &mut Tickets) -> Vec<Effect> {
+        let mut effects = self.leave(&route, tickets);
+        self.route = route;
+        effects.extend(self.enter(tickets));
+        effects
+    }
+
+    /// Closes the detail screen showing, unless `next` is the same screen.
+    fn leave(&mut self, next: &Route, tickets: &mut Tickets) -> Vec<Effect> {
+        if self.route == *next {
+            return Vec::new();
         }
-        stay()
+        self.close_call(tickets);
+        self.close_contact(tickets);
+        self.close_thread(tickets)
+    }
+
+    /// What showing the current route needs read. Every visit to a list reads
+    /// it again, and what it showed stays until the answer lands.
+    fn enter(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
+        match self.route.clone() {
+            Route::Devices => {
+                // A fresh list every visit. A sign-out still being sent keeps the
+                // screen busy, so its answer lands on the new visit.
+                self.devices = DevicesScreen {
+                    busy: self.devices.busy,
+                    ..DevicesScreen::default()
+                };
+                self.load_devices(tickets)
+            }
+            Route::Inbox => self.enter_inbox(tickets),
+            Route::Calls => self.enter_calls(tickets),
+            Route::CallDetail { call_id } => self.open_call(call_id, tickets),
+            Route::Contacts => self.enter_contacts(tickets),
+            Route::ContactDetail { contact_id } => self.open_contact(contact_id, tickets),
+            Route::BlockedContacts => self.load_blocked(tickets),
+            // A thread is opened by `navigate`, which reads its key first.
+            Route::Overview | Route::Account | Route::Workspace(_) | Route::Thread { .. } => {
+                Vec::new()
+            }
+        }
+    }
+
+    pub(crate) fn back(&mut self, tickets: &mut Tickets) -> Next {
+        let Some(parent) = self.route.parent() else {
+            return stay();
+        };
+        let effects = self.leave(&parent, tickets);
+        self.route = parent;
+        Next::Stay(effects)
     }
 
     pub(crate) fn refresh(&mut self, tickets: &mut Tickets) -> Next {
         if self.route == Route::Devices {
             return Next::Stay(self.load_devices(tickets));
         }
+        let mut effects = self.rewatch(tickets);
         let ready = matches!(self.workspaces, WorkspacesState::Ready(_));
-        if ready && self.route != Route::Overview {
-            return stay();
+        if !ready || self.route == Route::Overview {
+            effects.extend(self.refresh_overview(ready, tickets));
+            return Next::Stay(effects);
         }
-        // The overview, or any screen while no workspace is open: read the
-        // workspace list again, then the overview. What is showing stays until
-        // the answer arrives.
+        effects.extend(match self.route {
+            Route::Inbox => self.refresh_inbox(tickets),
+            Route::Thread { .. } => self.refresh_thread(tickets),
+            Route::Calls => self.enter_calls(tickets),
+            Route::CallDetail { .. } => self.refresh_call(tickets),
+            Route::Contacts => self.enter_contacts(tickets),
+            Route::ContactDetail { .. } => self.refresh_contact(tickets),
+            Route::BlockedContacts => self.load_blocked(tickets),
+            _ => Vec::new(),
+        });
+        Next::Stay(effects)
+    }
+
+    /// The overview, or any screen while no workspace is open: read the
+    /// workspace list again, then the overview. What is showing stays until the
+    /// answer arrives.
+    fn refresh_overview(&mut self, ready: bool, tickets: &mut Tickets) -> Vec<Effect> {
         match &mut self.overview {
             OverviewScreen::Loaded(content) => content.refreshing = true,
             other => *other = OverviewScreen::Loading,
@@ -131,32 +234,65 @@ impl SignedIn {
         tickets.cancel(Slot::Overview);
         tickets.cancel(Slot::Setup);
         let ticket = tickets.issue(Slot::Workspaces);
-        Next::Stay(vec![Effect::LoadWorkspaces { ticket }])
+        vec![Effect::LoadWorkspaces { ticket }]
     }
 
     pub(crate) fn select(&mut self, id: &str, tickets: &mut Tickets) -> Next {
+        Next::Stay(self.switch_to(id, tickets).unwrap_or_default())
+    }
+
+    /// Opens the listed workspace `id`, or answers `None` when it is not listed
+    /// or already open.
+    pub(crate) fn switch_to(&mut self, id: &str, tickets: &mut Tickets) -> Option<Vec<Effect>> {
         let WorkspacesState::Ready(workspaces) = &mut self.workspaces else {
-            return stay();
+            return None;
         };
         if !workspaces.select(id) {
-            return stay();
+            return None;
         }
+        let mut effects = self.close_screens(tickets);
         self.overview = OverviewScreen::Loading;
-        self.route = self.route.after_workspace_switch();
         // A list still being read would choose a workspace by the old memory
         // when it lands, and undo this choice.
         tickets.cancel(Slot::Workspaces);
         tickets.cancel(Slot::Setup);
+        effects.push(Effect::RememberWorkspace {
+            workspace_id: Some(id.to_owned()),
+        });
+        effects.extend(self.open_workspace(id, tickets));
         let ticket = tickets.issue(Slot::Overview);
-        Next::Stay(vec![
-            Effect::RememberWorkspace {
-                workspace_id: Some(id.to_owned()),
-            },
-            Effect::LoadOverview {
-                ticket,
-                workspace_id: id.to_owned(),
-            },
-        ])
+        effects.push(Effect::LoadOverview {
+            ticket,
+            workspace_id: id.to_owned(),
+        });
+        Some(effects)
+    }
+
+    /// A workspace has just been opened: watch it, read its unread count, and
+    /// read what the screen showing needs.
+    fn open_workspace(&mut self, id: &str, tickets: &mut Tickets) -> Vec<Effect> {
+        let mut effects = vec![self.watch(id, tickets)];
+        effects.extend(self.load_unread(tickets));
+        self.route = self.route.after_workspace_switch();
+        if self.route.is_workspace_scoped() {
+            effects.extend(self.enter(tickets));
+        }
+        effects
+    }
+
+    /// Drops every screen of the open workspace, and sends a reply still waiting
+    /// to be saved.
+    fn close_screens(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
+        let effects = self.close_thread(tickets);
+        tickets.cancel_each(&WORKSPACE_SLOTS);
+        self.unread = None;
+        self.inbox = InboxScreen::default();
+        self.calls = CallLog::default();
+        self.call = None;
+        self.contacts = ContactsScreen::default();
+        self.contact = None;
+        self.blocked = BlockedScreen::default();
+        effects
     }
 
     pub(crate) fn open_finish_setup(&mut self, config: &CoreConfig) -> Next {
@@ -194,11 +330,7 @@ impl SignedIn {
         let response = match result {
             Ok(response) => response,
             Err(error) => {
-                if let Some(end) = SessionEnd::from_api_error(&error) {
-                    return Next::End(end);
-                }
-                self.close_workspace(workspaces::failed(&error), tickets);
-                return stay();
+                return Next::Stay(self.close_workspace(workspaces::failed(&error), tickets));
             }
         };
         let previous = self.active_id();
@@ -211,14 +343,15 @@ impl SignedIn {
             effects.push(Effect::RememberWorkspace { workspace_id: None });
         }
         let WorkspacesState::Ready(workspaces) = &state else {
-            self.close_workspace(state, tickets);
+            effects.extend(self.close_workspace(state, tickets));
             return Next::Stay(effects);
         };
         let active = workspaces.active().id.clone();
         self.workspaces = state;
         if previous.as_deref() != Some(active.as_str()) {
+            effects.extend(self.close_screens(tickets));
             self.overview = OverviewScreen::Loading;
-            self.route = self.route.after_workspace_switch();
+            effects.extend(self.open_workspace(&active, tickets));
         }
         tickets.cancel(Slot::Setup);
         let ticket = tickets.issue(Slot::Overview);
@@ -334,12 +467,7 @@ impl SignedIn {
                     })
                     .collect(),
             ),
-            Err(error) => {
-                if let Some(end) = SessionEnd::from_api_error(&error) {
-                    return Next::End(end);
-                }
-                DevicesList::Failed(FailureText::from_api_error(&error))
-            }
+            Err(error) => DevicesList::Failed(FailureText::from_api_error(&error)),
         };
         stay()
     }
@@ -423,9 +551,6 @@ impl SignedIn {
     }
 
     fn write_failed(&mut self, error: &ApiError) -> Next {
-        if let Some(end) = SessionEnd::from_api_error(error) {
-            return Next::End(end);
-        }
         self.devices.failure = Some(FailureText::from_api_error(error));
         stay()
     }
@@ -437,29 +562,39 @@ impl SignedIn {
     }
 
     fn overview_failed(&mut self, error: &ApiError, tickets: &mut Tickets) -> Next {
-        if let Some(end) = SessionEnd::from_api_error(error) {
-            return Next::End(end);
-        }
         match error {
             // What the service answers an account with no workspace at all.
-            ApiError::NotFound(_) => self.close_workspace(WorkspacesState::NoWorkspaces, tickets),
-            other => self.overview = OverviewScreen::Failed(FailureText::from_api_error(other)),
+            ApiError::NotFound(_) => {
+                Next::Stay(self.close_workspace(WorkspacesState::NoWorkspaces, tickets))
+            }
+            other => {
+                self.overview = OverviewScreen::Failed(FailureText::from_api_error(other));
+                stay()
+            }
         }
-        stay()
     }
 
     /// No workspace is open any more: `state` says why.
-    fn close_workspace(&mut self, state: WorkspacesState, tickets: &mut Tickets) {
+    fn close_workspace(&mut self, state: WorkspacesState, tickets: &mut Tickets) -> Vec<Effect> {
+        let mut effects = self.close_screens(tickets);
+        effects.extend(self.unwatch(tickets));
         self.workspaces = state;
         self.overview = OverviewScreen::Loading;
         tickets.cancel(Slot::Overview);
         tickets.cancel(Slot::Setup);
+        effects
     }
 
-    fn active_id(&self) -> Option<String> {
+    /// The open workspace's id, when one is open.
+    pub(crate) fn active_id(&self) -> Option<String> {
         match &self.workspaces {
             WorkspacesState::Ready(workspaces) => Some(workspaces.active().id.clone()),
             _ => None,
         }
+    }
+
+    /// The open workspace's id, for a request only made while one is open.
+    pub(crate) fn workspace_id(&self) -> String {
+        self.active_id().unwrap_or_default()
     }
 }

@@ -68,6 +68,7 @@ pub fn ticket(effect: &Effect) -> Ticket {
     match effect {
         Effect::RestoreSession { ticket }
         | Effect::RetryAfter { ticket, .. }
+        | Effect::Wait { ticket, .. }
         | Effect::BeginSignIn { ticket }
         | Effect::CompleteSignIn { ticket, .. }
         | Effect::SignOut { ticket }
@@ -76,7 +77,28 @@ pub fn ticket(effect: &Effect) -> Ticket {
         | Effect::LoadSetupStatus { ticket, .. }
         | Effect::LoadDevices { ticket }
         | Effect::RevokeDevice { ticket, .. }
-        | Effect::RevokeAllDevices { ticket } => *ticket,
+        | Effect::RevokeAllDevices { ticket }
+        | Effect::LoadConversations { ticket, .. }
+        | Effect::LoadUnreadCount { ticket, .. }
+        | Effect::LoadDraftKeys { ticket, .. }
+        | Effect::SearchMessages { ticket, .. }
+        | Effect::LoadTimeline { ticket, .. }
+        | Effect::LoadDraft { ticket, .. }
+        | Effect::SaveDraft { ticket, .. }
+        | Effect::DeleteDraft { ticket, .. }
+        | Effect::SendMessage { ticket, .. }
+        | Effect::UploadMedia { ticket, .. }
+        | Effect::GenerateAiDraft { ticket, .. }
+        | Effect::MarkRead { ticket, .. }
+        | Effect::FindMessageThread { ticket, .. }
+        | Effect::LoadCalls { ticket, .. }
+        | Effect::LoadCall { ticket, .. }
+        | Effect::LoadTranscript { ticket, .. }
+        | Effect::LoadContacts { ticket, .. }
+        | Effect::LoadContact { ticket, .. }
+        | Effect::CreateContact { ticket, .. }
+        | Effect::WriteContact { ticket, .. }
+        | Effect::LoadBlocked { ticket, .. } => *ticket,
         other => panic!("{other:?} carries no ticket"),
     }
 }

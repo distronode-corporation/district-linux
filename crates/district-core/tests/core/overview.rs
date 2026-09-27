@@ -68,7 +68,17 @@ fn empty_list() -> WorkspaceListResponse {
 fn the_remembered_workspace_opens_first() {
     let (model, effects) = listed(Some(CLIENT));
     assert_eq!(workspaces(&model).active().id, CLIENT);
-    assert_eq!(effects.len(), 1, "{effects:?}");
+    // Its live updates and its unread count start with it.
+    let [
+        Effect::WatchLive { workspace_ids, .. },
+        Effect::LoadUnreadCount { workspace_id, .. },
+        Effect::LoadOverview { .. },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(workspace_ids, &[CLIENT.to_owned()]);
+    assert_eq!(workspace_id, CLIENT);
     assert_eq!(load_overview(&effects).1, CLIENT);
     assert_eq!(signed_in(&model).overview, OverviewScreen::Loading);
 }
@@ -95,7 +105,7 @@ fn a_remembered_workspace_that_has_gone_is_forgotten() {
     let (model, effects) = listed(Some("ws-removed"));
     assert_eq!(workspaces(&model).active().id, VIEWER);
     assert_eq!(effects[0], Effect::RememberWorkspace { workspace_id: None });
-    assert!(matches!(effects[1], Effect::LoadOverview { .. }));
+    assert!(matches!(effects[3], Effect::LoadOverview { .. }));
 }
 
 /// An incomplete list may simply have missed the remembered workspace's region,
@@ -110,7 +120,7 @@ fn an_incomplete_list_keeps_the_memory() {
             "district-workspace-list-partial.json",
         )),
     });
-    assert_eq!(effects.len(), 1, "{effects:?}");
+    assert_eq!(effects.len(), 3, "no memory forgotten: {effects:?}");
     let workspaces = workspaces(&model);
     assert_eq!(workspaces.active().id, AGENCY);
     assert_eq!(
@@ -613,7 +623,9 @@ fn refreshing_with_no_workspace_open_reads_the_list_again_from_any_screen() {
 #[test]
 fn refreshing_a_screen_this_milestone_does_not_have_does_nothing() {
     let (mut model, _) = loaded(AGENCY, "agency");
-    model.update(Event::Navigate(Route::Calls));
+    model.update(Event::Navigate(Route::Workspace(
+        WorkspaceSection::Messaging,
+    )));
     assert!(model.update(Event::Refresh).is_empty());
     model.update(Event::Navigate(Route::Account));
     assert!(model.update(Event::Refresh).is_empty());
@@ -708,9 +720,12 @@ fn workspace_screens_need_an_open_workspace_and_the_account_does_not() {
     assert_eq!(signed_in(&model).route, Route::Overview);
 
     let (mut model, _) = loaded(AGENCY, "agency");
-    let effects = model.update(Event::Navigate(Route::Inbox));
+    let effects = model.update(Event::Navigate(Route::Workspace(WorkspaceSection::Hub)));
     assert!(effects.is_empty());
-    assert_eq!(signed_in(&model).route, Route::Inbox);
+    assert_eq!(
+        signed_in(&model).route,
+        Route::Workspace(WorkspaceSection::Hub)
+    );
 }
 
 #[test]

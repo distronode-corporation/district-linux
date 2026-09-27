@@ -15,17 +15,39 @@
 //! for a workspace the user has already left, a devices list read before a
 //! sign-out, or anything from a session that has since ended, can never land on
 //! the wrong screen. A session change forgets every ticket at once.
+//!
+//! A few slots wait for several results at once, one per row or per message
+//! (unblocking callers from the blocked list, looking up the thread of each
+//! message that arrives), and remember a key with each ticket.
+//!
+//! # A failure that ends the session
+//!
+//! Every result that failed because the session is over ends it, in one place
+//! ([`Model::update`]), before any screen sees the result, and only when the
+//! result is still awaited: a stale answer from a screen already left cannot sign
+//! anybody out.
 
 use std::time::Duration;
 
 use district_api::{ApiError, ReauthReason, RetryReason, TokenError};
 use district_auth::{AccessClaims, LoginError, SignOutReport};
+use district_live::WorkspaceUpdate;
 use district_model::{
-    DeviceListResponse, DeviceRevokeResponse, OverviewResponse, WorkspaceListResponse,
+    AiDraftResponse, BlockedContactsResponse, CallDetailResponse, CallSummary,
+    CallTranscriptResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
+    ConversationsResponse, CreateContactRequest, DeviceListResponse, DeviceRevokeResponse,
+    DraftListResponse, DraftResponse, DraftSaveRequest, MarkReadResponse, MediaUploadResponse,
+    MessageSearchResponse, MessageThreadResponse, OverviewResponse, SendMessageRequest,
+    SendMessageResponse, ThreadRef, TimelineCursor, TimelineResponse, UnreadCountResponse,
+    WorkspaceListResponse,
 };
 
 use crate::account::AccountView;
+use crate::calls::CallsEvent;
+use crate::contacts::{ContactWrite, ContactWritten, ContactsEvent};
 use crate::devices::DevicesEvent;
+use crate::inbox::InboxEvent;
+use crate::live::{Notification, NotificationTarget};
 use crate::role::Capabilities;
 use crate::route::Route;
 use crate::session::{
@@ -33,6 +55,7 @@ use crate::session::{
     SignOutOutcome, SignOutScope, SignedInSession, SignedOut, SignedOutWhy, SigningIn, SigningOut,
 };
 use crate::signed_in::{Next, SignedIn};
+use crate::thread::{PickedAttachment, ThreadEvent};
 
 /// How long the app waits before its first attempt to resume a session again
 /// after the network was down or the refresh was rate limited. Each further
@@ -61,7 +84,10 @@ impl CoreConfig {
 
 /// Pairs an effect with the event that reports its result. See the module
 /// documentation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+///
+/// Tickets are issued in increasing order, so a later one compares greater. That
+/// is what [`Effect::WatchLive`] relies on to apply only the newest watched set.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Ticket(u64);
 
 /// Something that happened: an action of the user's, forwarded by the app, or
@@ -82,7 +108,7 @@ pub enum Event {
     /// Sign out of this device, from the account screen.
     SignOut,
     /// Go to a screen. Refused when the member's role or the workspace state
-    /// does not allow it.
+    /// does not allow it, and for a thread whose key this build cannot read.
     Navigate(Route),
     /// Go back to the current screen's parent.
     Back,
@@ -96,8 +122,24 @@ pub enum Event {
     DeleteAccount,
     /// Something on the devices screen.
     Devices(DevicesEvent),
+    /// Something on the inbox list.
+    Inbox(InboxEvent),
+    /// Something in the open thread.
+    Thread(ThreadEvent),
+    /// Something on the call log or a call.
+    Calls(CallsEvent),
+    /// Something on the contacts screens.
+    Contacts(ContactsEvent),
     /// Dismiss the notice over the signed-in screens.
     DismissNotice,
+    /// The main window was shown (`true`) or hidden (`false`). The app starts
+    /// visible.
+    WindowVisible(bool),
+    /// The user activated a notification the app showed.
+    OpenNotification(NotificationTarget),
+    /// A live update from the telemetry hub, forwarded by the app from the
+    /// receiver [`LiveHub::new`](crate::LiveHub::new) handed it.
+    Live(WorkspaceUpdate),
 
     /// The start-up check finished.
     SessionRestored {
@@ -109,6 +151,11 @@ pub enum Event {
     /// The wait asked for by [`Effect::RetryAfter`] is over.
     RetryDue {
         /// The ticket of [`Effect::RetryAfter`].
+        ticket: Ticket,
+    },
+    /// The wait asked for by [`Effect::Wait`] is over.
+    WaitOver {
+        /// The ticket of [`Effect::Wait`].
         ticket: Ticket,
     },
     /// The browser was asked to open the sign-in page.
@@ -180,13 +227,267 @@ pub enum Event {
         /// The service's answer.
         result: Result<DeviceRevokeResponse, ApiError>,
     },
+    /// The inbox's threads were read.
+    ConversationsLoaded {
+        /// The ticket of [`Effect::LoadConversations`].
+        ticket: Ticket,
+        /// The threads.
+        result: Result<ConversationsResponse, ApiError>,
+    },
+    /// The unread count was read.
+    UnreadCountLoaded {
+        /// The ticket of [`Effect::LoadUnreadCount`].
+        ticket: Ticket,
+        /// The count.
+        result: Result<UnreadCountResponse, ApiError>,
+    },
+    /// The member's saved replies were read, for the draft badges.
+    DraftKeysLoaded {
+        /// The ticket of [`Effect::LoadDraftKeys`].
+        ticket: Ticket,
+        /// The saved replies.
+        result: Result<DraftListResponse, ApiError>,
+    },
+    /// A message search finished.
+    SearchLoaded {
+        /// The ticket of [`Effect::SearchMessages`].
+        ticket: Ticket,
+        /// The matches.
+        result: Result<MessageSearchResponse, ApiError>,
+    },
+    /// A page of the open thread was read.
+    TimelineLoaded {
+        /// The ticket of [`Effect::LoadTimeline`].
+        ticket: Ticket,
+        /// The page.
+        result: Result<TimelineResponse, ApiError>,
+    },
+    /// The open thread's saved reply was read.
+    DraftLoaded {
+        /// The ticket of [`Effect::LoadDraft`].
+        ticket: Ticket,
+        /// The saved reply, if there is one.
+        result: Result<DraftResponse, ApiError>,
+    },
+    /// A saved reply was written or deleted.
+    DraftWritten {
+        /// The ticket of [`Effect::SaveDraft`] or [`Effect::DeleteDraft`].
+        ticket: Ticket,
+        /// Whether it was.
+        result: Result<(), ApiError>,
+    },
+    /// A message was sent, or refused.
+    MessageSent {
+        /// The ticket of [`Effect::SendMessage`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SendMessageResponse, ApiError>,
+    },
+    /// An attachment was uploaded, or refused.
+    MediaUploaded {
+        /// The ticket of [`Effect::UploadMedia`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<MediaUploadResponse, ApiError>,
+    },
+    /// A reply was written by the model, or the request failed.
+    AiDraftWritten {
+        /// The ticket of [`Effect::GenerateAiDraft`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<AiDraftResponse, ApiError>,
+    },
+    /// A thread was marked read.
+    MarkedRead {
+        /// The ticket of [`Effect::MarkRead`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<MarkReadResponse, ApiError>,
+    },
+    /// The thread a message belongs to was looked up.
+    MessageThreadFound {
+        /// The ticket of [`Effect::FindMessageThread`].
+        ticket: Ticket,
+        /// The thread.
+        result: Result<MessageThreadResponse, ApiError>,
+    },
+    /// A page of the call log was read.
+    CallsLoaded {
+        /// The ticket of [`Effect::LoadCalls`].
+        ticket: Ticket,
+        /// The calls.
+        result: Result<Vec<CallSummary>, ApiError>,
+    },
+    /// One call was read.
+    CallLoaded {
+        /// The ticket of [`Effect::LoadCall`].
+        ticket: Ticket,
+        /// The call.
+        result: Result<CallDetailResponse, ApiError>,
+    },
+    /// One call's transcript was read.
+    TranscriptLoaded {
+        /// The ticket of [`Effect::LoadTranscript`].
+        ticket: Ticket,
+        /// The transcript.
+        result: Result<CallTranscriptResponse, ApiError>,
+    },
+    /// A page of contacts was read.
+    ContactsLoaded {
+        /// The ticket of [`Effect::LoadContacts`].
+        ticket: Ticket,
+        /// The page.
+        result: Result<ContactListResponse, ApiError>,
+    },
+    /// One contact was read.
+    ContactLoaded {
+        /// The ticket of [`Effect::LoadContact`].
+        ticket: Ticket,
+        /// The contact.
+        result: Result<ContactDetailResponse, ApiError>,
+    },
+    /// A contact was created, or refused.
+    ContactCreated {
+        /// The ticket of [`Effect::CreateContact`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<ContactMutationResponse, ApiError>,
+    },
+    /// A change to a contact was made, or refused.
+    ContactWritten {
+        /// The ticket of [`Effect::WriteContact`].
+        ticket: Ticket,
+        /// What was done.
+        result: Result<ContactWritten, ApiError>,
+    },
+    /// The blocked callers were read.
+    BlockedLoaded {
+        /// The ticket of [`Effect::LoadBlocked`].
+        ticket: Ticket,
+        /// The list.
+        result: Result<BlockedContactsResponse, ApiError>,
+    },
     /// No browser would open a page from [`Effect::OpenUrl`].
     UrlOpenFailed,
 }
 
+impl Event {
+    /// The ticket and the failure of a result that came back as an API error.
+    fn api_failure(&self) -> Option<(Ticket, &ApiError)> {
+        match self {
+            Event::WorkspacesLoaded {
+                ticket,
+                result: Err(error),
+                ..
+            }
+            | Event::OverviewLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SetupStatusLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DevicesLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeviceRevoked {
+                ticket,
+                result: Err(error),
+            }
+            | Event::AllDevicesRevoked {
+                ticket,
+                result: Err(error),
+            }
+            | Event::ConversationsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::UnreadCountLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DraftKeysLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SearchLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::TimelineLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DraftLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DraftWritten {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MessageSent {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MediaUploaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::AiDraftWritten {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MarkedRead {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MessageThreadFound {
+                ticket,
+                result: Err(error),
+            }
+            | Event::CallsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::CallLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::TranscriptLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::ContactsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::ContactLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::ContactCreated {
+                ticket,
+                result: Err(error),
+            }
+            | Event::ContactWritten {
+                ticket,
+                result: Err(error),
+            }
+            | Event::BlockedLoaded {
+                ticket,
+                result: Err(error),
+            } => Some((*ticket, error)),
+            _ => None,
+        }
+    }
+}
+
 /// Something for the runner to do. Plain data: the model decides, the runner
 /// acts.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Effect {
     /// Present the refresh tokens a past sign-out could not get revoked. Once
     /// per start, signed in or not. Reports nothing back.
@@ -199,6 +500,15 @@ pub enum Effect {
     /// Wait, then report [`Event::RetryDue`].
     RetryAfter {
         /// Returned in [`Event::RetryDue`].
+        ticket: Ticket,
+        /// How long.
+        delay: Duration,
+    },
+    /// Wait, then report [`Event::WaitOver`]. The debounces (search, saving a
+    /// reply) and the research poll: each new wait replaces the one before it in
+    /// its slot, so only the last one's end does anything.
+    Wait {
+        /// Returned in [`Event::WaitOver`].
         ticket: Ticket,
         /// How long.
         delay: Duration,
@@ -272,10 +582,216 @@ pub enum Effect {
         /// The page.
         url: String,
     },
+    /// Make the set of workspaces with a live socket exactly `workspace_ids`,
+    /// empty to stop them all. Reports nothing back; the updates arrive on the
+    /// hub's receiver.
+    ///
+    /// The set is a state, not an instruction, and effects may run in any order,
+    /// so the runner applies it only when no set with a later `revision` has been
+    /// applied already. A late start can then never reopen a socket a sign-out
+    /// closed.
+    WatchLive {
+        /// Orders the sets: a later one compares greater.
+        revision: Ticket,
+        /// The workspaces to watch.
+        workspace_ids: Vec<String>,
+    },
+    /// Show a desktop notification. Reports nothing back.
+    Notify(Notification),
+    /// Read the inbox's threads.
+    LoadConversations {
+        /// Returned in [`Event::ConversationsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read how many messages nobody has read, for the badge.
+    LoadUnreadCount {
+        /// Returned in [`Event::UnreadCountLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read the member's saved replies, for the draft badges. Keys only are kept.
+    LoadDraftKeys {
+        /// Returned in [`Event::DraftKeysLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Search every message in the workspace.
+    SearchMessages {
+        /// Returned in [`Event::SearchLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// What was typed.
+        query: String,
+    },
+    /// Read a page of a thread: the newest when `older_than` is `None`.
+    LoadTimeline {
+        /// Returned in [`Event::TimelineLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The thread.
+        thread: ThreadRef,
+        /// Where to continue backwards from, or `None` for the newest page.
+        older_than: Option<TimelineCursor>,
+    },
+    /// Read the member's saved reply on a thread.
+    LoadDraft {
+        /// Returned in [`Event::DraftLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The thread's key.
+        thread_key: String,
+    },
+    /// Save the member's reply on a thread, replacing any saved before.
+    SaveDraft {
+        /// Returned in [`Event::DraftWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The reply.
+        draft: DraftSaveRequest,
+    },
+    /// Delete the member's saved reply on a thread.
+    DeleteDraft {
+        /// Returned in [`Event::DraftWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The thread's key.
+        thread_key: String,
+    },
+    /// Send a message. Billed, and sent once: never repeated by the runner.
+    SendMessage {
+        /// Returned in [`Event::MessageSent`].
+        ticket: Ticket,
+        /// The workspace that pays for it.
+        workspace_id: String,
+        /// The message.
+        message: SendMessageRequest,
+    },
+    /// Upload an image to attach to the next message.
+    UploadMedia {
+        /// Returned in [`Event::MediaUploaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The image.
+        attachment: PickedAttachment,
+    },
+    /// Have a model write a reply. Billed; only ever asked for by the user.
+    GenerateAiDraft {
+        /// Returned in [`Event::AiDraftWritten`].
+        ticket: Ticket,
+        /// The workspace that pays for it.
+        workspace_id: String,
+        /// The thread.
+        thread: ThreadRef,
+    },
+    /// Mark a thread read for everyone in the workspace.
+    MarkRead {
+        /// Returned in [`Event::MarkedRead`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The thread.
+        thread: ThreadRef,
+    },
+    /// Find the thread a message belongs to.
+    FindMessageThread {
+        /// Returned in [`Event::MessageThreadFound`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The message.
+        message_id: String,
+    },
+    /// Read a page of the call log.
+    LoadCalls {
+        /// Returned in [`Event::CallsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// At most this many.
+        limit: u32,
+        /// After skipping this many.
+        offset: u32,
+    },
+    /// Read one call.
+    LoadCall {
+        /// Returned in [`Event::CallLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The call.
+        call_id: String,
+    },
+    /// Read one call's transcript.
+    LoadTranscript {
+        /// Returned in [`Event::TranscriptLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The call.
+        call_id: String,
+    },
+    /// Read a page of contacts.
+    LoadContacts {
+        /// Returned in [`Event::ContactsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// At most this many.
+        limit: u32,
+        /// After skipping this many.
+        offset: u32,
+    },
+    /// Read one contact.
+    LoadContact {
+        /// Returned in [`Event::ContactLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The contact.
+        contact_id: String,
+    },
+    /// Create a contact.
+    CreateContact {
+        /// Returned in [`Event::ContactCreated`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The contact.
+        contact: CreateContactRequest,
+    },
+    /// Change, delete, research, clear or block a contact. Sent once.
+    WriteContact {
+        /// Returned in [`Event::ContactWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The contact.
+        contact_id: String,
+        /// What to do.
+        write: ContactWrite,
+    },
+    /// Read the blocked callers.
+    LoadBlocked {
+        /// Returned in [`Event::BlockedLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
 }
 
-/// The slots a result can be waited for in. One ticket per slot at a time.
-#[derive(Clone, Copy, Debug)]
+/// The slots a result can be waited for in. One ticket per slot at a time,
+/// except in the keyed slots, which wait for one per key.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Slot {
     Restore,
     Retry,
@@ -286,22 +802,105 @@ pub(crate) enum Slot {
     Setup,
     Devices,
     DeviceWrite,
+    Unread,
+    Conversations,
+    DraftKeys,
+    Search,
+    SearchTimer,
+    Timeline,
+    TimelineOlder,
+    DraftLoad,
+    DraftTimer,
+    DraftWrite,
+    Send,
+    Upload,
+    AiDraft,
+    MarkRead,
+    OpenLookup,
+    /// Keyed by message id.
+    MessageLookup,
+    CallLog,
+    CallLogMore,
+    CallDetail,
+    Transcript,
+    Contacts,
+    ContactsMore,
+    ContactCreate,
+    ContactDetail,
+    ContactPoll,
+    ContactWrite,
+    Blocked,
+    /// Keyed by contact id.
+    BlockedWrite,
 }
 
-const SLOTS: usize = 9;
+const SLOTS: usize = Slot::BlockedWrite as usize + 1;
 
-/// The ticket counter and the ticket awaited in each slot.
-#[derive(Debug, Default)]
+/// The slots that belong to the open workspace's screens, forgotten when it
+/// closes.
+pub(crate) const WORKSPACE_SLOTS: [Slot; 28] = [
+    Slot::Unread,
+    Slot::Conversations,
+    Slot::DraftKeys,
+    Slot::Search,
+    Slot::SearchTimer,
+    Slot::Timeline,
+    Slot::TimelineOlder,
+    Slot::DraftLoad,
+    Slot::DraftTimer,
+    Slot::DraftWrite,
+    Slot::Send,
+    Slot::Upload,
+    Slot::AiDraft,
+    Slot::MarkRead,
+    Slot::OpenLookup,
+    Slot::MessageLookup,
+    Slot::CallLog,
+    Slot::CallLogMore,
+    Slot::CallDetail,
+    Slot::Transcript,
+    Slot::Contacts,
+    Slot::ContactsMore,
+    Slot::ContactCreate,
+    Slot::ContactDetail,
+    Slot::ContactPoll,
+    Slot::ContactWrite,
+    Slot::Blocked,
+    Slot::BlockedWrite,
+];
+
+/// The ticket counter and the tickets awaited.
+#[derive(Debug)]
 pub(crate) struct Tickets {
     issued: u64,
     awaited: [Option<Ticket>; SLOTS],
+    /// Per slot: a hint that the data changed arrived while a read was already
+    /// on its way, so another read is due when it lands.
+    again: [bool; SLOTS],
+    /// The keyed slots' tickets.
+    keyed: Vec<(Slot, Ticket, String)>,
+}
+
+impl Default for Tickets {
+    fn default() -> Self {
+        Self {
+            issued: 0,
+            awaited: [None; SLOTS],
+            again: [false; SLOTS],
+            keyed: Vec::new(),
+        }
+    }
 }
 
 impl Tickets {
+    fn next(&mut self) -> Ticket {
+        self.issued += 1;
+        Ticket(self.issued)
+    }
+
     /// A new ticket, now the one awaited in `slot`.
     pub(crate) fn issue(&mut self, slot: Slot) -> Ticket {
-        self.issued += 1;
-        let ticket = Ticket(self.issued);
+        let ticket = self.next();
         self.awaited[slot as usize] = Some(ticket);
         ticket
     }
@@ -320,11 +919,73 @@ impl Tickets {
     /// Stops waiting in `slot`.
     pub(crate) fn cancel(&mut self, slot: Slot) {
         self.awaited[slot as usize] = None;
+        self.again[slot as usize] = false;
+    }
+
+    /// Whether a result is awaited in `slot`.
+    pub(crate) fn awaiting(&self, slot: Slot) -> bool {
+        self.awaited[slot as usize].is_some()
+    }
+
+    /// A read for `slot` on the strength of a hint that its data changed: a
+    /// ticket to send one now, or `None` when one is already on its way, in
+    /// which case another is due once it lands (see [`take_again`](Self::take_again)).
+    /// A burst of hints costs at most two reads.
+    pub(crate) fn refresh(&mut self, slot: Slot) -> Option<Ticket> {
+        if self.awaiting(slot) {
+            self.again[slot as usize] = true;
+            return None;
+        }
+        Some(self.issue(slot))
+    }
+
+    /// Whether a hint arrived for `slot` while its last read was on its way.
+    /// Asked once the read's result has been accepted; clears the mark.
+    pub(crate) fn take_again(&mut self, slot: Slot) -> bool {
+        std::mem::take(&mut self.again[slot as usize])
+    }
+
+    /// A new ticket awaited in `slot` for `key`, beside any awaited for other
+    /// keys.
+    pub(crate) fn issue_keyed(&mut self, slot: Slot, key: &str) -> Ticket {
+        let ticket = self.next();
+        self.keyed.push((slot, ticket, key.to_owned()));
+        ticket
+    }
+
+    /// The key `ticket` was issued for in `slot`, if it is still awaited. It is
+    /// not awaited any more.
+    pub(crate) fn accept_keyed(&mut self, slot: Slot, ticket: Ticket) -> Option<String> {
+        let index = self
+            .keyed
+            .iter()
+            .position(|(s, t, _)| *s == slot && *t == ticket)?;
+        Some(self.keyed.remove(index).2)
+    }
+
+    /// A number for [`Effect::WatchLive`], later than every one before it.
+    pub(crate) fn revision(&mut self) -> Ticket {
+        self.next()
+    }
+
+    /// Stops waiting in each of `slots`, keyed or not.
+    pub(crate) fn cancel_each(&mut self, slots: &[Slot]) {
+        for slot in slots {
+            self.cancel(*slot);
+        }
+        self.keyed.retain(|(slot, _, _)| !slots.contains(slot));
+    }
+
+    /// Whether `ticket` is awaited anywhere.
+    fn awaits(&self, ticket: Ticket) -> bool {
+        self.awaited.contains(&Some(ticket)) || self.keyed.iter().any(|(_, t, _)| *t == ticket)
     }
 
     /// Stops waiting in every slot, for a new session state.
     fn cancel_all(&mut self) {
         self.awaited = [None; SLOTS];
+        self.again = [false; SLOTS];
+        self.keyed.clear();
     }
 }
 
@@ -336,6 +997,9 @@ pub struct Model {
     tickets: Tickets,
     /// Attempts to resume the session that failed in a row, for the backoff.
     restore_failures: u32,
+    /// Whether the main window is showing. Kept here as well as in the session,
+    /// because it outlives any one session.
+    window_visible: bool,
 }
 
 impl Model {
@@ -353,6 +1017,7 @@ impl Model {
             }),
             tickets,
             restore_failures: 0,
+            window_visible: true,
         };
         (
             model,
@@ -393,6 +1058,9 @@ impl Model {
 
     /// Applies `event`, and returns the effects to run.
     pub fn update(&mut self, event: Event) -> Vec<Effect> {
+        if let Some(end) = self.ended_by(&event) {
+            return self.end_session(end);
+        }
         match event {
             Event::SessionRestored { ticket, result } => self.restored(ticket, result),
             Event::RetryDue { ticket } => self.retry_due(ticket),
@@ -405,8 +1073,12 @@ impl Model {
             Event::RetrySignOut => self.retry_sign_out(),
             Event::SignOutFinished { ticket, report } => self.sign_out_finished(ticket, report),
             Event::SignOut => self.signed_in(|_, _, _| Next::SignOut(SignOutScope::ThisDevice)),
+            Event::WindowVisible(visible) => {
+                self.window_visible = visible;
+                self.signed_in(|s, tickets, _| s.window_visible(visible, tickets))
+            }
             Event::Navigate(route) => self.signed_in(|s, tickets, _| s.navigate(route, tickets)),
-            Event::Back => self.signed_in(|s, _, _| s.back()),
+            Event::Back => self.signed_in(|s, tickets, _| s.back(tickets)),
             Event::Refresh => self.signed_in(|s, tickets, _| s.refresh(tickets)),
             Event::SelectWorkspace(id) => self.signed_in(|s, tickets, _| s.select(&id, tickets)),
             Event::OpenFinishSetup => self.signed_in(|s, _, config| s.open_finish_setup(config)),
@@ -414,8 +1086,21 @@ impl Model {
             Event::Devices(event) => {
                 self.signed_in(|s, tickets, _| s.devices_event(event, tickets))
             }
+            Event::Inbox(event) => self.signed_in(|s, tickets, _| s.inbox_event(event, tickets)),
+            Event::Thread(event) => self.signed_in(|s, tickets, _| s.thread_event(event, tickets)),
+            Event::Calls(event) => self.signed_in(|s, tickets, _| s.calls_event(event, tickets)),
+            Event::Contacts(event) => {
+                self.signed_in(|s, tickets, _| s.contacts_event(event, tickets))
+            }
             Event::DismissNotice => self.signed_in(|s, _, _| s.dismiss_notice()),
             Event::UrlOpenFailed => self.signed_in(|s, _, _| s.url_open_failed()),
+            Event::OpenNotification(target) => {
+                self.signed_in(|s, tickets, _| s.open_notification(target, tickets))
+            }
+            Event::Live(update) => self.signed_in(|s, tickets, _| s.live(update, tickets)),
+            Event::WaitOver { ticket } => {
+                self.signed_in(|s, tickets, _| s.wait_over(ticket, tickets))
+            }
             Event::WorkspacesLoaded {
                 ticket,
                 remembered,
@@ -438,7 +1123,75 @@ impl Model {
             Event::AllDevicesRevoked { ticket, result } => {
                 self.signed_in(|s, tickets, _| s.all_devices_revoked(ticket, result, tickets))
             }
+            Event::ConversationsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.conversations_loaded(ticket, result, tickets))
+            }
+            Event::UnreadCountLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.unread_loaded(ticket, result, tickets))
+            }
+            Event::DraftKeysLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.draft_keys_loaded(ticket, result, tickets))
+            }
+            Event::SearchLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.search_loaded(ticket, result, tickets))
+            }
+            Event::TimelineLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.timeline_loaded(ticket, result, tickets))
+            }
+            Event::DraftLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.draft_loaded(ticket, result, tickets))
+            }
+            Event::DraftWritten { ticket, .. } => {
+                self.signed_in(|_, tickets, _| draft_written(ticket, tickets))
+            }
+            Event::MessageSent { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.message_sent(ticket, result, tickets))
+            }
+            Event::MediaUploaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.media_uploaded(ticket, result, tickets))
+            }
+            Event::AiDraftWritten { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.ai_draft_written(ticket, result, tickets))
+            }
+            Event::MarkedRead { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.marked_read(ticket, result, tickets))
+            }
+            Event::MessageThreadFound { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.message_thread_found(ticket, result, tickets))
+            }
+            Event::CallsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.calls_loaded(ticket, result, tickets))
+            }
+            Event::CallLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.call_loaded(ticket, result, tickets))
+            }
+            Event::TranscriptLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.transcript_loaded(ticket, result, tickets))
+            }
+            Event::ContactsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.contacts_loaded(ticket, result, tickets))
+            }
+            Event::ContactLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.contact_loaded(ticket, result, tickets))
+            }
+            Event::ContactCreated { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.contact_created(ticket, result, tickets))
+            }
+            Event::ContactWritten { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.contact_written(ticket, result, tickets))
+            }
+            Event::BlockedLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.blocked_loaded(ticket, result, tickets))
+            }
         }
+    }
+
+    /// The end of the session `event` reports: a result still awaited that
+    /// failed because nobody is signed in any more.
+    fn ended_by(&self, event: &Event) -> Option<SessionEnd> {
+        let (ticket, error) = event.api_failure()?;
+        let end = SessionEnd::from_api_error(error)?;
+        self.tickets.awaits(ticket).then_some(end)
     }
 
     /// Runs `step` on the signed-in state, or does nothing when nobody is signed
@@ -463,7 +1216,6 @@ impl Model {
         match next {
             None => Vec::new(),
             Some(Next::Stay(effects)) => effects,
-            Some(Next::End(end)) => self.end_session(end),
             Some(Next::SignOut(scope)) => self.begin_sign_out(scope),
         }
     }
@@ -658,13 +1410,18 @@ impl Model {
     fn start_signed_in(&mut self, identity: Identity, notice: Option<Notice>) -> Vec<Effect> {
         self.tickets.cancel_all();
         let ticket = self.tickets.issue(Slot::Workspaces);
-        self.session = SessionState::SignedIn(Box::new(SignedIn::new(identity, notice)));
+        self.session = SessionState::SignedIn(Box::new(SignedIn::new(
+            identity,
+            notice,
+            self.window_visible,
+        )));
         vec![Effect::LoadWorkspaces { ticket }]
     }
 
     /// The session ended without the user asking. With no session stored at all,
     /// that is the ordinary signed-out screen, not an ended session.
     fn end_session(&mut self, end: SessionEnd) -> Vec<Effect> {
+        let effects = self.stop_live();
         self.tickets.cancel_all();
         let why = match end {
             SessionEnd::Reauth(ReauthReason::NoSession) => SignedOutWhy::NeverSignedIn,
@@ -674,20 +1431,37 @@ impl Model {
             why,
             sign_in_error: None,
         });
-        Vec::new()
+        effects
     }
 
     /// Signs out. The remembered workspace is forgotten too, so whoever signs in
     /// next starts from their own default.
     fn begin_sign_out(&mut self, scope: SignOutScope) -> Vec<Effect> {
+        let mut effects = self.stop_live();
         self.tickets.cancel_all();
         let ticket = self.tickets.issue(Slot::SignOut);
         self.session = SessionState::SigningOut(SigningOut { scope });
-        vec![
+        effects.extend([
             Effect::RememberWorkspace { workspace_id: None },
             Effect::SignOut { ticket },
-        ]
+        ]);
+        effects
     }
+
+    /// Closes the live sockets of a session that is ending, if it has any open.
+    fn stop_live(&mut self) -> Vec<Effect> {
+        match &mut self.session {
+            SessionState::SignedIn(signed_in) => signed_in.unwatch(&mut self.tickets),
+            _ => Vec::new(),
+        }
+    }
+}
+
+/// A saved reply was written. Nothing waits on the answer: a failed save is
+/// superseded by the next one, and the text is still in the composer.
+fn draft_written(ticket: Ticket, tickets: &mut Tickets) -> Next {
+    tickets.accept(Slot::DraftWrite, ticket);
+    Next::Stay(Vec::new())
 }
 
 /// The signed-in state, when someone is signed in.

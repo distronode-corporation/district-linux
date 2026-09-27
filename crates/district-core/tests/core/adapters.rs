@@ -6,20 +6,29 @@ use std::sync::{Arc, Mutex};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use district_api::{AccessToken, ApiClient, ApiConfig, ReauthReason, TokenError, TokenSource};
+use district_api::{ApiError, ErrorDetail};
 use district_auth::{
     AuthorizationGrant, ExchangeOutcome, LoginError, MemorySessionStore, NativeAuthApi,
     NativeTokens, Persistence, RefreshApi, RefreshOutcome, RefreshToken, RevokeApi, RevokeOutcome,
     RevokeStatus, TokenRefreshCoordinator,
 };
 use district_core::{
-    Auth, CodeExchange, DistrictApi, ExchangeFailure, NativeAuth, RestoreError, SignInError,
+    Auth, CodeExchange, DistrictApi, Effect, ExchangeFailure, LiveHub, LiveUpdates, NativeAuth,
+    RestoreError, SignInError, Ticket,
+};
+use district_live::{
+    LiveConfig, LiveError, LiveUpdate, OpenFuture, SystemClock, TokenMinter, Transport,
+};
+use district_model::{
+    BlockTarget, CreateContactRequest, DraftSaveRequest, SendMessageRequest, TelemetryToken,
+    ThreadRef, UpdateContactRequest,
 };
 use serde_json::json;
 use url::Url;
 use wiremock::matchers::{method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::support::{THIS_DEVICE, USER, claims, fixture};
+use crate::support::{THIS_DEVICE, USER, claims, fixture, listed, ticket};
 
 /// A compact JWT whose payload carries `sub`, `did` and `exp`. Unsigned, which
 /// is all the app ever reads of one.
@@ -140,6 +149,401 @@ async fn the_api_client_is_the_runners_api() {
             .revoked,
         2
     );
+}
+
+/// Every screen read and write of the second milestone, through the API
+/// client, against a server that answers each with its recording.
+#[tokio::test]
+async fn the_api_client_serves_the_screens_of_the_inbox_calls_and_contacts() {
+    let server = MockServer::start().await;
+    let routes: [(&str, &str, serde_json::Value); 25] = [
+        (
+            "GET",
+            "/api/district/conversations",
+            fixture("district-conversations.json"),
+        ),
+        (
+            "GET",
+            "/api/district/timeline",
+            fixture("district-timeline.json"),
+        ),
+        (
+            "GET",
+            "/api/district/messages/unread-count",
+            fixture("district-messages-unread-count.json"),
+        ),
+        (
+            "GET",
+            "/api/district/messages/search",
+            json!({"success": true, "results": [], "limit": 50}),
+        ),
+        (
+            "GET",
+            "/api/district/messages/msg_contract_inbound",
+            fixture("district-message-thread.json"),
+        ),
+        (
+            "POST",
+            "/api/district/messages/send",
+            fixture("district-message-send.json"),
+        ),
+        (
+            "POST",
+            "/api/district/messages/mark-read",
+            fixture("district-message-mark-read.json"),
+        ),
+        (
+            "POST",
+            "/api/district/messages/media",
+            fixture("district-media-upload.json"),
+        ),
+        (
+            "GET",
+            "/api/district/messages/drafts",
+            fixture("district-draft.json"),
+        ),
+        (
+            "GET",
+            "/api/district/messages/drafts",
+            fixture("district-drafts-list.json"),
+        ),
+        (
+            "PUT",
+            "/api/district/messages/drafts",
+            fixture("district-draft-put.json"),
+        ),
+        (
+            "DELETE",
+            "/api/district/messages/drafts",
+            fixture("district-draft-delete.json"),
+        ),
+        (
+            "POST",
+            "/api/district/messages/draft",
+            fixture("district-ai-draft.json"),
+        ),
+        ("GET", "/api/district/calls", fixture("district-calls.json")),
+        (
+            "GET",
+            "/api/district/calls/call_contract_answered",
+            fixture("district-call-detail.json"),
+        ),
+        (
+            "GET",
+            "/api/district/calls/call_contract_answered/transcript",
+            fixture("district-call-transcript.json"),
+        ),
+        (
+            "GET",
+            "/api/district/contacts",
+            fixture("district-contacts.json"),
+        ),
+        (
+            "GET",
+            "/api/district/contacts/get",
+            fixture("district-contact-detail.json"),
+        ),
+        (
+            "GET",
+            "/api/district/contacts/blocked",
+            json!({"success": true, "blocked": []}),
+        ),
+        (
+            "POST",
+            "/api/district/contacts/create",
+            json!({"success": true, "id": "contact_new"}),
+        ),
+        (
+            "PATCH",
+            "/api/district/contacts/update",
+            fixture("district-contact-update.json"),
+        ),
+        (
+            "DELETE",
+            "/api/district/contacts/delete",
+            fixture("district-contact-delete.json"),
+        ),
+        (
+            "POST",
+            "/api/district/contacts/enrich",
+            fixture("district-enrich.json"),
+        ),
+        (
+            "POST",
+            "/api/district/contacts/clear-intel",
+            fixture("district-clear-intel.json"),
+        ),
+        (
+            "POST",
+            "/api/district/contacts/block",
+            json!({"success": true, "contactId": "contact_contract_1", "name": "Ada",
+                   "phoneNumber": null, "blockedAt": "2026-09-26T12:00:00.000Z"}),
+        ),
+    ];
+    for (index, (verb, route, body)) in routes.into_iter().enumerate() {
+        // The single draft is the read that names a thread; the list is the one
+        // that does not.
+        let mock = Mock::given(method(verb)).and(path(route));
+        let mock = if index == 8 {
+            mock.and(query_param("threadKey", "contact:contact_contract_1"))
+        } else {
+            mock
+        };
+        mock.respond_with(ResponseTemplate::new(200).set_body_json(body))
+            .mount(&server)
+            .await;
+    }
+    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let client = ApiClient::new(config, OneToken).unwrap();
+    let ws = "ws-contract-test";
+    let thread = ThreadRef::Contact("contact_contract_1".to_owned());
+    let key = "contact:contact_contract_1";
+
+    assert_eq!(
+        DistrictApi::conversations(&client, ws)
+            .await
+            .unwrap()
+            .conversations
+            .len(),
+        2
+    );
+    assert_eq!(
+        DistrictApi::timeline(&client, ws, &thread, None)
+            .await
+            .unwrap()
+            .timeline
+            .len(),
+        5
+    );
+    assert_eq!(
+        DistrictApi::unread_count(&client, ws).await.unwrap().count,
+        3
+    );
+    assert_eq!(
+        DistrictApi::search_messages(&client, ws, "roof")
+            .await
+            .unwrap()
+            .limit,
+        Some(50)
+    );
+    assert_eq!(
+        DistrictApi::message_thread(&client, ws, "msg_contract_inbound")
+            .await
+            .unwrap()
+            .thread
+            .thread_key,
+        key
+    );
+    let message = SendMessageRequest {
+        to: "+14165550142".to_owned(),
+        body: "Confirmed for Thursday at 2pm.".to_owned(),
+        channel: "sms".to_owned(),
+        subject: None,
+        media_urls: Vec::new(),
+    };
+    assert!(
+        DistrictApi::send_message(&client, ws, &message)
+            .await
+            .unwrap()
+            .success
+    );
+    assert_eq!(
+        DistrictApi::mark_read(&client, ws, &thread)
+            .await
+            .unwrap()
+            .marked,
+        3
+    );
+    assert_eq!(
+        DistrictApi::upload_media(&client, ws, "roof.png", "image/png", vec![1; 33])
+            .await
+            .unwrap()
+            .media
+            .unwrap()
+            .size_bytes,
+        33
+    );
+    assert!(
+        DistrictApi::draft(&client, ws, key)
+            .await
+            .unwrap()
+            .draft
+            .is_some()
+    );
+    assert_eq!(
+        DistrictApi::drafts(&client, ws).await.unwrap().drafts.len(),
+        2
+    );
+    let draft = DraftSaveRequest {
+        thread_key: key.to_owned(),
+        body: "Thanks".to_owned(),
+        subject: None,
+        media_urls: Vec::new(),
+    };
+    assert!(
+        DistrictApi::save_draft(&client, ws, &draft)
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::delete_draft(&client, ws, key)
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::generate_ai_draft(&client, ws, &thread)
+            .await
+            .unwrap()
+            .draft
+            .starts_with("Thanks for waiting")
+    );
+    assert_eq!(
+        DistrictApi::calls(&client, ws, 25, 0).await.unwrap().len(),
+        5
+    );
+    assert!(
+        DistrictApi::call_detail(&client, ws, "call_contract_answered")
+            .await
+            .unwrap()
+            .call
+            .is_some()
+    );
+    assert!(
+        DistrictApi::call_transcript(&client, ws, "call_contract_answered")
+            .await
+            .unwrap()
+            .has_transcript()
+    );
+    assert_eq!(
+        DistrictApi::contacts(&client, ws, 25, 0)
+            .await
+            .unwrap()
+            .total,
+        2
+    );
+    let detail = DistrictApi::contact(&client, ws, "contact_contract_1")
+        .await
+        .unwrap();
+    assert!(
+        DistrictApi::blocked_contacts(&client, ws)
+            .await
+            .unwrap()
+            .blocked
+            .is_empty()
+    );
+    let create = CreateContactRequest {
+        name: "Ada".to_owned(),
+        phone_number: None,
+        email: Some("ada@example.com".to_owned()),
+    };
+    assert_eq!(
+        DistrictApi::create_contact(&client, ws, &create)
+            .await
+            .unwrap()
+            .id
+            .as_deref(),
+        Some("contact_new")
+    );
+    let change = UpdateContactRequest::from_contact(&detail.contact.unwrap());
+    assert!(
+        DistrictApi::update_contact(&client, ws, &change)
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::delete_contact(&client, ws, "contact_contract_1")
+            .await
+            .unwrap()
+            .success
+    );
+    assert_eq!(
+        DistrictApi::enrich_contact(&client, ws, "contact_contract_1")
+            .await
+            .unwrap()
+            .status
+            .as_deref(),
+        Some("pending")
+    );
+    assert!(
+        DistrictApi::clear_contact_intel(&client, ws, "contact_contract_1")
+            .await
+            .unwrap()
+            .success
+    );
+    let target = BlockTarget::Contact("contact_contract_1".to_owned());
+    assert!(
+        DistrictApi::set_contact_blocked(&client, ws, &target, true)
+            .await
+            .unwrap()
+            .blocked_at
+            .is_some()
+    );
+}
+
+/// Refuses every credential, as for a member the workspace no longer has, so a
+/// connection ends at once and says so.
+struct RefusingMinter(Arc<Mutex<Vec<String>>>);
+
+impl TokenMinter for RefusingMinter {
+    async fn mint(&self, workspace_id: &str) -> Result<TelemetryToken, ApiError> {
+        self.0.lock().unwrap().push(workspace_id.to_owned());
+        Err(ApiError::Forbidden(ErrorDetail::default()))
+    }
+}
+
+/// A network no connection gets as far as.
+struct NoNetwork;
+
+impl Transport for NoNetwork {
+    fn open<'a>(&'a self, _url: &'a Url) -> OpenFuture<'a> {
+        Box::pin(async { Err(std::io::Error::other("no network in tests")) })
+    }
+}
+
+/// Three tickets, oldest first.
+fn revisions() -> [Ticket; 3] {
+    let (_, effects) = listed(None);
+    let tickets: Vec<Ticket> = effects
+        .iter()
+        .map(|effect| match effect {
+            Effect::WatchLive { revision, .. } => *revision,
+            other => ticket(other),
+        })
+        .collect();
+    <[Ticket; 3]>::try_from(tickets).unwrap()
+}
+
+/// The watched set the model asked for last is the one that stays, whatever
+/// order the runner ran the changes in.
+#[tokio::test]
+async fn the_live_hub_applies_only_the_newest_watched_set() {
+    let minted = Arc::new(Mutex::new(Vec::new()));
+    let config = LiveConfig {
+        transport: Arc::new(NoNetwork),
+        clock: Arc::new(SystemClock),
+        jitter: || 0.5,
+    };
+    let (hub, mut updates) = LiveHub::new(Arc::new(RefusingMinter(Arc::clone(&minted))), config);
+    let [older, newer, newest] = revisions();
+    assert!(older < newer && newer < newest);
+
+    hub.watch(newer, vec!["ws_a".to_owned()]).await;
+    let update = updates.recv().await.unwrap();
+    assert_eq!(update.workspace_id, "ws_a");
+    assert!(matches!(
+        update.update,
+        LiveUpdate::Ended(Some(LiveError::Mint(ApiError::Forbidden(_))))
+    ));
+    // An older set, run late, and the same one again, change nothing.
+    hub.watch(older, Vec::new()).await;
+    hub.watch(newer, vec!["ws_b".to_owned()]).await;
+    hub.watch(newest, vec!["ws_c".to_owned()]).await;
+    let update = updates.recv().await.unwrap();
+    assert_eq!(update.workspace_id, "ws_c");
+    assert_eq!(*minted.lock().unwrap(), ["ws_a", "ws_c"]);
 }
 
 /// Who asked for an exchange: the installation id and name.

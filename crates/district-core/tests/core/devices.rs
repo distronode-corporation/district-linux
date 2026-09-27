@@ -202,12 +202,14 @@ fn this_devices_row_asks_its_own_question_and_signs_out() {
     );
 
     let effects = devices_event(&mut model, DevicesEvent::Confirm);
+    // The open workspace's live updates stop with the session.
     assert!(matches!(
         effects.as_slice(),
         [
+            Effect::WatchLive { workspace_ids, .. },
             Effect::RememberWorkspace { workspace_id: None },
             Effect::SignOut { .. }
-        ]
+        ] if workspace_ids.is_empty()
     ));
     assert_eq!(
         model.session(),
@@ -348,9 +350,10 @@ fn signing_out_everywhere_asks_first_then_signs_this_device_out() {
     assert!(matches!(
         effects.as_slice(),
         [
+            Effect::WatchLive { workspace_ids, .. },
             Effect::RememberWorkspace { workspace_id: None },
             Effect::SignOut { .. }
-        ]
+        ] if workspace_ids.is_empty()
     ));
     assert_eq!(
         model.session(),

@@ -48,6 +48,7 @@ fn every_route_belongs_to_a_tab() {
         (thread(), Tab::Inbox),
         (call(), Tab::Calls),
         (contact(), Tab::Contacts),
+        (Route::BlockedContacts, Tab::Contacts),
         (Route::Devices, Tab::Account),
         (Route::Workspace(WorkspaceSection::Hub), Tab::Overview),
         (Route::Workspace(WorkspaceSection::Persona), Tab::Overview),
@@ -69,6 +70,7 @@ fn only_the_account_and_the_devices_list_are_outside_a_workspace() {
         call(),
         Route::Contacts,
         contact(),
+        Route::BlockedContacts,
         Route::Workspace(WorkspaceSection::Members),
     ] {
         assert!(route.is_workspace_scoped(), "{route:?}");
@@ -81,6 +83,7 @@ fn back_leads_to_the_parent_and_stops_at_a_tab() {
         (thread(), Some(Route::Inbox)),
         (call(), Some(Route::Calls)),
         (contact(), Some(Route::Contacts)),
+        (Route::BlockedContacts, Some(Route::Contacts)),
         (Route::Devices, Some(Route::Account)),
         (
             Route::Workspace(WorkspaceSection::Hub),
@@ -112,6 +115,7 @@ fn a_workspace_switch_leaves_details_and_settings() {
         (Route::Workspace(WorkspaceSection::Routing), Route::Overview),
         (Route::Workspace(WorkspaceSection::Hub), Route::Overview),
         (Route::Calls, Route::Calls),
+        (Route::BlockedContacts, Route::BlockedContacts),
         (Route::Account, Route::Account),
         (Route::Devices, Route::Devices),
     ];

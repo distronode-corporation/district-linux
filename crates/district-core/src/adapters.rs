@@ -1,8 +1,8 @@
-//! The real implementations of the runner's API and sign-in traits, over
-//! `district-api` and `district-auth`.
+//! The real implementations of the runner's API, sign-in and live updates
+//! traits, over `district-api`, `district-auth` and `district-live`.
 
 use std::future::Future;
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use district_api::{ApiClient, ApiConfig, ApiError, TokenSource};
 use district_auth::{
@@ -10,13 +10,22 @@ use district_auth::{
     NativeAuthApi, NoPresence, RefreshApi, RevokeApi, SessionStore, SignOut, SignOutReport,
     TokenRefreshCoordinator,
 };
+use district_live::{LiveConfig, TelemetryHub, TokenMinter, WorkspaceUpdate};
 use district_model::{
-    DeviceListResponse, DeviceRevokeResponse, OverviewResponse, SetupResponse,
-    WorkspaceListResponse,
+    AiDraftResponse, BlockTarget, BlockedContactsResponse, CallDetailResponse, CallSummary,
+    CallTranscriptResponse, ClearIntelResponse, ContactBlockResponse, ContactDetailResponse,
+    ContactListResponse, ContactMutationResponse, ConversationsResponse, CreateContactRequest,
+    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
+    DraftResponse, DraftSaveRequest, EnrichResponse, MarkReadResponse, MediaUploadResponse,
+    MessageSearchResponse, MessageThreadResponse, OverviewResponse, SendMessageRequest,
+    SendMessageResponse, SetupResponse, ThreadRef, TimelineCursor, TimelineResponse,
+    UnreadCountResponse, UpdateContactRequest, WorkspaceListResponse,
 };
+use tokio::sync::mpsc::UnboundedReceiver;
 use url::Url;
 
-use crate::runner::{Auth, DistrictApi};
+use crate::model::Ticket;
+use crate::runner::{Auth, DistrictApi, LiveUpdates};
 use crate::session::{ExchangeFailure, RestoreError, SignInError, SignedInSession};
 
 impl<S: TokenSource> DistrictApi for ApiClient<S> {
@@ -55,6 +64,247 @@ impl<S: TokenSource> DistrictApi for ApiClient<S> {
         &self,
     ) -> impl Future<Output = Result<DeviceRevokeResponse, ApiError>> + Send {
         ApiClient::revoke_all_devices(self)
+    }
+
+    fn conversations(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<ConversationsResponse, ApiError>> + Send {
+        ApiClient::conversations(self, workspace_id)
+    }
+
+    fn timeline(
+        &self,
+        workspace_id: &str,
+        thread: &ThreadRef,
+        older_than: Option<&TimelineCursor>,
+    ) -> impl Future<Output = Result<TimelineResponse, ApiError>> + Send {
+        ApiClient::timeline(self, workspace_id, thread, older_than)
+    }
+
+    fn unread_count(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<UnreadCountResponse, ApiError>> + Send {
+        ApiClient::unread_count(self, workspace_id)
+    }
+
+    fn search_messages(
+        &self,
+        workspace_id: &str,
+        query: &str,
+    ) -> impl Future<Output = Result<MessageSearchResponse, ApiError>> + Send {
+        ApiClient::search_messages(self, workspace_id, query)
+    }
+
+    fn message_thread(
+        &self,
+        workspace_id: &str,
+        message_id: &str,
+    ) -> impl Future<Output = Result<MessageThreadResponse, ApiError>> + Send {
+        ApiClient::message_thread(self, workspace_id, message_id)
+    }
+
+    fn send_message(
+        &self,
+        workspace_id: &str,
+        message: &SendMessageRequest,
+    ) -> impl Future<Output = Result<SendMessageResponse, ApiError>> + Send {
+        ApiClient::send_message(self, workspace_id, message)
+    }
+
+    fn mark_read(
+        &self,
+        workspace_id: &str,
+        thread: &ThreadRef,
+    ) -> impl Future<Output = Result<MarkReadResponse, ApiError>> + Send {
+        ApiClient::mark_read(self, workspace_id, thread)
+    }
+
+    fn upload_media(
+        &self,
+        workspace_id: &str,
+        file_name: &str,
+        mime_type: &str,
+        bytes: Vec<u8>,
+    ) -> impl Future<Output = Result<MediaUploadResponse, ApiError>> + Send {
+        ApiClient::upload_media(self, workspace_id, file_name, mime_type, bytes)
+    }
+
+    fn draft(
+        &self,
+        workspace_id: &str,
+        thread_key: &str,
+    ) -> impl Future<Output = Result<DraftResponse, ApiError>> + Send {
+        ApiClient::draft(self, workspace_id, thread_key)
+    }
+
+    fn drafts(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<DraftListResponse, ApiError>> + Send {
+        ApiClient::drafts(self, workspace_id)
+    }
+
+    fn save_draft(
+        &self,
+        workspace_id: &str,
+        draft: &DraftSaveRequest,
+    ) -> impl Future<Output = Result<DraftResponse, ApiError>> + Send {
+        ApiClient::save_draft(self, workspace_id, draft)
+    }
+
+    fn delete_draft(
+        &self,
+        workspace_id: &str,
+        thread_key: &str,
+    ) -> impl Future<Output = Result<DraftDeleteResponse, ApiError>> + Send {
+        ApiClient::delete_draft(self, workspace_id, thread_key)
+    }
+
+    fn generate_ai_draft(
+        &self,
+        workspace_id: &str,
+        thread: &ThreadRef,
+    ) -> impl Future<Output = Result<AiDraftResponse, ApiError>> + Send {
+        ApiClient::generate_ai_draft(self, workspace_id, thread)
+    }
+
+    fn calls(
+        &self,
+        workspace_id: &str,
+        limit: u32,
+        offset: u32,
+    ) -> impl Future<Output = Result<Vec<CallSummary>, ApiError>> + Send {
+        ApiClient::calls(self, workspace_id, limit, offset)
+    }
+
+    fn call_detail(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> impl Future<Output = Result<CallDetailResponse, ApiError>> + Send {
+        ApiClient::call_detail(self, workspace_id, call_id)
+    }
+
+    fn call_transcript(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> impl Future<Output = Result<CallTranscriptResponse, ApiError>> + Send {
+        ApiClient::call_transcript(self, workspace_id, call_id)
+    }
+
+    fn contacts(
+        &self,
+        workspace_id: &str,
+        limit: u32,
+        offset: u32,
+    ) -> impl Future<Output = Result<ContactListResponse, ApiError>> + Send {
+        ApiClient::contacts(self, workspace_id, limit, offset)
+    }
+
+    fn contact(
+        &self,
+        workspace_id: &str,
+        contact_id: &str,
+    ) -> impl Future<Output = Result<ContactDetailResponse, ApiError>> + Send {
+        ApiClient::contact(self, workspace_id, contact_id)
+    }
+
+    fn blocked_contacts(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<BlockedContactsResponse, ApiError>> + Send {
+        ApiClient::blocked_contacts(self, workspace_id)
+    }
+
+    fn create_contact(
+        &self,
+        workspace_id: &str,
+        contact: &CreateContactRequest,
+    ) -> impl Future<Output = Result<ContactMutationResponse, ApiError>> + Send {
+        ApiClient::create_contact(self, workspace_id, contact)
+    }
+
+    fn update_contact(
+        &self,
+        workspace_id: &str,
+        change: &UpdateContactRequest,
+    ) -> impl Future<Output = Result<ContactMutationResponse, ApiError>> + Send {
+        ApiClient::update_contact(self, workspace_id, change)
+    }
+
+    fn delete_contact(
+        &self,
+        workspace_id: &str,
+        contact_id: &str,
+    ) -> impl Future<Output = Result<ContactMutationResponse, ApiError>> + Send {
+        ApiClient::delete_contact(self, workspace_id, contact_id)
+    }
+
+    fn enrich_contact(
+        &self,
+        workspace_id: &str,
+        contact_id: &str,
+    ) -> impl Future<Output = Result<EnrichResponse, ApiError>> + Send {
+        ApiClient::enrich_contact(self, workspace_id, contact_id)
+    }
+
+    fn clear_contact_intel(
+        &self,
+        workspace_id: &str,
+        contact_id: &str,
+    ) -> impl Future<Output = Result<ClearIntelResponse, ApiError>> + Send {
+        ApiClient::clear_contact_intel(self, workspace_id, contact_id)
+    }
+
+    fn set_contact_blocked(
+        &self,
+        workspace_id: &str,
+        target: &BlockTarget,
+        blocked: bool,
+    ) -> impl Future<Output = Result<ContactBlockResponse, ApiError>> + Send {
+        ApiClient::set_contact_blocked(self, workspace_id, target, blocked)
+    }
+}
+
+/// [`LiveUpdates`] over the telemetry hub.
+///
+/// The app builds one with [`new`](Self::new), hands it to the runner, and
+/// forwards every update from the receiver it came with to the model as
+/// [`Event::Live`](crate::Event::Live). The hub is behind a lock because
+/// changing the watched set waits for the sockets it closes, and the runner may
+/// run two changes at once; the lock and the revision together make the last set
+/// the model asked for the one that stays, whatever order the two ran in.
+pub struct LiveHub<M> {
+    state: tokio::sync::Mutex<Watched<M>>,
+}
+
+struct Watched<M> {
+    hub: TelemetryHub<M>,
+    applied: Option<Ticket>,
+}
+
+impl<M: TokenMinter> LiveHub<M> {
+    /// A hub minting credentials through `minter` (the API client), connecting
+    /// as `config` says, and the receiver its updates arrive on. The receiver
+    /// must be read for as long as the hub lives; dropping it ends every socket.
+    pub fn new(minter: Arc<M>, config: LiveConfig) -> (Self, UnboundedReceiver<WorkspaceUpdate>) {
+        let (hub, updates) = TelemetryHub::new(minter, config);
+        let state = tokio::sync::Mutex::new(Watched { hub, applied: None });
+        (Self { state }, updates)
+    }
+}
+
+impl<M: TokenMinter> LiveUpdates for LiveHub<M> {
+    async fn watch(&self, revision: Ticket, workspace_ids: Vec<String>) {
+        let mut watched = self.state.lock().await;
+        if watched.applied.is_some_and(|applied| applied >= revision) {
+            return;
+        }
+        watched.applied = Some(revision);
+        watched.hub.set_watched(workspace_ids).await;
     }
 }
 
@@ -198,8 +448,9 @@ where
     }
 
     async fn sign_out(&self) -> SignOutReport {
-        // No live updates are registered yet, so there is nothing to unregister
-        // before the session goes.
+        // The desktop's presence is not registered yet, so there is nothing to
+        // unregister before the session goes. The live sockets are the model's
+        // to close, and it closes them as it signs out.
         self.sign_out.sign_out(&NoPresence).await
     }
 

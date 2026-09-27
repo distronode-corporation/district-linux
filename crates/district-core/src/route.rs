@@ -85,6 +85,8 @@ pub enum Route {
         /// The contact's id.
         contact_id: String,
     },
+    /// The callers the workspace has blocked, below contacts.
+    BlockedContacts,
     /// The account.
     Account,
     /// The installations signed in to the account. Like the account, not tied to
@@ -127,7 +129,7 @@ impl Route {
             Self::Overview | Self::Workspace(_) => Tab::Overview,
             Self::Inbox | Self::Thread { .. } => Tab::Inbox,
             Self::Calls | Self::CallDetail { .. } => Tab::Calls,
-            Self::Contacts | Self::ContactDetail { .. } => Tab::Contacts,
+            Self::Contacts | Self::ContactDetail { .. } | Self::BlockedContacts => Tab::Contacts,
             Self::Account | Self::Devices => Tab::Account,
         }
     }
@@ -143,7 +145,7 @@ impl Route {
         match self {
             Self::Thread { .. } => Some(Self::Inbox),
             Self::CallDetail { .. } => Some(Self::Calls),
-            Self::ContactDetail { .. } => Some(Self::Contacts),
+            Self::ContactDetail { .. } | Self::BlockedContacts => Some(Self::Contacts),
             Self::Devices => Some(Self::Account),
             Self::Workspace(WorkspaceSection::Hub) => Some(Self::Overview),
             Self::Workspace(_) => Some(Self::Workspace(WorkspaceSection::Hub)),
@@ -156,7 +158,8 @@ impl Route {
     /// A detail names something in the old workspace, so it gives way to its
     /// list. A settings section gives way to the overview, because the member's
     /// role in the new workspace, which decides the sections, is not known until
-    /// the new overview arrives. Tabs, the account and the devices list stay.
+    /// the new overview arrives. Tabs, the blocked list, the account and the
+    /// devices list stay.
     pub fn after_workspace_switch(&self) -> Route {
         match self {
             Self::Workspace(_) => Self::Overview,

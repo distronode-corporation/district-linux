@@ -12,17 +12,20 @@ publish.workspace = true
 [dependencies]
 district-api = { workspace = true }
 district-auth = { workspace = true }
+district-live = { workspace = true }
 district-model = { workspace = true }
+# Reads the ids a `call_ringing` event carries.
+serde_json = { workspace = true }
 # `time` for the one clock this crate provides, `TokioClock`, which the effect
-# runner sleeps on between attempts to resume a session.
-tokio = { workspace = true, features = ["time"] }
+# runner sleeps on between attempts to resume a session and for the debounces;
+# `sync` for the lock `LiveHub` keeps the telemetry hub behind.
+tokio = { workspace = true, features = ["sync", "time"] }
 url = { workspace = true }
 
 [dev-dependencies]
 # Test only: to build access tokens whose claims the sign-in code can read.
 base64 = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 # `test-util` lets a test stop and step the clock instead of sleeping for real.
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "test-util", "time"] }
 wiremock = { workspace = true }
