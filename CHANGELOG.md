@@ -220,8 +220,72 @@ date, and bump `[workspace.package] version` to match.
   the same call; the reads are repeated once after a refused access token and the
   writes never are.
 
+- `district-core`: the workspace settings, still with no GTK and no IO. The hub
+  (`settings_rows`, `settings_note`) lists the sections the member's role may open:
+  every one for an agency or client member, and call handling, the knowledge base
+  and the carrier accounts for a viewer, who changes none of them. Each section
+  reads what it shows when it opens (`Route::Workspace`), keeps its state in its own
+  field of `SignedIn`, and drops it, edits and typed credentials included, when it
+  is left. A section that edits the settings row (`ConfigLoad`) has a form only
+  once the row is read: a failed read offers a retry and nothing else, and a list
+  stored in a shape this build cannot carry whole is shown as not editable here.
+  The three saves that replace a stored list send the list read with the member's
+  edits applied, every stored key kept, after a question for the directory and the
+  routing rules that says what saving does (remove everyone, remove every rule);
+  each save is read back, only that answer becomes the new starting point, and a
+  save whose read-back fails says it landed (`SaveState::SavedButStale`) and
+  offers only a read. A failed save keeps the edits. One write at a time per
+  section, and a refresh does not interrupt one.
+  - The persona (`PersonaSection`): its texts from the settings row, its engine,
+    language, voice, answer length, variation, voice style and early speech only
+    with the options read too and only as the options offer them (an engine the
+    region does not offer is refused, a language the engine does not speak is
+    cleared, the voice follows the engine, and for the engine whose voices speak
+    one language, the language), a save of only what changed with the answer length
+    travelling with its engine, and the audition: a dialog stating it is billed,
+    Start sending one request for the form on screen, the credential held for the
+    call engine and dropped on Stop or close, a five second cooldown after each
+    (`PREVIEW_COOLDOWN`), and no retry by itself. An answer without an encryption
+    passphrase is not joined.
+  - The capabilities (`ToolsSection`): every tool this build can name and every
+    stored id it cannot, the defaults (not every tool) for a workspace that never
+    chose, and the research switch saved alone through the persona.
+  - The transfer directory and the routing rules (`DirectorySection`,
+    `RoutingRulesSection`), edited one key of one stored entry at a time; a rule's
+    engine override is shown and not changed here.
+  - Call handling and availability (`CallHandlingSection`): the workspace's setting
+    saved with a button, sending only what changed, the ring kept within 5 to 30
+    seconds, and the member's own availability sent at once; both answers are
+    adopted as stored, and a reason against availability is shown in words.
+  - The knowledge base (`KnowledgeSection`): the documents and the mode read apart,
+    adding a document (billed) sent once, deleting one and switching to the linked
+    mode each asking first, the list read again after each, and the mode shown
+    the one the service stored.
+  - The carrier accounts (`MessagingSection`): adding and editing one account at
+    a time in a form (`MessagingForm`) whose typed credentials (`SecretText`) no
+    `Debug` prints and which go with the form, a blank secret keeping the stored
+    one except for a new account or a changed carrier, numbers sent only when
+    typed in, the credential check offered only when every box is typed with the
+    carrier's refusal shown as its answer (`CredentialTest`), the default and each
+    channel's sender, removal asking first and naming the numbers it releases, and
+    the owner's mobile number, never shown, saved without a read-back. A 502 from
+    a save is shown in the service's words and may be tried again.
+  - Members and the workspace's name (`MembersSection`): adding, changing a role
+    and removing (after a question) for an agency member only, each read back;
+    the two refusals the service names shown in its words with no retry
+    (`FailureText::from_member_error`); the rename for an agency or client member,
+    shown, in the section and the switcher, as the service stored it.
+  - The phone numbers row opens the phone numbers screen (`Route::Marketplace`).
+  - `SignedIn::settings_unsaved` says when leaving would lose edits, so the app can
+    ask first.
+- `district-core`: `DistrictApi` gains the 28 methods behind those sections, which
+  `ApiClient` implements, and the runner the effects that call them. A write whose
+  answer holds nothing to keep reports `Event::SettingsWritten`.
+
 ### Changed
 
+- `district-core`: `Effect` derives `PartialEq` without `Eq`, because a persona's
+  variation is fractional.
 - A session that has no token right now says why. `TokenError::RetryLater`
   carries a `RetryReason` (rate limited, offline, a missing or locked secret
   store, a storage failure), and the API client reports it as

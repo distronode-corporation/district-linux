@@ -149,18 +149,35 @@ The project is pre-release, and parts of this are not implemented yet.
   tools, the call directory and the routing rules), so an empty or half-loaded
   form would be a deletion the service reports as a success. A list is saved only
   as the list just read with the member's edits applied, each stored entry sent
-  back whole, keys the app does not know included.
+  back whole, keys the app does not know included. A section whose read failed
+  has no form at all, only a retry; a list stored in a shape the app cannot carry
+  whole is not offered for editing; and after a save the settings are read back
+  before anything else can be saved. If that read fails, the section says the
+  save landed and offers only a read, never a save from settings the app can no
+  longer vouch for.
+- The members, their roles and the settings sections open to each role follow
+  the service's rules: a viewer is shown call handling, the knowledge base and
+  the carrier accounts, and changes none of them; the settings row's four
+  sections and the members are not opened for a viewer at all, and members are
+  changed by an agency member only.
 - Carrier credentials are typed by the member and sent only in the body of a save
-  or of a credential check. The service never sends them back, the app keeps
-  none, no error carries one, and every type that holds one prints only whether
-  it is set. Each carrier's credentials are their own type, so a secret cannot go
-  out under another carrier's field names, which the service would keep
-  unencrypted.
-- Auditioning an unsaved persona starts a billed call. Its credential and the
-  room's encryption passphrase are kept in memory, redacted from `Debug`, and
-  asked for only when the member asks to listen, never again by themselves after
-  a failure. The same holds for adding a knowledge base document, which is billed
-  by its length.
+  or of a credential check. The service never sends them back. The app holds what
+  was typed only while the form that took it is open: closing the form, leaving
+  the section or a save that lands drops it (a save that fails keeps it, so it
+  need not be typed twice). No error carries one, and every type that holds one,
+  the events and effects that carry one included, prints only whether it is set.
+  Each carrier's credentials are their own type, so a secret cannot go out under
+  another carrier's field names, which the service would keep unencrypted, and
+  changing an account's carrier drops what was typed for the old one.
+- Auditioning an unsaved persona starts a billed call. It is asked for only when
+  the member presses Start in a dialog that says so, one at a time, never again
+  by itself after a failure, and not again for a few seconds after one ends. Its
+  credential and the room's encryption passphrase are kept in memory for the call
+  engine, redacted from `Debug`, and dropped when the audition is stopped, the
+  dialog closed or the section left. An answer without a passphrase, or for a
+  room that is not an audition room, is not joined. Adding a knowledge base
+  document, which is billed by its length, is likewise sent once, only when the
+  member adds it.
 
 ### Privileges
 
