@@ -14,7 +14,8 @@ on:
   workflow_call:
   pull_request:
     paths:
-      - "packaging/**"
+      # A dependency bump can change what the binary links, and so Depends.
+      - "Cargo.lock"
       - "crates/district-app/Cargo.toml"
       - "crates/district-app/data/com.distronode.DistrictAI.*"
       - "scripts/build-deb.sh"
