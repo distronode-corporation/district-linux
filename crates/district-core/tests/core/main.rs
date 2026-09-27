@@ -8,9 +8,11 @@
 mod adapters;
 mod devices;
 mod failure;
+mod inbox;
 mod overview;
 mod role;
 mod route;
 mod runner;
 mod session;
 mod support;
+mod thread;

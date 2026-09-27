@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::PathBuf;
 
+use district_api::{ApiError, ErrorDetail};
 use district_auth::AccessClaims;
 use district_core::{
     CoreConfig, Effect, Event, Model, OverviewContent, OverviewScreen, SessionState, SignedIn,
@@ -100,6 +101,34 @@ pub fn ticket(effect: &Effect) -> Ticket {
         | Effect::WriteContact { ticket, .. }
         | Effect::LoadBlocked { ticket, .. } => *ticket,
         other => panic!("{other:?} carries no ticket"),
+    }
+}
+
+/// The ticket of the one effect in `effects` that `wanted` picks.
+pub fn pick(effects: &[Effect], wanted: fn(&Effect) -> bool) -> Ticket {
+    let found: Vec<&Effect> = effects.iter().filter(|effect| wanted(effect)).collect();
+    match found.as_slice() {
+        [effect] => ticket(effect),
+        _ => panic!("not exactly one such effect in {effects:?}"),
+    }
+}
+
+/// A failure the service could answer for anything: a server error.
+pub fn server_error() -> ApiError {
+    ApiError::Server {
+        status: 503,
+        detail: ErrorDetail::default(),
+    }
+}
+
+/// The service's refusal, with its own words.
+pub fn refusal(message: &str) -> ApiError {
+    ApiError::Rejected {
+        status: 400,
+        detail: ErrorDetail {
+            message: Some(message.to_owned()),
+            ..ErrorDetail::default()
+        },
     }
 }
 
