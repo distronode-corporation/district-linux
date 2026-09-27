@@ -229,7 +229,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: The version agrees across the workspace and CHANGELOG.md
+      - name: The version agrees across the workspace, CHANGELOG.md and the AppStream metadata
         run: python3 scripts/check-version.py
 
       # Before the scan, so that a rule which has stopped matching anything fails
