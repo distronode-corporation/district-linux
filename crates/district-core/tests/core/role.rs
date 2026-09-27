@@ -130,3 +130,42 @@ fn the_settings_sections_open_by_role() {
         assert!(!unknown.allows(&route), "{section:?}");
     }
 }
+
+/// Every desk and support route refuses a viewer, reads included, so the whole
+/// of each is closed to one; the other sections open to every role and hold
+/// back their own controls.
+#[test]
+fn the_desk_and_support_are_closed_to_a_viewer_and_the_rest_are_open() {
+    let agency = Capabilities::for_role(Some("agency"));
+    let client = Capabilities::for_role(Some("client"));
+    let viewer = Capabilities::for_role(Some("viewer"));
+    let unknown = Capabilities::for_role(None);
+    let closed = [
+        Route::Desk,
+        Route::DeskTicket {
+            ticket_id: "t".to_owned(),
+        },
+        Route::DeskSettings,
+        Route::Support,
+        Route::SupportRequest {
+            key: "DA-1".to_owned(),
+        },
+    ];
+    for route in &closed {
+        assert!(agency.allows(route) && client.allows(route), "{route:?}");
+        assert!(!viewer.allows(route) && !unknown.allows(route), "{route:?}");
+    }
+    for route in [
+        Route::Hq,
+        Route::Analytics,
+        Route::Marketplace,
+        Route::Billing,
+        Route::Workflows,
+        Route::Scheduling,
+        Route::Rooms,
+    ] {
+        for capabilities in [agency, client, viewer, unknown] {
+            assert!(capabilities.allows(&route), "{route:?} {capabilities:?}");
+        }
+    }
+}

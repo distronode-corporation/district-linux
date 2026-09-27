@@ -99,7 +99,41 @@ pub fn ticket(effect: &Effect) -> Ticket {
         | Effect::LoadContact { ticket, .. }
         | Effect::CreateContact { ticket, .. }
         | Effect::WriteContact { ticket, .. }
-        | Effect::LoadBlocked { ticket, .. } => *ticket,
+        | Effect::LoadBlocked { ticket, .. }
+        | Effect::AskHq { ticket, .. }
+        | Effect::ConfirmHq { ticket, .. }
+        | Effect::LoadAnalytics { ticket, .. }
+        | Effect::LoadUsage { ticket, .. }
+        | Effect::LoadUsageHistory { ticket, .. }
+        | Effect::SearchNumbers { ticket, .. }
+        | Effect::LoadOwnedNumbers { ticket, .. }
+        | Effect::LoadWorkspaceBilling { ticket, .. }
+        | Effect::LoadAccountBilling { ticket, .. }
+        | Effect::LoadWorkflows { ticket, .. }
+        | Effect::LoadWorkflowRuns { ticket, .. }
+        | Effect::SetWorkflowActive { ticket, .. }
+        | Effect::LoadCampaign { ticket, .. }
+        | Effect::SetCampaignEnabled { ticket, .. }
+        | Effect::LoadSchedulingStatus { ticket, .. }
+        | Effect::EnableScheduling { ticket, .. }
+        | Effect::RequestSchedulingHandOff { ticket, .. }
+        | Effect::LoadDeskSettings { ticket, .. }
+        | Effect::SaveDeskSettings { ticket, .. }
+        | Effect::UploadDeskLogo { ticket, .. }
+        | Effect::DeleteDeskLogo { ticket, .. }
+        | Effect::LoadDeskTickets { ticket, .. }
+        | Effect::CreateDeskTicket { ticket, .. }
+        | Effect::LoadDeskTicket { ticket, .. }
+        | Effect::ReplyToDeskTicket { ticket, .. }
+        | Effect::SetDeskTicketStatus { ticket, .. }
+        | Effect::LoadSupportRequests { ticket, .. }
+        | Effect::CreateSupportRequest { ticket, .. }
+        | Effect::LoadSupportRequest { ticket, .. }
+        | Effect::ReplyToSupportRequest { ticket, .. }
+        | Effect::CloseSupportRequest { ticket, .. }
+        | Effect::LoadMeetings { ticket, .. }
+        | Effect::LoadMeeting { ticket, .. }
+        | Effect::RequestRoomToken { ticket, .. } => *ticket,
         other => panic!("{other:?} carries no ticket"),
     }
 }

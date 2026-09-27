@@ -6,16 +6,25 @@
 //! a keyring or the network.
 
 mod adapters;
+mod analytics;
+mod billing;
 mod calls;
 mod contacts;
+mod desk;
 mod devices;
 mod failure;
+mod hq;
 mod inbox;
 mod live;
+mod marketplace;
 mod overview;
 mod role;
+mod rooms;
 mod route;
 mod runner;
+mod scheduling;
 mod session;
 mod support;
+mod support_requests;
 mod thread;
+mod workflows;

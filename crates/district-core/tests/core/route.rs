@@ -123,3 +123,77 @@ fn a_workspace_switch_leaves_details_and_settings() {
         assert_eq!(route.after_workspace_switch(), after, "{route:?}");
     }
 }
+
+/// The workspace's other sections, and their detail screens.
+fn sections() -> [Route; 9] {
+    [
+        Route::Hq,
+        Route::Analytics,
+        Route::Marketplace,
+        Route::Billing,
+        Route::Workflows,
+        Route::Scheduling,
+        Route::Desk,
+        Route::Support,
+        Route::Rooms,
+    ]
+}
+
+fn desk_ticket() -> Route {
+    Route::DeskTicket {
+        ticket_id: "desk_ticket_1".to_owned(),
+    }
+}
+
+fn support_request() -> Route {
+    Route::SupportRequest {
+        key: "DA-42".to_owned(),
+    }
+}
+
+/// Every section is reached from the overview: it highlights the overview's tab
+/// and goes back to it, and each detail goes back to its list.
+#[test]
+fn the_workspaces_sections_sit_under_the_overview() {
+    for route in sections() {
+        assert_eq!(route.tab(), Tab::Overview, "{route:?}");
+        assert_eq!(route.parent(), Some(Route::Overview), "{route:?}");
+        assert!(route.is_workspace_scoped(), "{route:?}");
+    }
+    for (route, parent) in [
+        (desk_ticket(), Route::Desk),
+        (Route::DeskSettings, Route::Desk),
+        (support_request(), Route::Support),
+    ] {
+        assert_eq!(route.tab(), Tab::Overview, "{route:?}");
+        assert_eq!(route.parent(), Some(parent), "{route:?}");
+        assert!(route.is_workspace_scoped(), "{route:?}");
+    }
+}
+
+/// The help desk and support depend on the role, like the settings sections,
+/// so a switch leaves them for the overview; every other section stays and
+/// reads the new workspace.
+#[test]
+fn a_workspace_switch_leaves_the_desk_and_support_and_keeps_the_rest() {
+    for route in [
+        Route::Desk,
+        desk_ticket(),
+        Route::DeskSettings,
+        Route::Support,
+        support_request(),
+    ] {
+        assert_eq!(route.after_workspace_switch(), Route::Overview, "{route:?}");
+    }
+    for route in [
+        Route::Hq,
+        Route::Analytics,
+        Route::Marketplace,
+        Route::Billing,
+        Route::Workflows,
+        Route::Scheduling,
+        Route::Rooms,
+    ] {
+        assert_eq!(route.after_workspace_switch(), route, "{route:?}");
+    }
+}
