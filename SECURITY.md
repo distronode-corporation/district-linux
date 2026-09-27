@@ -84,6 +84,22 @@ The project is pre-release, and parts of this are not implemented yet.
   not choose. TLS is rustls with certificate verification and no option to turn it
   off.
 
+### Live updates
+
+- Calls and messages arrive over a WebSocket, one per workspace, opened with a
+  credential the service mints for that workspace alone and that expires after
+  fifteen minutes. It is kept only in memory and replaced before it expires.
+- The credential is sent in the `Sec-WebSocket-Protocol` header, after the
+  protocol's version marker, never in the URL. The server must select the version
+  marker: a server that selects the credential (and so sends it back) is refused.
+- The socket is `wss`, with the same TLS configuration and certificate store as the
+  API calls. Plain `ws` is refused unless the address is this machine.
+- Events are customer data. Nothing in the app logs them, no error or status
+  carries one, and one that cannot be read, or that names another workspace, is
+  dropped unread. Logging below debug level is compiled out of the build, because
+  the WebSocket library logs the handshake (credential included) and every
+  message at trace level.
+
 ### Privileges
 
 The app runs as your user and never asks for or needs administrator rights. It

@@ -68,5 +68,23 @@ date, and bump `[workspace.package] version` to match.
   `ApiError::TokenUnavailable` rather than as a rate limit, so the app can tell
   "wait", "check your connection" and "unlock your keyring" apart.
   `ApiError::RateLimited` no longer has a `refresh_throttled` flag.
+- `district-model`: the live telemetry credential (`TelemetryToken`) and the event
+  envelope the socket delivers (`TelemetryEnvelope`), whose event type keeps a name
+  this client does not know (`TelemetryEventType::Unknown`) rather than failing.
+  Neither prints its credential or its customer data in `Debug`.
+- `district-api`: `ApiClient::telemetry_token`, which mints that credential.
+- `district-live`: live updates. `TelemetryConnection` runs one workspace's socket:
+  it presents the credential in `Sec-WebSocket-Protocol` and refuses a server that
+  does not select the protocol's version, replaces the socket a minute before the
+  credential expires, mints a new credential when the server refuses one (4401),
+  stops when the member may not stream the workspace (4403), and otherwise
+  reconnects with exponential backoff and jitter capped at 60 seconds, presuming a
+  socket dead after 90 seconds without a frame. `TelemetryHub` runs one per
+  watched workspace and merges their updates into one stream, each tagged with its
+  workspace. TLS is rustls with the operating system's certificate store, as for
+  the API calls, and `ws://` is refused except to this machine.
+- Logging below debug level is compiled out of the whole build (`log`'s
+  `max_level_debug`), because the WebSocket library logs the handshake, with the
+  credential in it, and every message at trace level.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main
