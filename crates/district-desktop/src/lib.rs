@@ -1,22 +1,33 @@
 //! Linux desktop adapters for District AI for Linux. No GTK.
 //!
-//! - Secret storage through the Secret Service, using `oo7`. Inside a Flatpak
-//!   sandbox `oo7` keeps an encrypted keyring file instead, with its key from the
-//!   secret portal. The refresh token is stored here and nowhere else.
-//! - A stable device id for this installation.
-//! - Settings.
-//! - Starting at login, requested through the XDG background portal so it works
-//!   the same inside and outside a sandbox.
+//! - [`Oo7SessionStore`]: the signed-in session in the desktop's secret store,
+//!   through `oo7`: the Secret Service outside a sandbox, an encrypted keyring
+//!   file keyed by the secret portal inside a Flatpak. The refresh token is
+//!   stored there and nowhere else.
+//! - [`RefreshMarkerFile`]: the refresh-pending marker, a fingerprint of the
+//!   refresh token being rotated (never the token), written atomically and
+//!   durably under `$XDG_STATE_HOME`.
+//! - [`DeviceIdentity`]: this installation's random id, under
+//!   `$XDG_DATA_HOME`.
+//! - [`device_name`]: the operating system's name, for the signed-in devices
+//!   list. Never the host name.
 //!
-//! Status: a placeholder in the workspace layout. The adapters land in later
-//! changes.
+//! Every type takes its directory, or its keyring, as a constructor argument,
+//! so the tests never touch the real user's directories or keyring.
+//! [`XdgDirs::from_env`] is where the app gets the real ones.
+//!
+//! Settings and starting at login (through the background portal) land in
+//! later changes.
 
 #![forbid(unsafe_code)]
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn crate_name_matches_the_manifest() {
-        assert_eq!(env!("CARGO_PKG_NAME"), "district-desktop");
-    }
-}
+mod device;
+mod dirs;
+mod files;
+mod marker;
+
+pub use device::{
+    DEVICE_ID_FILE, DeviceIdentity, FALLBACK_DEVICE_NAME, device_name, device_name_in,
+};
+pub use dirs::{APP_ID, NoHomeDirectory, XdgDirs};
+pub use marker::{MARKER_FILE, RefreshMarkerFile};

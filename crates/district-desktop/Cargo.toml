@@ -10,7 +10,20 @@ authors.workspace = true
 publish.workspace = true
 
 [dependencies]
+district-auth = { workspace = true }
 oo7 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# `rt` for moving blocking file writes (with their fsyncs) off the async threads.
+tokio = { workspace = true, features = ["rt"] }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+# `sync` for the lock oo7's keyring type holds, to build a file-backed one;
+# `time` to wait for a test keyring daemon to start.
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
 
 [lints]
 workspace = true
