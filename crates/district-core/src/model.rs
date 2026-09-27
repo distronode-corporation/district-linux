@@ -105,6 +105,17 @@ pub struct CoreConfig {
     pub web_base_url: String,
     /// This build's version, for the account screen.
     pub app_version: String,
+    /// Whether this build has a call engine that can carry audio: false for a
+    /// build of `district-call` without its `livekit` feature.
+    ///
+    /// Without one, every call would reach a person or a bill with nothing to
+    /// carry the audio, so a build without calls never registers this
+    /// desktop's presence (the service would hold callers for a desktop that
+    /// cannot answer), never rings, offers no dialler, cannot answer and
+    /// starts no persona audition. A meeting room, which rings nobody and
+    /// costs nothing to ask for, is still tried, and fails with
+    /// [`DisconnectReason::Unavailable`](crate::DisconnectReason::Unavailable).
+    pub calls_available: bool,
 }
 
 impl CoreConfig {
@@ -2945,20 +2956,25 @@ impl Model {
     }
 
     /// Someone is signed in: read the workspaces, and whether this desktop
-    /// rings for calls.
+    /// rings for calls. A build without calls does not ask: nothing may ring
+    /// in it whatever the setting says.
     fn start_signed_in(&mut self, identity: Identity, notice: Option<Notice>) -> Vec<Effect> {
         self.tickets.cancel_all();
-        let setting = self.tickets.issue(Slot::RingSetting);
+        let calls_available = self.config.calls_available;
+        let mut effects = Vec::new();
+        if calls_available {
+            let setting = self.tickets.issue(Slot::RingSetting);
+            effects.push(Effect::ReadRingSetting { ticket: setting });
+        }
         let ticket = self.tickets.issue(Slot::Workspaces);
+        effects.push(Effect::LoadWorkspaces { ticket });
         self.session = SessionState::SignedIn(Box::new(SignedIn::new(
             identity,
             notice,
             self.window_visible,
+            calls_available,
         )));
-        vec![
-            Effect::ReadRingSetting { ticket: setting },
-            Effect::LoadWorkspaces { ticket },
-        ]
+        effects
     }
 
     /// The session ended without the user asking. With no session stored at all,

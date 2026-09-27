@@ -142,6 +142,9 @@ pub struct SignedIn {
     pub presence: PresenceState,
     /// The dial whose answer is awaited.
     pub(crate) pending_dial: Option<PendingDial>,
+    /// Whether this build can carry a call's audio
+    /// ([`CoreConfig::calls_available`]).
+    pub(crate) calls_available: bool,
 }
 
 /// What a signed-in step decided.
@@ -158,7 +161,12 @@ pub(crate) fn stay() -> Next {
 }
 
 impl SignedIn {
-    pub(crate) fn new(identity: Identity, notice: Option<Notice>, window_visible: bool) -> Self {
+    pub(crate) fn new(
+        identity: Identity,
+        notice: Option<Notice>,
+        window_visible: bool,
+        calls_available: bool,
+    ) -> Self {
         Self {
             identity,
             workspaces: WorkspacesState::Loading,
@@ -202,6 +210,7 @@ impl SignedIn {
             media: None,
             presence: PresenceState::default(),
             pending_dial: None,
+            calls_available,
         }
     }
 
@@ -209,16 +218,20 @@ impl SignedIn {
     ///
     /// The overview's role once it has been read, because that is the effective
     /// one; the workspace list's until then. Nothing when no workspace is open.
+    /// In a build without calls ([`CoreConfig::calls_available`]) nobody may
+    /// dial or answer, whatever the role.
     pub fn capabilities(&self) -> Capabilities {
         let WorkspacesState::Ready(workspaces) = &self.workspaces else {
             return Capabilities::default();
         };
-        match &self.overview {
+        let mut capabilities = match &self.overview {
             OverviewScreen::Loaded(content) => content.capabilities,
             OverviewScreen::Loading | OverviewScreen::Failed(_) => {
                 Capabilities::for_role(Some(&workspaces.active().role))
             }
-        }
+        };
+        capabilities.can_dial &= self.calls_available;
+        capabilities
     }
 
     pub(crate) fn navigate(&mut self, route: Route, tickets: &mut Tickets) -> Next {

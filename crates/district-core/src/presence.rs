@@ -142,9 +142,10 @@ impl SignedIn {
     }
 
     /// Registers the presence, and schedules its renewal, when the desktop
-    /// should ring.
+    /// should ring. Never in a build without calls: the service would hold a
+    /// caller for a desktop that cannot answer.
     fn register_if_wanted(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
-        if !self.presence.rings_here() {
+        if !self.calls_available || !self.presence.rings_here() {
             return Vec::new();
         }
         if self.presence.status != PresenceStatus::Registered {
@@ -160,10 +161,11 @@ impl SignedIn {
         ]
     }
 
-    /// Unregisters the presence, and stops renewing it, when it was wanted.
+    /// Unregisters the presence, and stops renewing it, when it was wanted. A
+    /// build without calls never registered it.
     fn unregister(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         tickets.cancel(Slot::PresenceHeartbeat);
-        if !self.presence.rings_here() {
+        if !self.calls_available || !self.presence.rings_here() {
             return Vec::new();
         }
         self.presence.status = PresenceStatus::Off;

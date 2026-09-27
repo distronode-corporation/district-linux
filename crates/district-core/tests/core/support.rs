@@ -1,6 +1,7 @@
 //! What the tests share: a configuration, an identity, recorded server
 //! responses, and models brought to a given state by events.
 
+use std::cell::Cell;
 use std::fs;
 use std::path::PathBuf;
 
@@ -28,11 +29,28 @@ pub const VIEWER: &str = "ws-contract-viewer";
 /// The fixture list's client workspace.
 pub const CLIENT: &str = "ws-contract-client";
 
+thread_local! {
+    /// Whether [`config`] describes a build with calls, for the test running on
+    /// this thread. See [`without_calls`].
+    static CALLS_AVAILABLE: Cell<bool> = const { Cell::new(true) };
+}
+
 pub fn config() -> CoreConfig {
     CoreConfig {
         web_base_url: "https://www.distronode.com/".to_owned(),
         app_version: "0.1.0".to_owned(),
+        calls_available: CALLS_AVAILABLE.get(),
     }
+}
+
+/// Runs `test` with every model these helpers build describing a build with
+/// no call engine. Each test runs on a thread of its own, so the setting
+/// reaches no other test.
+pub fn without_calls<T>(test: impl FnOnce() -> T) -> T {
+    CALLS_AVAILABLE.set(false);
+    let result = test();
+    CALLS_AVAILABLE.set(true);
+    result
 }
 
 pub fn claims() -> AccessClaims {

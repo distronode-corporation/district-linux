@@ -470,6 +470,7 @@ fn a_room_that_ends_under_the_member_drops_its_credential_and_says_why() {
         (DisconnectReason::Removed, true),
         (DisconnectReason::RoomEnded, false),
         (DisconnectReason::ConnectFailed, true),
+        (DisconnectReason::Unavailable, true),
     ] {
         let (mut model, session, _) = joined(AGENCY, "agency");
         assert!(
@@ -552,6 +553,10 @@ fn every_way_a_room_ends_has_its_words_or_none() {
         (
             DisconnectReason::Other,
             Some("The connection was lost and could not be resumed."),
+        ),
+        (
+            DisconnectReason::Unavailable,
+            Some("Calls and meeting rooms are not available in this build of District AI."),
         ),
     ] {
         assert_eq!(reason.message(), words, "{reason:?}");

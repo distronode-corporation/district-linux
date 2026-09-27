@@ -19,7 +19,7 @@ use serde_json::json;
 use crate::settings::{open, settings_row, unchanged};
 use crate::support::{
     AGENCY, USER, connect, fixture, media, ring_here, ringing, server_error, service, signed_in,
-    ticket,
+    ticket, without_calls,
 };
 
 const DEEPGRAM: &str = "deepgram-pipeline";
@@ -694,6 +694,34 @@ fn an_audition_that_cannot_be_joined_fails_and_one_that_ends_is_ended() {
     assert!(matches!(effects.as_slice(), [Effect::Wait { .. }]));
     assert_eq!(persona(&model).preview, Some(PersonaPreview::Ended));
     assert!(persona(&model).preview_cooling);
+}
+
+#[test]
+fn an_audition_through_an_engine_that_can_join_nothing_says_so() {
+    let (mut model, session) = auditioning();
+    model.update(media(
+        session,
+        MediaEvent::Disconnected(DisconnectReason::Unavailable),
+    ));
+    let Some(PersonaPreview::Failed(failure)) = &persona(&model).preview else {
+        panic!("{:?}", persona(&model).preview);
+    };
+    assert_eq!(failure.message, DisconnectReason::UNAVAILABLE);
+    assert!(persona(&model).preview_credential().is_none());
+}
+
+#[test]
+fn a_build_without_calls_starts_no_audition() {
+    without_calls(|| {
+        let mut model = ready();
+        event(&mut model, PersonaEvent::OpenPreview);
+        assert!(persona(&model).can_start_preview());
+        assert!(
+            event(&mut model, PersonaEvent::StartPreview).is_empty(),
+            "an audition is billed whether or not it can be heard"
+        );
+        assert!(persona(&model).preview_credential().is_none());
+    });
 }
 
 #[test]

@@ -340,6 +340,22 @@ fn a_room_that_cannot_be_joined_is_a_failed_call() {
 }
 
 #[test]
+fn a_call_through_an_engine_that_can_join_nothing_fails_saying_so() {
+    let mut model = at_dialler(AGENCY, "agency");
+    let session = placed(&mut model);
+    let effects = model.update(media(
+        session,
+        MediaEvent::Disconnected(DisconnectReason::Unavailable),
+    ));
+    assert_eq!(effects, [carrier_hang_up()], "the telephone leg is ended");
+    let CallPhase::Ended(CallEnd::Failed(failure)) = phase(&model) else {
+        panic!("{:?}", phase(&model));
+    };
+    assert_eq!(failure.message, DisconnectReason::UNAVAILABLE);
+    assert!(!failure.retryable, "trying again would fail the same way");
+}
+
+#[test]
 fn a_callee_who_picked_up_before_the_room_was_joined_is_answered_on_joining() {
     let mut model = at_dialler(AGENCY, "agency");
     let session = placed(&mut model);

@@ -767,8 +767,11 @@ impl SignedIn {
 
     pub(crate) fn persona_event(&mut self, event: PersonaEvent, tickets: &mut Tickets) -> Next {
         let can_change = self.capabilities().can_change;
-        // Nothing else may hold the engine when an audition starts.
-        let refused = event == PersonaEvent::StartPreview && self.media_busy();
+        // Nothing else may hold the engine when an audition starts, and a
+        // build without calls has no engine to hold: the audition is billed
+        // whether or not anything can be heard.
+        let refused =
+            event == PersonaEvent::StartPreview && (self.media_busy() || !self.calls_available);
         let workspace_id = self.workspace_id();
         let mut effects = self
             .persona
@@ -818,6 +821,9 @@ impl SignedIn {
         let ended = match reason {
             DisconnectReason::ConnectFailed => {
                 PersonaPreview::Failed(FailureText::final_(PREVIEW_NOT_JOINED))
+            }
+            DisconnectReason::Unavailable => {
+                PersonaPreview::Failed(FailureText::final_(DisconnectReason::UNAVAILABLE))
             }
             _ => PersonaPreview::Ended,
         };

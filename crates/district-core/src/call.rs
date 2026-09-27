@@ -366,6 +366,9 @@ impl SignedIn {
         tickets: &mut Tickets,
     ) -> Vec<Effect> {
         let end = match self.active_call.as_ref().map(|call| &call.phase) {
+            _ if reason == DisconnectReason::Unavailable => {
+                CallEnd::Failed(FailureText::final_(DisconnectReason::UNAVAILABLE))
+            }
             Some(CallPhase::Connecting) if reason == DisconnectReason::ConnectFailed => {
                 CallEnd::Failed(FailureText::final_(ActiveCall::CONNECT_FAILED))
             }

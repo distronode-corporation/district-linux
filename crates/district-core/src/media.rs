@@ -140,8 +140,9 @@ impl fmt::Debug for MediaCredential {
 ///   second connects.
 /// - On [`connect`](Self::connect), report [`MediaEvent::Connecting`] at once,
 ///   then [`MediaEvent::Connected`] or, when the room cannot be joined,
-///   [`MediaEvent::Disconnected`] with [`DisconnectReason::ConnectFailed`]. Never
-///   leave a session reported as connecting.
+///   [`MediaEvent::Disconnected`] with [`DisconnectReason::ConnectFailed`]
+///   ([`DisconnectReason::Unavailable`] from an engine that can join nothing
+///   at all). Never leave a session reported as connecting.
 /// - Use the credential's server and token as they are, and its passphrase as
 ///   the room's shared key, verbatim (see [`MediaCredential::passphrase`]). A
 ///   session with no passphrase is joined unencrypted, and any key installed for
@@ -269,6 +270,9 @@ pub enum DisconnectReason {
     JoinedElsewhere,
     /// The connection was lost and could not be resumed.
     ConnectionLost,
+    /// This build has no call engine that can carry audio, so nothing was
+    /// joined: see [`CoreConfig::calls_available`](crate::CoreConfig::calls_available).
+    Unavailable,
     /// Anything else the media library reports.
     Other,
 }
@@ -284,8 +288,14 @@ impl DisconnectReason {
             Self::ConnectionLost | Self::Other => {
                 Some("The connection was lost and could not be resumed.")
             }
+            Self::Unavailable => Some(Self::UNAVAILABLE),
         }
     }
+
+    /// What to tell the member when this build cannot join a call or a room at
+    /// all. Said plainly, because "try again" would never help.
+    pub const UNAVAILABLE: &'static str =
+        "Calls and meeting rooms are not available in this build of District AI.";
 }
 
 /// One remote participant, as much of them as the screens need.
