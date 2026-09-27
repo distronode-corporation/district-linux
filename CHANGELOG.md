@@ -25,5 +25,8 @@ date, and bump `[workspace.package] version` to match.
   refused), encode it back and compare, and account for every recording.
 - `district-api`: the HTTP client and the table of the endpoints it calls, held to the
   Android app's endpoint list by a parity test.
+- A line coverage gate in CI: every crate is held to a floor in `coverage-floors.toml`
+  by `scripts/check-coverage.py`, 100 for each crate that needs no desktop session,
+  live media or GTK main loop.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main

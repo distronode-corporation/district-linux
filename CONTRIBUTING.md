@@ -27,8 +27,10 @@ crates/district-app/      The GTK 4 and libadwaita binary, `district-ai`. The on
 contracts/                What this client is checked against: the server's recorded
                           responses (vendored and sanitised by sync-contracts.py) and
                           the Android app's endpoint snapshot (sync-endpoints.py).
-scripts/                  check-version.py and check-public-hygiene.py, run by CI;
-                          sync-contracts.py and sync-endpoints.py, run by hand.
+scripts/                  check-version.py, check-public-hygiene.py and
+                          check-coverage.py, run by CI; sync-contracts.py and
+                          sync-endpoints.py, run by hand.
+coverage-floors.toml      Each crate's line coverage floor (see Coverage below).
 ```
 
 Dependencies point one way: `district-app` sits on top, `district-model` at the
@@ -41,7 +43,7 @@ files, and without a display.
 You need Rust 1.92 or newer (via [rustup](https://rustup.rs);
 `rust-toolchain.toml` pins the stable channel with rustfmt and clippy) and, to
 build the app itself, the packages under "Build from source" in
-[README.md](README.md). Python 3.11 or newer runs the two scripts.
+[README.md](README.md). Python 3.11 or newer runs the scripts.
 
 ```
 cargo run -p district-app      # the app
@@ -65,13 +67,69 @@ cargo test --workspace --locked
 python3 scripts/check-version.py
 python3 scripts/check-public-hygiene.py --self-test
 python3 scripts/check-public-hygiene.py
+python3 scripts/check-coverage.py --self-test
 ```
 
-CI also runs `cargo check` at the declared minimum Rust version (the `msrv` job),
+CI runs those tests with line coverage measured and checks it against the floors;
+[Coverage](#coverage) below has the commands to do the same. CI also runs
+`cargo check` at the declared minimum Rust version (the `msrv` job),
 `cargo deny --locked check` against [deny.toml](deny.toml), and
 [zizmor](https://docs.zizmor.sh) over the workflows. Clippy runs with
 `-D warnings`, so a warning is a failure. There is no formatting bot; run
 `cargo fmt --all` yourself.
+
+## Coverage
+
+CI measures line coverage while the tests run, with
+[cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov), and
+`scripts/check-coverage.py` holds every workspace crate to its floor in
+[coverage-floors.toml](coverage-floors.toml). To run the same check, install the
+tool and the LLVM tools that match your compiler once:
+
+```
+rustup component add llvm-tools-preview
+cargo install cargo-llvm-cov --locked
+```
+
+then:
+
+```
+cargo llvm-cov --workspace --locked --json --summary-only --output-path target/coverage.json
+python3 scripts/check-coverage.py target/coverage.json
+```
+
+The check prints a table of every crate either way. Without the GTK development
+files, add `--exclude district-app` to the first command: the check then fails on
+`district-app` as missing from the report, which is expected, and the other rows
+still say where each crate stands. `cargo llvm-cov --workspace --show-missing-lines`
+lists the lines no test runs, and `cargo llvm-cov --workspace --open` shows them in
+a browser.
+
+What the floors mean:
+
+- A floor is the whole-number percentage of a crate's lines under `src/` that the
+  tests must run; 100 means every line. Integration tests under `tests/` are not
+  measured. Unit tests inside `src/` are, because stable Rust has no way to leave
+  them out. Only lines: branch coverage needs a nightly compiler.
+- `district-model`, `district-api`, `district-auth`, `district-live` and
+  `district-core` are held at 100, because every line in them can be made to run
+  in a test without a desktop session, a display or a live call.
+- `district-desktop`, `district-call` and `district-app` have measured floors:
+  Secret Service and portal calls, live media and the GTK main loop cannot all run
+  in CI, so each floor is what the tests reached when it was set, rounded down.
+  `district-app` starts at 0, because CI does not run its GTK main loop yet.
+- There is no exclusion list. Code CI cannot run stays in the measurement and
+  holds its crate's floor down, where everyone can see it.
+- A crate missing from the report fails whatever its floor, and a floor above 0
+  with no measurable lines fails too, so a run that skipped a crate can never
+  read as covered. A new crate needs its entry in the change that adds it.
+
+Floors only ratchet up. Raise a crate's floor in the same change that raises its
+coverage; the check prints a note when a crate is a whole point or more above
+its floor. Never lower a floor without a stated reason in review.
+
+`python3 scripts/check-coverage.py --self-test` proves each rule still fails what
+it should, and CI runs it with the other repository checks.
 
 ## Public hygiene
 

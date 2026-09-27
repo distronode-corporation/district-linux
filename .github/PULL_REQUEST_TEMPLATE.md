@@ -20,6 +20,8 @@
 - [ ] `python3 scripts/check-version.py`
 - [ ] `python3 scripts/check-public-hygiene.py --self-test` and
       `python3 scripts/check-public-hygiene.py`
+- [ ] `python3 scripts/check-coverage.py --self-test`, and every crate at or above
+      its coverage floor (the commands are under "Coverage" in CONTRIBUTING.md)
 - [ ] Touches the UI, and so the app was run and the change looked at (name the
       distribution and desktop under the next heading)
 
