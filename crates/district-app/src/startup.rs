@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use district_api::{ApiClient, ApiConfig};
 use district_auth::{MemorySessionStore, NativeAuthApi, TokenRefreshCoordinator};
-use district_call::{CALLS_AVAILABLE, UnavailableCallEngine};
+use district_call::CALLS_AVAILABLE;
 use district_core::{
     CoreConfig, DesktopPresence, EffectRunner, Event, LiveHub, NativeAuth, TokioClock,
 };
@@ -88,7 +88,10 @@ fn launch() -> Result<glib::ExitCode, String> {
             device_id,
             Some(device_name.clone()),
         );
-        let (engine, media) = UnavailableCallEngine::new();
+        // The LiveKit engine in a build with the `voice` feature, and the one
+        // that joins nothing without it; CALLS_AVAILABLE below follows the same
+        // feature, so the core never expects calls this engine cannot carry.
+        let (engine, media) = district_call::engine();
         forward(&runtime, updates, events.clone(), Event::Live);
         forward(&runtime, media, events.clone(), Event::Media);
         let bridge = UiBridge::new(commands);

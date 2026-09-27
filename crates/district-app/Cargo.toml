@@ -30,6 +30,11 @@ required-features = ["gtk-tests"]
 [features]
 # Builds the smoke test. Nothing in the app itself changes.
 gtk-tests = []
+# Calls: the LiveKit call engine in place of the one that joins nothing. Off by
+# default, because it links libwebrtc (see "Building with calls" in
+# CONTRIBUTING.md); a build without it rings nothing, dials nothing and says
+# so.
+voice = ["district-call/livekit"]
 
 [dependencies]
 async-channel = { workspace = true }
