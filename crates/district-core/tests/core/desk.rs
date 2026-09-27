@@ -902,3 +902,31 @@ fn statuses_and_authors_read_as_the_service_fixed_them() {
     let response: DeskTicketResponse = fixture("district-desk-ticket.json");
     assert_eq!(response.ticket.id, TICKET);
 }
+
+/// A role that narrows while a ticket is open leaves it, and the customer's
+/// details with it, rather than hiding it behind the overview.
+#[test]
+fn a_role_narrowed_to_viewer_leaves_an_open_ticket_behind() {
+    let mut model = on_ticket(AGENCY, "agency");
+    model.update(Event::Navigate(Route::Overview));
+    let effects = model.update(Event::Refresh);
+    let effects = model.update(Event::WorkspacesLoaded {
+        ticket: last_ticket(&effects),
+        remembered: Some(AGENCY.to_owned()),
+        result: Ok(crate::support::workspace_list()),
+    });
+    // Back on the ticket while the overview is read again.
+    model.update(Event::Navigate(Route::DeskTicket {
+        ticket_id: TICKET.to_owned(),
+    }));
+    assert!(signed_in(&model).desk_ticket.is_some());
+    let narrowed = model.update(Event::OverviewLoaded {
+        ticket: last_ticket(&effects),
+        result: Ok(crate::support::overview(AGENCY, "viewer")),
+    });
+    let [Effect::LoadSetupStatus { .. }] = narrowed.as_slice() else {
+        panic!("{narrowed:?}");
+    };
+    assert_eq!(signed_in(&model).route, Route::Overview);
+    assert_eq!(signed_in(&model).desk_ticket, None);
+}

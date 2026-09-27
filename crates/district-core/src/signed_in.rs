@@ -482,17 +482,22 @@ impl SignedIn {
             show_finish_setup,
             refreshing: false,
         });
-        // The role may have narrowed since the screen was opened.
+        // The role may have narrowed since the screen was opened. The screen is
+        // left, not just hidden: a help desk ticket or a support request the
+        // role may no longer read must not stay in memory behind the overview.
+        let mut effects = Vec::new();
         if !self.capabilities().allows(&self.route) {
+            effects = self.leave(&Route::Overview, tickets);
             self.route = Route::Overview;
         }
         // After the overview, and never in its way: for everyone but the owner
         // the answer is a refusal, which must neither delay nor fail the screen.
         let ticket = tickets.issue(Slot::Setup);
-        Next::Stay(vec![Effect::LoadSetupStatus {
+        effects.push(Effect::LoadSetupStatus {
             ticket,
             workspace_id: active,
-        }])
+        });
+        Next::Stay(effects)
     }
 
     pub(crate) fn setup_loaded(
