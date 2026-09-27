@@ -47,6 +47,7 @@ mod hq;
 mod inbox;
 mod knowledge;
 mod members;
+mod messaging;
 mod numbers;
 mod overview;
 mod persona;
@@ -113,6 +114,14 @@ pub use knowledge::{
 pub use members::{
     CODE_LAST_AGENCY_MEMBER, CODE_MEMBER_EXISTS, MAX_WORKSPACE_NAME_LENGTH, MemberListResponse,
     MemberRemovalResponse, MemberResponse, MemberRole, RenameResponse, WorkspaceMember,
+};
+pub use messaging::{
+    ManagedAccount, MessagingAccount, MessagingAccountSave, MessagingAccountSaveResponse,
+    MessagingChannel, MessagingChannelDefaultResponse, MessagingCreatorCell,
+    MessagingCredentialSource, MessagingCredentials, MessagingDefaultResponse, MessagingDelete,
+    MessagingMetaResponse, MessagingProvider, MessagingResponse, MessagingSetChannelDefault,
+    MessagingSetDefault, MessagingTestDetails, MessagingTestResponse, SinchCredentials,
+    TelnyxCredentials, TwilioCredentials,
 };
 pub use numbers::{
     AvailableNumber, NumberSearch, NumberSearchResponse, OwnedNumber, OwnedNumbersResponse,

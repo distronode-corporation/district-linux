@@ -20,11 +20,13 @@ use district_model::{
     KnowledgeDeleteResponse, KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse,
     MarkReadResponse, MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary,
     MemberListResponse, MemberRemovalResponse, MemberResponse, MemberRole, MessageThreadResponse,
-    NativeRevokeResponse, NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP,
-    OverviewResponse, OwnedNumbersResponse, PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX,
-    PersonaLabelledValue, PersonaOptionsResponse, PersonaPreviewTokenResponse, PkceVector,
-    PushRegistrationResponse, RenameResponse, RoomTokenResponse, RoutingRuleField, SETUP_STEP_DONE,
-    SETUP_STEP_TODO, SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
+    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingDefaultResponse,
+    MessagingMetaResponse, MessagingResponse, MessagingTestResponse, NativeRevokeResponse,
+    NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, OverviewResponse,
+    OwnedNumbersResponse, PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX, PersonaLabelledValue,
+    PersonaOptionsResponse, PersonaPreviewTokenResponse, PkceVector, PushRegistrationResponse,
+    RenameResponse, RoomTokenResponse, RoutingRuleField, SETUP_STEP_DONE, SETUP_STEP_TODO,
+    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
     SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
     SupportRequestCreateResponse, SupportRequestFiling, SupportRequestResponse,
     SupportRequestsResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef,
@@ -1136,6 +1138,66 @@ fn knowledge_covers_a_pasted_and_a_fetched_document_and_both_modes() {
     let saved: KnowledgeModeResponse = decode("district-knowledge-mode-patch.json");
     assert_eq!(read.mode, KnowledgeMode::Linked.as_str());
     assert_eq!(saved.mode, KnowledgeMode::Internal.as_str());
+}
+
+#[test]
+fn messaging_covers_both_sources_and_a_workspace_with_no_account() {
+    let answer: MessagingResponse = decode("district-messaging.json");
+    let ids: BTreeSet<&str> = answer.accounts.iter().map(|a| a.id.as_str()).collect();
+    let sources: BTreeSet<&str> = answer
+        .accounts
+        .iter()
+        .map(|a| a.credential_source.as_str())
+        .collect();
+    assert_eq!(sources, BTreeSet::from(["byok", "managed"]));
+    assert!(ids.contains(answer.default_account_id.as_deref().expect("a default")));
+    assert!(
+        answer
+            .channel_defaults
+            .values()
+            .all(|id| ids.contains(id.as_str()))
+    );
+    let managed = answer
+        .managed_account
+        .as_ref()
+        .expect("Distronode's numbers");
+    assert!(!managed.phone_numbers.is_empty() && managed.provider.is_some());
+
+    let empty: MessagingResponse = decode("district-messaging-unmanaged.json");
+    assert!(empty.accounts.is_empty() && empty.managed_account.is_none());
+    assert!(empty.default_account_id.is_none() && empty.channel_defaults.is_empty());
+}
+
+#[test]
+fn every_messaging_change_answers_with_what_it_changed() {
+    let saved: MessagingAccountSaveResponse = decode("district-messaging-upsert.json");
+    assert!(!saved.account_id.is_empty() && saved.default_account_id.is_some());
+    for name in [
+        "district-messaging-set-default.json",
+        "district-messaging-delete.json",
+    ] {
+        let answer: MessagingDefaultResponse = decode(name);
+        assert!(answer.default_account_id.is_some(), "{name}");
+    }
+    let channels: MessagingChannelDefaultResponse =
+        decode("district-messaging-channel-default.json");
+    assert!(
+        channels.channel_defaults.len() > 1,
+        "every channel, not the one changed"
+    );
+    let meta: MessagingMetaResponse = decode("district-messaging-meta.json");
+    assert!(meta.success);
+}
+
+#[test]
+fn a_credential_check_answers_an_acceptance_or_the_carriers_refusal() {
+    let accepted: MessagingTestResponse = decode("district-messaging-test.json");
+    assert_eq!(accepted.refusal(), None);
+    let details = accepted.details.expect("the account the carrier named");
+    assert!(details.friendly_name.is_some() && details.status.is_some());
+    let refused: MessagingTestResponse = decode("district-messaging-test-rejected.json");
+    assert!(!refused.success && refused.details.is_none());
+    assert!(refused.refusal().is_some_and(|reason| !reason.is_empty()));
 }
 
 #[test]

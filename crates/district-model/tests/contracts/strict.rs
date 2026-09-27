@@ -154,6 +154,8 @@ fn every_deserialize_type_in_src_honours_strict_contracts() {
         "RoomE2ee",
         "AiPersona",
         "PersonaVoiceGroup",
+        "ManagedAccount",
+        "MessagingTestDetails",
     ] {
         assert!(
             scan.checked.iter().any(|name| name == expected),

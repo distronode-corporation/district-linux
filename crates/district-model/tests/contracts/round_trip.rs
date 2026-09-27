@@ -289,6 +289,9 @@ const DISPLAY_ONLY: &str = "WorkspaceConfig: the messaging and campaign settings
 const VOICE_DEFAULTS: &str = "PersonaDefaults: starting voices keyed by engine id and by \
                               language, so every key is data";
 
+const CHANNEL_DEFAULTS: &str = "channel_defaults: a map from channel name to account id, open to \
+                                channels added later";
+
 /// The objects the unknown-field probe leaves alone, because the type carries them
 /// as plain JSON on purpose. An entry must still be opaque, or the probe fails it
 /// as stale: a type that starts modelling one of these gets the probe back.
@@ -362,6 +365,21 @@ pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
         fixture: "fixtures/district-meeting-detail.json",
         path: "$.participants",
         reason: MEETING_JSON,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-messaging-channel-default.json",
+        path: "$.channelDefaults",
+        reason: CHANNEL_DEFAULTS,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-messaging-unmanaged.json",
+        path: "$.channelDefaults",
+        reason: CHANNEL_DEFAULTS,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-messaging.json",
+        path: "$.channelDefaults",
+        reason: CHANNEL_DEFAULTS,
     },
     OpaqueObject {
         fixture: "fixtures/district-persona-options.json",

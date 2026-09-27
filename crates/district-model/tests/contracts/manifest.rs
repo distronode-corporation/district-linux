@@ -30,7 +30,9 @@ use district_model::{
     DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, KnowledgeCreateResponse,
     KnowledgeDeleteResponse, KnowledgeListResponse, KnowledgeModeResponse, MarkReadResponse,
     MediaUploadResponse, MeetingDetail, MeetingSummary, MemberListResponse, MemberRemovalResponse,
-    MemberResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
+    MemberResponse, MessageThreadResponse, MessagingAccountSaveResponse,
+    MessagingChannelDefaultResponse, MessagingDefaultResponse, MessagingMetaResponse,
+    MessagingResponse, MessagingTestResponse, NativeRevokeResponse, NumberSearchResponse,
     OverviewResponse, OwnedNumbersResponse, PersonaOptionsResponse, PersonaPreviewTokenResponse,
     PkceVector, PushRegistrationResponse, RenameResponse, RoomTokenResponse,
     SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
@@ -294,6 +296,49 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
         "district-messages-unread-count.json",
         codec::<UnreadCountResponse>,
     ),
+    // PATCH /api/district/workspace/messaging, `setChannelDefault`.
+    (
+        "district-messaging-channel-default.json",
+        codec::<MessagingChannelDefaultResponse>,
+    ),
+    // PATCH /api/district/workspace/messaging, `delete`.
+    (
+        "district-messaging-delete.json",
+        codec::<MessagingDefaultResponse>,
+    ),
+    // PATCH /api/district/workspace/messaging, `meta`.
+    (
+        "district-messaging-meta.json",
+        codec::<MessagingMetaResponse>,
+    ),
+    // PATCH /api/district/workspace/messaging, `setDefault`.
+    (
+        "district-messaging-set-default.json",
+        codec::<MessagingDefaultResponse>,
+    ),
+    // POST /api/district/workspace/messaging/test, the credentials refused: an
+    // answer with `success: false`, sent with a 200.
+    (
+        "district-messaging-test-rejected.json",
+        codec::<MessagingTestResponse>,
+    ),
+    // POST /api/district/workspace/messaging/test, the credentials accepted.
+    (
+        "district-messaging-test.json",
+        codec::<MessagingTestResponse>,
+    ),
+    // GET /api/district/workspace/messaging for a workspace with no account.
+    (
+        "district-messaging-unmanaged.json",
+        codec::<MessagingResponse>,
+    ),
+    // PATCH /api/district/workspace/messaging with no action: an account saved.
+    (
+        "district-messaging-upsert.json",
+        codec::<MessagingAccountSaveResponse>,
+    ),
+    // GET /api/district/workspace/messaging: two accounts and Distronode's numbers.
+    ("district-messaging.json", codec::<MessagingResponse>),
     // POST /api/auth/native/revoke: this installation signing itself out.
     ("district-native-revoke.json", codec::<NativeRevokeResponse>),
     // GET /api/district/workspace/numbers/search: a priced and an unpriced number.
@@ -450,7 +495,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 18;
+pub const NOT_YET_MODELLED_BASELINE: usize = 9;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -465,15 +510,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-enrich-disabled.json",
     "district-member-duplicate.json",
     "district-member-last-agency.json",
-    "district-messaging-channel-default.json",
-    "district-messaging-delete.json",
-    "district-messaging-meta.json",
-    "district-messaging-set-default.json",
-    "district-messaging-test-rejected.json",
-    "district-messaging-test.json",
-    "district-messaging-unmanaged.json",
-    "district-messaging-upsert.json",
-    "district-messaging.json",
     "district-workspace-list-degraded.json",
 ];
 
