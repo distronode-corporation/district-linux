@@ -43,5 +43,5 @@ floor = 100
 reason = "Measured, not a target: live media needs a LiveKit server and audio devices CI does not have."
 
 [crates.district-app]
-floor = 0
-reason = "CI runs the app's unit tests but not the GTK main loop; a GTK smoke job under a virtual display will measure the rest and raise this."
+floor = 91
+reason = "Measured, not a target: the smoke test drives the real window under Xvfb, but the start-up wiring (the keyring, the network, the runtime) and the runner's thread run only in the real app."
