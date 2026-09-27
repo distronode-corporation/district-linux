@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Booking pages: where the workspace's booking pages stand, turning them
+     on, and managing them on the web through a one-time link that is never
+     shown here. src/pages/scheduling.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSchedulingPage" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">loading</property>
+            <property name="child">
+              <object class="GtkSpinner" id="loading_spinner">
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="width-request">32</property>
+                <property name="height-request">32</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">status</property>
+            <property name="child">
+              <object class="AdwStatusPage" id="status">
+                <property name="icon-name">x-office-calendar-symbolic</property>
+                <property name="child">
+                  <object class="GtkButton" id="retry_button">
+                    <property name="label">Try again</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">content</property>
+            <property name="child">
+              <object class="GtkScrolledWindow">
+                <property name="hscrollbar-policy">never</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">640</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="margin-start">18</property>
+                        <property name="margin-end">18</property>
+                        <property name="margin-top">24</property>
+                        <property name="margin-bottom">24</property>
+                        <child>
+                          <object class="GtkImage" id="state_icon">
+                            <property name="pixel-size">64</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="message_label">
+                            <property name="wrap">True</property>
+                            <property name="justify">center</property>
+                            <style>
+                              <class name="title-4"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox" id="details_list">
+                            <property name="selection-mode">none</property>
+                            <style>
+                              <class name="boxed-list"/>
+                            </style>
+                            <child>
+                              <object class="AdwActionRow" id="page_row">
+                                <property name="title">Booking page</property>
+                                <property name="use-markup">False</property>
+                                <property name="subtitle-selectable">True</property>
+                                <style>
+                                  <class name="property"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwActionRow" id="ready_row">
+                                <property name="title">Last live</property>
+                                <property name="use-markup">False</property>
+                                <style>
+                                  <class name="property"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwActionRow" id="problem_row">
+                                <property name="title">What went wrong</property>
+                                <property name="use-markup">False</property>
+                                <property name="subtitle-selectable">True</property>
+                                <style>
+                                  <class name="property"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="notice_box">
+                            <property name="spacing">12</property>
+                            <property name="visible">False</property>
+                            <style>
+                              <class name="card"/>
+                              <class name="composer-failure"/>
+                            </style>
+                            <child>
+                              <object class="GtkLabel" id="notice_label">
+                                <property name="xalign">0</property>
+                                <property name="hexpand">True</property>
+                                <property name="wrap">True</property>
+                                <property name="use-markup">False</property>
+                                <property name="margin-start">12</property>
+                                <property name="margin-top">10</property>
+                                <property name="margin-bottom">10</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="notice_dismiss">
+                                <property name="label">Dismiss</property>
+                                <property name="valign">center</property>
+                                <property name="margin-end">10</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="spacing">10</property>
+                            <property name="halign">center</property>
+                            <child>
+                              <object class="GtkButton" id="enable_button">
+                                <property name="label">Turn on booking pages</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="suggested-action"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="check_button">
+                                <property name="label">Check again</property>
+                                <style>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="web_button">
+                                <property name="label">Manage on the web</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="suggested-action"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkSpinner" id="busy_spinner">
+                                <property name="visible">False</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="web_caption">
+                            <property name="label">Opens the booking pages on the District AI website in your browser, signed in as you.</property>
+                            <property name="wrap">True</property>
+                            <property name="justify">center</property>
+                            <style>
+                              <class name="dim-label"/>
+                              <class name="caption"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

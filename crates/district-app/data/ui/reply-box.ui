@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The box a reply is written in, under a help desk ticket or a support
+     request: the text, Send, what it waits for and why it failed.
+     src/pages/reply_box.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictReplyBox" parent="AdwBin">
+    <property name="child">
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">8</property>
+        <property name="margin-start">18</property>
+        <property name="margin-end">18</property>
+        <property name="margin-top">8</property>
+        <property name="margin-bottom">14</property>
+        <child>
+          <object class="GtkBox" id="failure_box">
+            <property name="spacing">12</property>
+            <property name="visible">False</property>
+            <style>
+              <class name="card"/>
+              <class name="composer-failure"/>
+            </style>
+            <child>
+              <object class="GtkLabel" id="failure_label">
+                <property name="xalign">0</property>
+                <property name="hexpand">True</property>
+                <property name="wrap">True</property>
+                <property name="use-markup">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-top">8</property>
+                <property name="margin-bottom">8</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="dismiss_button">
+                <property name="label">Dismiss</property>
+                <property name="valign">center</property>
+                <property name="margin-end">8</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="note_label">
+            <property name="xalign">0</property>
+            <property name="wrap">True</property>
+            <property name="visible">False</property>
+            <style>
+              <class name="dim-label"/>
+              <class name="caption"/>
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">8</property>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="hexpand">True</property>
+                <property name="hscrollbar-policy">never</property>
+                <property name="min-content-height">64</property>
+                <property name="max-content-height">180</property>
+                <property name="propagate-natural-height">True</property>
+                <style>
+                  <class name="card"/>
+                  <class name="composer-box"/>
+                </style>
+                <property name="child">
+                  <object class="GtkTextView" id="text">
+                    <property name="wrap-mode">word-char</property>
+                    <property name="accepts-tab">False</property>
+                    <property name="top-margin">8</property>
+                    <property name="bottom-margin">8</property>
+                    <property name="left-margin">10</property>
+                    <property name="right-margin">10</property>
+                    <accessibility>
+                      <property name="label">Reply</property>
+                    </accessibility>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="valign">end</property>
+                <property name="spacing">6</property>
+                <child>
+                  <object class="GtkSpinner" id="spinner">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="send_button">
+                    <property name="label">Send</property>
+                    <style>
+                      <class name="suggested-action"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

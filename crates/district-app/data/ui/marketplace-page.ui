@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Phone numbers, read only: the numbers the workspace holds, and a search
+     of the numbers for sale. Buying opens the web. src/pages/marketplace.rs
+     fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictMarketplacePage" parent="AdwBin">
+    <property name="child">
+      <object class="GtkScrolledWindow">
+        <property name="hscrollbar-policy">never</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">760</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">18</property>
+                <property name="margin-start">18</property>
+                <property name="margin-end">18</property>
+                <property name="margin-top">18</property>
+                <property name="margin-bottom">24</property>
+                <child>
+                  <object class="GtkLabel" id="note_label">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox" id="web_box">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkButton" id="web_button">
+                        <property name="halign">start</property>
+                        <property name="child">
+                          <object class="GtkLabel" id="web_label">
+                            <property name="wrap">True</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </property>
+                        <style>
+                          <class name="pill"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="web_caption">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <style>
+                          <class name="dim-label"/>
+                          <class name="caption"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="halign">start</property>
+                    <style>
+                      <class name="linked"/>
+                    </style>
+                    <child>
+                      <object class="GtkToggleButton" id="owned_tab">
+                        <property name="label">Your numbers</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkToggleButton" id="search_tab">
+                        <property name="label">Find a number</property>
+                        <property name="group">owned_tab</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStack" id="tab_stack">
+                    <property name="vhomogeneous">False</property>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">owned</property>
+                        <property name="child">
+                          <object class="GtkStack" id="owned_stack">
+                            <property name="vhomogeneous">False</property>
+                            <child>
+                              <object class="GtkStackPage">
+                                <property name="name">loading</property>
+                                <property name="child">
+                                  <object class="GtkSpinner" id="owned_spinner">
+                                    <property name="halign">center</property>
+                                    <property name="width-request">32</property>
+                                    <property name="height-request">32</property>
+                                  </object>
+                                </property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkStackPage">
+                                <property name="name">status</property>
+                                <property name="child">
+                                  <object class="AdwStatusPage" id="owned_status">
+                                    <property name="icon-name">phone-symbolic</property>
+                                    <style>
+                                      <class name="compact"/>
+                                    </style>
+                                    <property name="child">
+                                      <object class="GtkButton" id="owned_retry">
+                                        <property name="label">Try again</property>
+                                        <property name="halign">center</property>
+                                        <style>
+                                          <class name="pill"/>
+                                        </style>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkStackPage">
+                                <property name="name">list</property>
+                                <property name="child">
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">8</property>
+                                    <child>
+                                      <object class="GtkLabel" id="partial_note">
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <property name="use-markup">False</property>
+                                        <style>
+                                          <class name="warning"/>
+                                          <class name="caption"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkListBox" id="owned_list">
+                                        <property name="selection-mode">none</property>
+                                        <accessibility>
+                                          <property name="label">Your numbers</property>
+                                        </accessibility>
+                                        <style>
+                                          <class name="boxed-list"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </property>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">search</property>
+                        <property name="child">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">12</property>
+                            <child>
+                              <object class="GtkListBox">
+                                <property name="selection-mode">none</property>
+                                <style>
+                                  <class name="boxed-list"/>
+                                </style>
+                                <child>
+                                  <object class="AdwEntryRow" id="area_row">
+                                    <property name="title">Area code</property>
+                                    <property name="use-markup">False</property>
+                                    <property name="input-purpose">digits</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="AdwEntryRow" id="country_row">
+                                    <property name="title">Country code</property>
+                                    <property name="use-markup">False</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="AdwComboRow" id="type_row">
+                                    <property name="title">Number type</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="search_button">
+                                <property name="label">Search</property>
+                                <property name="halign">start</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="suggested-action"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkStack" id="search_stack">
+                                <property name="vhomogeneous">False</property>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">idle</property>
+                                    <property name="child">
+                                      <object class="GtkLabel">
+                                        <property name="label">Type an area code, or search the whole country. Results come from your carrier.</property>
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <style>
+                                          <class name="dim-label"/>
+                                        </style>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">searching</property>
+                                    <property name="child">
+                                      <object class="GtkSpinner" id="search_spinner">
+                                        <property name="halign">center</property>
+                                        <property name="width-request">32</property>
+                                        <property name="height-request">32</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">status</property>
+                                    <property name="child">
+                                      <object class="AdwStatusPage" id="search_status">
+                                        <property name="icon-name">system-search-symbolic</property>
+                                        <style>
+                                          <class name="compact"/>
+                                        </style>
+                                        <property name="child">
+                                          <object class="GtkButton" id="search_retry">
+                                            <property name="label">Try again</property>
+                                            <property name="halign">center</property>
+                                            <style>
+                                              <class name="pill"/>
+                                            </style>
+                                          </object>
+                                        </property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">results</property>
+                                    <property name="child">
+                                      <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+                                        <property name="spacing">8</property>
+                                        <child>
+                                          <object class="GtkLabel" id="provider_label">
+                                            <property name="xalign">0</property>
+                                            <property name="use-markup">False</property>
+                                            <style>
+                                              <class name="dim-label"/>
+                                              <class name="caption"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkListBox" id="results_list">
+                                            <property name="selection-mode">none</property>
+                                            <accessibility>
+                                              <property name="label">Numbers for sale</property>
+                                            </accessibility>
+                                            <style>
+                                              <class name="boxed-list"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

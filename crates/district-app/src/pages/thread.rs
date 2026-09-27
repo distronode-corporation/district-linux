@@ -620,7 +620,7 @@ const READ_CHUNK: usize = 64 * 1024;
 
 /// Reads `file` until its end or until `cap` bytes are read, whichever is
 /// first: never more than `cap`.
-async fn read_capped(file: &gio::File, cap: usize) -> Result<Vec<u8>, glib::Error> {
+pub(crate) async fn read_capped(file: &gio::File, cap: usize) -> Result<Vec<u8>, glib::Error> {
     let stream = file.read_future(glib::Priority::DEFAULT).await?;
     let mut bytes = Vec::new();
     while bytes.len() < cap {

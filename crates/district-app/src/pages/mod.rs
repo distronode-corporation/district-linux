@@ -3,26 +3,50 @@
 //! the window's [`EventSink`].
 
 mod account;
+mod analytics;
+mod billing;
 mod blocked;
 mod call;
 mod calls;
 mod contact;
 mod contact_form;
 mod contacts;
+mod desk;
+mod desk_settings;
+mod desk_ticket;
 mod devices;
+mod hq;
 mod inbox;
+mod marketplace;
+mod meeting_record;
 mod overview;
+mod reply_box;
+mod rooms;
+mod scheduling;
 mod session;
 mod shared;
+mod support;
+mod support_request;
 mod thread;
+mod ticket_form;
+mod workflows;
 
 pub(crate) use account::AccountPage;
+pub(crate) use analytics::AnalyticsPage;
+pub(crate) use billing::BillingPage;
 pub(crate) use calls::CallsPage;
 pub(crate) use contacts::{ContactsPage, in_section as in_contacts};
+pub(crate) use desk::{DeskPage, in_section as in_desk};
 pub(crate) use devices::DevicesPage;
+pub(crate) use hq::HqPage;
 pub(crate) use inbox::InboxPage;
+pub(crate) use marketplace::MarketplacePage;
 pub(crate) use overview::OverviewPage;
+pub(crate) use rooms::RoomsPage;
+pub(crate) use scheduling::SchedulingPage;
 pub(crate) use session::SessionPage;
+pub(crate) use support::{SupportPage, in_section as in_support};
+pub(crate) use workflows::WorkflowsPage;
 
 use district_core::Event;
 
@@ -83,7 +107,7 @@ mod tests {
     use super::*;
 
     /// Every template the window is built from.
-    const TEMPLATES: [(&str, &str); 13] = [
+    const TEMPLATES: [(&str, &str); 28] = [
         ("window.ui", include_str!("../../data/ui/window.ui")),
         (
             "session-page.ui",
@@ -123,6 +147,54 @@ mod tests {
         (
             "blocked-view.ui",
             include_str!("../../data/ui/blocked-view.ui"),
+        ),
+        ("hq-page.ui", include_str!("../../data/ui/hq-page.ui")),
+        (
+            "analytics-page.ui",
+            include_str!("../../data/ui/analytics-page.ui"),
+        ),
+        (
+            "marketplace-page.ui",
+            include_str!("../../data/ui/marketplace-page.ui"),
+        ),
+        (
+            "billing-page.ui",
+            include_str!("../../data/ui/billing-page.ui"),
+        ),
+        (
+            "workflows-page.ui",
+            include_str!("../../data/ui/workflows-page.ui"),
+        ),
+        (
+            "scheduling-page.ui",
+            include_str!("../../data/ui/scheduling-page.ui"),
+        ),
+        ("desk-page.ui", include_str!("../../data/ui/desk-page.ui")),
+        (
+            "desk-ticket-view.ui",
+            include_str!("../../data/ui/desk-ticket-view.ui"),
+        ),
+        (
+            "desk-settings-view.ui",
+            include_str!("../../data/ui/desk-settings-view.ui"),
+        ),
+        (
+            "support-page.ui",
+            include_str!("../../data/ui/support-page.ui"),
+        ),
+        (
+            "support-request-view.ui",
+            include_str!("../../data/ui/support-request-view.ui"),
+        ),
+        ("reply-box.ui", include_str!("../../data/ui/reply-box.ui")),
+        (
+            "ticket-form.ui",
+            include_str!("../../data/ui/ticket-form.ui"),
+        ),
+        ("rooms-page.ui", include_str!("../../data/ui/rooms-page.ui")),
+        (
+            "meeting-record.ui",
+            include_str!("../../data/ui/meeting-record.ui"),
         ),
     ];
 
@@ -205,7 +277,7 @@ mod tests {
                 }
             }
         }
-        assert!(checked >= 9, "the check found the buttons: {checked}");
+        assert!(checked >= 11, "the check found the buttons: {checked}");
         // The scan itself: nesting, and objects that close themselves.
         let ui = r#"<object class="GtkButton"><child><object class="GtkImage"/></child><object class="X"></object></object><object class="GtkButton"/>"#;
         assert_eq!(objects(ui, "GtkButton").len(), 2);

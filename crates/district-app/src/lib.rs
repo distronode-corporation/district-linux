@@ -33,8 +33,10 @@ use libadwaita as adw;
 
 mod app;
 mod bridge;
+mod charts;
 mod controller;
 mod effects;
+mod markdown;
 mod notifications;
 mod pages;
 mod routes;

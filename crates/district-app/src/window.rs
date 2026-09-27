@@ -13,8 +13,9 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::{
-    AccountPage, CallsPage, ContactsPage, DevicesPage, InboxPage, OverviewPage, Sends, SessionPage,
-    in_contacts,
+    AccountPage, AnalyticsPage, BillingPage, CallsPage, ContactsPage, DeskPage, DevicesPage,
+    HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage, SchedulingPage, Sends,
+    SessionPage, SupportPage, WorkflowsPage, in_contacts, in_desk, in_support,
 };
 use crate::routes::{self, Entry, Section};
 use crate::sink::EventSink;
@@ -92,6 +93,24 @@ mod imp {
         #[template_child]
         pub contacts_page: TemplateChild<ContactsPage>,
         #[template_child]
+        pub hq_page: TemplateChild<HqPage>,
+        #[template_child]
+        pub analytics_page: TemplateChild<AnalyticsPage>,
+        #[template_child]
+        pub marketplace_page: TemplateChild<MarketplacePage>,
+        #[template_child]
+        pub billing_page: TemplateChild<BillingPage>,
+        #[template_child]
+        pub workflows_page: TemplateChild<WorkflowsPage>,
+        #[template_child]
+        pub scheduling_page: TemplateChild<SchedulingPage>,
+        #[template_child]
+        pub desk_page: TemplateChild<DeskPage>,
+        #[template_child]
+        pub support_page: TemplateChild<SupportPage>,
+        #[template_child]
+        pub rooms_page: TemplateChild<RoomsPage>,
+        #[template_child]
         pub later_page: TemplateChild<adw::StatusPage>,
         pub sink: OnceCell<EventSink>,
         pub rows: RefCell<Vec<SidebarRow>>,
@@ -117,6 +136,15 @@ mod imp {
             InboxPage::static_type();
             CallsPage::static_type();
             ContactsPage::static_type();
+            HqPage::static_type();
+            AnalyticsPage::static_type();
+            MarketplacePage::static_type();
+            BillingPage::static_type();
+            WorkflowsPage::static_type();
+            SchedulingPage::static_type();
+            DeskPage::static_type();
+            SupportPage::static_type();
+            RoomsPage::static_type();
             klass.bind_template();
         }
 
@@ -175,6 +203,8 @@ mod imp {
                 self.inbox_page.split_view(),
                 self.calls_page.split_view(),
                 self.contacts_page.split_view(),
+                self.desk_page.split_view(),
+                self.support_page.split_view(),
             ] {
                 let weak = window.downgrade();
                 split.connect_collapsed_notify(move |_| {
@@ -218,6 +248,15 @@ impl DistrictWindow {
         imp.inbox_page.set_sink(sink.clone());
         imp.calls_page.set_sink(sink.clone());
         imp.contacts_page.set_sink(sink.clone());
+        imp.hq_page.set_sink(sink.clone());
+        imp.analytics_page.set_sink(sink.clone());
+        imp.marketplace_page.set_sink(sink.clone());
+        imp.billing_page.set_sink(sink.clone());
+        imp.workflows_page.set_sink(sink.clone());
+        imp.scheduling_page.set_sink(sink.clone());
+        imp.desk_page.set_sink(sink.clone());
+        imp.support_page.set_sink(sink.clone());
+        imp.rooms_page.set_sink(sink.clone());
         imp.sink.set(sink).ok();
         window
     }
@@ -287,9 +326,33 @@ impl DistrictWindow {
                 imp.session_stack.set_visible_child_name("session");
                 imp.session_page.update(other);
                 imp.devices_page.ask(None);
-                imp.inbox_page.leave();
-                imp.contacts_page.leave();
+                self.leave_pages(None);
             }
+        }
+    }
+
+    /// Closes every dialog and question of a page that is not showing for
+    /// `route`, so none outlives its screen.
+    fn leave_pages(&self, route: Option<&Route>) {
+        let imp = self.imp();
+        let showing = |shows: fn(&Route) -> bool| route.is_some_and(shows);
+        if !showing(|route| matches!(route, Route::Inbox | Route::Thread { .. })) {
+            imp.inbox_page.leave();
+        }
+        if !showing(in_contacts) {
+            imp.contacts_page.leave();
+        }
+        if !showing(|route| *route == Route::Workflows) {
+            imp.workflows_page.leave();
+        }
+        if !showing(in_desk) {
+            imp.desk_page.leave();
+        }
+        if !showing(in_support) {
+            imp.support_page.leave();
+        }
+        if !showing(|route| *route == Route::Rooms) {
+            imp.rooms_page.leave();
         }
     }
 
@@ -394,12 +457,8 @@ impl DistrictWindow {
         if *route != Route::Devices {
             imp.devices_page.ask(None);
         }
-        if !matches!(route, Route::Inbox | Route::Thread { .. }) {
-            imp.inbox_page.leave();
-        }
-        if !in_contacts(route) {
-            imp.contacts_page.leave();
-        }
+        self.leave_pages(Some(route));
+        let capabilities = signed_in.capabilities();
         match route {
             Route::Overview => {
                 imp.page_stack.set_visible_child_name("overview");
@@ -428,6 +487,47 @@ impl DistrictWindow {
                     self.toast(outcome);
                 }
             }
+            Route::Hq => {
+                imp.page_stack.set_visible_child_name("hq");
+                imp.hq_page.update(signed_in);
+            }
+            Route::Analytics => {
+                imp.page_stack.set_visible_child_name("analytics");
+                imp.analytics_page.update(&signed_in.analytics);
+            }
+            Route::Marketplace => {
+                imp.page_stack.set_visible_child_name("marketplace");
+                imp.marketplace_page
+                    .update(&signed_in.marketplace, &capabilities);
+            }
+            Route::Billing => {
+                imp.page_stack.set_visible_child_name("billing");
+                imp.billing_page.update(&signed_in.billing, &capabilities);
+            }
+            Route::Workflows => {
+                imp.page_stack.set_visible_child_name("workflows");
+                imp.workflows_page.update(signed_in);
+            }
+            Route::Scheduling => {
+                imp.page_stack.set_visible_child_name("scheduling");
+                imp.scheduling_page.update(&signed_in.scheduling);
+            }
+            route if in_desk(route) => {
+                imp.page_stack.set_visible_child_name("desk");
+                if let Some(outcome) = imp.desk_page.update(signed_in) {
+                    self.toast(outcome);
+                }
+            }
+            route if in_support(route) => {
+                imp.page_stack.set_visible_child_name("support");
+                if let Some(outcome) = imp.support_page.update(signed_in) {
+                    self.toast(outcome);
+                }
+            }
+            Route::Rooms => {
+                imp.page_stack.set_visible_child_name("rooms");
+                imp.rooms_page.update(signed_in);
+            }
             other => {
                 imp.page_stack.set_visible_child_name("later");
                 imp.later_page.set_title(routes::title(other));
@@ -446,6 +546,8 @@ impl DistrictWindow {
             Route::Inbox | Route::Thread { .. } => Some(imp.inbox_page.split_view()),
             Route::Calls | Route::CallDetail { .. } => Some(imp.calls_page.split_view()),
             route if in_contacts(route) => Some(imp.contacts_page.split_view()),
+            route if in_desk(route) => Some(imp.desk_page.split_view()),
+            route if in_support(route) => Some(imp.support_page.split_view()),
             _ => None,
         }
     }
@@ -507,9 +609,20 @@ fn refresh_state(signed_in: &SignedIn) -> (bool, bool) {
             true,
             matches!(&signed_in.contacts.list, ContactList::Ready(rows) if rows.refreshing),
         ),
-        Route::CallDetail { .. } | Route::ContactDetail { .. } | Route::BlockedContacts => {
-            (true, false)
-        }
+        Route::Analytics => (true, AnalyticsPage::refreshing(&signed_in.analytics)),
+        Route::Marketplace => (true, MarketplacePage::refreshing(&signed_in.marketplace)),
+        Route::Billing => (true, BillingPage::refreshing(&signed_in.billing)),
+        Route::Scheduling => (true, SchedulingPage::refreshing(&signed_in.scheduling)),
+        Route::Desk => (true, DeskPage::refreshing(&signed_in.desk)),
+        Route::Support => (true, SupportPage::refreshing(&signed_in.support)),
+        Route::Rooms => (true, RoomsPage::refreshing(&signed_in.rooms)),
+        Route::CallDetail { .. }
+        | Route::ContactDetail { .. }
+        | Route::BlockedContacts
+        | Route::Workflows
+        | Route::DeskTicket { .. }
+        | Route::DeskSettings
+        | Route::SupportRequest { .. } => (true, false),
         _ => (false, false),
     }
 }

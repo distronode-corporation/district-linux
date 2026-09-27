@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Workflows: the outbound campaign's card with its switch, which asks
+     first, and each workflow with its switch and its runs.
+     src/pages/workflows.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictWorkflowsPage" parent="AdwBin">
+    <property name="child">
+      <object class="GtkScrolledWindow">
+        <property name="hscrollbar-policy">never</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">760</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+                <property name="margin-start">18</property>
+                <property name="margin-end">18</property>
+                <property name="margin-top">18</property>
+                <property name="margin-bottom">24</property>
+                <child>
+                  <object class="AdwPreferencesGroup" id="campaign_group">
+                    <property name="header-suffix">
+                      <object class="GtkLabel" id="campaign_badge">
+                        <property name="valign">center</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </property>
+                    <child>
+                      <object class="GtkStack" id="campaign_stack">
+                        <property name="vhomogeneous">False</property>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">loading</property>
+                            <property name="child">
+                              <object class="GtkSpinner" id="campaign_loading">
+                                <property name="halign">start</property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">failed</property>
+                            <property name="child">
+                              <object class="GtkLabel" id="campaign_failed">
+                                <property name="xalign">0</property>
+                                <property name="wrap">True</property>
+                                <property name="use-markup">False</property>
+                                <style>
+                                  <class name="error"/>
+                                </style>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">ready</property>
+                            <property name="child">
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">10</property>
+                                <child>
+                                  <object class="GtkListBox">
+                                    <property name="selection-mode">none</property>
+                                    <style>
+                                      <class name="boxed-list"/>
+                                    </style>
+                                    <child>
+                                      <object class="AdwActionRow" id="batch_row">
+                                        <property name="title">Batch size</property>
+                                        <property name="use-markup">False</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="goal_row">
+                                        <property name="title">Goal</property>
+                                        <property name="use-markup">False</property>
+                                        <property name="subtitle-selectable">True</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="campaign_failure">
+                                    <property name="xalign">0</property>
+                                    <property name="wrap">True</property>
+                                    <property name="use-markup">False</property>
+                                    <style>
+                                      <class name="error"/>
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="campaign_note">
+                                    <property name="xalign">0</property>
+                                    <property name="wrap">True</property>
+                                    <style>
+                                      <class name="dim-label"/>
+                                      <class name="caption"/>
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="spacing">8</property>
+                                    <child>
+                                      <object class="GtkButton" id="pause_button">
+                                        <property name="label">Pause campaign</property>
+                                        <style>
+                                          <class name="pill"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="resume_button">
+                                        <property name="label">Resume campaign</property>
+                                        <style>
+                                          <class name="pill"/>
+                                          <class name="suggested-action"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkSpinner" id="campaign_spinner">
+                                        <property name="visible">False</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox" id="toggle_failure_box">
+                    <property name="spacing">12</property>
+                    <property name="visible">False</property>
+                    <style>
+                      <class name="card"/>
+                      <class name="composer-failure"/>
+                    </style>
+                    <child>
+                      <object class="GtkLabel" id="toggle_failure">
+                        <property name="xalign">0</property>
+                        <property name="hexpand">True</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-top">10</property>
+                        <property name="margin-bottom">10</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="toggle_dismiss">
+                        <property name="label">Dismiss</property>
+                        <property name="valign">center</property>
+                        <property name="margin-end">10</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Workflows</property>
+                    <property name="description">Workflows are built and edited on the District AI website. Here you can turn each on or off and see what its runs did.</property>
+                    <child>
+                      <object class="GtkStack" id="list_stack">
+                        <property name="vhomogeneous">False</property>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">loading</property>
+                            <property name="child">
+                              <object class="GtkSpinner" id="list_spinner">
+                                <property name="halign">center</property>
+                                <property name="width-request">32</property>
+                                <property name="height-request">32</property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">status</property>
+                            <property name="child">
+                              <object class="AdwStatusPage" id="list_status">
+                                <property name="icon-name">system-run-symbolic</property>
+                                <style>
+                                  <class name="compact"/>
+                                </style>
+                                <property name="child">
+                                  <object class="GtkButton" id="list_retry">
+                                    <property name="label">Try again</property>
+                                    <property name="halign">center</property>
+                                    <style>
+                                      <class name="pill"/>
+                                    </style>
+                                  </object>
+                                </property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">list</property>
+                            <property name="child">
+                              <object class="GtkListBox" id="workflow_list">
+                                <property name="selection-mode">none</property>
+                                <accessibility>
+                                  <property name="label">Workflows</property>
+                                </accessibility>
+                                <style>
+                                  <class name="boxed-list"/>
+                                </style>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

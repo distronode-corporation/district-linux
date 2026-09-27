@@ -148,6 +148,14 @@ pub(crate) fn long_local(when: &glib::DateTime) -> String {
     format!("{}, {}", long_date(when), time_of_day(when))
 }
 
+/// The date, in this computer's zone, of `secs` seconds after the Unix epoch,
+/// as the payment processor writes its dates. `None` for one out of range.
+pub(crate) fn unix_date(secs: i64) -> Option<String> {
+    glib::DateTime::from_unix_local(secs)
+        .ok()
+        .map(|when| long_date(&when))
+}
+
 /// `iso` as a list row reads it: the time for today, the day and month for
 /// this year, and the year too before that. `None` for a time this build
 /// cannot read.
@@ -167,6 +175,22 @@ pub(crate) fn short_time(iso: &str, now: &glib::DateTime) -> Option<String> {
 /// `iso` in full: `15 August 2026, 14:30`.
 pub(crate) fn long_time(iso: &str, now: &glib::DateTime) -> Option<String> {
     instant_in(iso, now).map(|when| long_local(&when))
+}
+
+/// `iso` as a list row reads it ([`short_time`]), or the text as it is when this
+/// build cannot read it.
+pub(crate) fn short_text(iso: &str) -> String {
+    now()
+        .and_then(|now| short_time(iso, &now))
+        .unwrap_or_else(|| iso.to_owned())
+}
+
+/// `iso` in full in this computer's zone, or the text as it is when this build
+/// cannot read it: a time is never dropped for its form.
+pub(crate) fn when_text(iso: &str) -> String {
+    now()
+        .and_then(|now| long_time(iso, &now))
+        .unwrap_or_else(|| iso.to_owned())
 }
 
 /// The heading over a day's messages: "Today", "Yesterday", or the date.
@@ -228,6 +252,45 @@ pub(crate) fn plain_label(text: &str, classes: &[&str]) -> gtk::Label {
 /// Takes every row out of `list`.
 pub(crate) fn clear_list(list: &gtk::ListBox) {
     list.remove_all();
+}
+
+/// A message of a conversation: who wrote it and when, over the text in a
+/// bubble on its side (the workspace's own on the right). Every text is shown
+/// as it is, never as markup.
+pub(crate) fn conversation_message(
+    author: &str,
+    when: &str,
+    body: &str,
+    ours: bool,
+) -> gtk::Widget {
+    let column = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(3)
+        .halign(if ours {
+            gtk::Align::End
+        } else {
+            gtk::Align::Start
+        })
+        .name("conversation-message")
+        .build();
+    if ours {
+        column.set_margin_start(48);
+    } else {
+        column.set_margin_end(48);
+    }
+    let meta = [author, when]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" \u{b7} ");
+    let heading = plain_label(&meta, &["caption", "dim-label"]);
+    heading.set_xalign(if ours { 1.0 } else { 0.0 });
+    column.append(&heading);
+    let text = plain_label(body, &["bubble", if ours { "outbound" } else { "inbound" }]);
+    text.set_selectable(true);
+    text.set_max_width_chars(60);
+    column.append(&text);
+    column.upcast()
 }
 
 /// Takes every child out of `container`.
@@ -499,6 +562,11 @@ mod tests {
         assert_eq!(long_local(&afternoon), "15 August 2026, 14:30");
         // The locale's own form, which the tests' C locale writes on 24 hours.
         let _ = locale_clock_24h();
+        assert!(unix_date(1_789_000_000).is_some());
+        assert_eq!(unix_date(i64::MAX), None);
+        assert_eq!(when_text("not a time"), "not a time");
+        assert_eq!(short_text("not a time"), "not a time");
+        assert!(when_text("2026-08-15T14:30:00Z").contains("August 2026"));
     }
 
     #[test]

@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Support: the workspace's requests to Distronode beside the open one,
+     folding to one pane at a time when narrow. src/pages/support.rs fills it,
+     and opens the form that raises a request as a dialog. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSupportPage" parent="AdwBin">
+    <property name="child">
+      <object class="AdwBreakpointBin">
+        <property name="width-request">300</property>
+        <property name="height-request">300</property>
+        <child>
+          <object class="AdwBreakpoint">
+            <condition>max-width: 720sp</condition>
+            <setter object="split_view" property="collapsed">True</setter>
+          </object>
+        </child>
+        <property name="child">
+          <object class="AdwNavigationSplitView" id="split_view">
+            <property name="min-sidebar-width">280</property>
+            <property name="max-sidebar-width">400</property>
+            <property name="sidebar-width-fraction">0.4</property>
+            <property name="sidebar">
+              <object class="AdwNavigationPage">
+                <property name="title">Support</property>
+                <property name="tag">requests</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkButton" id="new_button">
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">6</property>
+                        <property name="child">
+                          <object class="AdwButtonContent">
+                            <property name="icon-name">list-add-symbolic</property>
+                            <property name="label">New request</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="submitted_box">
+                        <property name="spacing">8</property>
+                        <property name="visible">False</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-bottom">6</property>
+                        <style>
+                          <class name="card"/>
+                          <class name="notice-card"/>
+                        </style>
+                        <child>
+                          <object class="GtkLabel" id="submitted_label">
+                            <property name="xalign">0</property>
+                            <property name="hexpand">True</property>
+                            <property name="wrap">True</property>
+                            <property name="use-markup">False</property>
+                            <property name="margin-start">10</property>
+                            <property name="margin-top">8</property>
+                            <property name="margin-bottom">8</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="submitted_dismiss">
+                            <property name="icon-name">window-close-symbolic</property>
+                            <property name="tooltip-text">Dismiss</property>
+                            <property name="valign">center</property>
+                            <property name="margin-end">6</property>
+                            <style>
+                              <class name="flat"/>
+                              <class name="circular"/>
+                            </style>
+                            <accessibility>
+                              <property name="label">Dismiss</property>
+                            </accessibility>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStack" id="list_stack">
+                        <property name="vexpand">True</property>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">loading</property>
+                            <property name="child">
+                              <object class="GtkSpinner" id="list_spinner">
+                                <property name="halign">center</property>
+                                <property name="valign">center</property>
+                                <property name="width-request">32</property>
+                                <property name="height-request">32</property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">status</property>
+                            <property name="child">
+                              <object class="AdwStatusPage" id="list_status">
+                                <property name="icon-name">help-faq-symbolic</property>
+                                <style>
+                                  <class name="compact"/>
+                                </style>
+                                <property name="child">
+                                  <object class="GtkButton" id="list_retry">
+                                    <property name="label">Try again</property>
+                                    <property name="halign">center</property>
+                                    <style>
+                                      <class name="pill"/>
+                                    </style>
+                                  </object>
+                                </property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">list</property>
+                            <property name="child">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <property name="child">
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">8</property>
+                                    <property name="margin-start">12</property>
+                                    <property name="margin-end">12</property>
+                                    <property name="margin-top">6</property>
+                                    <property name="margin-bottom">12</property>
+                                    <child>
+                                      <object class="GtkLabel" id="refresh_failure">
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <property name="use-markup">False</property>
+                                        <style>
+                                          <class name="error"/>
+                                          <class name="caption"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="open_heading">
+                                        <property name="label">Open</property>
+                                        <property name="xalign">0</property>
+                                        <style>
+                                          <class name="heading"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkListBox" id="open_list">
+                                        <property name="selection-mode">single</property>
+                                        <accessibility>
+                                          <property name="label">Open requests</property>
+                                        </accessibility>
+                                        <style>
+                                          <class name="boxed-list"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="resolved_heading">
+                                        <property name="label">Resolved</property>
+                                        <property name="xalign">0</property>
+                                        <property name="margin-top">10</property>
+                                        <style>
+                                          <class name="heading"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkListBox" id="resolved_list">
+                                        <property name="selection-mode">single</property>
+                                        <accessibility>
+                                          <property name="label">Resolved requests</property>
+                                        </accessibility>
+                                        <style>
+                                          <class name="boxed-list"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="capped_note">
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <style>
+                                          <class name="dim-label"/>
+                                          <class name="caption"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+            <property name="content">
+              <object class="AdwNavigationPage">
+                <property name="title">Support request</property>
+                <property name="tag">request</property>
+                <property name="child">
+                  <object class="GtkStack" id="detail_stack">
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">none</property>
+                        <property name="child">
+                          <object class="AdwStatusPage">
+                            <property name="icon-name">help-faq-symbolic</property>
+                            <property name="title">No request open</property>
+                            <property name="description">Choose a request to read our replies and answer them.</property>
+                            <style>
+                              <class name="compact"/>
+                            </style>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">request</property>
+                        <property name="child">
+                          <object class="DistrictSupportRequestView" id="request_view"/>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

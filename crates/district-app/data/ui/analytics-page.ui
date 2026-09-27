@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Analytics: call analytics over a window, with its trend, funnel and
+     sentiment charts, this month's metered usage and the last few months.
+     Each card reads apart and fails apart. src/pages/analytics.rs fills it
+     and draws the charts through src/charts.rs. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictAnalyticsPage" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">status</property>
+            <property name="child">
+              <object class="AdwStatusPage" id="status">
+                <property name="icon-name">x-office-presentation-symbolic</property>
+                <property name="child">
+                  <object class="GtkButton" id="retry_button">
+                    <property name="label">Try again</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">content</property>
+            <property name="child">
+              <object class="GtkScrolledWindow">
+                <property name="hscrollbar-policy">never</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">880</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">24</property>
+                        <property name="margin-start">18</property>
+                        <property name="margin-end">18</property>
+                        <property name="margin-top">18</property>
+                        <property name="margin-bottom">24</property>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="linked"/>
+                            </style>
+                            <accessibility>
+                              <property name="label">Period</property>
+                            </accessibility>
+                            <child>
+                              <object class="GtkToggleButton" id="range_7">
+                                <property name="label">7 days</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkToggleButton" id="range_30">
+                                <property name="label">30 days</property>
+                                <property name="group">range_7</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkToggleButton" id="range_90">
+                                <property name="label">90 days</property>
+                                <property name="group">range_7</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwPreferencesGroup" id="report_group">
+                            <property name="title">Calls</property>
+                            <property name="header-suffix">
+                              <object class="GtkSpinner" id="report_spinner">
+                                <property name="visible">False</property>
+                              </object>
+                            </property>
+                            <child>
+                              <object class="GtkStack" id="report_stack">
+                                <property name="vhomogeneous">False</property>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">loading</property>
+                                    <property name="child">
+                                      <object class="GtkSpinner" id="report_loading">
+                                        <property name="halign">start</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">failed</property>
+                                    <property name="child">
+                                      <object class="GtkLabel" id="report_failure">
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <property name="use-markup">False</property>
+                                        <style>
+                                          <class name="error"/>
+                                        </style>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">ready</property>
+                                    <property name="child">
+                                      <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+                                        <property name="spacing">14</property>
+                                        <child>
+                                          <object class="GtkFlowBox" id="tiles">
+                                            <property name="selection-mode">none</property>
+                                            <property name="homogeneous">True</property>
+                                            <property name="min-children-per-line">2</property>
+                                            <property name="max-children-per-line">5</property>
+                                            <property name="column-spacing">12</property>
+                                            <property name="row-spacing">12</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="change_label">
+                                            <property name="xalign">0</property>
+                                            <property name="wrap">True</property>
+                                            <style>
+                                              <class name="dim-label"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="trend_title">
+                                            <property name="xalign">0</property>
+                                            <property name="margin-top">8</property>
+                                            <style>
+                                              <class name="heading"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkBox" id="trend_box">
+                                            <property name="orientation">vertical</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label">Call funnel</property>
+                                            <property name="xalign">0</property>
+                                            <property name="margin-top">8</property>
+                                            <style>
+                                              <class name="heading"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkGrid" id="funnel_grid">
+                                            <property name="row-spacing">8</property>
+                                            <property name="column-spacing">12</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label">Caller sentiment</property>
+                                            <property name="xalign">0</property>
+                                            <property name="margin-top">8</property>
+                                            <style>
+                                              <class name="heading"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkBox" id="sentiment_box">
+                                            <property name="orientation">vertical</property>
+                                            <property name="spacing">8</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwPreferencesGroup" id="usage_group">
+                            <property name="title">This month's usage</property>
+                            <child>
+                              <object class="GtkStack" id="usage_stack">
+                                <property name="vhomogeneous">False</property>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">loading</property>
+                                    <property name="child">
+                                      <object class="GtkSpinner" id="usage_loading">
+                                        <property name="halign">start</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">note</property>
+                                    <property name="child">
+                                      <object class="GtkLabel" id="usage_note">
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <property name="use-markup">False</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">ready</property>
+                                    <property name="child">
+                                      <object class="GtkListBox" id="usage_list">
+                                        <property name="selection-mode">none</property>
+                                        <style>
+                                          <class name="boxed-list"/>
+                                        </style>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwPreferencesGroup" id="history_group">
+                            <property name="title">Recent months</property>
+                            <child>
+                              <object class="GtkStack" id="history_stack">
+                                <property name="vhomogeneous">False</property>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">loading</property>
+                                    <property name="child">
+                                      <object class="GtkSpinner" id="history_loading">
+                                        <property name="halign">start</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">note</property>
+                                    <property name="child">
+                                      <object class="GtkLabel" id="history_note">
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <property name="use-markup">False</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkStackPage">
+                                    <property name="name">ready</property>
+                                    <property name="child">
+                                      <object class="GtkGrid" id="history_grid">
+                                        <property name="row-spacing">8</property>
+                                        <property name="column-spacing">12</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

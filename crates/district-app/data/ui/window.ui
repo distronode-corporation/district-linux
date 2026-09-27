@@ -246,6 +246,78 @@
                                     </child>
                                     <child>
                                       <object class="GtkStackPage">
+                                        <property name="name">hq</property>
+                                        <property name="child">
+                                          <object class="DistrictHqPage" id="hq_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">analytics</property>
+                                        <property name="child">
+                                          <object class="DistrictAnalyticsPage" id="analytics_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">marketplace</property>
+                                        <property name="child">
+                                          <object class="DistrictMarketplacePage" id="marketplace_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">billing</property>
+                                        <property name="child">
+                                          <object class="DistrictBillingPage" id="billing_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">workflows</property>
+                                        <property name="child">
+                                          <object class="DistrictWorkflowsPage" id="workflows_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">scheduling</property>
+                                        <property name="child">
+                                          <object class="DistrictSchedulingPage" id="scheduling_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">desk</property>
+                                        <property name="child">
+                                          <object class="DistrictDeskPage" id="desk_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">support</property>
+                                        <property name="child">
+                                          <object class="DistrictSupportPage" id="support_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="name">rooms</property>
+                                        <property name="child">
+                                          <object class="DistrictRoomsPage" id="rooms_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
                                         <property name="name">later</property>
                                         <property name="child">
                                           <object class="AdwStatusPage" id="later_page"/>

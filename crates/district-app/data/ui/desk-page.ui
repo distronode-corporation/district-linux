@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The help desk: the queue beside the open ticket or the desk's settings,
+     folding to one pane at a time when narrow. src/pages/desk.rs fills it,
+     and opens the form that raises a ticket as a dialog. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictDeskPage" parent="AdwBin">
+    <property name="child">
+      <object class="AdwBreakpointBin">
+        <property name="width-request">300</property>
+        <property name="height-request">300</property>
+        <child>
+          <object class="AdwBreakpoint">
+            <condition>max-width: 720sp</condition>
+            <setter object="split_view" property="collapsed">True</setter>
+          </object>
+        </child>
+        <property name="child">
+          <object class="AdwNavigationSplitView" id="split_view">
+            <property name="min-sidebar-width">280</property>
+            <property name="max-sidebar-width">400</property>
+            <property name="sidebar-width-fraction">0.4</property>
+            <property name="sidebar">
+              <object class="AdwNavigationPage">
+                <property name="title">Help desk</property>
+                <property name="tag">queue</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">6</property>
+                        <child>
+                          <object class="GtkButton" id="new_button">
+                            <property name="hexpand">True</property>
+                            <property name="child">
+                              <object class="AdwButtonContent">
+                                <property name="icon-name">list-add-symbolic</property>
+                                <property name="label">New ticket</property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="settings_button">
+                            <property name="hexpand">True</property>
+                            <property name="child">
+                              <object class="AdwButtonContent">
+                                <property name="icon-name">emblem-system-symbolic</property>
+                                <property name="label">Settings</property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="filter">
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-bottom">6</property>
+                        <property name="tooltip-text">Which tickets to show</property>
+                        <accessibility>
+                          <property name="label">Which tickets to show</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="submitted_box">
+                        <property name="spacing">8</property>
+                        <property name="visible">False</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-bottom">6</property>
+                        <style>
+                          <class name="card"/>
+                          <class name="notice-card"/>
+                        </style>
+                        <child>
+                          <object class="GtkLabel" id="submitted_label">
+                            <property name="xalign">0</property>
+                            <property name="hexpand">True</property>
+                            <property name="wrap">True</property>
+                            <property name="use-markup">False</property>
+                            <property name="margin-start">10</property>
+                            <property name="margin-top">8</property>
+                            <property name="margin-bottom">8</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="submitted_dismiss">
+                            <property name="icon-name">window-close-symbolic</property>
+                            <property name="tooltip-text">Dismiss</property>
+                            <property name="valign">center</property>
+                            <property name="margin-end">6</property>
+                            <style>
+                              <class name="flat"/>
+                              <class name="circular"/>
+                            </style>
+                            <accessibility>
+                              <property name="label">Dismiss</property>
+                            </accessibility>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStack" id="list_stack">
+                        <property name="vexpand">True</property>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">loading</property>
+                            <property name="child">
+                              <object class="GtkSpinner" id="list_spinner">
+                                <property name="halign">center</property>
+                                <property name="valign">center</property>
+                                <property name="width-request">32</property>
+                                <property name="height-request">32</property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">status</property>
+                            <property name="child">
+                              <object class="AdwStatusPage" id="list_status">
+                                <property name="icon-name">help-browser-symbolic</property>
+                                <style>
+                                  <class name="compact"/>
+                                </style>
+                                <property name="child">
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">10</property>
+                                    <property name="halign">center</property>
+                                    <child>
+                                      <object class="GtkButton" id="list_retry">
+                                        <property name="label">Try again</property>
+                                        <style>
+                                          <class name="pill"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="turn_on_button">
+                                        <style>
+                                          <class name="pill"/>
+                                          <class name="suggested-action"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkSpinner" id="enable_spinner">
+                                        <property name="visible">False</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="enable_failure">
+                                        <property name="wrap">True</property>
+                                        <property name="justify">center</property>
+                                        <property name="use-markup">False</property>
+                                        <style>
+                                          <class name="error"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">list</property>
+                            <property name="child">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <property name="child">
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">8</property>
+                                    <property name="margin-start">12</property>
+                                    <property name="margin-end">12</property>
+                                    <property name="margin-top">6</property>
+                                    <property name="margin-bottom">12</property>
+                                    <child>
+                                      <object class="GtkListBox" id="ticket_list">
+                                        <property name="selection-mode">single</property>
+                                        <accessibility>
+                                          <property name="label">Tickets</property>
+                                        </accessibility>
+                                        <style>
+                                          <class name="boxed-list"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="none_matching">
+                                        <property name="xalign">0</property>
+                                        <property name="wrap">True</property>
+                                        <style>
+                                          <class name="dim-label"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+            <property name="content">
+              <object class="AdwNavigationPage">
+                <property name="title">Ticket</property>
+                <property name="tag">ticket</property>
+                <property name="child">
+                  <object class="GtkStack" id="detail_stack">
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">none</property>
+                        <property name="child">
+                          <object class="AdwStatusPage">
+                            <property name="icon-name">help-browser-symbolic</property>
+                            <property name="title">No ticket open</property>
+                            <property name="description">Choose a ticket to read it and reply.</property>
+                            <style>
+                              <class name="compact"/>
+                            </style>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">ticket</property>
+                        <property name="child">
+                          <object class="DistrictDeskTicketView" id="ticket_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">settings</property>
+                        <property name="child">
+                          <object class="DistrictDeskSettingsView" id="settings_view"/>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

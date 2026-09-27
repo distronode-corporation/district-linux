@@ -38,18 +38,23 @@ use district_auth::{
     AccessClaims, Persistence, RevokeStatus, SignOutReport, StoreError, StoreErrorKind,
 };
 use district_core::{
-    ContactWritten, CoreConfig, Effect, Event, Notification, NotificationAction,
-    NotificationTarget, Notifier, RestoreError, RingSurface, SignedInSession, Ticket, Urgency,
-    UrlOpener,
+    ContactWritten, CoreConfig, DisconnectReason, Effect, Event, MediaEvent, MediaUpdate,
+    MicrophoneState, Notification, NotificationAction, NotificationTarget, Notifier, Participant,
+    RestoreError, RingSurface, SignedInSession, Ticket, Urgency, UrlOpener,
 };
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
 use district_model::{
     AiDraftResponse, BlockedContact, BlockedContactsResponse, CallDetailResponse, CallSummary,
     CallTranscriptResponse, ContactBlockResponse, ContactDetailResponse, ContactListResponse,
-    ContactMutationResponse, ConversationsResponse, DeviceListResponse, DeviceRevokeResponse,
-    DraftListResponse, DraftResponse, MarkReadResponse, MessageSearchHit, MessageSearchResponse,
-    MessageThreadResponse, NativeDevice, OverviewResponse, SendMessageResponse, TelemetryEnvelope,
-    TimelineResponse, UnreadCountResponse, WorkspaceListResponse,
+    ContactMutationResponse, ConversationsResponse, DeskLogoRemovalResponse, DeskSettingsResponse,
+    DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse, DraftListResponse,
+    DraftResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse, MeetingSummary,
+    MessageSearchHit, MessageSearchResponse, MessageThreadResponse, NativeDevice,
+    NumberSearchResponse, OverviewResponse, OwnedNumbersResponse, SchedulingEnableResponse,
+    SchedulingHandOffResponse, SchedulingStatusResponse, SendMessageResponse,
+    SupportRequestsResponse, TelemetryEnvelope, TimelineResponse, UnreadCountResponse,
+    UsageHistoryResponse, WorkflowListResponse, WorkflowRun, WorkflowRunsResponse,
+    WorkspaceBillingResponse, WorkspaceListResponse,
 };
 use gtk::{gdk, gio, glib};
 use gtk4 as gtk;
@@ -131,7 +136,41 @@ fn ticket(effect: &Effect) -> Ticket {
         | Effect::LoadContact { ticket, .. }
         | Effect::CreateContact { ticket, .. }
         | Effect::WriteContact { ticket, .. }
-        | Effect::LoadBlocked { ticket, .. } => *ticket,
+        | Effect::LoadBlocked { ticket, .. }
+        | Effect::AskHq { ticket, .. }
+        | Effect::ConfirmHq { ticket, .. }
+        | Effect::LoadAnalytics { ticket, .. }
+        | Effect::LoadUsage { ticket, .. }
+        | Effect::LoadUsageHistory { ticket, .. }
+        | Effect::SearchNumbers { ticket, .. }
+        | Effect::LoadOwnedNumbers { ticket, .. }
+        | Effect::LoadWorkspaceBilling { ticket, .. }
+        | Effect::LoadAccountBilling { ticket }
+        | Effect::LoadWorkflows { ticket, .. }
+        | Effect::LoadWorkflowRuns { ticket, .. }
+        | Effect::SetWorkflowActive { ticket, .. }
+        | Effect::LoadCampaign { ticket, .. }
+        | Effect::SetCampaignEnabled { ticket, .. }
+        | Effect::LoadSchedulingStatus { ticket, .. }
+        | Effect::EnableScheduling { ticket, .. }
+        | Effect::RequestSchedulingHandOff { ticket, .. }
+        | Effect::LoadDeskSettings { ticket, .. }
+        | Effect::SaveDeskSettings { ticket, .. }
+        | Effect::UploadDeskLogo { ticket, .. }
+        | Effect::DeleteDeskLogo { ticket, .. }
+        | Effect::LoadDeskTickets { ticket, .. }
+        | Effect::CreateDeskTicket { ticket, .. }
+        | Effect::LoadDeskTicket { ticket, .. }
+        | Effect::ReplyToDeskTicket { ticket, .. }
+        | Effect::SetDeskTicketStatus { ticket, .. }
+        | Effect::LoadSupportRequests { ticket, .. }
+        | Effect::CreateSupportRequest { ticket, .. }
+        | Effect::LoadSupportRequest { ticket, .. }
+        | Effect::ReplyToSupportRequest { ticket, .. }
+        | Effect::CloseSupportRequest { ticket, .. }
+        | Effect::LoadMeetings { ticket, .. }
+        | Effect::LoadMeeting { ticket, .. }
+        | Effect::RequestRoomToken { ticket, .. } => *ticket,
         other => panic!("no ticket the script answers in {other:?}"),
     }
 }
@@ -339,6 +378,19 @@ impl Smoke {
         self.pump();
     }
 
+    /// Scrolls the first scrolled window on screen inside the widget named
+    /// `name` to `fraction` of the way down.
+    fn scroll_within(&self, name: &str, fraction: f64) {
+        let scroller = descendants(&self.mapped(name))
+            .into_iter()
+            .filter(WidgetExt::is_mapped)
+            .find_map(|widget| widget.downcast::<gtk::ScrolledWindow>().ok())
+            .unwrap_or_else(|| panic!("nothing scrolls in {name}"));
+        let adjustment = scroller.vadjustment();
+        adjustment.set_value((adjustment.upper() - adjustment.page_size()) * fraction);
+        self.pump();
+    }
+
     /// Presses `key` with `modifiers` in the text view named `name`, as its
     /// key handler sees it, and answers whether the handler kept the key.
     fn press(&self, name: &str, key: gdk::Key, modifiers: gdk::ModifierType) -> bool {
@@ -397,6 +449,61 @@ impl Smoke {
             .expect("a question on screen");
         question.emit_by_name::<()>("response", &[&response]);
         self.pump();
+    }
+
+    /// Answers the pending effect named `name` with the event `answer` makes
+    /// from its ticket.
+    fn reply(&self, name: &str, answer: impl FnOnce(Ticket) -> Event) {
+        let ticket = self.ticket(name);
+        self.answer(answer(ticket));
+    }
+
+    /// The text of the text view named `name` that is on screen.
+    fn mapped_buffer(&self, name: &str) -> gtk::TextBuffer {
+        self.mapped(name)
+            .downcast::<gtk::TextView>()
+            .expect("a text view")
+            .buffer()
+    }
+
+    /// The `index`th widget on screen named `name`, as a `T`.
+    fn nth<T: IsA<gtk::Widget>>(&self, name: &str, index: usize) -> T {
+        self.all(name)
+            .into_iter()
+            .filter(WidgetExt::is_mapped)
+            .nth(index)
+            .unwrap_or_else(|| panic!("no {name} {index} on screen"))
+            .downcast::<T>()
+            .unwrap_or_else(|_| panic!("{name} is not the type asked for"))
+    }
+
+    /// Whether a label on screen holds `text` somewhere in what it shows.
+    fn shows_part(&self, text: &str) -> bool {
+        descendants(self.window().upcast_ref())
+            .into_iter()
+            .filter(WidgetExt::is_mapped)
+            .filter_map(|widget| widget.downcast::<gtk::Label>().ok())
+            .any(|label| label.text().contains(text))
+    }
+
+    /// Whether the widget on screen named `name` takes input.
+    fn sensitive(&self, name: &str) -> bool {
+        self.mapped(name).is_sensitive()
+    }
+
+    /// Resizes the window to `width` by `height`, as the desktop would.
+    fn resize(&self, width: i32, height: i32) {
+        let window = self.window();
+        // GTK uses the default size when a hidden window is shown again.
+        window.set_visible(false);
+        window.set_default_size(width, height);
+        window.present();
+        self.pump();
+    }
+
+    /// Clears what the app asked for so far: the script answers none of it.
+    fn forget(&self) {
+        self.script.pending.borrow_mut().clear();
     }
 
     /// Scrolls the scrolled window named `name` to its end.
@@ -841,9 +948,9 @@ fn account_and_devices(smoke: &Smoke) {
 
 /// A screen this build does not have yet.
 fn later_screens(smoke: &Smoke) {
-    smoke.activate("sidebar-hq");
+    smoke.activate("sidebar-settings");
     assert!(smoke.shown("later_page"));
-    assert_eq!(smoke.status_title("later_page"), "District HQ");
+    assert_eq!(smoke.status_title("later_page"), "Workspace settings");
     smoke.shot("10-later-build");
     smoke.script.pending.borrow_mut().clear();
 }
@@ -1712,6 +1819,1455 @@ fn contacts_screens(smoke: &Smoke) {
     smoke.script.pending.borrow_mut().clear();
 }
 
+/// District HQ: an empty conversation, a blank question, a question that
+/// fails and is asked again, an answer in Markdown with its links, and a
+/// proposed change dismissed, then confirmed, failed and made.
+fn hq_screen(smoke: &Smoke) {
+    smoke.activate("sidebar-hq");
+    assert_eq!(smoke.status_title("empty_status"), "Ask District HQ");
+    smoke.click("ask_button");
+    assert!(!smoke.pending("AskHq"), "a blank question is not sent");
+    smoke.shot("40-hq-empty");
+
+    smoke.type_into("prompt_entry", "How many calls this week?");
+    smoke.click("ask_button");
+    let asked = smoke.ticket("AskHq");
+    assert!(smoke.shows_text("Thinking."));
+    assert!(!smoke.sensitive("ask_button"), "one question at a time");
+    smoke.shot("41-hq-thinking");
+    smoke.answer(Event::HqAnswered {
+        ticket: asked,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("hq-question"), "the question stays");
+    smoke.click("retry_button");
+    let asked = smoke.ticket("AskHq");
+    let mut answer: HqPromptResponse = fixture("district-hq-answer.json");
+    answer.answer = "You had **19 calls** this week:\n\n- 16 were *answered*\n- 3 were missed, \
+        see [the call log](https://www.distronode.com/dashboard/district/calls)\n\nAsk me \
+        for `weekly` figures, or <b>anything</b>."
+        .to_owned();
+    smoke.answer(Event::HqAnswered {
+        ticket: asked,
+        result: Ok(answer),
+    });
+    let label = smoke
+        .mapped("hq-answer")
+        .downcast::<gtk::Label>()
+        .expect("the answer");
+    assert!(label.uses_markup());
+    assert!(
+        label.text().contains("<b>anything</b>"),
+        "the service's own tags are text"
+    );
+    assert!(label.text().contains("\u{2022} 16 were answered"));
+    let web = "https://www.distronode.com/dashboard/district/calls";
+    assert!(label.emit_by_name::<bool>("activate-link", &[&web]));
+    smoke.pump();
+    let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
+        unreachable!()
+    };
+    assert_eq!(url, web, "through the app's own opener");
+    label.emit_by_name::<bool>("activate-link", &[&"file:///etc/passwd"]);
+    smoke.pump();
+    assert!(!smoke.pending("OpenUrl"), "only a web page is opened");
+    smoke.shot("42-hq-answer");
+
+    // A change proposed, and set aside: nothing is sent.
+    let propose = |prompt: &str| {
+        smoke.type_into("prompt_entry", prompt);
+        smoke
+            .mapped("prompt_entry")
+            .emit_by_name::<()>("activate", &[]);
+        smoke.pump();
+        let asked = smoke.ticket("AskHq");
+        smoke.answer(Event::HqAnswered {
+            ticket: asked,
+            result: Ok(fixture("district-hq-pending-write.json")),
+        });
+    };
+    propose("Change the greeting");
+    assert!(smoke.shown("card"));
+    assert!(smoke.shows_text("Nothing has been changed yet."));
+    smoke.shot("43-hq-proposal");
+    smoke.click("dismiss_button");
+    assert!(!smoke.shown("card"));
+    assert!(!smoke.pending("ConfirmHq"));
+
+    // Confirmed: applied, lost, confirmed again and made.
+    propose("Change the greeting, please");
+    smoke.click("confirm_button");
+    let confirmed = smoke.ticket("ConfirmHq");
+    assert!(smoke.shows_text("Applying the change."));
+    assert!(!smoke.sensitive("confirm_button"));
+    smoke.answer(Event::HqConfirmed {
+        ticket: confirmed,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("card"), "a failed confirmation keeps its card");
+    assert!(
+        smoke.shows_part("may have been made"),
+        "and does not claim nothing changed"
+    );
+    smoke.shot("44-hq-confirm-failed");
+    smoke.click("confirm_button");
+    smoke.reply("ConfirmHq", |ticket| Event::HqConfirmed {
+        ticket,
+        result: Ok(fixture("district-hq-confirm.json")),
+    });
+    assert!(!smoke.shown("card"));
+    assert!(smoke.shows_text("Done. The change is in place."));
+    smoke.shot("45-hq-applied");
+    // A change other than the one confirmed is said to be one.
+    propose("And the goodbye");
+    smoke.click("confirm_button");
+    let mut other: HqConfirmResponse = fixture("district-hq-confirm.json");
+    other.tool = "update_tools".to_owned();
+    smoke.reply("ConfirmHq", |ticket| Event::HqConfirmed {
+        ticket,
+        result: Ok(other),
+    });
+    assert!(smoke.shows_part("a change other than the one you confirmed"));
+    smoke.forget();
+}
+
+/// Analytics: every card read, all three failing, the charts, another
+/// window, a window with no calls, and the cards failing on their own.
+fn analytics_screen(smoke: &Smoke) {
+    smoke.activate("sidebar-analytics");
+    assert!(smoke.shown("report_loading"));
+    let fail_all = |smoke: &Smoke| {
+        smoke.reply("LoadAnalytics", |ticket| Event::AnalyticsLoaded {
+            ticket,
+            result: Err(server_error()),
+        });
+        smoke.reply("LoadUsage {", |ticket| Event::UsageLoaded {
+            ticket,
+            result: Err(server_error()),
+        });
+        smoke.reply("LoadUsageHistory", |ticket| Event::UsageHistoryLoaded {
+            ticket,
+            result: Err(server_error()),
+        });
+    };
+    fail_all(smoke);
+    assert_eq!(smoke.status_title("status"), "Could not load analytics");
+    smoke.shot("46-analytics-failed");
+    smoke.click("retry_button");
+    smoke.reply("LoadAnalytics", |ticket| Event::AnalyticsLoaded {
+        ticket,
+        result: Ok(fixture("district-analytics.json")),
+    });
+    smoke.reply("LoadUsage {", |ticket| Event::UsageLoaded {
+        ticket,
+        result: Ok(fixture("district-usage.json")),
+    });
+    smoke.reply("LoadUsageHistory", |ticket| Event::UsageHistoryLoaded {
+        ticket,
+        result: Ok(fixture("district-usage-history.json")),
+    });
+    smoke.forget();
+    assert!(smoke.shows_text("Calls over 7 days"));
+    assert!(smoke.shown("trend-chart") && smoke.shown("sentiment-chart"));
+    assert!(smoke.shows_text("Up 20% on the previous period."));
+    assert!(
+        smoke.shows_text("Aug 9") && smoke.shows_text("Aug 15"),
+        "the axis"
+    );
+    smoke.shot("47-analytics");
+    smoke.scroll_within("analytics_page", 0.45);
+    smoke.shot("48-analytics-funnel");
+    smoke.scroll_within_to_end("analytics_page");
+    smoke.shot("48-analytics-usage");
+    smoke.scroll_within("analytics_page", 0.0);
+
+    // Another window: only its own figures are read, the old ones showing.
+    smoke.click("range_30");
+    let window = smoke.take("LoadAnalytics");
+    assert!(format!("{window:?}").contains("ThirtyDays"), "{window:?}");
+    assert!(
+        smoke.shown("report_spinner"),
+        "the old figures stay meanwhile"
+    );
+    assert!(!smoke.pending("LoadUsage"), "usage is by the month");
+    smoke.answer(Event::AnalyticsLoaded {
+        ticket: ticket(&window),
+        result: Ok(fixture("district-analytics-new-workspace.json")),
+    });
+    assert!(smoke.shows_text("Calls over 30 days"));
+    assert!(smoke.shows_text("No calls in this window."));
+    assert!(smoke.shows_text("No calls to analyse yet."));
+    smoke.shot("49-analytics-no-calls");
+    smoke.click("range_90");
+    smoke.reply("LoadAnalytics", |ticket| Event::AnalyticsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_part("Could not load call analytics."));
+
+    // The cards fail and empty apart, the rest still showing.
+    smoke.click("refresh_button");
+    smoke.reply("LoadAnalytics", |ticket| Event::AnalyticsLoaded {
+        ticket,
+        result: Ok(fixture("district-analytics.json")),
+    });
+    smoke.reply("LoadUsage {", |ticket| Event::UsageLoaded {
+        ticket,
+        result: Ok(fixture("district-usage-empty.json")),
+    });
+    smoke.reply("LoadUsageHistory", |ticket| Event::UsageHistoryLoaded {
+        ticket,
+        result: Ok(UsageHistoryResponse {
+            success: true,
+            usage: Vec::new(),
+        }),
+    });
+    assert!(smoke.shows_text("No usage has been recorded this month yet."));
+    assert!(smoke.shows_text("No usage has been recorded in recent months."));
+    assert!(smoke.shows_text("Calls per week"));
+    smoke.shot("50-analytics-no-usage");
+    smoke.click("refresh_button");
+    smoke.reply("LoadAnalytics", |ticket| Event::AnalyticsLoaded {
+        ticket,
+        result: Ok(fixture("district-analytics.json")),
+    });
+    smoke.reply("LoadUsage {", |ticket| Event::UsageLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    smoke.reply("LoadUsageHistory", |ticket| Event::UsageHistoryLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_part("Could not load usage."));
+    assert!(smoke.shows_part("Could not load usage history."));
+    smoke.forget();
+}
+
+/// Phone numbers, read only: the numbers held, failing, short and empty; the
+/// web marketplace; and the search, typed, picked, refused for want of a
+/// carrier, failing, and finding nothing.
+fn numbers_screen(smoke: &Smoke) {
+    smoke.activate("sidebar-numbers");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(
+        smoke.status_title("owned_status"),
+        "Could not load this workspace's numbers"
+    );
+    smoke.click("owned_retry");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers-partial.json")),
+    });
+    smoke.forget();
+    assert!(smoke.shown("partial_note"));
+    assert!(smoke.count("number-row") >= 1);
+    assert!(smoke.shows_part("+1 416 555 0100"), "numbers read grouped");
+    assert!(smoke.shows_part("read only"));
+    smoke.shot("51-numbers");
+    smoke.click("web_button");
+    let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
+        unreachable!()
+    };
+    assert_eq!(
+        url,
+        "https://www.distronode.com/dashboard/district/marketplace"
+    );
+    smoke.click("refresh_button");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(OwnedNumbersResponse {
+            success: true,
+            numbers: Vec::new(),
+            partial: false,
+            failed_providers: Vec::new(),
+        }),
+    });
+    assert_eq!(smoke.status_title("owned_status"), "No numbers yet");
+    smoke.click("refresh_button");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    smoke.forget();
+
+    // The search: once the typing stops.
+    smoke.click("search_tab");
+    assert!(smoke.shows_part("Type an area code"));
+    smoke.type_into("area_row", "416");
+    let wait = smoke.last_ticket("Wait {");
+    assert!(smoke.shown("search_spinner"));
+    smoke.answer(Event::WaitOver { ticket: wait });
+    let search = smoke.take("SearchNumbers");
+    assert!(format!("{search:?}").contains("416"), "{search:?}");
+    smoke.answer(Event::NumbersFound {
+        ticket: ticket(&search),
+        result: Ok(fixture("district-numbers-search.json")),
+    });
+    assert!(smoke.count("number-row") >= 1);
+    assert!(smoke.shows_part("Offered by"));
+    smoke.shot("52-numbers-search");
+    smoke
+        .find("type_row")
+        .downcast::<adw::ComboRow>()
+        .unwrap()
+        .set_selected(1);
+    smoke.pump();
+    assert!(smoke.pending("Wait {"), "a new type searches again");
+    smoke.forget();
+    smoke.click("search_button");
+    smoke.reply("SearchNumbers", |ticket| Event::NumbersFound {
+        ticket,
+        result: Err(ApiError::Envelope {
+            status: 409,
+            code: "messaging_provider_not_configured".to_owned(),
+            detail: ErrorDetail {
+                message: Some("Connect a carrier account to search for numbers.".to_owned()),
+                code: Some("messaging_provider_not_configured".to_owned()),
+                ..ErrorDetail::default()
+            },
+        }),
+    });
+    assert_eq!(smoke.status_title("search_status"), "No carrier connected");
+    assert!(!smoke.shown("search_retry"), "no retry that cannot help");
+    smoke.shot("53-numbers-no-carrier");
+    smoke.type_into("country_row", "CA");
+    assert!(smoke.pending("Wait {"), "the country searches again");
+    smoke.forget();
+    smoke
+        .mapped("country_row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    let search = smoke.take("SearchNumbers");
+    assert!(format!("{search:?}").contains("\"CA\""), "{search:?}");
+    smoke.answer(Event::NumbersFound {
+        ticket: ticket(&search),
+        result: Err(server_error()),
+    });
+    assert_eq!(
+        smoke.status_title("search_status"),
+        "Could not search for numbers"
+    );
+    smoke.click("search_retry");
+    smoke.reply("SearchNumbers", |ticket| Event::NumbersFound {
+        ticket,
+        result: Ok(NumberSearchResponse {
+            success: true,
+            provider: "telnyx".to_owned(),
+            numbers: Vec::new(),
+        }),
+    });
+    assert_eq!(smoke.status_title("search_status"), "No matches");
+    smoke.click("owned_tab");
+    assert!(smoke.count("number-row") >= 1, "the numbers held again");
+    smoke.forget();
+}
+
+/// Billing, read only: the plan failing and read, its minutes and usage, the
+/// subscriptions and invoices, the web billing page and an invoice, a payment
+/// processor out of reach, a failed read of the account, and an account with
+/// no billing, beside a plan past due and capped.
+fn billing_screen(smoke: &Smoke) {
+    smoke.activate("sidebar-billing");
+    assert!(smoke.shown("loading_spinner"));
+    smoke.reply("LoadWorkspaceBilling", |ticket| {
+        Event::WorkspaceBillingLoaded {
+            ticket,
+            result: Err(server_error()),
+        }
+    });
+    assert_eq!(smoke.status_title("status"), "Could not load billing");
+    smoke.forget();
+    smoke.click("retry_button");
+    smoke.reply("LoadWorkspaceBilling", |ticket| {
+        Event::WorkspaceBillingLoaded {
+            ticket,
+            result: Ok(fixture("district-workspace-billing.json")),
+        }
+    });
+    assert!(smoke.shown("account_spinner"), "the account is read apart");
+    smoke.reply("LoadAccountBilling", |ticket| Event::AccountBillingLoaded {
+        ticket,
+        result: Ok(fixture("district-billing.json")),
+    });
+    smoke.forget();
+    assert!(smoke.shows_text("VoicePro"));
+    assert!(smoke.shows_text("Active"));
+    assert!(smoke.shows_text("1522.75 of 1500 minutes"));
+    assert!(smoke.shows_part("Founding customer 20% off"));
+    smoke.shot("54-billing");
+    smoke.scroll_within_to_end("billing_page");
+    smoke.shot("55-billing-invoices");
+    smoke.click("invoice-button");
+    let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
+        unreachable!()
+    };
+    assert_eq!(url, "https://invoice.stripe.test/in_contract_paid");
+    smoke.click("web_button");
+    let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
+        unreachable!()
+    };
+    assert_eq!(url, "https://www.distronode.com/dashboard/district/billing");
+
+    // The processor out of reach is not an account without billing.
+    smoke.click("refresh_button");
+    smoke.reply("LoadWorkspaceBilling", |ticket| {
+        Event::WorkspaceBillingLoaded {
+            ticket,
+            result: Ok(fixture("district-workspace-billing-null-usage.json")),
+        }
+    });
+    smoke.reply("LoadAccountBilling", |ticket| Event::AccountBillingLoaded {
+        ticket,
+        result: Ok(fixture("district-billing-unavailable.json")),
+    });
+    assert!(smoke.shows_text("Billing details unavailable"));
+    smoke.shot("56-billing-unavailable");
+    smoke.forget();
+    smoke.click("refresh_button");
+    let mut capped: WorkspaceBillingResponse = fixture("district-workspace-billing.json");
+    capped.billing.subscription_status = "past_due".to_owned();
+    capped.billing.overage_policy = "hard_cap".to_owned();
+    capped.billing.overage_cap_exceeded = true;
+    smoke.reply("LoadWorkspaceBilling", |ticket| {
+        Event::WorkspaceBillingLoaded {
+            ticket,
+            result: Ok(capped),
+        }
+    });
+    smoke.reply("LoadAccountBilling", |ticket| Event::AccountBillingLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_text("Calls are being declined: your included minutes are used up."));
+    assert!(smoke.shows_text("Could not load your subscription and invoices"));
+    smoke.shot("57-billing-capped");
+    smoke.forget();
+    smoke.click("account_retry");
+    smoke.reply("LoadWorkspaceBilling", |ticket| {
+        Event::WorkspaceBillingLoaded {
+            ticket,
+            result: Ok(fixture("district-workspace-billing.json")),
+        }
+    });
+    smoke.reply("LoadAccountBilling", |ticket| Event::AccountBillingLoaded {
+        ticket,
+        result: Ok(fixture("district-billing-no-customer.json")),
+    });
+    assert!(smoke.shows_text("No subscription is attached to this account."));
+    assert!(smoke.shows_text("No invoices yet."));
+    smoke.forget();
+}
+
+/// Workflows: the campaign and the list failing and read, a workflow's runs
+/// failing, read page by page and empty, a switch refused and then taken, and
+/// the campaign's question, cancelled, failed, answered, and closed with its
+/// screen.
+fn workflows_screen(smoke: &Smoke) {
+    smoke.activate("sidebar-workflows");
+    assert!(smoke.shown("campaign_loading") && smoke.shown("list_spinner"));
+    smoke.reply("LoadCampaign", |ticket| Event::CampaignLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    smoke.reply("LoadWorkflows", |ticket| Event::WorkflowsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_part("Could not load the campaign."));
+    assert_eq!(
+        smoke.status_title("list_status"),
+        "Could not load workflows"
+    );
+    let read = |smoke: &Smoke| {
+        smoke.reply("LoadCampaign", |ticket| Event::CampaignLoaded {
+            ticket,
+            result: Ok(fixture("district-campaign-status.json")),
+        });
+        smoke.reply("LoadWorkflows", |ticket| Event::WorkflowsLoaded {
+            ticket,
+            result: Ok(fixture("district-workflows.json")),
+        });
+        smoke.forget();
+    };
+    smoke.click("list_retry");
+    smoke.reply("LoadCampaign", |ticket| Event::CampaignLoaded {
+        ticket,
+        result: Ok(fixture("district-campaign-status.json")),
+    });
+    smoke.reply("LoadWorkflows", |ticket| Event::WorkflowsLoaded {
+        ticket,
+        result: Ok(WorkflowListResponse {
+            success: true,
+            workflows: Vec::new(),
+        }),
+    });
+    assert_eq!(smoke.status_title("list_status"), "No workflows yet");
+    smoke.forget();
+    smoke.click("refresh_button");
+    read(smoke);
+    assert_eq!(smoke.count("workflow-row"), 2);
+    assert!(smoke.shows_text("Active") && smoke.shows_text("25"));
+    assert!(smoke.shows_part("After a missed call"));
+    smoke.shot("58-workflows");
+
+    // A workflow's runs: the first read failing is read again with the screen.
+    let expand = |index: usize| {
+        smoke
+            .nth::<adw::ExpanderRow>("workflow-row", index)
+            .set_expanded(true);
+        smoke.pump();
+    };
+    expand(0);
+    let runs = smoke.take("LoadWorkflowRuns");
+    assert!(smoke.shows_text("Reading runs."));
+    smoke.answer(Event::WorkflowRunsLoaded {
+        ticket: ticket(&runs),
+        result: Err(server_error()),
+    });
+    smoke.click("runs-button");
+    read(smoke);
+    expand(0);
+    let mut first: WorkflowRunsResponse = fixture("district-workflow-runs.json");
+    first.has_more = true;
+    let later = WorkflowRunsResponse {
+        runs: vec![WorkflowRun {
+            id: "run_contract_older".to_owned(),
+            ..first.runs[0].clone()
+        }],
+        has_more: false,
+        ..first.clone()
+    };
+    smoke.reply("LoadWorkflowRuns", |ticket| Event::WorkflowRunsLoaded {
+        ticket,
+        result: Ok(first),
+    });
+    assert!(smoke.count("run-row") >= 3);
+    assert!(smoke.shows_part("Send email: skipped (contact has no email address)"));
+    smoke.shot("59-workflow-runs");
+    smoke.click("runs-button");
+    let more = smoke.take("LoadWorkflowRuns");
+    assert!(format!("{more:?}").contains("offset: 4"), "{more:?}");
+    smoke.answer(Event::WorkflowRunsLoaded {
+        ticket: ticket(&more),
+        result: Err(server_error()),
+    });
+    smoke.click("runs-button");
+    smoke.reply("LoadWorkflowRuns", |ticket| Event::WorkflowRunsLoaded {
+        ticket,
+        result: Ok(later),
+    });
+    assert!(!smoke.shown("runs-button"), "every run is read");
+    // Another workflow, which never ran: one open at a time.
+    expand(1);
+    smoke.reply("LoadWorkflowRuns", |ticket| Event::WorkflowRunsLoaded {
+        ticket,
+        result: Ok(WorkflowRunsResponse {
+            success: true,
+            runs: Vec::new(),
+            total: 0,
+            limit: 10,
+            offset: 0,
+            has_more: false,
+        }),
+    });
+    assert!(smoke.shows_text("This workflow has not run yet."));
+    assert_eq!(smoke.count("run-row"), 0, "the first closed");
+
+    // A switch: shown at once, put back on a refusal, one change at a time.
+    let switch = smoke.nth::<gtk::Switch>("workflow-switch", 1);
+    assert!(!switch.is_active());
+    switch.set_active(true);
+    smoke.pump();
+    let toggle = smoke.take("SetWorkflowActive");
+    assert!(smoke.nth::<gtk::Switch>("workflow-switch", 1).is_active());
+    assert!(
+        !smoke
+            .nth::<gtk::Switch>("workflow-switch", 1)
+            .is_sensitive()
+    );
+    smoke.answer(Event::WorkflowActiveSet {
+        ticket: ticket(&toggle),
+        result: Err(server_error()),
+    });
+    assert!(!smoke.nth::<gtk::Switch>("workflow-switch", 1).is_active());
+    assert!(smoke.shown("toggle_failure_box"));
+    smoke.shot("60-workflows-switch-refused");
+    smoke.click("toggle_dismiss");
+    assert!(!smoke.shown("toggle_failure_box"));
+    smoke
+        .nth::<gtk::Switch>("workflow-switch", 1)
+        .set_active(true);
+    smoke.pump();
+    smoke.reply("SetWorkflowActive", |ticket| Event::WorkflowActiveSet {
+        ticket,
+        result: Ok(fixture("district-workflow-toggle.json")),
+    });
+    assert!(smoke.nth::<gtk::Switch>("workflow-switch", 1).is_active());
+
+    // The campaign: a question first, every time.
+    smoke.click("pause_button");
+    assert!(smoke.first::<adw::AlertDialog>().is_some());
+    smoke.shot("61-workflows-question");
+    smoke.respond("cancel");
+    assert!(!smoke.pending("SetCampaignEnabled"), "nothing on a no");
+    smoke.click("pause_button");
+    smoke.respond("confirm");
+    let set = smoke.take("SetCampaignEnabled");
+    assert!(smoke.shown("campaign_spinner"));
+    smoke.answer(Event::CampaignSet {
+        ticket: ticket(&set),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("campaign_failure"));
+    smoke.click("pause_button");
+    smoke.respond("confirm");
+    smoke.reply("SetCampaignEnabled", |ticket| Event::CampaignSet {
+        ticket,
+        result: Ok(fixture("district-campaign-pause.json")),
+    });
+    assert!(smoke.shows_text("Paused"));
+    assert!(smoke.shown("resume_button") && !smoke.shown("pause_button"));
+    // A question left open closes with its screen.
+    smoke.click("resume_button");
+    assert!(smoke.first::<adw::AlertDialog>().is_some());
+    smoke.activate("sidebar-overview");
+    assert!(
+        smoke.first::<adw::AlertDialog>().is_none(),
+        "closed with the screen"
+    );
+    assert!(!smoke.pending("SetCampaignEnabled"));
+    smoke.forget();
+}
+
+/// Booking pages: a failed read, being set up, never set up, turning them on
+/// with a setup that fails and one that lands, live, the hand-off to the web
+/// and its refusal, and a workspace not offered them.
+fn scheduling_screen(smoke: &Smoke) {
+    smoke.activate("sidebar-booking");
+    let status = |smoke: &Smoke, result: Result<SchedulingStatusResponse, ApiError>| {
+        smoke.reply("LoadSchedulingStatus", |ticket| {
+            Event::SchedulingStatusLoaded { ticket, result }
+        });
+    };
+    status(smoke, Err(server_error()));
+    assert_eq!(smoke.status_title("status"), "Could not load booking pages");
+    smoke.forget();
+    smoke.click("retry_button");
+    status(
+        smoke,
+        Ok(fixture("district-scheduling-status-provisioning.json")),
+    );
+    smoke.forget();
+    assert!(smoke.shown("check_button") && !smoke.shown("enable_button"));
+    smoke.shot("62-booking-setting-up");
+    smoke.click("check_button");
+    status(smoke, Ok(fixture("district-scheduling-status-legacy.json")));
+    smoke.forget();
+    assert!(smoke.shown("enable_button"));
+    smoke.shot("63-booking-off");
+    smoke.click("enable_button");
+    let enable = smoke.take("EnableScheduling");
+    assert!(!smoke.sensitive("enable_button"), "one press at a time");
+    smoke.answer(Event::SchedulingEnabled {
+        ticket: ticket(&enable),
+        result: Ok(SchedulingEnableResponse {
+            ok: false,
+            status: "error".to_owned(),
+            public_host: None,
+            error: Some("The booking service did not answer.".to_owned()),
+        }),
+    });
+    let mut failed: SchedulingStatusResponse = fixture("district-scheduling-status-error.json");
+    failed.can_manage = true;
+    status(smoke, Ok(failed));
+    assert!(smoke.shows_text("The booking service did not answer."));
+    assert!(smoke.shown("problem_row"));
+    smoke.shot("64-booking-setup-failed");
+    smoke.click("notice_dismiss");
+    assert!(!smoke.shown("notice_box"));
+    smoke.click("enable_button");
+    smoke.reply("EnableScheduling", |ticket| Event::SchedulingEnabled {
+        ticket,
+        result: Ok(fixture("district-scheduling-enable.json")),
+    });
+    status(smoke, Ok(fixture("district-scheduling-status-ready.json")));
+    smoke.forget();
+    assert!(smoke.shows_text("Your booking page is live."));
+    assert!(smoke.shown("web_button"));
+    smoke.shot("65-booking-live");
+
+    // The hand-off: asked for on the press, opened at once, never shown.
+    smoke.click("web_button");
+    let asked = smoke.take("RequestSchedulingHandOff");
+    assert!(smoke.shown("busy_spinner"));
+    let hand_off: SchedulingHandOffResponse = desktop_fixture("district-scheduling-handoff.json");
+    let secret = hand_off.url.clone();
+    smoke.answer(Event::SchedulingHandOffReady {
+        ticket: ticket(&asked),
+        result: Ok(hand_off),
+    });
+    let opened = smoke.take("OpenOneTimeUrl");
+    let Effect::OpenOneTimeUrl { url } = &opened else {
+        unreachable!()
+    };
+    assert_eq!(url.expose(), secret);
+    assert!(!format!("{opened:?}").contains(&secret), "never printed");
+    assert!(!smoke.shows_part(&secret), "never shown");
+    smoke.click("web_button");
+    smoke.reply("RequestSchedulingHandOff", |ticket| {
+        Event::SchedulingHandOffReady {
+            ticket,
+            result: Err(ApiError::Forbidden(ErrorDetail::default())),
+        }
+    });
+    assert!(smoke.shown("notice_box"));
+    smoke.shot("66-booking-refused");
+    smoke.click("notice_dismiss");
+    smoke.click("refresh_button");
+    status(
+        smoke,
+        Ok(SchedulingStatusResponse {
+            eligible: false,
+            can_manage: false,
+            tenant: None,
+        }),
+    );
+    assert!(smoke.shows_text("Booking pages are not offered to this workspace."));
+    assert!(!smoke.shown("enable_button") && !smoke.shown("web_button"));
+    smoke.forget();
+}
+
+/// A PNG picked through the desktop's file chooser, the one the button named
+/// `button` opened: `path` is written with the image, or left as it is.
+#[allow(deprecated)] // GtkFileChooser is how a test reaches the dialog GtkFileDialog opens.
+fn pick(smoke: &Smoke, button: &str, path: &std::path::Path) {
+    smoke.click(button);
+    let open = chooser(smoke);
+    let file = gio::File::for_path(path);
+    open.set_file(&file).expect("the chooser takes the file");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while open.file().and_then(|chosen| chosen.path()).as_deref() != Some(path) {
+        assert!(
+            Instant::now() < deadline,
+            "the chooser never selected the file"
+        );
+        smoke.pump();
+    }
+    open.response(gtk::ResponseType::Accept);
+    smoke.pump();
+}
+
+/// Waits for the effect named `name`, which a file read on the main loop
+/// sends.
+fn wait_for(smoke: &Smoke, name: &str) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !smoke.pending(name) {
+        assert!(Instant::now() < deadline, "{name} never arrived");
+        smoke.pump();
+    }
+}
+
+/// The help desk: switched off and turned on, the queue failing and read and
+/// filtered, a ticket raised, one ticket with its status moved and a reply,
+/// the settings with the logo, and a narrow window.
+fn desk_screens(smoke: &Smoke) {
+    smoke.activate("sidebar-desk");
+    let mut off: DeskSettingsResponse = fixture("district-desk-settings.json");
+    off.settings.enabled = false;
+    smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
+        ticket,
+        result: Ok(off),
+    });
+    assert!(
+        !smoke.pending("LoadDeskTickets"),
+        "a desk that is off records nothing"
+    );
+    assert_eq!(smoke.status_title("list_status"), "The help desk is off");
+    smoke.shot("67-desk-off");
+    smoke.click("turn_on_button");
+    let turn_on = smoke.take("SaveDeskSettings");
+    assert!(smoke.shown("enable_spinner"));
+    smoke.answer(Event::DeskSettingsSaved {
+        ticket: ticket(&turn_on),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("enable_failure"));
+    smoke.click("turn_on_button");
+    smoke.reply("SaveDeskSettings", |ticket| Event::DeskSettingsSaved {
+        ticket,
+        result: Ok(fixture("district-desk-settings.json")),
+    });
+    smoke.reply("LoadDeskTickets", |ticket| Event::DeskTicketsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(
+        smoke.status_title("list_status"),
+        "Could not load the help desk"
+    );
+    let read_queue = |smoke: &Smoke, queue: DeskTicketsResponse| {
+        smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
+            ticket,
+            result: Ok(fixture("district-desk-settings.json")),
+        });
+        smoke.reply("LoadDeskTickets", |ticket| Event::DeskTicketsLoaded {
+            ticket,
+            result: Ok(queue),
+        });
+        smoke.forget();
+    };
+    smoke.click("list_retry");
+    read_queue(smoke, fixture("district-desk-tickets.json"));
+    assert_eq!(smoke.count("ticket-row"), 3);
+    assert_eq!(smoke.status_title("list_status"), "", "the queue shows");
+    smoke.shot("68-desk");
+
+    // The filter counts the whole queue, and shows what matches.
+    let filter = smoke.find("filter").downcast::<gtk::DropDown>().unwrap();
+    filter.set_selected(1);
+    smoke.pump();
+    assert_eq!(smoke.count("ticket-row"), 1);
+    let mut open_only: DeskTicketsResponse = fixture("district-desk-tickets.json");
+    open_only.tickets.truncate(1);
+    smoke.click("refresh_button");
+    read_queue(smoke, open_only);
+    filter.set_selected(3);
+    smoke.pump();
+    assert!(smoke.shows_text("No tickets with this status."));
+    filter.set_selected(0);
+    smoke.pump();
+    smoke.click("refresh_button");
+    read_queue(
+        smoke,
+        DeskTicketsResponse {
+            success: true,
+            tickets: Vec::new(),
+        },
+    );
+    assert_eq!(smoke.status_title("list_status"), "No tickets yet");
+    smoke.click("refresh_button");
+    read_queue(smoke, fixture("district-desk-tickets.json"));
+
+    // Raising a ticket: cancelled, closed, then sent, refused and raised.
+    smoke.click("new_button");
+    assert!(smoke.shown("subject_row") && smoke.shown("name_row"));
+    assert!(!smoke.shown("kind_row"), "a ticket has no kind");
+    smoke.click("cancel_button");
+    assert!(!smoke.shown("subject_row"));
+    smoke.click("new_button");
+    smoke.first::<adw::Dialog>().expect("the form").close();
+    smoke.pump();
+    assert!(!smoke.shown("subject_row"));
+    smoke.click("new_button");
+    smoke.type_into("subject_row", "Printer on fire");
+    assert!(!smoke.sensitive("submit_button"), "a message too");
+    smoke
+        .mapped_buffer("message")
+        .set_text("The printer in the lobby is on fire.");
+    smoke.pump();
+    smoke.type_into("name_row", "Ada Byron");
+    smoke.type_into("email_row", "ada@example.com");
+    smoke.type_into("phone_row", "+1 212 555 0199");
+    assert!(smoke.sensitive("submit_button"));
+    smoke.shot("69-desk-new-ticket");
+    smoke.click("submit_button");
+    let raised = smoke.take("CreateDeskTicket");
+    assert!(format!("{raised:?}").contains("Printer on fire"));
+    assert!(!smoke.sensitive("submit_button"), "one at a time");
+    smoke.answer(Event::DeskTicketCreated {
+        ticket: ticket(&raised),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("failure_label"));
+    smoke.click("submit_button");
+    smoke.reply("CreateDeskTicket", |ticket| Event::DeskTicketCreated {
+        ticket,
+        result: Ok(fixture("district-desk-ticket-create.json")),
+    });
+    assert!(!smoke.shown("subject_row"), "the form closes");
+    assert!(smoke.shows_text("Ticket T-41 is open."));
+    read_queue(smoke, fixture("district-desk-tickets.json"));
+    smoke.click("submitted_dismiss");
+    assert!(!smoke.shown("submitted_box"));
+
+    // One ticket: failing, read, its status moved, and a reply.
+    smoke.activate_nth("ticket-row", 0);
+    smoke.reply("LoadDeskTicket {", |ticket| Event::DeskTicketLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(smoke.status_title("status"), "Could not load this ticket");
+    smoke.click("retry_button");
+    smoke.reply("LoadDeskTicket {", |ticket| Event::DeskTicketLoaded {
+        ticket,
+        result: Ok(fixture("district-desk-ticket.json")),
+    });
+    smoke.forget();
+    assert!(smoke.shown("ticket_view"));
+    assert!(smoke.nth::<gtk::ToggleButton>("open_button", 0).is_active());
+    assert!(smoke.count("conversation-message") >= 1);
+    smoke.shot("70-desk-ticket");
+    smoke.click("waiting_button");
+    let moved = smoke.take("SetDeskTicketStatus");
+    assert!(smoke.shown("status_spinner"));
+    smoke.answer(Event::DeskTicketStatusSet {
+        ticket: ticket(&moved),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("status_failure"));
+    assert!(
+        smoke.nth::<gtk::ToggleButton>("open_button", 0).is_active(),
+        "unmoved"
+    );
+    smoke.click("waiting_button");
+    smoke.reply("SetDeskTicketStatus", |ticket| Event::DeskTicketStatusSet {
+        ticket,
+        result: Ok(fixture("district-desk-ticket-status.json")),
+    });
+    assert!(!smoke.shown("status_spinner"));
+    smoke
+        .mapped_buffer("text")
+        .set_text("Moved to Tuesday at 10am.");
+    smoke.pump();
+    assert!(smoke.sensitive("send_button"));
+    smoke.click("send_button");
+    let replied = smoke.take("ReplyToDeskTicket");
+    assert!(!smoke.sensitive("send_button"), "one at a time");
+    smoke.answer(Event::DeskReplied {
+        ticket: ticket(&replied),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("failure_box"));
+    smoke.click("dismiss_button");
+    assert!(!smoke.shown("failure_box"));
+    let reply = smoke.mapped_buffer("text");
+    assert_eq!(
+        reply.text(&reply.start_iter(), &reply.end_iter(), false),
+        "Moved to Tuesday at 10am.",
+        "what was written stays"
+    );
+    smoke.click("send_button");
+    smoke.reply("ReplyToDeskTicket", |ticket| Event::DeskReplied {
+        ticket,
+        result: Ok(fixture("district-desk-ticket-reply.json")),
+    });
+    assert!(smoke.toasted("Reply sent."));
+    assert!(smoke.shows_text("The customer was emailed your reply."));
+    smoke.shot("71-desk-replied");
+    smoke.forget();
+
+    // The settings: failing, read, changed, saved, and the logo.
+    smoke.click("settings_button");
+    smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(
+        smoke.status_title("status"),
+        "Could not load the desk's settings"
+    );
+    smoke.click("retry_button");
+    smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
+        ticket,
+        result: Ok(fixture("district-desk-settings.json")),
+    });
+    smoke.forget();
+    assert!(smoke.shows_text("A logo is published."));
+    assert!(!smoke.sensitive("save_button"), "nothing changed yet");
+    smoke.shot("72-desk-settings");
+    smoke
+        .mapped("notify_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap()
+        .set_active(false);
+    smoke.pump();
+    smoke.type_into("brand_row", "Analytical Engines");
+    assert!(smoke.sensitive("save_button"));
+    smoke.click("save_button");
+    let saved = smoke.take("SaveDeskSettings");
+    assert!(format!("{saved:?}").contains("Analytical Engines"));
+    assert!(smoke.shown("save_spinner"));
+    smoke.answer(Event::DeskSettingsSaved {
+        ticket: ticket(&saved),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("save_failure"));
+    smoke.click("save_button");
+    smoke.reply("SaveDeskSettings", |ticket| Event::DeskSettingsSaved {
+        ticket,
+        result: Ok(fixture("district-desk-settings-patch.json")),
+    });
+    assert!(smoke.toasted("Settings saved."));
+    let enabled = smoke
+        .mapped("enabled_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap();
+    enabled.set_active(!enabled.is_active());
+    smoke.pump();
+    assert!(smoke.sensitive("save_button"), "a change to save");
+
+    let picture = std::env::temp_dir().join(format!("district-logo-{}.png", std::process::id()));
+    fs::write(&picture, PNG).expect("the picture is written");
+    pick(smoke, "choose_button", &picture);
+    wait_for(smoke, "UploadDeskLogo");
+    let uploaded = smoke.take("UploadDeskLogo");
+    assert!(format!("{uploaded:?}").contains("image/png"));
+    assert!(smoke.shown("logo_spinner"));
+    smoke.answer(Event::DeskLogoUploaded {
+        ticket: ticket(&uploaded),
+        result: Err(ApiError::Rejected {
+            status: 413,
+            detail: ErrorDetail {
+                message: Some("Logos must be 512 KB or smaller.".to_owned()),
+                ..ErrorDetail::default()
+            },
+        }),
+    });
+    assert!(smoke.shows_text("Logos must be 512 KB or smaller."));
+    smoke.shot("73-desk-logo-refused");
+    smoke.click("logo_dismiss");
+    assert!(!smoke.shown("logo_note_box"));
+    pick(smoke, "choose_button", &picture);
+    wait_for(smoke, "UploadDeskLogo");
+    smoke.reply("UploadDeskLogo", |ticket| Event::DeskLogoUploaded {
+        ticket,
+        result: Ok(fixture("district-desk-logo.json")),
+    });
+    assert!(smoke.toasted("Logo updated."));
+    smoke.click("remove_button");
+    let mut kept: DeskLogoRemovalResponse = fixture("district-desk-logo-delete.json");
+    kept.object_removed = false;
+    smoke.reply("DeleteDeskLogo", |ticket| Event::DeskLogoDeleted {
+        ticket,
+        result: Ok(kept),
+    });
+    assert!(smoke.shows_text("No logo yet."));
+    assert!(smoke.shows_part("may still be reachable"));
+    assert!(!smoke.shown("remove_button"));
+    assert!(smoke.toasted("Logo updated."));
+    smoke.shot("74-desk-logo-removed");
+    smoke.click("logo_dismiss");
+    // An image that cannot be read is said to be, and nothing is sent.
+    let mut permissions = fs::metadata(&picture).unwrap().permissions();
+    std::os::unix::fs::PermissionsExt::set_mode(&mut permissions, 0o000);
+    fs::set_permissions(&picture, permissions).unwrap();
+    pick(smoke, "choose_button", &picture);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !smoke.shown("logo_note_box") {
+        assert!(
+            Instant::now() < deadline,
+            "the unreadable image was never reported"
+        );
+        smoke.pump();
+    }
+    assert!(smoke.shows_text("That image could not be read. Try picking it again."));
+    assert!(!smoke.pending("UploadDeskLogo"));
+    fs::remove_file(&picture).ok();
+    smoke.click("logo_dismiss");
+    // A file chooser still open when the settings are left closes with them.
+    smoke.click("choose_button");
+    chooser(smoke);
+    smoke.activate("sidebar-desk");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while open_chooser().is_some() {
+        assert!(Instant::now() < deadline, "the file chooser stayed open");
+        smoke.pump();
+    }
+    smoke.forget();
+
+    // A narrow window: one pane at a time, the ticket over the queue.
+    smoke.resize(400, 760);
+    let split = smoke
+        .find("split_view")
+        .downcast::<adw::NavigationSplitView>()
+        .unwrap();
+    split.set_show_content(true);
+    smoke.pump();
+    smoke.activate_nth("ticket-row", 1);
+    smoke.reply("LoadDeskTicket {", |ticket| Event::DeskTicketLoaded {
+        ticket,
+        result: Ok(fixture("district-desk-ticket.json")),
+    });
+    assert!(smoke.shown("back_button"), "back to the queue");
+    assert!(!smoke.shown("ticket-row"), "one pane at a time");
+    smoke.shot("75-desk-ticket-narrow");
+    smoke.click("back_button");
+    assert!(smoke.shown("ticket-row"));
+    smoke.shot("76-desk-narrow");
+    // Leaving the ticket by a gesture closes it as the back button does.
+    smoke.activate_nth("ticket-row", 0);
+    smoke.reply("LoadDeskTicket {", |ticket| Event::DeskTicketLoaded {
+        ticket,
+        result: Ok(fixture("district-desk-ticket.json")),
+    });
+    inner_split(smoke, "desk_page").set_show_content(false);
+    smoke.pump();
+    assert!(smoke.shown("ticket-row"), "back on the queue");
+    smoke.resize(1024, 720);
+    smoke.forget();
+    // The form raising a ticket closes with its screen.
+    smoke.click("new_button");
+    assert!(smoke.shown("subject_row"));
+    smoke.activate("sidebar-overview");
+    assert!(
+        smoke.first::<adw::Dialog>().is_none(),
+        "closed with the screen"
+    );
+    smoke.forget();
+}
+
+/// The split view of the page named `page`, list beside detail.
+fn inner_split(smoke: &Smoke, page: &str) -> adw::NavigationSplitView {
+    descendants(&smoke.mapped(page))
+        .into_iter()
+        .find_map(|widget| widget.downcast::<adw::NavigationSplitView>().ok())
+        .expect("the page's own split view")
+}
+
+/// Support: the requests failing, read, failing again beside the list, and
+/// empty; a request raised; one request with its reply; and closing it,
+/// asked first, failing, done, and a question closed with its screen.
+fn support_screens(smoke: &Smoke) {
+    smoke.activate("sidebar-support");
+    let list = |smoke: &Smoke, result: Result<SupportRequestsResponse, ApiError>| {
+        smoke.reply("LoadSupportRequests", |ticket| {
+            Event::SupportRequestsLoaded { ticket, result }
+        });
+        smoke.forget();
+    };
+    list(smoke, Err(server_error()));
+    assert_eq!(
+        smoke.status_title("list_status"),
+        "Could not load your support requests"
+    );
+    smoke.click("list_retry");
+    list(smoke, Ok(fixture("district-support-requests.json")));
+    assert_eq!(smoke.count("request-row"), 3);
+    assert!(smoke.shown("open_heading") && smoke.shown("resolved_heading"));
+    assert!(smoke.shows_part("Not filed yet \u{b7} Opening"));
+    smoke.shot("77-support");
+    smoke.click("refresh_button");
+    list(smoke, Err(server_error()));
+    assert!(
+        smoke.shown("refresh_failure"),
+        "the list stays, and says so"
+    );
+    smoke.click("refresh_button");
+    list(
+        smoke,
+        Ok(SupportRequestsResponse {
+            success: true,
+            requests: Vec::new(),
+        }),
+    );
+    assert_eq!(smoke.status_title("list_status"), "No requests");
+    smoke.click("refresh_button");
+    list(smoke, Ok(fixture("district-support-requests.json")));
+
+    // Raising one: its kind, its subject and what is happening.
+    smoke.click("new_button");
+    assert!(smoke.shown("kind_row") && !smoke.shown("name_row"));
+    smoke
+        .mapped("kind_row")
+        .downcast::<adw::ComboRow>()
+        .unwrap()
+        .set_selected(1);
+    smoke.pump();
+    smoke.type_into("subject_row", "Transfers ring out");
+    smoke
+        .mapped_buffer("message")
+        .set_text("Calls transferred to the front desk ring out after four rings.");
+    smoke.pump();
+    smoke.shot("78-support-new");
+    smoke.click("submit_button");
+    let raised = smoke.take("CreateSupportRequest");
+    assert!(format!("{raised:?}").contains("Question"), "{raised:?}");
+    smoke.answer(Event::SupportRequestCreated {
+        ticket: ticket(&raised),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("failure_label"));
+    smoke.click("submit_button");
+    let again = smoke.take("CreateSupportRequest");
+    let key = |effect: &Effect| {
+        let shown = format!("{effect:?}");
+        shown
+            .split("idempotency_key: ")
+            .nth(1)
+            .map(|rest| rest.split(',').next().unwrap_or_default().to_owned())
+            .unwrap_or_default()
+    };
+    assert_eq!(key(&again), key(&raised), "a retry is the same draft");
+    smoke.answer(Event::SupportRequestCreated {
+        ticket: ticket(&again),
+        result: Ok(fixture("district-support-request-create.json")),
+    });
+    assert!(!smoke.shown("subject_row"), "the form closes");
+    assert!(smoke.shows_part("is open with our team."));
+    list(smoke, Ok(fixture("district-support-requests.json")));
+    smoke.click("submitted_dismiss");
+    assert!(!smoke.shown("submitted_box"));
+    smoke.click("new_button");
+    smoke.click("cancel_button");
+    assert!(!smoke.shown("subject_row"));
+
+    // One request: failing, read, and a reply.
+    smoke.activate_nth("request-row", 0);
+    smoke.reply("LoadSupportRequest {", |ticket| {
+        Event::SupportRequestLoaded {
+            ticket,
+            result: Err(server_error()),
+        }
+    });
+    assert_eq!(smoke.status_title("status"), "Could not load this request");
+    smoke.click("retry_button");
+    let read_request = |smoke: &Smoke| {
+        smoke.reply("LoadSupportRequest {", |ticket| {
+            Event::SupportRequestLoaded {
+                ticket,
+                result: Ok(fixture("district-support-request.json")),
+            }
+        });
+        smoke.forget();
+    };
+    read_request(smoke);
+    assert!(smoke.shows_text("DA-42 \u{b7} In Progress"));
+    assert_eq!(smoke.count("conversation-message"), 2);
+    smoke.shot("79-support-request");
+    smoke
+        .mapped_buffer("text")
+        .set_text("It happens on every transfer.");
+    smoke.pump();
+    smoke.click("send_button");
+    smoke.reply("ReplyToSupportRequest", |ticket| Event::SupportReplied {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("failure_box"));
+    smoke.click("dismiss_button");
+    smoke.click("send_button");
+    smoke.reply("ReplyToSupportRequest", |ticket| Event::SupportReplied {
+        ticket,
+        result: Ok(fixture("district-support-reply.json")),
+    });
+    assert!(smoke.toasted("Reply sent."));
+    assert_eq!(smoke.count("conversation-message"), 3);
+
+    // Closing: asked first, and nothing on a no.
+    smoke.click("close_button");
+    assert!(smoke.first::<adw::AlertDialog>().is_some());
+    smoke.shot("80-support-close");
+    smoke.respond("cancel");
+    assert!(!smoke.pending("CloseSupportRequest"));
+    smoke.click("close_button");
+    smoke.respond("confirm");
+    let closing = smoke.take("CloseSupportRequest");
+    assert!(smoke.shown("close_spinner"));
+    smoke.answer(Event::SupportRequestClosed {
+        ticket: ticket(&closing),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("close_failure"));
+    smoke.click("close_button");
+    smoke.respond("confirm");
+    smoke.reply("CloseSupportRequest", |ticket| {
+        Event::SupportRequestClosed {
+            ticket,
+            result: Ok(fixture("district-support-close.json")),
+        }
+    });
+    assert!(smoke.shows_part("Closed as"));
+    assert!(!smoke.shown("close_button"), "resolved: nothing to close");
+    smoke.shot("81-support-closed");
+    // A question left open closes with its screen.
+    smoke.click("refresh_button");
+    read_request(smoke);
+    smoke.click("close_button");
+    assert!(smoke.first::<adw::AlertDialog>().is_some());
+    smoke.activate("sidebar-overview");
+    assert!(
+        smoke.first::<adw::AlertDialog>().is_none(),
+        "closed with the screen"
+    );
+    assert!(!smoke.pending("CloseSupportRequest"));
+    smoke.forget();
+
+    // A narrow window: one pane at a time, and a gesture back to the list.
+    smoke.activate("sidebar-support");
+    list(smoke, Ok(fixture("district-support-requests.json")));
+    smoke.resize(400, 760);
+    let split = smoke
+        .find("split_view")
+        .downcast::<adw::NavigationSplitView>()
+        .unwrap();
+    split.set_show_content(true);
+    smoke.pump();
+    smoke.activate_nth("request-row", 1);
+    smoke.reply("LoadSupportRequest {", |ticket| {
+        Event::SupportRequestLoaded {
+            ticket,
+            result: Ok(fixture("district-support-request.json")),
+        }
+    });
+    assert!(!smoke.shown("request-row"), "one pane at a time");
+    smoke.shot("81-support-request-narrow");
+    inner_split(smoke, "support_page").set_show_content(false);
+    smoke.pump();
+    assert!(smoke.shown("request-row"), "back on the list");
+    smoke.resize(1024, 720);
+    smoke.forget();
+    // The form raising a request closes with its screen.
+    smoke.click("new_button");
+    assert!(smoke.shown("subject_row"));
+    smoke.activate("sidebar-overview");
+    assert!(
+        smoke.first::<adw::Dialog>().is_none(),
+        "closed with the screen"
+    );
+    smoke.forget();
+}
+
+/// The meetings the rooms lobby lists, in this workspace's rooms.
+fn meetings() -> Vec<MeetingSummary> {
+    let mut meetings: Vec<MeetingSummary> = fixture("district-meetings.json");
+    for meeting in &mut meetings {
+        meeting.room_name = meeting.room_name.replace("ws-contract-test", AGENCY);
+    }
+    meetings
+}
+
+/// The rooms lobby: the meetings failing and read, a room named, refused,
+/// joined with its people, its microphone and its end, a meeting rejoined and
+/// left, and a meeting's record, failing, read and closed with the lobby.
+fn rooms_screen(smoke: &Smoke) {
+    smoke.activate("sidebar-rooms");
+    smoke.reply("LoadMeetings", |ticket| Event::MeetingsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(
+        smoke.status_title("meetings_status"),
+        "Could not load meetings"
+    );
+    smoke.click("meetings_retry");
+    smoke.reply("LoadMeetings", |ticket| Event::MeetingsLoaded {
+        ticket,
+        result: Ok(meetings()),
+    });
+    smoke.forget();
+    assert_eq!(smoke.count("meeting-row"), 2);
+    assert!(smoke.shows_part("Minutes are written when the meeting ends."));
+    assert!(!smoke.sensitive("join_button"), "no name yet");
+    smoke.shot("82-rooms");
+
+    smoke.type_into("room_row", "Weekly Review!");
+    assert!(smoke.shows_text("Everyone who joins \"weekly-review\" meets in the same room."));
+    smoke.click("join_button");
+    let asked = smoke.take("RequestRoomToken");
+    assert!(format!("{asked:?}").contains("weekly-review"));
+    assert!(smoke.shown("join_spinner"));
+    smoke.answer(Event::RoomTokenIssued {
+        ticket: ticket(&asked),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("failure_box"));
+    smoke.click("failure_dismiss");
+    assert!(!smoke.shown("failure_box"));
+    smoke
+        .mapped("room_row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    smoke.reply("RequestRoomToken", |ticket| Event::RoomTokenIssued {
+        ticket,
+        result: Ok(fixture("district-room-token.json")),
+    });
+    let Effect::ConnectMedia { session, .. } = smoke.take("ConnectMedia") else {
+        unreachable!()
+    };
+    assert!(smoke.shown("room_card"));
+    assert!(smoke.shows_part("Joining the room."));
+    let media = |event| {
+        smoke.answer(Event::Media(MediaUpdate { session, event }));
+    };
+    media(MediaEvent::Connected);
+    media(MediaEvent::ParticipantJoined(Participant::new(
+        "user-9c11",
+        Some("Grace".to_owned()),
+        false,
+    )));
+    media(MediaEvent::ParticipantJoined(Participant::new(
+        "agent-companion",
+        None,
+        true,
+    )));
+    media(MediaEvent::Microphone(MicrophoneState::On));
+    assert!(smoke.shows_part("In the room. With Grace."));
+    assert!(smoke.shows_part("The Companion joins every room"));
+    assert!(smoke.shows_text("Mute"));
+    assert!(!smoke.sensitive("join_button"), "one room at a time");
+    smoke.shot("83-rooms-joined");
+    smoke.click("mute_button");
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(!enabled);
+    media(MediaEvent::Microphone(MicrophoneState::Unavailable));
+    media(MediaEvent::EncryptionFailed);
+    media(MediaEvent::Reconnecting);
+    assert!(smoke.shows_part("could not be used"));
+    assert!(smoke.shows_part("could not be decrypted"));
+    assert!(smoke.shows_text("Unmute"));
+    media(MediaEvent::Disconnected(DisconnectReason::Unavailable));
+    assert!(!smoke.shown("room_card"));
+    assert!(smoke.shows_text(DisconnectReason::UNAVAILABLE));
+    smoke.shot("84-rooms-unavailable");
+    smoke.click("failure_dismiss");
+
+    // A meeting still running is rejoined, and left.
+    smoke.click("rejoin-button");
+    smoke.reply("RequestRoomToken", |ticket| Event::RoomTokenIssued {
+        ticket,
+        result: Ok(fixture("district-room-token.json")),
+    });
+    assert!(smoke.shown("room_card"));
+    assert!(smoke.shows_part("standup"));
+    smoke.forget();
+    smoke.click("leave_button");
+    assert!(smoke.pending("DisconnectMedia"), "the room is left");
+    assert!(!smoke.shown("room_card"));
+    smoke.forget();
+
+    // A meeting's record, over the lobby.
+    smoke.activate_nth("meeting-row", 1);
+    assert!(smoke.first::<adw::Dialog>().is_some());
+    smoke.reply("LoadMeeting {", |ticket| Event::MeetingLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(smoke.status_title("status"), "Could not load this meeting");
+    smoke.first::<adw::Dialog>().expect("the record").close();
+    smoke.pump();
+    assert!(smoke.first::<adw::Dialog>().is_none(), "closed");
+    smoke.activate_nth("meeting-row", 1);
+    smoke.reply("LoadMeeting {", |ticket| Event::MeetingLoaded {
+        ticket,
+        result: Ok(fixture("district-meeting-detail.json")),
+    });
+    assert!(smoke.shows_part("Rewrite the greeting (Grace)"));
+    assert!(smoke.shows_text("Ada, Grace"));
+    smoke.shot("85-meeting-record");
+    smoke.activate("sidebar-overview");
+    assert!(
+        smoke.first::<adw::Dialog>().is_none(),
+        "closed with the lobby"
+    );
+    smoke.forget();
+}
+
 /// Live updates: the status line while the socket is down, trying again from
 /// it, and a message arriving: a notification that names nothing, which opens
 /// the message's thread.
@@ -1878,6 +3434,102 @@ fn viewer_workspace(smoke: &Smoke) {
     });
     assert_eq!(smoke.status_title("status"), "No blocked callers");
     smoke.script.pending.borrow_mut().clear();
+    viewer_screens(smoke);
+}
+
+/// The workspace's own screens as a viewer reads them: each shows what it
+/// shows a member, and offers none of the changes.
+fn viewer_screens(smoke: &Smoke) {
+    smoke.activate("sidebar-hq");
+    assert_eq!(
+        smoke.status_title("empty_status"),
+        "Ask District HQ",
+        "each workspace has its own conversation"
+    );
+    smoke.type_into("prompt_entry", "Change the greeting");
+    smoke.click("ask_button");
+    smoke.reply("AskHq", |ticket| Event::HqAnswered {
+        ticket,
+        result: Ok(fixture("district-hq-pending-write.json")),
+    });
+    assert!(smoke.shown("card"));
+    assert!(
+        !smoke.sensitive("confirm_button"),
+        "a viewer never confirms"
+    );
+    assert!(smoke.shows_part("Only an agency or client member"));
+    smoke.shot("86-hq-viewer");
+    smoke.click("dismiss_button");
+    smoke.forget();
+
+    smoke.activate("sidebar-numbers");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    assert!(smoke.shows_part("Ask an agency or client member"));
+    assert!(
+        !smoke.shown("web_button"),
+        "nothing to buy with there either"
+    );
+    smoke.shot("87-numbers-viewer");
+    smoke.forget();
+
+    smoke.activate("sidebar-billing");
+    smoke.reply("LoadWorkspaceBilling", |ticket| {
+        Event::WorkspaceBillingLoaded {
+            ticket,
+            result: Ok(fixture("district-workspace-billing.json")),
+        }
+    });
+    smoke.reply("LoadAccountBilling", |ticket| Event::AccountBillingLoaded {
+        ticket,
+        result: Ok(fixture("district-billing.json")),
+    });
+    assert!(smoke.shows_part("to change the plan"));
+    assert!(!smoke.shown("web_button"));
+    smoke.forget();
+
+    smoke.activate("sidebar-workflows");
+    smoke.reply("LoadCampaign", |ticket| Event::CampaignLoaded {
+        ticket,
+        result: Ok(fixture("district-campaign-status-empty.json")),
+    });
+    smoke.reply("LoadWorkflows", |ticket| Event::WorkflowsLoaded {
+        ticket,
+        result: Ok(fixture("district-workflows.json")),
+    });
+    assert!(
+        !smoke
+            .nth::<gtk::Switch>("workflow-switch", 0)
+            .is_sensitive()
+    );
+    assert!(!smoke.shown("pause_button") && !smoke.shown("resume_button"));
+    assert!(smoke.shows_part("You are a viewer in this workspace."));
+    assert!(smoke.shows_text("No batch size set yet."));
+    smoke.shot("88-workflows-viewer");
+    smoke.forget();
+
+    smoke.activate("sidebar-rooms");
+    smoke.reply("LoadMeetings", |ticket| Event::MeetingsLoaded {
+        ticket,
+        result: Ok(Vec::new()),
+    });
+    assert_eq!(smoke.status_title("meetings_status"), "No meetings yet");
+    assert!(smoke.shows_part("so you join rooms to listen"));
+    smoke.type_into("room_row", "standup");
+    smoke.click("join_button");
+    smoke.reply("RequestRoomToken", |ticket| Event::RoomTokenIssued {
+        ticket,
+        result: Ok(fixture("district-room-token-viewer.json")),
+    });
+    assert!(smoke.shown("room_card"));
+    assert!(!smoke.shown("mute_button"), "a viewer listens");
+    smoke.shot("89-rooms-viewer");
+    smoke.forget();
+    smoke.click("leave_button");
+    smoke.forget();
+    assert!(!smoke.shown("sidebar-support"), "closed to a viewer");
 }
 
 /// A narrow window: the sidebar folds away behind the page.
@@ -2085,6 +3737,15 @@ fn main() {
     inbox_and_thread(&smoke);
     calls_screens(&smoke);
     contacts_screens(&smoke);
+    hq_screen(&smoke);
+    analytics_screen(&smoke);
+    numbers_screen(&smoke);
+    billing_screen(&smoke);
+    workflows_screen(&smoke);
+    scheduling_screen(&smoke);
+    desk_screens(&smoke);
+    support_screens(&smoke);
+    rooms_screen(&smoke);
     live_updates(&smoke);
     viewer_workspace(&smoke);
     narrow(&smoke);

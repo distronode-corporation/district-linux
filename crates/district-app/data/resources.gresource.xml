@@ -17,6 +17,21 @@
     <file>ui/contact-view.ui</file>
     <file>ui/contact-form.ui</file>
     <file>ui/blocked-view.ui</file>
+    <file>ui/hq-page.ui</file>
+    <file>ui/analytics-page.ui</file>
+    <file>ui/marketplace-page.ui</file>
+    <file>ui/billing-page.ui</file>
+    <file>ui/workflows-page.ui</file>
+    <file>ui/scheduling-page.ui</file>
+    <file>ui/desk-page.ui</file>
+    <file>ui/desk-ticket-view.ui</file>
+    <file>ui/desk-settings-view.ui</file>
+    <file>ui/support-page.ui</file>
+    <file>ui/support-request-view.ui</file>
+    <file>ui/reply-box.ui</file>
+    <file>ui/ticket-form.ui</file>
+    <file>ui/rooms-page.ui</file>
+    <file>ui/meeting-record.ui</file>
     <file>style.css</file>
     <file>sounds/ringtone.wav</file>
     <file alias="icons/scalable/apps/com.distronode.DistrictAI.svg">icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg</file>
