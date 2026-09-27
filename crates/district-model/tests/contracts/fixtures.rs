@@ -11,15 +11,17 @@ use std::collections::BTreeSet;
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CHANNEL_EMAIL, CHANNEL_SMS,
     CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
-    ClearIntelResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
-    ConversationsResponse, DIRECTION_FLAT, DIRECTION_UP, DeviceListResponse, DeviceRevokeResponse,
-    DraftDeleteResponse, DraftListResponse, DraftResponse, EnrichResponse, HqConfirmResponse,
-    HqPromptResponse, MarkReadResponse, MediaUploadResponse, MessageThreadResponse,
-    NativeRevokeResponse, NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP,
-    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse, SETUP_STEP_DONE,
-    SETUP_STEP_TODO, SchedulingHandOffResponse, SendMessageResponse, SetupResponse,
-    TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef, TimelineResponse,
-    UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse, UsageResponse,
+    CampaignStatusResponse, ClearIntelResponse, ContactDetailResponse, ContactListResponse,
+    ContactMutationResponse, ConversationsResponse, DIRECTION_FLAT, DIRECTION_UP,
+    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
+    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
+    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
+    OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, OverviewResponse, OwnedNumbersResponse,
+    PkceVector, PushRegistrationResponse, SETUP_STEP_DONE, SETUP_STEP_TODO,
+    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
+    SendMessageResponse, SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken,
+    ThreadRef, TimelineResponse, UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse,
+    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
     WorkspaceBillingResponse, WorkspaceListResponse,
 };
 use serde_json::Value;
@@ -725,6 +727,96 @@ fn account_billing_covers_its_three_shapes() {
     let mut unflagged = down.clone();
     unflagged.billing_unavailable = false;
     assert_eq!(unflagged, none, "the two differ by the flag alone");
+}
+
+// Workflows and the campaign.
+
+#[test]
+fn workflows_cover_one_that_has_run_and_one_that_has_not() {
+    let list: WorkflowListResponse = decode("district-workflows.json");
+    let workflows = &list.workflows;
+    assert!(workflows.iter().any(|w| w.active && w.latest_run.is_some()));
+    assert!(
+        workflows
+            .iter()
+            .any(|w| !w.active && w.latest_run.is_none())
+    );
+    let toggled: WorkflowToggleResponse = decode("district-workflow-toggle.json");
+    assert!(toggled.success);
+}
+
+#[test]
+fn runs_cover_every_status_a_skip_with_its_reason_and_an_unfinished_failure() {
+    let page: WorkflowRunsResponse = decode("district-workflow-runs.json");
+    let statuses: BTreeSet<&str> = page.runs.iter().map(|r| r.status.as_str()).collect();
+    assert_eq!(
+        statuses,
+        BTreeSet::from(["failed", "partial", "skipped", "success"])
+    );
+    let failed = page.runs.iter().find(|r| r.status == "failed").unwrap();
+    assert!(failed.finished_at.is_none() && failed.action_results.is_empty());
+    assert!(failed.error.is_some(), "the only explanation");
+    let actions = page.runs.iter().flat_map(|r| &r.action_results);
+    assert!(
+        actions
+            .clone()
+            .any(|a| a.outcome == "skipped" && a.reason.is_some())
+    );
+    assert!(
+        actions
+            .clone()
+            .any(|a| a.outcome == "ok" && a.reason.is_none())
+    );
+    assert!(page.has_more && page.total > page.limit);
+    assert_eq!(usize::try_from(page.limit).unwrap(), page.runs.len());
+}
+
+#[test]
+fn the_campaign_covers_running_paused_and_never_set_up() {
+    let running: CampaignStatusResponse = decode("district-campaign-status.json");
+    let paused: CampaignStatusResponse = decode("district-campaign-pause.json");
+    let never: CampaignStatusResponse = decode("district-campaign-status-empty.json");
+    assert!(running.campaign.infinite_sdr_enabled && !paused.campaign.infinite_sdr_enabled);
+    assert_eq!(
+        (
+            &paused.campaign.sdr_batch_size,
+            &paused.campaign.sdr_campaign_goal
+        ),
+        (
+            &running.campaign.sdr_batch_size,
+            &running.campaign.sdr_campaign_goal
+        ),
+        "pausing changes nothing else"
+    );
+    assert!(never.campaign.sdr_batch_size.is_none() && never.campaign.sdr_campaign_goal.is_none());
+}
+
+// Booking pages.
+
+#[test]
+fn the_scheduling_status_covers_each_state_and_a_link_only_when_ready() {
+    let legacy: SchedulingStatusResponse = decode("district-scheduling-status-legacy.json");
+    assert!(legacy.eligible && legacy.tenant.is_none(), "never set up");
+    for (name, status, link) in [
+        ("district-scheduling-status-ready.json", "ready", true),
+        (
+            "district-scheduling-status-provisioning.json",
+            "provisioning",
+            false,
+        ),
+        ("district-scheduling-status-error.json", "error", false),
+    ] {
+        let answer: SchedulingStatusResponse = decode(name);
+        let tenant = answer.tenant.expect(name);
+        assert_eq!(tenant.status, status, "{name}");
+        assert_eq!(tenant.booking_url.is_some(), link, "{name}");
+    }
+    let error: SchedulingStatusResponse = decode("district-scheduling-status-error.json");
+    assert!(!error.can_manage, "a viewer's answer");
+    let tenant = error.tenant.unwrap();
+    assert!(tenant.last_error.is_some() && tenant.last_ready_at.is_some());
+    let enabled: SchedulingEnableResponse = decode("district-scheduling-enable.json");
+    assert!(enabled.ok && enabled.error.is_none() && enabled.public_host.is_some());
 }
 
 // PKCE vectors.

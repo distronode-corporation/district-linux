@@ -149,6 +149,7 @@ fn every_deserialize_type_in_src_honours_strict_contracts() {
         "TimelineEvent",
         "ContactCompany",
         "BillingDiscount",
+        "SchedulingTenant",
     ] {
         assert!(
             scan.checked.iter().any(|name| name == expected),

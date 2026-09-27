@@ -52,6 +52,7 @@ mod scheduling;
 mod setup;
 mod telemetry;
 mod usage;
+mod workflows;
 mod workspace;
 
 pub use analytics::{
@@ -93,12 +94,19 @@ pub use overview::{OverviewMetrics, OverviewResponse};
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;
 pub use push::PushRegistrationResponse;
-pub use scheduling::SchedulingHandOffResponse;
+pub use scheduling::{
+    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse, SchedulingTenant,
+};
 pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,
 };
 pub use telemetry::{TelemetryEnvelope, TelemetryEventType, TelemetryToken};
 pub use usage::{UsageHistoryResponse, UsageMonth, UsageResponse};
+pub use workflows::{
+    CampaignStatus, CampaignStatusResponse, WorkflowActionResult, WorkflowLatestRun,
+    WorkflowListResponse, WorkflowRun, WorkflowRunsResponse, WorkflowSummary,
+    WorkflowToggleResponse,
+};
 pub use workspace::{WorkspaceEntry, WorkspaceListResponse};
 
 #[cfg(test)]

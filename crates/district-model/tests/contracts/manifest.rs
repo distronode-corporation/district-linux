@@ -22,15 +22,17 @@ use std::collections::BTreeMap;
 
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CallDetailResponse,
-    CallHangUpResponse, CallSummary, CallTranscriptResponse, ClearIntelResponse,
-    ContactDetailResponse, ContactListResponse, ContactMutationResponse, ConversationsResponse,
-    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
-    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
-    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse,
-    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
+    CallHangUpResponse, CallSummary, CallTranscriptResponse, CampaignStatusResponse,
+    ClearIntelResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
+    ConversationsResponse, DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse,
+    DraftListResponse, DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse,
+    MarkReadResponse, MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse,
+    NumberSearchResponse, OverviewResponse, OwnedNumbersResponse, PkceVector,
+    PushRegistrationResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
     TelemetryToken, TimelineResponse, UnreadCountResponse, UsageHistoryResponse, UsageResponse,
-    WorkspaceBillingResponse, WorkspaceListResponse,
+    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -112,6 +114,21 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // GET /api/district/calls: the call log, a bare array.
     ("district-calls.json", codec::<Vec<CallSummary>>),
+    // PATCH /api/district/workspace/campaign-status: the campaign paused.
+    (
+        "district-campaign-pause.json",
+        codec::<CampaignStatusResponse>,
+    ),
+    // GET /api/district/workspace/campaign-status for a campaign never set up.
+    (
+        "district-campaign-status-empty.json",
+        codec::<CampaignStatusResponse>,
+    ),
+    // GET /api/district/workspace/campaign-status.
+    (
+        "district-campaign-status.json",
+        codec::<CampaignStatusResponse>,
+    ),
     // POST /api/district/contacts/clear-intel.
     ("district-clear-intel.json", codec::<ClearIntelResponse>),
     // DELETE /api/district/contacts/delete.
@@ -218,6 +235,31 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // POST /api/auth/native/revoke-all: every device signed out.
     ("district-revoke-all.json", codec::<DeviceRevokeResponse>),
+    // POST /api/district/scheduling/enable.
+    (
+        "district-scheduling-enable.json",
+        codec::<SchedulingEnableResponse>,
+    ),
+    // GET /api/district/scheduling/status, the last setup failed.
+    (
+        "district-scheduling-status-error.json",
+        codec::<SchedulingStatusResponse>,
+    ),
+    // GET /api/district/scheduling/status, never set up.
+    (
+        "district-scheduling-status-legacy.json",
+        codec::<SchedulingStatusResponse>,
+    ),
+    // GET /api/district/scheduling/status, being set up.
+    (
+        "district-scheduling-status-provisioning.json",
+        codec::<SchedulingStatusResponse>,
+    ),
+    // GET /api/district/scheduling/status, live.
+    (
+        "district-scheduling-status-ready.json",
+        codec::<SchedulingStatusResponse>,
+    ),
     // GET /api/district/setup.
     ("district-setup.json", codec::<SetupResponse>),
     // GET /api/district/timeline, an older page that fills its window.
@@ -231,6 +273,15 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-usage-history.json", codec::<UsageHistoryResponse>),
     // GET /api/district/workspace/usage.
     ("district-usage.json", codec::<UsageResponse>),
+    // GET /api/district/workflows/runs: a run of each status.
+    ("district-workflow-runs.json", codec::<WorkflowRunsResponse>),
+    // PATCH /api/district/workflows.
+    (
+        "district-workflow-toggle.json",
+        codec::<WorkflowToggleResponse>,
+    ),
+    // GET /api/district/workflows: one that has run and one that has not.
+    ("district-workflows.json", codec::<WorkflowListResponse>),
     // GET /api/district/workspace/billing, no plan and nothing metered.
     (
         "district-workspace-billing-null-usage.json",
@@ -257,7 +308,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 65;
+pub const NOT_YET_MODELLED_BASELINE: usize = 54;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -265,9 +316,6 @@ pub const NOT_YET_MODELLED_BASELINE: usize = 65;
 /// decision recorded in [`EXCLUDED_BY_DECISION`].
 pub const NOT_YET_MODELLED: &[&str] = &[
     "district-call-answer.json",
-    "district-campaign-pause.json",
-    "district-campaign-status-empty.json",
-    "district-campaign-status.json",
     "district-desk-logo-delete.json",
     "district-desk-logo.json",
     "district-desk-settings-patch.json",
@@ -312,20 +360,12 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-room-token-viewer.json",
     "district-room-token.json",
     "district-routing-patch.json",
-    "district-scheduling-enable.json",
-    "district-scheduling-status-error.json",
-    "district-scheduling-status-legacy.json",
-    "district-scheduling-status-provisioning.json",
-    "district-scheduling-status-ready.json",
     "district-support-close.json",
     "district-support-reply.json",
     "district-support-request-create.json",
     "district-support-request.json",
     "district-support-requests.json",
     "district-tools-patch.json",
-    "district-workflow-runs.json",
-    "district-workflow-toggle.json",
-    "district-workflows.json",
     "district-workspace-config-sparse.json",
     "district-workspace-config.json",
     "district-workspace-list-degraded.json",
