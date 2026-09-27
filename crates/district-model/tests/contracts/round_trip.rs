@@ -255,10 +255,36 @@ const TELEMETRY_DATA: &str = "TelemetryEnvelope::data: the event's content diffe
                               type and by which part of the service published it, so a \
                               reshaped call row must not make the envelope unreadable";
 
+const SOCIAL_HANDLES: &str = "Contact::social_handles: platform names and handles, a stored \
+                              JSON value the service fixes no shape for";
+
+const INTELLIGENCE: &str = "Contact::intelligence: a research dossier written by a model, whose \
+                            shape changes with the model's instructions";
+
 /// The objects the unknown-field probe leaves alone, because the type carries them
 /// as plain JSON on purpose. An entry must still be opaque, or the probe fails it
 /// as stale: a type that starts modelling one of these gets the probe back.
 pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
+    OpaqueObject {
+        fixture: "fixtures/district-contact-detail.json",
+        path: "$.contact.intelligence",
+        reason: INTELLIGENCE,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-contact-detail.json",
+        path: "$.contact.socialHandles",
+        reason: SOCIAL_HANDLES,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-contacts.json",
+        path: "$.contacts[0].intelligence",
+        reason: INTELLIGENCE,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-contacts.json",
+        path: "$.contacts[0].socialHandles",
+        reason: SOCIAL_HANDLES,
+    },
     OpaqueObject {
         fixture: "desktop/telemetry-event-call-ended-row.json",
         path: "$.data",

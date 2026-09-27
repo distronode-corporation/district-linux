@@ -22,11 +22,12 @@ use std::collections::BTreeMap;
 
 use district_model::{
     AiDraftResponse, CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
+    ClearIntelResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
     ConversationsResponse, DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse,
-    DraftListResponse, DraftResponse, MarkReadResponse, MediaUploadResponse, MessageThreadResponse,
-    NativeRevokeResponse, OverviewResponse, PkceVector, SchedulingHandOffResponse,
-    SendMessageResponse, SetupResponse, TelemetryEnvelope, TelemetryToken, TimelineResponse,
-    UnreadCountResponse, WorkspaceListResponse,
+    DraftListResponse, DraftResponse, EnrichResponse, MarkReadResponse, MediaUploadResponse,
+    MessageThreadResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
+    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
+    TelemetryToken, TimelineResponse, UnreadCountResponse, WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -88,6 +89,25 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // GET /api/district/calls: the call log, a bare array.
     ("district-calls.json", codec::<Vec<CallSummary>>),
+    // POST /api/district/contacts/clear-intel.
+    ("district-clear-intel.json", codec::<ClearIntelResponse>),
+    // DELETE /api/district/contacts/delete.
+    (
+        "district-contact-delete.json",
+        codec::<ContactMutationResponse>,
+    ),
+    // GET /api/district/contacts/get, with the number described beside it.
+    (
+        "district-contact-detail.json",
+        codec::<ContactDetailResponse>,
+    ),
+    // PATCH /api/district/contacts/update.
+    (
+        "district-contact-update.json",
+        codec::<ContactMutationResponse>,
+    ),
+    // GET /api/district/contacts: a full row and a sparse, phone-less one.
+    ("district-contacts.json", codec::<ContactListResponse>),
     // GET /api/district/conversations: a mixed-channel contact thread and a bare
     // address thread.
     (
@@ -108,6 +128,8 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-draft.json", codec::<DraftResponse>),
     // GET /api/district/messages/drafts without a thread: every saved reply.
     ("district-drafts-list.json", codec::<DraftListResponse>),
+    // POST /api/district/contacts/enrich: a research run queued.
+    ("district-enrich.json", codec::<EnrichResponse>),
     // POST /api/district/messages/media: an uploaded attachment.
     ("district-media-upload.json", codec::<MediaUploadResponse>),
     // POST /api/district/messages/mark-read.
@@ -164,7 +186,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 89;
+pub const NOT_YET_MODELLED_BASELINE: usize = 83;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -180,11 +202,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-campaign-pause.json",
     "district-campaign-status-empty.json",
     "district-campaign-status.json",
-    "district-clear-intel.json",
-    "district-contact-delete.json",
-    "district-contact-detail.json",
-    "district-contact-update.json",
-    "district-contacts.json",
     "district-desk-logo-delete.json",
     "district-desk-logo.json",
     "district-desk-settings-patch.json",
@@ -202,7 +219,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-dial.json",
     "district-directory-patch.json",
     "district-enrich-disabled.json",
-    "district-enrich.json",
     "district-hq-answer.json",
     "district-hq-confirm.json",
     "district-hq-pending-write.json",

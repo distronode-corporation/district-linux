@@ -10,12 +10,13 @@ use std::collections::BTreeSet;
 
 use district_model::{
     AiDraftResponse, CHANNEL_EMAIL, CHANNEL_SMS, CallDetailResponse, CallHangUpResponse,
-    CallSummary, CallTranscriptResponse, ConversationsResponse, DeviceListResponse,
-    DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, MarkReadResponse,
-    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
-    SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingHandOffResponse, SendMessageResponse,
-    SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef,
-    TimelineResponse, UnreadCountResponse, WorkspaceListResponse,
+    CallSummary, CallTranscriptResponse, ClearIntelResponse, ContactDetailResponse,
+    ContactListResponse, ContactMutationResponse, ConversationsResponse, DeviceListResponse,
+    DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, EnrichResponse,
+    MarkReadResponse, MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse,
+    OverviewResponse, PkceVector, SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingHandOffResponse,
+    SendMessageResponse, SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken,
+    ThreadRef, TimelineResponse, UnreadCountResponse, UpdateContactRequest, WorkspaceListResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -299,6 +300,74 @@ fn one_call_is_its_row_of_the_log_and_its_transcript_comes_apart() {
     assert!(call.has_transcript && call.transcript.is_empty());
     let transcript: CallTranscriptResponse = decode("district-call-transcript.json");
     assert!(transcript.success && transcript.has_transcript());
+}
+
+// Contacts.
+
+#[test]
+fn the_contact_list_covers_a_full_row_and_a_sparse_email_only_one() {
+    let list: ContactListResponse = decode("district-contacts.json");
+    assert!(list.success);
+    assert_eq!(usize::try_from(list.total).unwrap(), list.contacts.len());
+    assert!(list.limit > 0);
+    let full = list
+        .contacts
+        .iter()
+        .find(|c| c.company.is_some())
+        .expect("a researched contact");
+    assert!(full.phone_number.is_some() && full.intelligence.is_some());
+    assert!(
+        full.linkedin_handle().is_some(),
+        "a handle an edit must keep"
+    );
+    assert!(full.visual_memory.is_some());
+    assert!(
+        !full.dgi_in_progress() && !full.dgi_offerable(),
+        "research complete"
+    );
+    let sparse = list
+        .contacts
+        .iter()
+        .find(|c| c.phone_number.is_none())
+        .expect("a contact with no number");
+    assert!(sparse.email.is_some(), "an address instead");
+    assert!(sparse.dgi_status.is_none() && sparse.dgi_offerable());
+    // An edit started from the loaded row sends back everything it holds.
+    let update = UpdateContactRequest::from_contact(full);
+    assert_eq!(update.linkedin.as_deref(), full.linkedin_handle());
+    assert_eq!(update.context_summary, full.latest_context_summary);
+}
+
+#[test]
+fn one_contact_is_its_list_row_with_the_number_described_beside_it() {
+    let detail: ContactDetailResponse = decode("district-contact-detail.json");
+    assert!(detail.success);
+    let contact = detail.contact.expect("the contact");
+    let list: ContactListResponse = decode("district-contacts.json");
+    let row = list
+        .contacts
+        .iter()
+        .find(|c| c.id == contact.id)
+        .expect("in the list");
+    assert_eq!(&contact, row, "one shape for the list and the single read");
+    let intel = detail.phone_intel.expect("a number that parses");
+    assert!(intel.carrier.is_none(), "no stored carrier lookup here");
+}
+
+#[test]
+fn the_contact_writes_confirm_and_research_is_queued_pending() {
+    for name in [
+        "district-contact-update.json",
+        "district-contact-delete.json",
+    ] {
+        let answer: ContactMutationResponse = decode(name);
+        assert!(answer.success && answer.id.is_none(), "{name}");
+    }
+    let enrich: EnrichResponse = decode("district-enrich.json");
+    assert!(enrich.success);
+    assert_eq!(enrich.status.as_deref(), Some("pending"));
+    let cleared: ClearIntelResponse = decode("district-clear-intel.json");
+    assert!(cleared.success);
 }
 
 // The inbox.

@@ -35,6 +35,7 @@
 mod auth;
 mod calls;
 mod compose;
+mod contacts;
 mod devices;
 mod inbox;
 mod overview;
@@ -54,6 +55,11 @@ pub use compose::{
     AiDraftResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest,
     MarkReadResponse, MediaUploadResponse, MessageDraft, SendMessageRequest, SendMessageResponse,
     SentMessage, UploadedMedia,
+};
+pub use contacts::{
+    BlockTarget, BlockedContact, BlockedContactsResponse, ClearIntelResponse, Contact,
+    ContactBlockResponse, ContactCompany, ContactDetailResponse, ContactListResponse,
+    ContactMutationResponse, CreateContactRequest, EnrichResponse, UpdateContactRequest,
 };
 pub use devices::{DeviceListResponse, DeviceRevokeResponse, NativeDevice, NativeRevokeResponse};
 pub use inbox::{
