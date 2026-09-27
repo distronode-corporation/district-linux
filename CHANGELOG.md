@@ -491,6 +491,61 @@ date, and bump `[workspace.package] version` to match.
 - `district-core`: `HqEvent::OpenLink` and `is_web_link`: a link in a District HQ
   answer is opened through the same `Effect::OpenUrl` as every other page, and
   only when it is `https://` or `http://` and a host.
+- The app's fourth screens: the workspace settings, drawn from `district-core` as
+  the others are. The hub lists the sections the member's role may open
+  (`settings_rows`) with the note under them (`settings_note`), beside the section
+  open, one pane at a time in a narrow window; the phone numbers row opens the
+  phone numbers screen.
+  - Every section is read when it opens and says so while it is. A section that
+    edits the settings row has no form after a failed read, only
+    `ConfigLoad::FAILED_TITLE` and a retry; a save that landed without its read
+    back says "Saved" and offers "Read them again", never a save, and does not
+    look like a failure. A save's outcome is a notice under its button ("Saved.",
+    or the failure, with the edits kept), and every input waits while a write is
+    on its way. The header's refresh reads a section again.
+  - Leaving a section with changes that are not saved (another screen, the way
+    back, a refresh, another workspace, a notification) asks "Discard your
+    changes?" first; keeping stays, and a save that lands while it is asked
+    closes the question.
+  - The persona: the name, greeting and personality; the engine, language,
+    voice, answer length, variation (a slider showing its value), speaking style
+    and early speech, each picker offering only what the options offer, a stored
+    value they do not list shown as stored (with `VOICE_OFF_CATALOGUE` for a
+    voice), the engines outside the region shown and not offered, and
+    `ENGINE_READ_ONLY` when the options could not be read. "Try this
+    receptionist" opens the audition dialog (`PREVIEW_TITLE`, `PREVIEW_BILLED`),
+    whose Start, in this build, says calls are not available and asks for
+    nothing, and which closes with the section.
+  - The capabilities: a switch per tool, a stored one this build cannot name
+    kept with its note, saved together; and the research switch, saved alone.
+  - The transfer directory and the routing rules: each stored entry or rule
+    edited one key at a time (the rules on cards, with the builder's choices and
+    a stored value they do not list shown as stored, and the engine shown and not
+    changed), the entries missing a name or a number counted, a shape this build
+    cannot carry shown as not editable here, and the question before a save
+    replaces the list.
+  - Call handling: who answers, as three choices, and how long the devices ring,
+    on a slider from 5 to 30 seconds, saved with a button; and the member's own
+    availability, sent at once, or the reason it cannot be.
+  - The knowledge base: where answers come from (the linked mode asked first),
+    adding a document with the note that it is billed, and each document deleted
+    after a question.
+  - The carrier accounts: each account with its carrier, whose it is and its
+    numbers, the default sender and each channel's sender, removal after a
+    question naming the numbers it releases, and the owner's mobile number, never
+    filled in. Adding and editing happen in a form whose key boxes are the
+    carrier's own (`CredentialField::for_provider`), a password row for each
+    secret, with `SECRET_KEEP` for an existing account and `PROVIDER_SWITCH` when
+    its carrier changes, and "Check these keys" with the carrier's answer.
+  - Members: each member's role (`member_role_label`), and for an agency member
+    adding one, changing a role and removing one after a question
+    (`remove_body`), the service's two refusals shown in its words; and renaming
+    the workspace, the name shown the one the service stored.
+  - A viewer reads call handling, the knowledge base and the carrier accounts,
+    each with its note, and is offered no control.
+  - The smoke test drives every section through these states, the audition to its
+    failure and the carrier form to its emptied keys, as a viewer and a client
+    where they differ, and draws each, light and dark.
 
 ### Changed
 
@@ -516,6 +571,9 @@ date, and bump `[workspace.package] version` to match.
   `LiveState::ringing` and `RingingCall` are gone: a ring is `RingController`'s.
   A room is no longer started over one already joined: it is left first.
 
+- `district-core`: in a build without a call engine, Start in the persona's
+  audition dialog fails with `DisconnectReason::UNAVAILABLE` rather than doing
+  nothing, still asking for nothing billed.
 - `district-core`: `Effect` derives `PartialEq` without `Eq`, because a persona's
   variation is fractional.
 - A session that has no token right now says why. `TokenError::RetryLater`

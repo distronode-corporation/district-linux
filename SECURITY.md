@@ -287,6 +287,15 @@ follow.
   audition room, is not joined. Adding a knowledge base
   document, which is billed by its length, is likewise sent once, only when the
   member adds it.
+- In a build without a call engine, Start in the audition dialog asks for
+  nothing and says calls are not available in this build.
+- The carrier form's keys are typed into password rows, which keep no undo
+  history. What is typed goes to the core as it is typed and is never written
+  back into a box from the app's state, and the boxes are emptied when the
+  form closes and when the carrier changes. The owner's mobile number box is
+  never filled in, and is emptied when the number is saved.
+- A save that replaces a list asks first, saying what it will do, and a section
+  whose read failed shows no form to save from.
 
 ### Privileges
 

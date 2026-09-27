@@ -119,7 +119,10 @@ numbers and their search, billing, workflows with their runs, switches and the
 campaign's question, booking pages and the hand-off to the web, the help desk
 (the queue, raising a ticket, a ticket's status and reply, the settings and a logo
 picked in the file chooser), support requests (raising one, a reply, closing one),
-the meeting rooms lobby and a meeting's record, each as a viewer where it
+the meeting rooms lobby and a meeting's record, the workspace settings (each
+section read, failing, edited, saved, saved without its read back and failing to
+save, the question before leaving changes, the audition failing in a build
+without calls, and the carrier form with its keys), each as a viewer where it
 differs, live updates and a message's notification, the account, the devices and
 the question before each sign-out, a narrow window, signing out. It needs a display
 and a session bus, so it is built only with the `gtk-tests` feature and runs

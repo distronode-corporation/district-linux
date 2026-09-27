@@ -9,10 +9,13 @@ receptionist from Distronode.
 > contacts and the blocked callers, District HQ, analytics with its charts, the
 > phone numbers and billing (read only), workflows and the outbound campaign,
 > booking pages, the help desk, support requests, the meeting rooms lobby with
-> each meeting's record, your account and the devices signed in to it. The
-> workspace settings say they arrive in a later build, and this build cannot take
-> or place calls or join a meeting room. There are no releases or packages yet.
-> Screenshots will follow with the first release.
+> each meeting's record, the workspace settings (the receptionist's persona, its
+> capabilities, the transfer directory, the routing rules, call handling and your
+> availability, the knowledge base, the carrier accounts, and the members and the
+> workspace's name), your account and the devices signed in to it. This build
+> cannot take or place calls, join a meeting room or play a persona's audition.
+> There are no releases or packages yet. Screenshots will follow with the first
+> release.
 
 ## What it will do
 
