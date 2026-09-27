@@ -40,6 +40,7 @@ mod billing;
 mod calls;
 mod compose;
 mod contacts;
+mod desk;
 mod devices;
 mod hq;
 mod inbox;
@@ -50,6 +51,7 @@ mod pkce;
 mod push;
 mod scheduling;
 mod setup;
+mod support;
 mod telemetry;
 mod usage;
 mod workflows;
@@ -78,6 +80,12 @@ pub use contacts::{
     ContactBlockResponse, ContactCompany, ContactDetailResponse, ContactListResponse,
     ContactMutationResponse, CreateContactRequest, EnrichResponse, UpdateContactRequest,
 };
+pub use desk::{
+    DeskBrandName, DeskLogoRemovalResponse, DeskMessage, DeskReplyResponse, DeskSettings,
+    DeskSettingsPatch, DeskSettingsResponse, DeskTicketCreateResponse, DeskTicketDetail,
+    DeskTicketDraft, DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse,
+    DeskTicketSummary, DeskTicketsResponse,
+};
 pub use devices::{DeviceListResponse, DeviceRevokeResponse, NativeDevice, NativeRevokeResponse};
 pub use hq::{HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqRole, HqTurn};
 pub use inbox::{
@@ -99,6 +107,11 @@ pub use scheduling::{
 };
 pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,
+};
+pub use support::{
+    SUPPORT_STATUS_DONE, SupportCloseResponse, SupportMessage, SupportReplyResponse,
+    SupportRequestCreateResponse, SupportRequestDetail, SupportRequestDraft, SupportRequestFiling,
+    SupportRequestKind, SupportRequestResponse, SupportRequestSummary, SupportRequestsResponse,
 };
 pub use telemetry::{TelemetryEnvelope, TelemetryEventType, TelemetryToken};
 pub use usage::{UsageHistoryResponse, UsageMonth, UsageResponse};

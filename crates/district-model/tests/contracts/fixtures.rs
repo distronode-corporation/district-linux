@@ -13,14 +13,18 @@ use district_model::{
     CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
     CampaignStatusResponse, ClearIntelResponse, ContactDetailResponse, ContactListResponse,
     ContactMutationResponse, ConversationsResponse, DIRECTION_FLAT, DIRECTION_UP,
+    DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsResponse, DeskTicketCreateResponse,
+    DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse,
     DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
     DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
     MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
     OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, OverviewResponse, OwnedNumbersResponse,
     PkceVector, PushRegistrationResponse, SETUP_STEP_DONE, SETUP_STEP_TODO,
     SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
-    SendMessageResponse, SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken,
-    ThreadRef, TimelineResponse, UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse,
+    SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
+    SupportRequestCreateResponse, SupportRequestFiling, SupportRequestResponse,
+    SupportRequestsResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef,
+    TimelineResponse, UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse,
     UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
     WorkspaceBillingResponse, WorkspaceListResponse,
 };
@@ -817,6 +821,109 @@ fn the_scheduling_status_covers_each_state_and_a_link_only_when_ready() {
     assert!(tenant.last_error.is_some() && tenant.last_ready_at.is_some());
     let enabled: SchedulingEnableResponse = decode("district-scheduling-enable.json");
     assert!(enabled.ok && enabled.error.is_none() && enabled.public_host.is_some());
+}
+
+// The help desk.
+
+#[test]
+fn the_queue_covers_every_state_and_a_ticket_with_no_customer_details() {
+    let queue: DeskTicketsResponse = decode("district-desk-tickets.json");
+    let statuses: BTreeSet<&str> = queue.tickets.iter().map(|t| t.status.as_str()).collect();
+    let known = [
+        DeskTicketStatus::Open,
+        DeskTicketStatus::Waiting,
+        DeskTicketStatus::Resolved,
+    ];
+    assert_eq!(statuses, known.iter().map(|s| s.as_str()).collect());
+    assert!(queue.tickets.iter().any(|t| t.source == "voice-call"));
+    assert!(queue.tickets.iter().any(|t| t.requester_phone.is_some()));
+    assert!(
+        queue
+            .tickets
+            .iter()
+            .any(|t| t.requester_name.is_none() && t.requester_email.is_none())
+    );
+    for ticket in &queue.tickets {
+        assert_eq!(ticket.resolved_at.is_some(), ticket.status == "resolved");
+    }
+}
+
+#[test]
+fn a_ticket_and_the_answers_to_changing_it_carry_the_ticket_the_service_holds() {
+    let one: DeskTicketResponse = decode("district-desk-ticket.json");
+    let ticket = &one.ticket;
+    let authors: BTreeSet<&str> = ticket
+        .messages
+        .iter()
+        .map(|m| m.author_type.as_str())
+        .collect();
+    assert_eq!(authors, BTreeSet::from(["assistant", "customer", "team"]));
+    assert_eq!(
+        usize::try_from(ticket.message_count).unwrap(),
+        ticket.messages.len()
+    );
+
+    let created: DeskTicketCreateResponse = decode("district-desk-ticket-create.json");
+    assert!(!created.deduplicated);
+    assert_eq!(created.ticket.expect("the new ticket").id, ticket.id);
+
+    let replied: DeskReplyResponse = decode("district-desk-ticket-reply.json");
+    let moved = replied.ticket.expect("the ticket after the reply");
+    assert_eq!(
+        moved.status,
+        DeskTicketStatus::Waiting.as_str(),
+        "a reply waits"
+    );
+    assert_eq!(replied.message.expect("the reply").author_type, "team");
+    assert_eq!(replied.notified, Some(true));
+
+    let resolved: DeskTicketStatusResponse = decode("district-desk-ticket-status.json");
+    assert_eq!(resolved.ticket.status, DeskTicketStatus::Resolved.as_str());
+    assert!(
+        resolved.ticket.resolved_at.is_some(),
+        "stamped by the service"
+    );
+}
+
+#[test]
+fn the_desk_settings_cover_a_name_a_cleared_name_and_a_logo_taken_down() {
+    let settings: DeskSettingsResponse = decode("district-desk-settings.json");
+    assert!(settings.settings.public_brand_name.is_some());
+    assert!(settings.settings.public_logo_url.is_some());
+    let patched: DeskSettingsResponse = decode("district-desk-settings-patch.json");
+    assert!(!patched.settings.enabled && patched.settings.public_brand_name.is_none());
+    let uploaded: DeskSettingsResponse = decode("district-desk-logo.json");
+    assert!(uploaded.settings.public_logo_url.is_some());
+    let removed: DeskLogoRemovalResponse = decode("district-desk-logo-delete.json");
+    assert!(removed.object_removed && removed.settings.public_logo_url.is_none());
+}
+
+// Support requests.
+
+#[test]
+fn support_requests_cover_filed_unfiled_and_done() {
+    let list: SupportRequestsResponse = decode("district-support-requests.json");
+    let requests = &list.requests;
+    assert!(requests.iter().any(|r| r.filed && r.issue_key.is_some()));
+    assert!(requests.iter().any(|r| !r.filed && r.issue_key.is_none()));
+    assert!(requests.iter().any(|r| r.is_done()) && requests.iter().any(|r| !r.is_done()));
+
+    let one: SupportRequestResponse = decode("district-support-request.json");
+    let roles: BTreeSet<&str> = one
+        .request
+        .messages
+        .iter()
+        .map(|m| m.role.as_str())
+        .collect();
+    assert_eq!(roles, BTreeSet::from(["agent", "customer"]));
+    assert!(one.request.closeable);
+
+    let created: SupportRequestCreateResponse = decode("district-support-request-create.json");
+    assert!(matches!(created.filing(), SupportRequestFiling::Filed(_)));
+    let replied: SupportReplyResponse = decode("district-support-reply.json");
+    assert_eq!(replied.message.role, "customer");
+    let closed: SupportCloseResponse = decode("district-support-close.json");
+    assert!(closed.success && !closed.status_name.is_empty());
 }
 
 // PKCE vectors.

@@ -24,15 +24,18 @@ use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CallDetailResponse,
     CallHangUpResponse, CallSummary, CallTranscriptResponse, CampaignStatusResponse,
     ClearIntelResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
-    ConversationsResponse, DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse,
-    DraftListResponse, DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse,
-    MarkReadResponse, MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse,
-    NumberSearchResponse, OverviewResponse, OwnedNumbersResponse, PkceVector,
-    PushRegistrationResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
-    SchedulingStatusResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
-    TelemetryToken, TimelineResponse, UnreadCountResponse, UsageHistoryResponse, UsageResponse,
-    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
-    WorkspaceListResponse,
+    ConversationsResponse, DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsResponse,
+    DeskTicketCreateResponse, DeskTicketResponse, DeskTicketStatusResponse, DeskTicketsResponse,
+    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
+    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
+    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
+    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse,
+    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
+    SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
+    SupportRequestCreateResponse, SupportRequestResponse, SupportRequestsResponse,
+    TelemetryEnvelope, TelemetryToken, TimelineResponse, UnreadCountResponse, UsageHistoryResponse,
+    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
+    WorkspaceBillingResponse, WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -154,6 +157,39 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
         "district-conversations.json",
         codec::<ConversationsResponse>,
     ),
+    // DELETE /api/district/desk/logo.
+    (
+        "district-desk-logo-delete.json",
+        codec::<DeskLogoRemovalResponse>,
+    ),
+    // POST /api/district/desk/logo.
+    ("district-desk-logo.json", codec::<DeskSettingsResponse>),
+    // PATCH /api/district/desk/settings, the brand name cleared.
+    (
+        "district-desk-settings-patch.json",
+        codec::<DeskSettingsResponse>,
+    ),
+    // GET /api/district/desk/settings.
+    ("district-desk-settings.json", codec::<DeskSettingsResponse>),
+    // POST /api/district/desk/tickets.
+    (
+        "district-desk-ticket-create.json",
+        codec::<DeskTicketCreateResponse>,
+    ),
+    // POST /api/district/desk/tickets/{ticketId}/reply.
+    (
+        "district-desk-ticket-reply.json",
+        codec::<DeskReplyResponse>,
+    ),
+    // POST /api/district/desk/tickets/{ticketId}/status.
+    (
+        "district-desk-ticket-status.json",
+        codec::<DeskTicketStatusResponse>,
+    ),
+    // GET /api/district/desk/tickets/{ticketId}: a thread by all three authors.
+    ("district-desk-ticket.json", codec::<DeskTicketResponse>),
+    // GET /api/district/desk/tickets: a ticket in each state.
+    ("district-desk-tickets.json", codec::<DeskTicketsResponse>),
     // POST /api/district/devices/register: a phone's push registration.
     (
         "district-device-register.json",
@@ -262,6 +298,25 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // GET /api/district/setup.
     ("district-setup.json", codec::<SetupResponse>),
+    // POST /api/district/support/requests/{key}/close.
+    ("district-support-close.json", codec::<SupportCloseResponse>),
+    // POST /api/district/support/requests/{key}/reply.
+    ("district-support-reply.json", codec::<SupportReplyResponse>),
+    // POST /api/district/support/requests, filed.
+    (
+        "district-support-request-create.json",
+        codec::<SupportRequestCreateResponse>,
+    ),
+    // GET /api/district/support/requests/{key}.
+    (
+        "district-support-request.json",
+        codec::<SupportRequestResponse>,
+    ),
+    // GET /api/district/support/requests: filed, pending and done.
+    (
+        "district-support-requests.json",
+        codec::<SupportRequestsResponse>,
+    ),
     // GET /api/district/timeline, an older page that fills its window.
     ("district-timeline-page.json", codec::<TimelineResponse>),
     // GET /api/district/timeline: messages of each channel and calls, interleaved.
@@ -308,7 +363,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 54;
+pub const NOT_YET_MODELLED_BASELINE: usize = 40;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -316,15 +371,6 @@ pub const NOT_YET_MODELLED_BASELINE: usize = 54;
 /// decision recorded in [`EXCLUDED_BY_DECISION`].
 pub const NOT_YET_MODELLED: &[&str] = &[
     "district-call-answer.json",
-    "district-desk-logo-delete.json",
-    "district-desk-logo.json",
-    "district-desk-settings-patch.json",
-    "district-desk-settings.json",
-    "district-desk-ticket-create.json",
-    "district-desk-ticket-reply.json",
-    "district-desk-ticket-status.json",
-    "district-desk-ticket.json",
-    "district-desk-tickets.json",
     "district-dial-dnc.json",
     "district-dial-dormant.json",
     "district-dial-subscription.json",
@@ -360,11 +406,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-room-token-viewer.json",
     "district-room-token.json",
     "district-routing-patch.json",
-    "district-support-close.json",
-    "district-support-reply.json",
-    "district-support-request-create.json",
-    "district-support-request.json",
-    "district-support-requests.json",
     "district-tools-patch.json",
     "district-workspace-config-sparse.json",
     "district-workspace-config.json",
