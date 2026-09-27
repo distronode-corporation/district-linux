@@ -31,7 +31,7 @@ jobs:
   flatpak:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    container:
+    env:
       # Flathub's build image with the GNOME 51 Platform and SDK installed from
       # Flathub, the runtime the manifest names. Pinned by digest, because the
       # SDK in it compiles what a release ships and the tag moves twice a week.
@@ -39,12 +39,23 @@ jobs:
       #   curl -sI -H "Authorization: Bearer $(curl -s 'https://ghcr.io/token?scope=repository:flathub-infra/flatpak-github-actions:pull' | jq -r .token)" \
       #     -H 'Accept: application/vnd.oci.image.index.v1+json' \
       #     https://ghcr.io/v2/flathub-infra/flatpak-github-actions/manifests/gnome-51
-      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51@sha256:78d969b18225ae107ca29497bf09c4a3f791e5f1838a9a912a529d0024fb6210
-      # flatpak-builder builds and flatpak runs inside bubblewrap sandboxes,
-      # which a default container may not create; the image's documentation
-      # asks for this.
-      options: --privileged
+      IMAGE: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51@sha256:78d969b18225ae107ca29497bf09c4a3f791e5f1838a9a912a529d0024fb6210
     steps:
+      # ⛔ THE RUNNER'S DISK IS NOT BIG ENOUGH AS IT COMES. The image (about 6 GB
+      # unpacked), the rust-stable and llvm22 extensions, the vendored crates,
+      # libwebrtc and a release build with calls filled it, and the runner died
+      # mid-build with "No space left on device" and no log. So the image runs
+      # as a container this job starts itself, after deleting toolchains the
+      # runner image carries and nothing here uses, rather than as the job's
+      # `container:`, which starts before any step could make room.
+      - name: Make room on the runner
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift \
+            /usr/local/share/powershell /usr/local/share/chromium /usr/lib/jvm
+          df -h /
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -56,27 +67,39 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "building $version"
 
+      # Privileged: flatpak-builder builds, and flatpak runs, inside bubblewrap
+      # sandboxes, which a default container may not create; the image's
+      # documentation asks for this. The checkout is mounted at /src.
+      - name: Start the build container
+        run: |
+          docker pull --quiet "$IMAGE"
+          docker run --detach --name flatpak --privileged \
+            --volume "$GITHUB_WORKSPACE:/src" --workdir /src "$IMAGE" sleep infinity
+          df -h /
+
       # flatpak-builder itself, from the image, rather than the
       # flatpak-github-actions action, which is two commands of it: one less
       # third party holding code execution in the job that builds what users
       # install (and this repository's allowed-actions list does not name it).
-      # The rust-stable SDK extension comes from Flathub at build time
+      # The SDK extensions come from Flathub at build time
       # (--install-deps-from). No cache: every crate and libwebrtc are
       # downloaded and checked against their pinned digests on every run, and a
       # release must never be built from a restored build directory. No FUSE in
       # a container, hence --disable-rofiles-fuse.
       - name: Build the bundle
         run: |
-          set -euo pipefail
-          flatpak-builder --version
-          flatpak-builder --disable-rofiles-fuse --force-clean \
-            --install-deps-from=flathub --arch=x86_64 \
-            --state-dir=.flatpak-builder --repo=repo \
-            flatpak_app packaging/flatpak/com.distronode.DistrictAI.yml
-          flatpak build-bundle --arch=x86_64 \
-            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
-            repo district-ai.flatpak com.distronode.DistrictAI
-          ls -l district-ai.flatpak
+          docker exec flatpak bash -euo pipefail -c '
+            flatpak-builder --version
+            flatpak-builder --disable-rofiles-fuse --force-clean \
+              --install-deps-from=flathub --arch=x86_64 \
+              --state-dir=.flatpak-builder --repo=repo \
+              flatpak_app packaging/flatpak/com.distronode.DistrictAI.yml
+            flatpak build-bundle --arch=x86_64 \
+              --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
+              repo district-ai.flatpak com.distronode.DistrictAI
+            ls -l district-ai.flatpak
+          '
+          df -h /
 
       # The bundle as a user installs it, beside the runtime it names (the
       # image's GNOME 51 Platform, installed system-wide, which is where this
@@ -87,26 +110,27 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          set -euo pipefail
-          flatpak install --system --noninteractive --bundle district-ai.flatpak
-          flatpak info --system com.distronode.DistrictAI
-          flatpak info --system --show-permissions com.distronode.DistrictAI
-          XDG_RUNTIME_DIR="$(mktemp -d)"
-          export XDG_RUNTIME_DIR
-          got="$(flatpak run --system com.distronode.DistrictAI --version)"
-          want="district-ai $VERSION (with calls)"
-          echo "$got"
-          if [ "$got" != "$want" ]; then
-            echo "::error::the bundle's --version said '$got', not '$want'"
-            exit 1
-          fi
+          docker exec --env VERSION flatpak bash -euo pipefail -c '
+            flatpak install --system --noninteractive --bundle district-ai.flatpak
+            flatpak info --system com.distronode.DistrictAI
+            flatpak info --system --show-permissions com.distronode.DistrictAI
+            XDG_RUNTIME_DIR="$(mktemp -d)"
+            export XDG_RUNTIME_DIR
+            got="$(flatpak run --system com.distronode.DistrictAI --version)"
+            want="district-ai $VERSION (with calls)"
+            echo "$got"
+            if [ "$got" != "$want" ]; then
+              echo "::error::--version in the sandbox said \"$got\", not \"$want\""
+              exit 1
+            fi
+          '
 
       - name: Name the bundle for the release
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p staging
-          mv district-ai.flatpak "staging/district-ai_${VERSION}_x86_64.flatpak"
+          cp district-ai.flatpak "staging/district-ai_${VERSION}_x86_64.flatpak"
           ls -l staging
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -123,5 +147,5 @@ jobs:
       # source). Reported here for the Flathub submission and never fatal.
       - name: Flathub's linter (report only)
         run: |
-          flatpak-builder-lint manifest packaging/flatpak/com.distronode.DistrictAI.yml || true
-          flatpak-builder-lint repo repo || true
+          docker exec flatpak flatpak-builder-lint manifest packaging/flatpak/com.distronode.DistrictAI.yml || true
+          docker exec flatpak flatpak-builder-lint repo repo || true
