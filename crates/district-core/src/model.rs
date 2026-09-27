@@ -443,17 +443,28 @@ impl Model {
 
     /// Runs `step` on the signed-in state, or does nothing when nobody is signed
     /// in, and carries out what it decides.
+    ///
+    /// Without a branch of its own: this is compiled once per step, and coverage
+    /// counts each copy on its own, so a branch here would need every step to
+    /// take every arm. The choices are made in `signed_in_state` and
+    /// `carry_out`, which are compiled once.
     fn signed_in(
         &mut self,
         step: impl FnOnce(&mut SignedIn, &mut Tickets, &CoreConfig) -> Next,
     ) -> Vec<Effect> {
-        let SessionState::SignedIn(signed_in) = &mut self.session else {
-            return Vec::new();
-        };
-        match step(signed_in, &mut self.tickets, &self.config) {
-            Next::Stay(effects) => effects,
-            Next::End(end) => self.end_session(end),
-            Next::SignOut(scope) => self.begin_sign_out(scope),
+        let next = signed_in_state(&mut self.session)
+            .map(|signed_in| step(signed_in, &mut self.tickets, &self.config));
+        self.carry_out(next)
+    }
+
+    /// Carries out what a step on the signed-in state decided, or nothing when
+    /// nobody was signed in to take it.
+    fn carry_out(&mut self, next: Option<Next>) -> Vec<Effect> {
+        match next {
+            None => Vec::new(),
+            Some(Next::Stay(effects)) => effects,
+            Some(Next::End(end)) => self.end_session(end),
+            Some(Next::SignOut(scope)) => self.begin_sign_out(scope),
         }
     }
 
@@ -676,6 +687,14 @@ impl Model {
             Effect::RememberWorkspace { workspace_id: None },
             Effect::SignOut { ticket },
         ]
+    }
+}
+
+/// The signed-in state, when someone is signed in.
+fn signed_in_state(session: &mut SessionState) -> Option<&mut SignedIn> {
+    match session {
+        SessionState::SignedIn(signed_in) => Some(&mut **signed_in),
+        _ => None,
     }
 }
 
