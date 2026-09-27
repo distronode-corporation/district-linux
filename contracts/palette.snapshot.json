@@ -1,0 +1,32 @@
+{
+  "source": "distronode-marketing/src/app/tokens.css",
+  "commit": "59e5f0a303686544e0f20f9cc3471a7f343eac64",
+  "recorded": "2026-09-27",
+  "tokens": [
+    "district",
+    "district-hover",
+    "district-foreground",
+    "success",
+    "warning",
+    "destructive",
+    "info"
+  ],
+  "light": {
+    "district": "#01657d",
+    "district-hover": "#045063",
+    "district-foreground": "#ffffff",
+    "success": "#016f4e",
+    "warning": "#754603",
+    "destructive": "#b4022d",
+    "info": "#223092"
+  },
+  "dark": {
+    "district": "#67cded",
+    "district-hover": "#8be2ff",
+    "district-foreground": "#0e1c1f",
+    "success": "#74e9aa",
+    "warning": "#eab90c",
+    "destructive": "#fe737f",
+    "info": "#77bafe"
+  }
+}

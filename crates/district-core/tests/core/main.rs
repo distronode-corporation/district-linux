@@ -24,6 +24,7 @@ mod members;
 mod messaging;
 mod no_calls;
 mod overview;
+mod palette;
 mod persona;
 mod presence;
 mod ringing;

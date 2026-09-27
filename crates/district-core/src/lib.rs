@@ -72,6 +72,9 @@
 //!   through [`CallEngine`]); and this desktop's presence, which is what lets a
 //!   call ring it ([`PresenceState`], [`DesktopPresence`]).
 //! - [`FailureText`]: the words for every failure, in one place.
+//! - [`palette`]: the brand's accent and semantic colours, light and dark, for
+//!   the app's stylesheet.
+//! - [`Palette`]: one theme's brand colours.
 //! - [`NativeAuth`], [`LiveHub`], [`DesktopPresence`] and the [`DistrictApi`]
 //!   implementation for [`ApiClient`](district_api::ApiClient): the real
 //!   sign-in, live updates, presence and API behind the runner's traits.
@@ -104,6 +107,7 @@ mod marketplace;
 mod media;
 mod model;
 mod overview;
+pub mod palette;
 mod presence;
 mod ringing;
 mod role;
@@ -173,6 +177,7 @@ pub use overview::{
     FINISH_SETUP_ACTION, FINISH_SETUP_BODY, FINISH_SETUP_TITLE, OverviewContent, OverviewScreen,
     SETUP_WEB_PATH,
 };
+pub use palette::Palette;
 pub use presence::{
     DesktopPresence, PRESENCE_HEARTBEAT, PRESENCE_RETRY, Presence, PresenceApi, PresenceState,
     PresenceStatus,
