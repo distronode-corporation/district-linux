@@ -99,6 +99,14 @@ The project is pre-release, and parts of this are not implemented yet.
   dropped unread. Logging below debug level is compiled out of the build, because
   the WebSocket library logs the handshake (credential included) and every
   message at trace level.
+- Only the open workspace is watched, and an event is only a hint: the app reads
+  what it changed again with its own session rather than show what the event
+  carried.
+- A desktop notification for a new message says only that one arrived. It names
+  no sender and carries no number and no text, because other programs on the
+  desktop can read notifications; its action carries the workspace and message
+  ids, and opening it asks the service for the message's thread under the app's
+  own session.
 
 ### Privileges
 

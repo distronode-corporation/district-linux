@@ -83,6 +83,38 @@ date, and bump `[workspace.package] version` to match.
   `set_contact_blocked`). Each sends what the Android app sends for the same call;
   the reads are repeated once after a refused access token and the writes never are.
   `generate_ai_draft` runs a billed model and nothing calls it on its own.
+- `district-core`: the inbox, a thread, the call log and contacts, still with no GTK
+  and no IO. The inbox lists the threads (saying when the list may be short), shows
+  the service's unread count as the badge and which threads have a saved reply, and
+  searches every message once the typing stops. A thread is read backwards a page at
+  a time and merged by event id, is marked read when opened, and has a composer whose
+  text is saved as the member's draft two seconds after the typing stops, deleted when
+  the box is cleared and restored into an empty box on opening. Sending is one message
+  at a time; the draft is deleted as the message goes and saved again if the send
+  fails. Images are checked against the service's rules before they are uploaded, and
+  a reply is written by the model only when the user asks for one. The call log is
+  read a page at a time and a call opens with its transcript. Contacts are paged by
+  the size the service applied, and can be added, edited (from the whole record,
+  because the service replaces it), deleted, researched with the result read until it
+  settles, cleared of research, blocked and unblocked, each change one at a time per
+  contact, with a question first for deleting, clearing research, blocking and
+  unblocking; the blocked callers have a screen of their own
+  (`Route::BlockedContacts`). A viewer can read all of it and change none of it.
+- `district-core`: live updates. The open workspace is watched (`Effect::WatchLive`,
+  which `LiveHub` applies only when it is newer than the last set, so a late start
+  cannot reopen a socket a sign-out closed), and each update the app forwards as
+  `Event::Live` reads again what it changed: a message the badge, the inbox list and
+  the open thread; a call the log and the open call; a reconnection whatever is on
+  screen. A burst of events costs at most two reads of each. A ringing call is
+  recorded for the calls milestone and nothing rings yet.
+- `district-core`: `Effect::Notify` for a message that arrives while the window is
+  hidden or its thread is not showing (the service is asked which thread it is in
+  when one is showing), saying only "New message", as the Android app's notification
+  does. Opening it (`Event::OpenNotification`) opens the workspace's inbox, then the
+  message's thread.
+- `district-core`: the runner takes two more traits, `LiveUpdates` and `Notifier`, and
+  `DistrictApi` has the inbox, call log and contacts methods, which `ApiClient`
+  implements.
 
 ### Changed
 
@@ -117,5 +149,9 @@ date, and bump `[workspace.package] version` to match.
   that a substitution's replacement must be new is now held per set, to the entries
   that substitute something there: the desktop set is recorded with fictional data
   already, including the stand-ins the table writes into the Android set.
+- `district-core`: a result saying the session has ended ends it in one place, before
+  any screen sees it, and only while the result is still awaited. The setup status
+  read, whose failures were all ignored, now ends an ended session like every other
+  read. `Effect` no longer derives `Hash`, and `Ticket` is ordered.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main
