@@ -1,9 +1,9 @@
 //! The data District AI for Linux exchanges with the District AI service.
 //!
 //! Serde types for the REST API, mirroring the core model of the District AI
-//! Android app so both clients read the same wire format, plus (in later changes)
-//! the envelopes the live telemetry socket delivers. This crate does no IO: it
-//! describes the bytes, it never fetches them.
+//! Android app so both clients read the same wire format, plus the credential
+//! for the live telemetry socket and the envelopes it delivers. This crate does
+//! no IO: it describes the bytes, it never fetches them.
 //!
 //! # Strict contracts
 //!
@@ -38,6 +38,7 @@ mod overview;
 mod phone;
 mod pkce;
 mod setup;
+mod telemetry;
 mod workspace;
 
 pub use auth::AuthMeResponse;
@@ -49,6 +50,7 @@ pub use pkce::PkceVector;
 pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,
 };
+pub use telemetry::{TelemetryEnvelope, TelemetryEventType, TelemetryToken};
 pub use workspace::{WorkspaceEntry, WorkspaceListResponse};
 
 #[cfg(test)]
