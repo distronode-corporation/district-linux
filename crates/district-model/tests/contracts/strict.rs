@@ -148,6 +148,7 @@ fn every_deserialize_type_in_src_honours_strict_contracts() {
         "PkceVector",
         "TimelineEvent",
         "ContactCompany",
+        "BillingDiscount",
     ] {
         assert!(
             scan.checked.iter().any(|name| name == expected),

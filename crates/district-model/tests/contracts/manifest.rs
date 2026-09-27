@@ -21,14 +21,16 @@
 use std::collections::BTreeMap;
 
 use district_model::{
-    AiDraftResponse, CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
-    ClearIntelResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
-    ConversationsResponse, DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse,
-    DraftListResponse, DraftResponse, EnrichResponse, MarkReadResponse, MediaUploadResponse,
-    MessageThreadResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
-    PushRegistrationResponse, SchedulingHandOffResponse, SendMessageResponse, SetupResponse,
-    TelemetryEnvelope, TelemetryToken, TimelineResponse, UnreadCountResponse,
-    WorkspaceListResponse,
+    AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CallDetailResponse,
+    CallHangUpResponse, CallSummary, CallTranscriptResponse, ClearIntelResponse,
+    ContactDetailResponse, ContactListResponse, ContactMutationResponse, ConversationsResponse,
+    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
+    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
+    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
+    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse,
+    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
+    TelemetryToken, TimelineResponse, UnreadCountResponse, UsageHistoryResponse, UsageResponse,
+    WorkspaceBillingResponse, WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -81,6 +83,26 @@ pub const EXPECTED_FIXTURE_COUNT: usize = 177;
 pub const IMPLEMENTED: &[(&str, Codec)] = &[
     // POST /api/district/messages/draft: a reply written by a model.
     ("district-ai-draft.json", codec::<AiDraftResponse>),
+    // GET /api/district/analytics for a workspace with no calls: zeros, and no
+    // percentage against a window with nothing in it.
+    (
+        "district-analytics-new-workspace.json",
+        codec::<AnalyticsResponse>,
+    ),
+    // GET /api/district/analytics.
+    ("district-analytics.json", codec::<AnalyticsResponse>),
+    // GET /api/billing for an account with no billing set up.
+    (
+        "district-billing-no-customer.json",
+        codec::<AccountBillingResponse>,
+    ),
+    // GET /api/billing while the payment processor cannot be reached.
+    (
+        "district-billing-unavailable.json",
+        codec::<AccountBillingResponse>,
+    ),
+    // GET /api/billing: subscriptions, invoices and the account's opaque details.
+    ("district-billing.json", codec::<AccountBillingResponse>),
     // GET /api/district/calls/{callId}: the call log's row for one call.
     ("district-call-detail.json", codec::<CallDetailResponse>),
     // GET /api/district/calls/{callId}/transcript.
@@ -141,6 +163,12 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-drafts-list.json", codec::<DraftListResponse>),
     // POST /api/district/contacts/enrich: a research run queued.
     ("district-enrich.json", codec::<EnrichResponse>),
+    // POST /api/district/hq with a prompt: an answer and nothing proposed.
+    ("district-hq-answer.json", codec::<HqPromptResponse>),
+    // POST /api/district/hq with a confirmation.
+    ("district-hq-confirm.json", codec::<HqConfirmResponse>),
+    // POST /api/district/hq with a prompt: a change proposed, not applied.
+    ("district-hq-pending-write.json", codec::<HqPromptResponse>),
     // POST /api/district/messages/media: an uploaded attachment.
     ("district-media-upload.json", codec::<MediaUploadResponse>),
     // POST /api/district/messages/mark-read.
@@ -169,10 +197,25 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // POST /api/auth/native/revoke: this installation signing itself out.
     ("district-native-revoke.json", codec::<NativeRevokeResponse>),
+    // GET /api/district/workspace/numbers/search: a priced and an unpriced number.
+    (
+        "district-numbers-search.json",
+        codec::<NumberSearchResponse>,
+    ),
     // GET /api/district/overview.
     ("district-overview.json", codec::<OverviewResponse>),
     // The server's own PKCE derivations, test data for sign-in.
     ("district-pkce-vectors.json", codec::<Vec<PkceVector>>),
+    // GET /api/district/workspace/provider/numbers with a carrier not answering.
+    (
+        "district-provider-numbers-partial.json",
+        codec::<OwnedNumbersResponse>,
+    ),
+    // GET /api/district/workspace/provider/numbers.
+    (
+        "district-provider-numbers.json",
+        codec::<OwnedNumbersResponse>,
+    ),
     // POST /api/auth/native/revoke-all: every device signed out.
     ("district-revoke-all.json", codec::<DeviceRevokeResponse>),
     // GET /api/district/setup.
@@ -181,6 +224,23 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-timeline-page.json", codec::<TimelineResponse>),
     // GET /api/district/timeline: messages of each channel and calls, interleaved.
     ("district-timeline.json", codec::<TimelineResponse>),
+    // GET /api/district/workspace/usage for a month with nothing metered.
+    ("district-usage-empty.json", codec::<UsageResponse>),
+    // GET /api/district/workspace/usage?history=true: months metered for
+    // fewer and fewer things.
+    ("district-usage-history.json", codec::<UsageHistoryResponse>),
+    // GET /api/district/workspace/usage.
+    ("district-usage.json", codec::<UsageResponse>),
+    // GET /api/district/workspace/billing, no plan and nothing metered.
+    (
+        "district-workspace-billing-null-usage.json",
+        codec::<WorkspaceBillingResponse>,
+    ),
+    // GET /api/district/workspace/billing.
+    (
+        "district-workspace-billing.json",
+        codec::<WorkspaceBillingResponse>,
+    ),
     // GET /api/district/workspace/list, with one region not answering.
     (
         "district-workspace-list-partial.json",
@@ -197,18 +257,13 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 81;
+pub const NOT_YET_MODELLED_BASELINE: usize = 65;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
 /// Shrink-only. Nothing may be added here: a new fixture needs a type, or a
 /// decision recorded in [`EXCLUDED_BY_DECISION`].
 pub const NOT_YET_MODELLED: &[&str] = &[
-    "district-analytics-new-workspace.json",
-    "district-analytics.json",
-    "district-billing-no-customer.json",
-    "district-billing-unavailable.json",
-    "district-billing.json",
     "district-call-answer.json",
     "district-campaign-pause.json",
     "district-campaign-status-empty.json",
@@ -228,9 +283,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-dial.json",
     "district-directory-patch.json",
     "district-enrich-disabled.json",
-    "district-hq-answer.json",
-    "district-hq-confirm.json",
-    "district-hq-pending-write.json",
     "district-knowledge-create.json",
     "district-knowledge-delete.json",
     "district-knowledge-mode-patch.json",
@@ -253,12 +305,9 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-messaging-unmanaged.json",
     "district-messaging-upsert.json",
     "district-messaging.json",
-    "district-numbers-search.json",
     "district-persona-options.json",
     "district-persona-patch.json",
     "district-persona-preview-token.json",
-    "district-provider-numbers-partial.json",
-    "district-provider-numbers.json",
     "district-rename.json",
     "district-room-token-viewer.json",
     "district-room-token.json",
@@ -274,14 +323,9 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-support-request.json",
     "district-support-requests.json",
     "district-tools-patch.json",
-    "district-usage-empty.json",
-    "district-usage-history.json",
-    "district-usage.json",
     "district-workflow-runs.json",
     "district-workflow-toggle.json",
     "district-workflows.json",
-    "district-workspace-billing-null-usage.json",
-    "district-workspace-billing.json",
     "district-workspace-config-sparse.json",
     "district-workspace-config.json",
     "district-workspace-list-degraded.json",

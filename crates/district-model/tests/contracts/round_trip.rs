@@ -261,10 +261,46 @@ const SOCIAL_HANDLES: &str = "Contact::social_handles: platform names and handle
 const INTELLIGENCE: &str = "Contact::intelligence: a research dossier written by a model, whose \
                             shape changes with the model's instructions";
 
+const ACCOUNT_BILLING: &str = "AccountBillingResponse: card details, a business name, tax \
+                               registrations and a postal address, which this client neither \
+                               shows nor changes, so it carries the payment processor's JSON \
+                               only to write it back";
+
+const HQ_ARGS: &str = "HQ arguments: chosen by the model, shaped by whichever write it picked, \
+                       and returned to the service untouched";
+
+const HQ_RESULT: &str = "HqConfirmResponse::result: whatever the applied write returned, for \
+                         diagnostics only";
+
 /// The objects the unknown-field probe leaves alone, because the type carries them
 /// as plain JSON on purpose. An entry must still be opaque, or the probe fails it
 /// as stale: a type that starts modelling one of these gets the probe back.
 pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
+    OpaqueObject {
+        fixture: "fixtures/district-billing.json",
+        path: "$.billingAddress",
+        reason: ACCOUNT_BILLING,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-billing.json",
+        path: "$.businessProfile",
+        reason: ACCOUNT_BILLING,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-billing.json",
+        path: "$.paymentMethod",
+        reason: ACCOUNT_BILLING,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-billing.json",
+        path: "$.paymentMethods",
+        reason: ACCOUNT_BILLING,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-billing.json",
+        path: "$.taxIds",
+        reason: ACCOUNT_BILLING,
+    },
     OpaqueObject {
         fixture: "fixtures/district-contact-detail.json",
         path: "$.contact.intelligence",
@@ -284,6 +320,21 @@ pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
         fixture: "fixtures/district-contacts.json",
         path: "$.contacts[0].socialHandles",
         reason: SOCIAL_HANDLES,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-hq-confirm.json",
+        path: "$.args",
+        reason: HQ_ARGS,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-hq-confirm.json",
+        path: "$.result",
+        reason: HQ_RESULT,
+    },
+    OpaqueObject {
+        fixture: "fixtures/district-hq-pending-write.json",
+        path: "$.pendingWrite.args",
+        reason: HQ_ARGS,
     },
     OpaqueObject {
         fixture: "desktop/telemetry-event-call-ended-row.json",

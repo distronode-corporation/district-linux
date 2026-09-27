@@ -9,15 +9,18 @@
 use std::collections::BTreeSet;
 
 use district_model::{
-    AiDraftResponse, CHANNEL_EMAIL, CHANNEL_SMS, CallDetailResponse, CallHangUpResponse,
-    CallSummary, CallTranscriptResponse, ClearIntelResponse, ContactDetailResponse,
-    ContactListResponse, ContactMutationResponse, ConversationsResponse, DeviceListResponse,
-    DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, EnrichResponse,
-    MarkReadResponse, MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse,
-    OverviewResponse, PkceVector, PushRegistrationResponse, SETUP_STEP_DONE, SETUP_STEP_TODO,
-    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
-    TelemetryEventType, TelemetryToken, ThreadRef, TimelineResponse, UnreadCountResponse,
-    UpdateContactRequest, WorkspaceListResponse,
+    AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CHANNEL_EMAIL, CHANNEL_SMS,
+    CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
+    ClearIntelResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
+    ConversationsResponse, DIRECTION_FLAT, DIRECTION_UP, DeviceListResponse, DeviceRevokeResponse,
+    DraftDeleteResponse, DraftListResponse, DraftResponse, EnrichResponse, HqConfirmResponse,
+    HqPromptResponse, MarkReadResponse, MediaUploadResponse, MessageThreadResponse,
+    NativeRevokeResponse, NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP,
+    OverviewResponse, OwnedNumbersResponse, PkceVector, PushRegistrationResponse, SETUP_STEP_DONE,
+    SETUP_STEP_TODO, SchedulingHandOffResponse, SendMessageResponse, SetupResponse,
+    TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef, TimelineResponse,
+    UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse, UsageResponse,
+    WorkspaceBillingResponse, WorkspaceListResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -540,6 +543,188 @@ fn the_draft_fixtures_cover_a_saved_reply_none_and_a_bare_one() {
     assert!(deleted.success);
     let written: AiDraftResponse = decode("district-ai-draft.json");
     assert!(written.success && !written.draft.is_empty());
+}
+
+// District HQ.
+
+#[test]
+fn hq_answers_with_a_proposal_only_when_it_proposes_a_change() {
+    let answer: HqPromptResponse = decode("district-hq-answer.json");
+    assert!(answer.success && !answer.answer.is_empty());
+    assert!(!answer.needs_confirmation && answer.pending_write.is_none());
+
+    let proposed: HqPromptResponse = decode("district-hq-pending-write.json");
+    assert!(proposed.needs_confirmation);
+    let pending = proposed.pending_write.expect("a proposed change");
+    assert!(!pending.summary.is_empty() && !pending.args.is_empty());
+
+    let confirmed: HqConfirmResponse = decode("district-hq-confirm.json");
+    assert!(confirmed.success && confirmed.executed);
+    assert!(
+        confirmed.is_the_proposal(&pending),
+        "the recorded confirmation applies the recorded proposal"
+    );
+    assert!(confirmed.result.is_some());
+}
+
+// Analytics and usage.
+
+#[test]
+fn analytics_cover_a_busy_window_and_one_with_nothing_to_compare_with() {
+    let busy: AnalyticsResponse = decode("district-analytics.json");
+    assert!(busy.success);
+    let delta = &busy.call_volume_delta;
+    assert_eq!(delta.direction, DIRECTION_UP);
+    assert!(delta.pct.is_some_and(|pct| pct > 0));
+    assert_eq!(
+        busy.engagement_trends
+            .iter()
+            .map(|point| point.calls)
+            .sum::<i64>(),
+        busy.metrics.total_calls,
+        "the trend's calls add up to the headline"
+    );
+    assert!(
+        busy.engagement_trends
+            .iter()
+            .any(|point| point.calls > 0 && point.avg_duration == 0),
+        "a day with calls and no completed one"
+    );
+    assert!(
+        busy.engagement_trends
+            .windows(2)
+            .all(|w| w[0].iso_date < w[1].iso_date),
+        "oldest first"
+    );
+    assert_eq!(busy.metrics.active_agents, 0);
+
+    let new: AnalyticsResponse = decode("district-analytics-new-workspace.json");
+    assert_eq!(new.call_volume_delta.pct, None, "new, not 0%");
+    assert_eq!(new.call_volume_delta.direction, DIRECTION_FLAT);
+    assert!(
+        !new.engagement_trends.is_empty(),
+        "zeros, not an empty series"
+    );
+    assert_eq!(new.sentiment_distribution.len(), 3);
+    assert!(
+        new.sentiment_distribution
+            .iter()
+            .all(|slice| slice.value == 0)
+    );
+}
+
+#[test]
+fn usage_covers_fractions_an_empty_month_and_measures_left_out() {
+    let month: UsageResponse = decode("district-usage.json");
+    let usage = month.usage.expect("a metered month");
+    assert!(
+        usage.call_minutes_inbound.is_some_and(|m| m.fract() != 0.0),
+        "fractional minutes"
+    );
+    assert!(usage.whatsapp_outbound == Some(0.0), "a measured zero");
+    assert!(usage.whatsapp_inbound.is_none(), "an unmetered measure");
+    assert!(usage.avatar_minutes.is_some());
+
+    let empty: UsageResponse = decode("district-usage-empty.json");
+    assert!(empty.success && empty.usage.is_none());
+
+    let history: UsageHistoryResponse = decode("district-usage-history.json");
+    let months = &history.usage;
+    assert!(
+        months.windows(2).all(|w| w[0].month > w[1].month),
+        "newest first"
+    );
+    assert_eq!(months[0], usage, "the history's first month is this month");
+    let last = months.last().expect("an older month");
+    assert!(last.provider.is_none() && last.call_minutes_outbound.is_none());
+}
+
+// Phone numbers.
+
+#[test]
+fn a_search_covers_a_priced_number_and_one_without_prices() {
+    let found: NumberSearchResponse = decode("district-numbers-search.json");
+    assert!(found.success && !found.provider.is_empty());
+    let priced = found.numbers.iter().find(|n| n.monthly_price.is_some());
+    let priced = priced.expect("a priced number");
+    assert!(priced.currency.is_some() && priced.locality.is_some());
+    assert!(priced.setup_price == Some(0.0), "a price of nothing");
+    let bare = found.numbers.iter().find(|n| n.monthly_price.is_none());
+    let bare = bare.expect("a number the carrier would not price");
+    assert!(bare.currency.is_none() && bare.setup_price.is_none());
+    assert_eq!(bare.number_type, "tollFree");
+}
+
+#[test]
+fn the_held_numbers_cover_both_kinds_and_a_short_list() {
+    let clean: OwnedNumbersResponse = decode("district-provider-numbers.json");
+    assert!(!clean.partial && clean.failed_providers.is_empty());
+    let numbers = &clean.numbers;
+    assert!(numbers.iter().any(|n| n.managed) && numbers.iter().any(|n| !n.managed));
+    assert!(numbers.iter().any(|n| n.capabilities.is_empty()));
+    assert!(numbers.iter().any(|n| n.monthly_price.is_none()));
+    assert!(
+        numbers
+            .iter()
+            .any(|n| n.sms_url.is_some() && n.friendly_name.is_some())
+    );
+
+    let short: OwnedNumbersResponse = decode("district-provider-numbers-partial.json");
+    assert!(short.success && short.partial);
+    assert_eq!(short.failed_providers, ["telnyx"]);
+    assert!(!short.numbers.is_empty(), "the rows that did resolve");
+}
+
+// Billing.
+
+#[test]
+fn the_workspace_plan_covers_both_overage_policies_and_nothing_metered() {
+    let plan: WorkspaceBillingResponse = decode("district-workspace-billing.json");
+    assert!(plan.success);
+    let billing = &plan.billing;
+    assert_eq!(billing.overage_policy, OVERAGE_POLICY_AUTO_BILL);
+    assert!(billing.usage.is_some());
+    let tier = billing.subscription_tier.as_deref().expect("a plan");
+    assert!(tier.eq_ignore_ascii_case(&billing.plan) && tier != billing.plan);
+    let usage: UsageResponse = decode("district-usage.json");
+    assert_eq!(
+        billing.usage, usage.usage,
+        "the same totals as the usage read"
+    );
+
+    let capped: WorkspaceBillingResponse = decode("district-workspace-billing-null-usage.json");
+    let billing = &capped.billing;
+    assert_eq!(billing.overage_policy, OVERAGE_POLICY_HARD_CAP);
+    assert!(billing.overage_cap_exceeded, "calls are being refused");
+    assert!(billing.subscription_tier.is_none() && billing.usage.is_none());
+}
+
+#[test]
+fn account_billing_covers_its_three_shapes() {
+    let full: AccountBillingResponse = decode("district-billing.json");
+    assert!(!full.billing_unavailable);
+    let subscriptions = &full.subscriptions;
+    let renewing = subscriptions.iter().find(|s| !s.cancel_at_period_end);
+    let renewing = renewing.expect("a subscription that renews");
+    assert!(renewing.discount.is_some() && renewing.included_minutes.is_some());
+    let ending = subscriptions.iter().find(|s| s.cancel_at_period_end);
+    let ending = ending.expect("a subscription that ends");
+    assert!(ending.discount.is_none() && ending.overage_rate.is_none());
+    assert!(full.invoices.iter().any(|i| i.hosted_invoice_url.is_none()));
+    assert!(full.invoices.iter().any(|i| i.invoice_pdf.is_some()));
+    assert_eq!(full.invoices_has_more, Some(true));
+    assert!(full.overage_spend_cap_cents.is_some() && full.customer_id.is_some());
+
+    let down: AccountBillingResponse = decode("district-billing-unavailable.json");
+    let none: AccountBillingResponse = decode("district-billing-no-customer.json");
+    assert!(down.billing_unavailable && !none.billing_unavailable);
+    for shape in [&down, &none] {
+        assert!(shape.subscriptions.is_empty() && shape.invoices.is_empty());
+        assert!(shape.invoices_has_more.is_none() && shape.overage_spend_cap_cents.is_none());
+    }
+    let mut unflagged = down.clone();
+    unflagged.billing_unavailable = false;
+    assert_eq!(unflagged, none, "the two differ by the flag alone");
 }
 
 // PKCE vectors.

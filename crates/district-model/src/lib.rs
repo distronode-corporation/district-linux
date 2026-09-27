@@ -26,18 +26,24 @@
 //!   has no value, or a key it leaves out when it has none. The second kind is
 //!   marked `skip_serializing_if`. The difference only shows when a value is
 //!   encoded again, which the contract tests do to prove a type loses nothing.
-//! - Whole numbers are `i64`, wide enough for anything the server sends.
+//! - Whole numbers are `i64`, wide enough for anything the server sends. A number
+//!   the server can send with a fraction (metered usage, a price) is `f64`, and a
+//!   type holding one is `PartialEq` without `Eq`.
 //! - Timestamps are ISO 8601 strings, as the server sends them. This crate does
 //!   no date handling.
 
 #![forbid(unsafe_code)]
 
+mod analytics;
 mod auth;
+mod billing;
 mod calls;
 mod compose;
 mod contacts;
 mod devices;
+mod hq;
 mod inbox;
+mod numbers;
 mod overview;
 mod phone;
 mod pkce;
@@ -45,9 +51,18 @@ mod push;
 mod scheduling;
 mod setup;
 mod telemetry;
+mod usage;
 mod workspace;
 
+pub use analytics::{
+    AnalyticsMetrics, AnalyticsRange, AnalyticsResponse, CallVolumeDelta, DIRECTION_DOWN,
+    DIRECTION_FLAT, DIRECTION_UP, EngagementPoint, FunnelStage, SentimentSlice,
+};
 pub use auth::AuthMeResponse;
+pub use billing::{
+    AccountBillingResponse, BillingDiscount, BillingInvoice, BillingSubscription,
+    OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, WorkspaceBilling, WorkspaceBillingResponse,
+};
 pub use calls::{
     CallAnalysis, CallDetailResponse, CallFollowUp, CallHangUpResponse, CallSummary,
     CallTranscriptResponse,
@@ -63,12 +78,16 @@ pub use contacts::{
     ContactMutationResponse, CreateContactRequest, EnrichResponse, UpdateContactRequest,
 };
 pub use devices::{DeviceListResponse, DeviceRevokeResponse, NativeDevice, NativeRevokeResponse};
+pub use hq::{HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqRole, HqTurn};
 pub use inbox::{
     CHANNEL_EMAIL, CHANNEL_SMS, ConversationLastMessage, ConversationSummary,
     ConversationsResponse, MESSAGE_SEARCH_MIN_QUERY_LENGTH, MessageSearchHit,
     MessageSearchResponse, MessageThreadMessage, MessageThreadResponse, MessageThreadTarget,
     ReplyTarget, ThreadRef, TimelineCursor, TimelineEvent, TimelinePageInfo, TimelineResponse,
     UnreadCountResponse,
+};
+pub use numbers::{
+    AvailableNumber, NumberSearch, NumberSearchResponse, OwnedNumber, OwnedNumbersResponse,
 };
 pub use overview::{OverviewMetrics, OverviewResponse};
 pub use phone::{PhoneIntel, PhoneRegion};
@@ -79,6 +98,7 @@ pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,
 };
 pub use telemetry::{TelemetryEnvelope, TelemetryEventType, TelemetryToken};
+pub use usage::{UsageHistoryResponse, UsageMonth, UsageResponse};
 pub use workspace::{WorkspaceEntry, WorkspaceListResponse};
 
 #[cfg(test)]
