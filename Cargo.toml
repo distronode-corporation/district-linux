@@ -142,7 +142,7 @@ livekit = { version = "0.9.3", default-features = false, features = ["native", "
 # Test only, both already in the tree through oo7: the call engine's tests sign
 # their media server credentials (HS256) and derive the room key the way
 # libwebrtc does, to look for it in what the engine logs.
-hmac = "0.12.1"
+hmac = "0.13.0"
 pbkdf2 = { version = "0.12.2", default-features = false, features = ["hmac"] }
 
 [workspace.lints.rust]
