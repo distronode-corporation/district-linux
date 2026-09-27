@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The carrier accounts: each account with its default and removal, the
+     numbers Distronode holds, each channel's sender, and the owner's mobile
+     number, which is never shown. src/pages/messaging.rs fills it, and opens
+     the form that adds or edits an account. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictMessagingView" parent="AdwBin">
+    <property name="child">
+      <object class="AdwPreferencesPage">
+        <child>
+          <object class="AdwPreferencesGroup" id="top_group">
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <child>
+                  <object class="GtkLabel" id="viewer_note">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="DistrictSaveNotice" id="notice"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="accounts_group">
+            <property name="title">Carrier accounts</property>
+            <property name="header-suffix">
+              <object class="GtkBox">
+                <property name="spacing">8</property>
+                <child>
+                  <object class="GtkSpinner" id="accounts_spinner">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="add_button">
+                    <property name="valign">center</property>
+                    <property name="child">
+                      <object class="AdwButtonContent">
+                        <property name="icon-name">list-add-symbolic</property>
+                        <property name="label">Add an account</property>
+                      </object>
+                    </property>
+                    <style>
+                      <class name="flat"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </property>
+            <child>
+              <object class="AdwActionRow" id="accounts_failed">
+                <property name="use-markup">False</property>
+                <child type="suffix">
+                  <object class="GtkButton" id="accounts_retry">
+                    <property name="label">Try again</property>
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="empty_row">
+                <property name="use-markup">False</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="managed_group">
+            <property name="title">Numbers held by Distronode</property>
+            <property name="description">Bought for this workspace on Distronode's own carrier account. They are not an account of this workspace's, so they cannot be chosen as a sender.</property>
+            <child>
+              <object class="AdwActionRow" id="managed_row">
+                <property name="use-markup">False</property>
+                <property name="subtitle-selectable">True</property>
+                <style>
+                  <class name="property"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="channels_group">
+            <property name="title">Sender for each channel</property>
+            <property name="description">A channel without a sender of its own sends from the default account.</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="creator_group">
+            <property name="title">The owner's mobile number</property>
+            <child>
+              <object class="AdwEntryRow" id="creator_row">
+                <property name="title">Mobile number</property>
+                <property name="use-markup">False</property>
+                <property name="input-purpose">phone</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="spacing">10</property>
+                <property name="margin-top">12</property>
+                <property name="halign">end</property>
+                <child>
+                  <object class="GtkSpinner" id="creator_spinner">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="creator_button">
+                    <property name="label">Save number</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

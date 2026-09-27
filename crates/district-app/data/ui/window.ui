@@ -318,6 +318,14 @@
                                     </child>
                                     <child>
                                       <object class="GtkStackPage">
+                                        <property name="name">settings</property>
+                                        <property name="child">
+                                          <object class="DistrictSettingsPage" id="settings_page"/>
+                                        </property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
                                         <property name="name">later</property>
                                         <property name="child">
                                           <object class="AdwStatusPage" id="later_page"/>

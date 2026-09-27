@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The routing rules: each stored rule on a card of its own, edited one key
+     at a time with the builder's choices and any stored value they do not
+     list, and a save that asks first. src/pages/routing.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictRoutingView" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">loading</property>
+            <property name="child">
+              <object class="GtkSpinner" id="loading_spinner">
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="width-request">32</property>
+                <property name="height-request">32</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">status</property>
+            <property name="child">
+              <object class="AdwStatusPage" id="status">
+                <property name="child">
+                  <object class="GtkButton" id="retry_button">
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">form</property>
+            <property name="child">
+              <object class="AdwPreferencesPage">
+                <child>
+                  <object class="AdwPreferencesGroup" id="rules_group">
+                    <property name="title">Rules</property>
+                    <property name="description">Checked in this order. A caller who matches a rule gets its voice and instruction.</property>
+                    <property name="header-suffix">
+                      <object class="GtkButton" id="add_button">
+                        <property name="valign">center</property>
+                        <property name="child">
+                          <object class="AdwButtonContent">
+                            <property name="icon-name">list-add-symbolic</property>
+                            <property name="label">Add a rule</property>
+                          </object>
+                        </property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </property>
+                    <child>
+                      <object class="AdwActionRow" id="empty_row">
+                        <property name="use-markup">False</property>
+                        <style>
+                          <class name="dim-label"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <property name="margin-top">12</property>
+                        <child>
+                          <object class="DistrictSaveNotice" id="notice"/>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="spacing">10</property>
+                            <property name="halign">end</property>
+                            <child>
+                              <object class="GtkSpinner" id="spinner">
+                                <property name="visible">False</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="save_button">
+                                <property name="label">Replace the rules</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="suggested-action"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

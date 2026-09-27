@@ -36,6 +36,7 @@ mod bridge;
 mod charts;
 mod controller;
 mod effects;
+mod guard;
 mod markdown;
 mod notifications;
 mod pages;

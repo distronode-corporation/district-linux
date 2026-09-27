@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The receptionist's persona: its texts from the settings read, its engine
+     and voice only as the options offer them, the save, and the audition.
+     src/pages/persona.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictPersonaView" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">loading</property>
+            <property name="child">
+              <object class="GtkSpinner" id="loading_spinner">
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="width-request">32</property>
+                <property name="height-request">32</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">status</property>
+            <property name="child">
+              <object class="AdwStatusPage" id="status">
+                <property name="child">
+                  <object class="GtkButton" id="retry_button">
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">form</property>
+            <property name="child">
+              <object class="AdwPreferencesPage">
+                <child>
+                  <object class="AdwPreferencesGroup" id="texts_group">
+                    <property name="title">What it says</property>
+                    <child>
+                      <object class="AdwEntryRow" id="name_row">
+                        <property name="title">Name</property>
+                        <property name="use-markup">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwEntryRow" id="greeting_row">
+                        <property name="title">Greeting</property>
+                        <property name="use-markup">False</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Personality</property>
+                    <property name="description">How it behaves, written into every call's instructions.</property>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="min-content-height">110</property>
+                        <style>
+                          <class name="card"/>
+                          <class name="composer-box"/>
+                        </style>
+                        <property name="child">
+                          <object class="GtkTextView" id="personality_view">
+                            <property name="wrap-mode">word-char</property>
+                            <property name="accepts-tab">False</property>
+                            <property name="top-margin">10</property>
+                            <property name="bottom-margin">10</property>
+                            <property name="left-margin">12</property>
+                            <property name="right-margin">12</property>
+                            <accessibility>
+                              <property name="label">Personality</property>
+                            </accessibility>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="engine_group">
+                    <property name="title">Voice and engine</property>
+                    <property name="header-suffix">
+                      <object class="GtkSpinner" id="options_spinner">
+                        <property name="visible">False</property>
+                      </object>
+                    </property>
+                    <child>
+                      <object class="AdwComboRow" id="engine_row">
+                        <property name="use-markup">False</property>
+                        <property name="title">Engine</property>
+                        <property name="use-subtitle">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwComboRow" id="language_row">
+                        <property name="use-markup">False</property>
+                        <property name="title">Language</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwComboRow" id="voice_row">
+                        <property name="title">Voice</property>
+                        <property name="use-markup">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwComboRow" id="length_row">
+                        <property name="use-markup">False</property>
+                        <property name="title">Answer length</property>
+                        <property name="use-subtitle">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="temperature_row">
+                        <property name="title">Variation</property>
+                        <property name="subtitle">How freely it answers, from 0 (the same way every time) to 1.</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="temperature_scale">
+                            <property name="valign">center</property>
+                            <property name="width-request">180</property>
+                            <property name="draw-value">True</property>
+                            <property name="value-pos">left</property>
+                            <property name="digits">2</property>
+                            <property name="round-digits">2</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">1</property>
+                                <property name="step-increment">0.05</property>
+                                <property name="page-increment">0.1</property>
+                              </object>
+                            </property>
+                            <accessibility>
+                              <property name="label">Variation</property>
+                            </accessibility>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwComboRow" id="style_row">
+                        <property name="use-markup">False</property>
+                        <property name="title">Speaking style</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSwitchRow" id="early_row">
+                        <property name="title">Start speaking early</property>
+                        <property name="subtitle">Speech starts before the answer is complete, which is quicker and billed.</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="engine_note">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                        <property name="margin-top">6</property>
+                        <style>
+                          <class name="dim-label"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="options_retry">
+                        <property name="label">Try again</property>
+                        <property name="halign">start</property>
+                        <property name="margin-top">6</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="regions_group">
+                    <property name="title">Engines outside this workspace's region</property>
+                    <property name="description">Shown for what their names say about where audio is processed. They cannot be chosen here.</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <child>
+                          <object class="DistrictSaveNotice" id="notice"/>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="spacing">10</property>
+                            <child>
+                              <object class="GtkButton" id="preview_button">
+                                <property name="halign">start</property>
+                                <property name="hexpand">True</property>
+                                <property name="child">
+                                  <object class="AdwButtonContent">
+                                    <property name="icon-name">audio-speakers-symbolic</property>
+                                    <property name="label">Try this receptionist</property>
+                                  </object>
+                                </property>
+                                <style>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkSpinner" id="save_spinner">
+                                <property name="visible">False</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="save_button">
+                                <property name="label">Save</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="suggested-action"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

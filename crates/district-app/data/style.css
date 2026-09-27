@@ -116,3 +116,7 @@ row.unread .conversation-title {
 .notice-card {
   background-color: alpha(@accent_bg_color, 0.12);
 }
+
+.saved-card {
+  background-color: alpha(@success_bg_color, 0.12);
+}

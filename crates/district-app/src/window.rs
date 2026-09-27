@@ -5,7 +5,7 @@ use std::cell::{OnceCell, RefCell};
 
 use district_core::{
     CallLog, Capabilities, ContactList, ConversationList, Event, LiveStatus, Model, Route,
-    SessionState, SignedIn, ThreadHistory, Workspaces, WorkspacesState,
+    SessionState, SignedIn, ThreadHistory, WorkspaceSection, Workspaces, WorkspacesState,
 };
 
 use crate::adw;
@@ -15,7 +15,8 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::{
     AccountPage, AnalyticsPage, BillingPage, CallsPage, ContactsPage, DeskPage, DevicesPage,
     HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage, SchedulingPage, Sends,
-    SessionPage, SupportPage, WorkflowsPage, in_contacts, in_desk, in_support,
+    SessionPage, SettingsPage, SupportPage, WorkflowsPage, in_contacts, in_desk, in_settings,
+    in_support,
 };
 use crate::routes::{self, Entry, Section};
 use crate::sink::EventSink;
@@ -111,6 +112,8 @@ mod imp {
         #[template_child]
         pub rooms_page: TemplateChild<RoomsPage>,
         #[template_child]
+        pub settings_page: TemplateChild<SettingsPage>,
+        #[template_child]
         pub later_page: TemplateChild<adw::StatusPage>,
         pub sink: OnceCell<EventSink>,
         pub rows: RefCell<Vec<SidebarRow>>,
@@ -145,6 +148,7 @@ mod imp {
             DeskPage::static_type();
             SupportPage::static_type();
             RoomsPage::static_type();
+            SettingsPage::static_type();
             klass.bind_template();
         }
 
@@ -205,6 +209,7 @@ mod imp {
                 self.contacts_page.split_view(),
                 self.desk_page.split_view(),
                 self.support_page.split_view(),
+                self.settings_page.split_view(),
             ] {
                 let weak = window.downgrade();
                 split.connect_collapsed_notify(move |_| {
@@ -257,6 +262,7 @@ impl DistrictWindow {
         imp.desk_page.set_sink(sink.clone());
         imp.support_page.set_sink(sink.clone());
         imp.rooms_page.set_sink(sink.clone());
+        imp.settings_page.set_sink(sink.clone());
         imp.sink.set(sink).ok();
         window
     }
@@ -353,6 +359,9 @@ impl DistrictWindow {
         }
         if !showing(|route| *route == Route::Rooms) {
             imp.rooms_page.leave();
+        }
+        if !showing(in_settings) {
+            imp.settings_page.leave();
         }
     }
 
@@ -528,6 +537,10 @@ impl DistrictWindow {
                 imp.page_stack.set_visible_child_name("rooms");
                 imp.rooms_page.update(signed_in);
             }
+            Route::Workspace(section) => {
+                imp.page_stack.set_visible_child_name("settings");
+                imp.settings_page.update(signed_in, *section);
+            }
             other => {
                 imp.page_stack.set_visible_child_name("later");
                 imp.later_page.set_title(routes::title(other));
@@ -548,6 +561,7 @@ impl DistrictWindow {
             route if in_contacts(route) => Some(imp.contacts_page.split_view()),
             route if in_desk(route) => Some(imp.desk_page.split_view()),
             route if in_support(route) => Some(imp.support_page.split_view()),
+            route if in_settings(route) => Some(imp.settings_page.split_view()),
             _ => None,
         }
     }
@@ -616,6 +630,7 @@ fn refresh_state(signed_in: &SignedIn) -> (bool, bool) {
         Route::Desk => (true, DeskPage::refreshing(&signed_in.desk)),
         Route::Support => (true, SupportPage::refreshing(&signed_in.support)),
         Route::Rooms => (true, RoomsPage::refreshing(&signed_in.rooms)),
+        Route::Workspace(section) => (*section != WorkspaceSection::Hub, false),
         Route::CallDetail { .. }
         | Route::ContactDetail { .. }
         | Route::BlockedContacts

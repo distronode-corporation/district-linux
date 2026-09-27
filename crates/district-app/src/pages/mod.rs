@@ -4,9 +4,11 @@
 
 mod account;
 mod analytics;
+mod audition;
 mod billing;
 mod blocked;
 mod call;
+mod call_handling;
 mod calls;
 mod contact;
 mod contact_form;
@@ -15,20 +17,31 @@ mod desk;
 mod desk_settings;
 mod desk_ticket;
 mod devices;
+mod directory;
 mod hq;
 mod inbox;
+mod knowledge;
 mod marketplace;
 mod meeting_record;
+mod members;
+mod messaging;
+mod messaging_form;
 mod overview;
+mod persona;
 mod reply_box;
 mod rooms;
+mod routing;
+mod save_notice;
 mod scheduling;
 mod session;
+mod settings;
+mod settings_kit;
 mod shared;
 mod support;
 mod support_request;
 mod thread;
 mod ticket_form;
+mod tools;
 mod workflows;
 
 pub(crate) use account::AccountPage;
@@ -45,6 +58,7 @@ pub(crate) use overview::OverviewPage;
 pub(crate) use rooms::RoomsPage;
 pub(crate) use scheduling::SchedulingPage;
 pub(crate) use session::SessionPage;
+pub(crate) use settings::{SettingsPage, in_section as in_settings};
 pub(crate) use support::{SupportPage, in_section as in_support};
 pub(crate) use workflows::WorkflowsPage;
 
@@ -107,7 +121,7 @@ mod tests {
     use super::*;
 
     /// Every template the window is built from.
-    const TEMPLATES: [(&str, &str); 28] = [
+    const TEMPLATES: [(&str, &str); 40] = [
         ("window.ui", include_str!("../../data/ui/window.ui")),
         (
             "session-page.ui",
@@ -196,6 +210,51 @@ mod tests {
             "meeting-record.ui",
             include_str!("../../data/ui/meeting-record.ui"),
         ),
+        (
+            "settings-page.ui",
+            include_str!("../../data/ui/settings-page.ui"),
+        ),
+        (
+            "save-notice.ui",
+            include_str!("../../data/ui/save-notice.ui"),
+        ),
+        (
+            "persona-view.ui",
+            include_str!("../../data/ui/persona-view.ui"),
+        ),
+        (
+            "audition-dialog.ui",
+            include_str!("../../data/ui/audition-dialog.ui"),
+        ),
+        ("tools-view.ui", include_str!("../../data/ui/tools-view.ui")),
+        (
+            "directory-view.ui",
+            include_str!("../../data/ui/directory-view.ui"),
+        ),
+        (
+            "routing-view.ui",
+            include_str!("../../data/ui/routing-view.ui"),
+        ),
+        (
+            "call-handling-view.ui",
+            include_str!("../../data/ui/call-handling-view.ui"),
+        ),
+        (
+            "knowledge-view.ui",
+            include_str!("../../data/ui/knowledge-view.ui"),
+        ),
+        (
+            "messaging-view.ui",
+            include_str!("../../data/ui/messaging-view.ui"),
+        ),
+        (
+            "messaging-form.ui",
+            include_str!("../../data/ui/messaging-form.ui"),
+        ),
+        (
+            "members-view.ui",
+            include_str!("../../data/ui/members-view.ui"),
+        ),
     ];
 
     /// Whether the tag opening at `at` closes itself (`<object .../>`).
@@ -277,7 +336,7 @@ mod tests {
                 }
             }
         }
-        assert!(checked >= 11, "the check found the buttons: {checked}");
+        assert!(checked >= 12, "the check found the buttons: {checked}");
         // The scan itself: nesting, and objects that close themselves.
         let ui = r#"<object class="GtkButton"><child><object class="GtkImage"/></child><object class="X"></object></object><object class="GtkButton"/>"#;
         assert_eq!(objects(ui, "GtkButton").len(), 2);

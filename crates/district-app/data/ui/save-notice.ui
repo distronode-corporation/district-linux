@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- How the last save of a settings section ended: saved, or failed with the
+     edits kept. A save that landed and could not be read back is the
+     section's own page, which offers a read, never a save.
+     src/pages/save_notice.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSaveNotice" parent="AdwBin">
+    <property name="child">
+      <object class="GtkBox" id="notice_card">
+        <property name="visible">False</property>
+        <property name="spacing">10</property>
+        <style>
+          <class name="card"/>
+        </style>
+        <child>
+          <object class="GtkImage" id="notice_icon">
+            <property name="margin-start">12</property>
+            <property name="valign">center</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="notice_label">
+            <property name="xalign">0</property>
+            <property name="hexpand">True</property>
+            <property name="wrap">True</property>
+            <property name="use-markup">False</property>
+            <property name="margin-top">10</property>
+            <property name="margin-bottom">10</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="notice_dismiss">
+            <property name="icon-name">window-close-symbolic</property>
+            <property name="tooltip-text">Dismiss</property>
+            <property name="valign">center</property>
+            <property name="margin-end">6</property>
+            <style>
+              <class name="flat"/>
+              <class name="circular"/>
+            </style>
+            <accessibility>
+              <property name="label">Dismiss</property>
+            </accessibility>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

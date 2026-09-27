@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The knowledge base: where answers come from, adding a document (billed,
+     sent once), and the documents, each deleted only after a question.
+     src/pages/knowledge.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictKnowledgeView" parent="AdwBin">
+    <property name="child">
+      <object class="AdwPreferencesPage">
+        <child>
+          <object class="AdwPreferencesGroup" id="top_group">
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <child>
+                  <object class="GtkLabel" id="viewer_note">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="DistrictSaveNotice" id="notice"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="mode_group">
+            <property name="title">Where answers come from</property>
+            <property name="header-suffix">
+              <object class="GtkSpinner" id="mode_spinner">
+                <property name="visible">False</property>
+              </object>
+            </property>
+            <child>
+              <object class="AdwActionRow" id="mode_failed">
+                <property name="use-markup">False</property>
+                <child type="suffix">
+                  <object class="GtkButton" id="mode_retry">
+                    <property name="label">Try again</property>
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="internal_row">
+                <property name="use-markup">False</property>
+                <property name="activatable-widget">internal_check</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="internal_check">
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="linked_row">
+                <property name="use-markup">False</property>
+                <property name="activatable-widget">linked_check</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="linked_check">
+                    <property name="valign">center</property>
+                    <property name="group">internal_check</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="mode_unknown_row">
+                <property name="use-markup">False</property>
+                <property name="title">A setting this app does not know</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="add_group">
+            <property name="title">Add a document</property>
+            <child>
+              <object class="AdwEntryRow" id="title_row">
+                <property name="title">Title</property>
+                <property name="use-markup">False</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="hscrollbar-policy">never</property>
+                <property name="min-content-height">130</property>
+                <property name="margin-top">12</property>
+                <style>
+                  <class name="card"/>
+                  <class name="composer-box"/>
+                </style>
+                <property name="child">
+                  <object class="GtkTextView" id="content_view">
+                    <property name="wrap-mode">word-char</property>
+                    <property name="accepts-tab">False</property>
+                    <property name="top-margin">10</property>
+                    <property name="bottom-margin">10</property>
+                    <property name="left-margin">12</property>
+                    <property name="right-margin">12</property>
+                    <accessibility>
+                      <property name="label">The document's text</property>
+                    </accessibility>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="spacing">10</property>
+                <property name="margin-top">12</property>
+                <child>
+                  <object class="GtkLabel" id="add_rejected">
+                    <property name="xalign">0</property>
+                    <property name="hexpand">True</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSpinner" id="add_spinner">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="add_button">
+                    <property name="label">Add document</property>
+                    <property name="halign">end</property>
+                    <property name="hexpand">True</property>
+                    <style>
+                      <class name="pill"/>
+                      <class name="suggested-action"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="documents_group">
+            <property name="title">Documents</property>
+            <property name="header-suffix">
+              <object class="GtkSpinner" id="documents_spinner">
+                <property name="visible">False</property>
+              </object>
+            </property>
+            <child>
+              <object class="AdwActionRow" id="documents_failed">
+                <property name="use-markup">False</property>
+                <child type="suffix">
+                  <object class="GtkButton" id="documents_retry">
+                    <property name="label">Try again</property>
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="empty_row">
+                <property name="use-markup">False</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

@@ -13,6 +13,7 @@ use crate::app::{APP_ID, Parts, is_sign_in_callback};
 use crate::bridge::UiCommand;
 use crate::effects::Effects;
 use crate::gtk::{self, gdk, gio, glib};
+use crate::guard::{self, DISCARD_ACTION, DISCARD_BODY, DISCARD_TITLE, KEEP_EDITING};
 use crate::notifications::{self, BUTTON_ACTION, OPEN_ACTION};
 use crate::sink::EventSink;
 use crate::style::Brand;
@@ -49,6 +50,9 @@ pub(crate) struct Controller {
     startup_notice: Option<String>,
     /// Whether the last drawing was of a sign-out under way.
     signing_out: Cell<bool>,
+    /// The question before leaving a settings section with changes that are
+    /// not saved, while it shows.
+    discard: RefCell<Option<adw::AlertDialog>>,
 }
 
 impl Controller {
@@ -71,6 +75,7 @@ impl Controller {
             device_name: parts.device_name,
             startup_notice: parts.startup_notice,
             signing_out: Cell::new(false),
+            discard: RefCell::new(None),
         })
     }
 
@@ -135,12 +140,64 @@ impl Controller {
         self.effects.finish(effects, QUIT_LIMIT);
     }
 
-    fn handle(&self, event: Event) {
+    /// Handles `event`, unless it would leave a settings section with
+    /// changes that are not saved: then the member is asked first.
+    fn handle(self: &Rc<Self>, event: Event) {
+        if guard::leaves_unsaved(&self.model.borrow(), &event) {
+            self.ask_discard(event);
+            self.render();
+            return;
+        }
+        self.update(event);
+    }
+
+    fn update(&self, event: Event) {
         let effects = self.model.borrow_mut().update(event);
         for effect in effects {
             self.effects.run(effect);
         }
         self.render();
+    }
+
+    /// Asks "Discard your changes?" before `event`. Discarding hands it to
+    /// the model as it was; keeping drops it, and the window is drawn again
+    /// from the model, which never moved. One question at a time.
+    fn ask_discard(self: &Rc<Self>, event: Event) {
+        if self.discard.borrow().is_some() {
+            return;
+        }
+        let dialog = adw::AlertDialog::new(Some(DISCARD_TITLE), Some(DISCARD_BODY));
+        dialog.add_response("keep", KEEP_EDITING);
+        dialog.add_response("discard", DISCARD_ACTION);
+        dialog.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
+        dialog.set_default_response(Some("keep"));
+        dialog.set_close_response("keep");
+        let closed = Rc::new(Cell::new(false));
+        let marked = Rc::clone(&closed);
+        dialog.connect_closed(move |_| marked.set(true));
+        let controller = Rc::downgrade(self);
+        dialog.connect_response(None, move |dialog, response| {
+            // Answered: the question goes, once its own closing has had its
+            // turn.
+            let (dialog, closed) = (dialog.clone(), Rc::clone(&closed));
+            glib::idle_add_local_once(move || {
+                if !closed.get() {
+                    dialog.force_close();
+                }
+            });
+            // A question the drawing closed was not answered.
+            if let Some(controller) = controller.upgrade()
+                && controller.discard.take().is_some()
+            {
+                if response == "discard" {
+                    controller.update(event.clone());
+                } else {
+                    controller.render();
+                }
+            }
+        });
+        dialog.present(self.window.upgrade().as_ref());
+        self.discard.replace(Some(dialog));
     }
 
     fn render(&self) {
@@ -156,6 +213,13 @@ impl Controller {
         let was_signing_out = self
             .signing_out
             .replace(matches!(session, SessionState::SigningOut(_)));
+        // The question before discarding changes closes once there are none
+        // to lose: a save landed, or the session is over.
+        let unsaved =
+            matches!(session, SessionState::SignedIn(signed_in) if signed_in.settings_unsaved());
+        if !unsaved && let Some(open) = self.discard.take() {
+            open.force_close();
+        }
         let Some(window) = self.window.upgrade() else {
             return;
         };

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The audition of the persona on screen: what it is and costs before it
+     starts, Start, where it stands, and Stop. Closing it asks the core, which
+     stops the audition first. src/pages/persona.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictAuditionDialog" parent="AdwDialog">
+    <property name="content-width">440</property>
+    <property name="can-close">False</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="show-title">False</property>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwStatusPage" id="status">
+            <property name="icon-name">audio-speakers-symbolic</property>
+            <style>
+              <class name="compact"/>
+            </style>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <property name="halign">center</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">8</property>
+                    <property name="halign">center</property>
+                    <child>
+                      <object class="GtkSpinner" id="spinner">
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="state_label">
+                        <property name="wrap">True</property>
+                        <property name="justify">center</property>
+                        <property name="use-markup">False</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="failure_label">
+                    <property name="wrap">True</property>
+                    <property name="justify">center</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="cooling_label">
+                    <property name="wrap">True</property>
+                    <property name="justify">center</property>
+                    <property name="label">Another audition can start in a few seconds.</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="start_button">
+                    <property name="label">Start</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                      <class name="suggested-action"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="stop_button">
+                    <property name="label">Stop</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                      <class name="destructive-action"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

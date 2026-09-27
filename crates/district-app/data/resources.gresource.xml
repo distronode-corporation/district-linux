@@ -32,6 +32,18 @@
     <file>ui/ticket-form.ui</file>
     <file>ui/rooms-page.ui</file>
     <file>ui/meeting-record.ui</file>
+    <file>ui/settings-page.ui</file>
+    <file>ui/save-notice.ui</file>
+    <file>ui/persona-view.ui</file>
+    <file>ui/audition-dialog.ui</file>
+    <file>ui/tools-view.ui</file>
+    <file>ui/directory-view.ui</file>
+    <file>ui/routing-view.ui</file>
+    <file>ui/call-handling-view.ui</file>
+    <file>ui/knowledge-view.ui</file>
+    <file>ui/messaging-view.ui</file>
+    <file>ui/messaging-form.ui</file>
+    <file>ui/members-view.ui</file>
     <file>style.css</file>
     <file>sounds/ringtone.wav</file>
     <file alias="icons/scalable/apps/com.distronode.DistrictAI.svg">icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg</file>

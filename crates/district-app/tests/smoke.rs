@@ -44,17 +44,18 @@ use district_core::{
 };
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
 use district_model::{
-    AiDraftResponse, BlockedContact, BlockedContactsResponse, CallDetailResponse, CallSummary,
-    CallTranscriptResponse, ContactBlockResponse, ContactDetailResponse, ContactListResponse,
-    ContactMutationResponse, ConversationsResponse, DeskLogoRemovalResponse, DeskSettingsResponse,
-    DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse, DraftListResponse,
-    DraftResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse, MeetingSummary,
-    MessageSearchHit, MessageSearchResponse, MessageThreadResponse, NativeDevice,
-    NumberSearchResponse, OverviewResponse, OwnedNumbersResponse, SchedulingEnableResponse,
-    SchedulingHandOffResponse, SchedulingStatusResponse, SendMessageResponse,
-    SupportRequestsResponse, TelemetryEnvelope, TimelineResponse, UnreadCountResponse,
-    UsageHistoryResponse, WorkflowListResponse, WorkflowRun, WorkflowRunsResponse,
-    WorkspaceBillingResponse, WorkspaceListResponse,
+    AiDraftResponse, AvailabilityResponse, BlockedContact, BlockedContactsResponse,
+    CallDetailResponse, CallHandlingResponse, CallSummary, CallTranscriptResponse,
+    ContactBlockResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
+    ConversationsResponse, DeskLogoRemovalResponse, DeskSettingsResponse, DeskTicketsResponse,
+    DeviceListResponse, DeviceRevokeResponse, DraftListResponse, DraftResponse, HqConfirmResponse,
+    HqPromptResponse, KnowledgeListResponse, KnowledgeModeResponse, MarkReadResponse,
+    MeetingSummary, MessageSearchHit, MessageSearchResponse, MessageThreadResponse,
+    MessagingResponse, NativeDevice, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse,
+    PersonaOptionsResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageResponse, SupportRequestsResponse, TelemetryEnvelope,
+    TimelineResponse, UnreadCountResponse, UsageHistoryResponse, WorkflowListResponse, WorkflowRun,
+    WorkflowRunsResponse, WorkspaceBillingResponse, WorkspaceConfigResponse, WorkspaceListResponse,
 };
 use gtk::{gdk, gio, glib};
 use gtk4 as gtk;
@@ -170,7 +171,28 @@ fn ticket(effect: &Effect) -> Ticket {
         | Effect::CloseSupportRequest { ticket, .. }
         | Effect::LoadMeetings { ticket, .. }
         | Effect::LoadMeeting { ticket, .. }
-        | Effect::RequestRoomToken { ticket, .. } => *ticket,
+        | Effect::RequestRoomToken { ticket, .. }
+        | Effect::LoadWorkspaceConfig { ticket, .. }
+        | Effect::SaveTools { ticket, .. }
+        | Effect::SaveDirectory { ticket, .. }
+        | Effect::SaveRoutingRules { ticket, .. }
+        | Effect::SavePersona { ticket, .. }
+        | Effect::LoadPersonaOptions { ticket, .. }
+        | Effect::LoadKnowledge { ticket, .. }
+        | Effect::AddKnowledgeDocument { ticket, .. }
+        | Effect::DeleteKnowledgeDocument { ticket, .. }
+        | Effect::LoadKnowledgeMode { ticket, .. }
+        | Effect::SetKnowledgeMode { ticket, .. }
+        | Effect::LoadMessaging { ticket, .. }
+        | Effect::WriteMessaging { ticket, .. }
+        | Effect::TestMessagingCredentials { ticket, .. }
+        | Effect::LoadCallHandling { ticket, .. }
+        | Effect::SaveCallHandling { ticket, .. }
+        | Effect::LoadAvailability { ticket, .. }
+        | Effect::SetAvailability { ticket, .. }
+        | Effect::LoadMembers { ticket, .. }
+        | Effect::WriteMember { ticket, .. }
+        | Effect::RenameWorkspace { ticket, .. } => *ticket,
         other => panic!("no ticket the script answers in {other:?}"),
     }
 }
@@ -944,15 +966,6 @@ fn account_and_devices(smoke: &Smoke) {
     );
     assert!(!smoke.pending("RevokeAllDevices"));
     assert!(smoke.shown("sign_out_row"), "back to the account");
-}
-
-/// A screen this build does not have yet.
-fn later_screens(smoke: &Smoke) {
-    smoke.activate("sidebar-settings");
-    assert!(smoke.shown("later_page"));
-    assert_eq!(smoke.status_title("later_page"), "Workspace settings");
-    smoke.shot("10-later-build");
-    smoke.script.pending.borrow_mut().clear();
 }
 
 /// The inbox's threads, read as the service reads them all, so the list says
@@ -3530,6 +3543,7 @@ fn viewer_screens(smoke: &Smoke) {
     smoke.click("leave_button");
     smoke.forget();
     assert!(!smoke.shown("sidebar-support"), "closed to a viewer");
+    viewer_settings(smoke);
 }
 
 /// A narrow window: the sidebar folds away behind the page.
@@ -3727,13 +3741,1350 @@ fn quitting(smoke: &Smoke) {
     );
 }
 
+/// The combo row on screen named `name`, the `index`th of them.
+fn combo(smoke: &Smoke, name: &str, index: usize) -> adw::ComboRow {
+    smoke.nth::<adw::ComboRow>(name, index)
+}
+
+/// The label of each choice `row` offers.
+fn choice_labels(row: &adw::ComboRow) -> Vec<String> {
+    let model = row.model().expect("choices");
+    (0..model.n_items())
+        .filter_map(|index| model.item(index).and_downcast::<gtk::StringObject>())
+        .map(|item| item.string().to_string())
+        .collect()
+}
+
+/// The label of what `row` has chosen.
+fn chosen(row: &adw::ComboRow) -> String {
+    row.selected_item()
+        .and_downcast::<gtk::StringObject>()
+        .map(|item| item.string().to_string())
+        .unwrap_or_default()
+}
+
+/// Chooses the choice labelled `label` on `row`, as a person would.
+fn choose(smoke: &Smoke, row: &adw::ComboRow, label: &str) {
+    let index = choice_labels(row)
+        .iter()
+        .position(|offered| offered == label)
+        .unwrap_or_else(|| panic!("no {label} among {:?}", choice_labels(row)));
+    row.set_selected(u32::try_from(index).expect("a small list"));
+    smoke.pump();
+}
+
+/// The question on screen, when there is one.
+fn question(smoke: &Smoke) -> Option<adw::AlertDialog> {
+    smoke.first::<adw::AlertDialog>()
+}
+
+/// How many questions are on screen.
+fn questions(smoke: &Smoke) -> usize {
+    descendants(smoke.window().upcast_ref())
+        .into_iter()
+        .filter(|widget| widget.is::<adw::AlertDialog>() && widget.is_mapped())
+        .count()
+}
+
+/// Answers the settings row read with `result`.
+fn config_read(smoke: &Smoke, result: Result<WorkspaceConfigResponse, ApiError>) {
+    smoke.reply("LoadWorkspaceConfig", |ticket| {
+        Event::WorkspaceConfigLoaded { ticket, result }
+    });
+}
+
+/// Answers a settings write with `result`.
+fn written(smoke: &Smoke, name: &str, result: Result<(), ApiError>) {
+    smoke.reply(name, |ticket| Event::SettingsWritten { ticket, result });
+}
+
+/// The settings row as recorded, with `change` made to its JSON.
+fn config_with(change: impl FnOnce(&mut serde_json::Value)) -> WorkspaceConfigResponse {
+    let mut json: serde_json::Value = fixture("district-workspace-config.json");
+    change(&mut json);
+    serde_json::from_value(json).expect("a settings row")
+}
+
+/// The persona's choices, with one engine outside the workspace's region.
+fn persona_options() -> PersonaOptionsResponse {
+    let mut options: PersonaOptionsResponse = fixture("district-persona-options.json");
+    options
+        .engines
+        .iter_mut()
+        .filter(|engine| engine.id == "cartesia-pipeline")
+        .for_each(|engine| {
+            engine.label = "Cartesia Pipeline - US (processed outside your region)".to_owned();
+            engine.in_region = false;
+        });
+    options
+}
+
+/// The workspace settings as an agency member reads and changes them: the
+/// hub, then every section in turn, and a narrow window.
+fn settings_screens(smoke: &Smoke) {
+    smoke.activate("sidebar-settings");
+    assert!(smoke.shown("hub_list"));
+    for row in [
+        "settings-persona",
+        "settings-tools",
+        "settings-directory",
+        "settings-routing",
+        "settings-call-handling",
+        "settings-knowledge",
+        "settings-messaging",
+        "settings-members",
+        "settings-numbers",
+    ] {
+        assert!(smoke.shown(row), "{row}");
+    }
+    assert!(smoke.shows_text(district_core::SETTINGS_MORE_ON_WEB));
+    assert!(smoke.shows_text("No section open"));
+    assert!(!smoke.shown("refresh_button"), "the hub reads nothing");
+    smoke.shot("90-settings-hub");
+    // The phone numbers row is the phone numbers screen.
+    smoke.activate("settings-numbers");
+    assert!(smoke.pending("LoadOwnedNumbers"));
+    smoke.forget();
+    smoke.activate("sidebar-settings");
+    persona_section(smoke);
+    tools_section(smoke);
+    directory_section(smoke);
+    routing_section(smoke);
+    call_handling_section(smoke);
+    knowledge_section(smoke);
+    messaging_section(smoke);
+    members_section(smoke);
+    settings_narrow(smoke);
+}
+
+/// The persona: a failed read with no form, the options failing apart, the
+/// form, the question before leaving it changed, a save failing, landing
+/// without its read back and landing, and the audition, which this build
+/// cannot join.
+fn persona_section(smoke: &Smoke) {
+    smoke.activate("settings-persona");
+    assert!(smoke.pending("LoadPersonaOptions"));
+    assert!(smoke.shown("loading_spinner"));
+    smoke.shot("91-persona-loading");
+    config_read(smoke, Err(server_error()));
+    smoke.reply("LoadPersonaOptions", |ticket| Event::PersonaOptionsLoaded {
+        ticket,
+        result: Ok(persona_options()),
+    });
+    assert_eq!(
+        smoke.status_title("status"),
+        "Could not load this workspace's settings"
+    );
+    assert!(!smoke.shown("name_row"), "no form from a failed read");
+    assert!(!smoke.shown("save_button"));
+    smoke.shot("92-persona-failed");
+
+    // The options failing leave the engine half read only.
+    smoke.click("retry_button");
+    let stored = config_with(|json| {
+        json["config"]["aiPersona"]["voice"] = "aura-luna-en".into();
+    });
+    smoke.reply("LoadPersonaOptions", |ticket| Event::PersonaOptionsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    config_read(smoke, Ok(stored));
+    assert!(smoke.shown("name_row"));
+    assert!(!smoke.shown("engine_row"));
+    assert!(smoke.shows_part(district_core::PersonaSection::ENGINE_READ_ONLY));
+    smoke.shot("93-persona-engine-read-only");
+    smoke.click("options_retry");
+    // Stored values the options do not list: an engine outside the region,
+    // a language and an answer length it does not offer, and a retired voice.
+    let odd = config_with(|json| {
+        let persona = &mut json["config"]["aiPersona"];
+        persona["voice"] = "aura-luna-en".into();
+        persona["modelId"] = "cartesia-pipeline".into();
+        persona["language"] = "sv-SE".into();
+        persona["responseLength"]["cartesia-pipeline"] = "verbose".into();
+    });
+    config_read(smoke, Ok(odd));
+    smoke.reply("LoadPersonaOptions", |ticket| Event::PersonaOptionsLoaded {
+        ticket,
+        result: Ok(persona_options()),
+    });
+    smoke.forget();
+    let name = smoke
+        .mapped("name_row")
+        .downcast::<gtk::Editable>()
+        .unwrap();
+    assert_eq!(name.text(), "Ada");
+    assert_eq!(
+        smoke.buffer_text("personality_view"),
+        "Warm, concise, and never oversells."
+    );
+    let engine = combo(smoke, "engine_row", 0);
+    let offered = choice_labels(&engine);
+    assert_eq!(
+        offered.last().map(String::as_str),
+        Some("Cartesia Pipeline - US (processed outside your region)"),
+        "the stored engine, listed after the ones that can be chosen"
+    );
+    assert_eq!(chosen(&engine), offered[offered.len() - 1]);
+    assert_eq!(
+        offered
+            .iter()
+            .filter(|label| label.starts_with("Cartesia"))
+            .count(),
+        1,
+        "an engine outside the region is not one of the choices"
+    );
+    assert!(smoke.shown("outside-engine-row"), "but it is shown");
+    assert_eq!(chosen(&combo(smoke, "language_row", 0)), "sv-SE");
+    assert_eq!(chosen(&combo(smoke, "length_row", 0)), "verbose");
+    let voice = combo(smoke, "voice_row", 0);
+    assert_eq!(
+        chosen(&voice),
+        "aura-luna-en",
+        "the stored voice, as stored"
+    );
+    assert_eq!(
+        voice.subtitle().as_deref(),
+        Some(district_core::PersonaSection::VOICE_OFF_CATALOGUE)
+    );
+    assert!(smoke.shown("early_row") && !smoke.shown("style_row"));
+    assert!(!smoke.sensitive("save_button"), "nothing changed yet");
+    assert!(smoke.sensitive("preview_button"));
+    smoke.shot("94-persona");
+
+    // Changed: leaving asks first, and keeping stays.
+    smoke.type_into("name_row", "Grace");
+    assert!(smoke.sensitive("save_button"));
+    smoke.activate("sidebar-overview");
+    let asked = question(smoke).expect("asked before leaving");
+    assert_eq!(asked.heading().as_deref(), Some("Discard your changes?"));
+    smoke.click("refresh_button");
+    assert_eq!(questions(smoke), 1, "one question at a time");
+    smoke.shot("95-persona-discard-question");
+    smoke.respond("keep");
+    assert!(question(smoke).is_none());
+    assert!(smoke.shown("name_row"), "still editing");
+    assert_eq!(name.text(), "Grace", "with the change kept");
+    smoke.activate("settings-tools");
+    smoke.respond("keep");
+    assert!(smoke.shown("name_row"));
+
+    // The engine half: Gemini Live has a speaking style and no early speech.
+    choose(
+        smoke,
+        &engine,
+        "Gemini 2.5 Live - US (processed in your region)",
+    );
+    assert!(smoke.shown("style_row") && !smoke.shown("early_row"));
+    assert_eq!(
+        chosen(&combo(smoke, "language_row", 0)),
+        "Not chosen",
+        "a language the engine does not speak is cleared"
+    );
+    choose(smoke, &combo(smoke, "language_row", 0), "German");
+    choose(
+        smoke,
+        &combo(smoke, "voice_row", 0),
+        "Kore (Friendly Female)",
+    );
+    choose(
+        smoke,
+        &combo(smoke, "length_row", 0),
+        "Balanced (up to 3 sentences, under 60 words)",
+    );
+    choose(
+        smoke,
+        &combo(smoke, "style_row", 0),
+        "Journey US English - Female",
+    );
+    smoke
+        .mapped("temperature_scale")
+        .downcast::<gtk::Scale>()
+        .unwrap()
+        .set_value(0.35);
+    smoke.pump();
+    smoke
+        .mapped_buffer("personality_view")
+        .set_text("Brisk and kind.");
+    smoke.pump();
+    smoke.type_into("greeting_row", "Hello, you have reached Contract Test.");
+    smoke.shot("96-persona-edited");
+
+    // Saving: the form waits, a failure keeps the edits.
+    smoke.click("save_button");
+    let saving = smoke.take("SavePersona");
+    let sent = format!("{saving:?}");
+    assert!(
+        sent.contains("Grace") && sent.contains("gemini-live"),
+        "{sent}"
+    );
+    assert!(
+        !smoke.sensitive("name_row"),
+        "nothing is typed while it saves"
+    );
+    assert!(smoke.shown("save_spinner"));
+    smoke.scroll_within_to_end("persona_view");
+    smoke.shot("97-persona-saving");
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&saving),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_text("Something went wrong on our side. Please try again shortly."));
+    assert_eq!(name.text(), "Grace", "the edits are kept");
+    smoke.scroll_within_to_end("persona_view");
+    smoke.shot("98-persona-save-failed");
+    smoke.click("notice_dismiss");
+    assert!(!smoke.shown("notice_label"));
+    // Leaving while a save is on its way asks; the save landing closes the
+    // question, because nothing is left to lose, and nothing moved.
+    smoke.click("save_button");
+    let landing = smoke.take("SavePersona");
+    smoke.activate("sidebar-overview");
+    assert!(question(smoke).is_some());
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&landing),
+        result: Ok(()),
+    });
+    config_read(
+        smoke,
+        Ok(config_with(|json| {
+            json["config"]["aiPersona"]["name"] = "Grace".into();
+        })),
+    );
+    assert!(
+        question(smoke).is_none(),
+        "the question closed with the save"
+    );
+    assert!(smoke.shown("name_row"), "and the section stayed");
+    smoke.type_into("name_row", "Grace B.");
+
+    // Saved, and the read back failing: saved, never a save again.
+    smoke.click("save_button");
+    written(smoke, "SavePersona", Ok(()));
+    config_read(smoke, Err(server_error()));
+    assert_eq!(smoke.status_title("status"), "Saved");
+    assert!(smoke.shows_part("could not be read back"));
+    assert!(
+        !smoke.shown("save_button"),
+        "no save from settings it cannot vouch for"
+    );
+    smoke.shot("99-persona-saved-stale");
+    smoke.click("retry_button");
+    let grace = config_with(|json| {
+        json["config"]["aiPersona"]["name"] = "Grace".into();
+    });
+    config_read(smoke, Ok(grace.clone()));
+    smoke.reply("LoadPersonaOptions", |ticket| Event::PersonaOptionsLoaded {
+        ticket,
+        result: Ok(persona_options()),
+    });
+    assert_eq!(name.text(), "Grace");
+    smoke.type_into("name_row", "Grace Hopper");
+    smoke.click("save_button");
+    written(smoke, "SavePersona", Ok(()));
+    config_read(smoke, Ok(grace));
+    assert!(smoke.shows_text("Saved."));
+    smoke.scroll_within_to_end("persona_view");
+    smoke.shot("100-persona-saved");
+    smoke.forget();
+
+    // The audition: what it is, before anything starts, and a Start that
+    // this build, which has no call engine, answers honestly.
+    smoke.click("preview_button");
+    let dialog = smoke.first::<adw::Dialog>().expect("the audition dialog");
+    assert!(smoke.shows_text(district_core::PersonaSection::PREVIEW_TITLE));
+    assert!(smoke.shows_part("It is billed like any call."));
+    assert!(smoke.shown("start_button") && !smoke.shown("stop_button"));
+    smoke.shot("101-audition");
+    smoke.click("start_button");
+    assert!(
+        !smoke.pending("RequestPersonaPreview"),
+        "nothing billed is asked for without a call engine"
+    );
+    assert!(smoke.shows_text(district_core::DisconnectReason::UNAVAILABLE));
+    smoke.shot("102-audition-unavailable");
+    dialog.close();
+    smoke.pump();
+    assert!(smoke.first::<adw::Dialog>().is_none(), "closed");
+    // A dialog still open when the section is left closes with it.
+    smoke.click("preview_button");
+    assert!(smoke.first::<adw::Dialog>().is_some());
+    smoke.activate("settings-tools");
+    assert!(
+        smoke.first::<adw::Dialog>().is_none(),
+        "closed with the section"
+    );
+}
+
+/// The capabilities: every tool, a stored one this build cannot name, a
+/// save, and the research switch failing to save and left with a question.
+fn tools_section(smoke: &Smoke) {
+    config_read(smoke, Ok(fixture("district-workspace-config.json")));
+    smoke.forget();
+    assert_eq!(smoke.count("capability-row"), 14);
+    assert!(smoke.shows_text(district_core::ToolsSection::UNKNOWN_TOOL));
+    assert!(
+        smoke
+            .mapped("research_row")
+            .downcast::<adw::SwitchRow>()
+            .unwrap()
+            .is_active()
+    );
+    assert!(!smoke.sensitive("save_tools_button"));
+    smoke.shot("103-tools");
+    let switch = smoke.nth::<adw::SwitchRow>("capability-row", 0);
+    switch.set_active(!switch.is_active());
+    smoke.pump();
+    assert!(smoke.sensitive("save_tools_button"));
+    smoke.click("save_tools_button");
+    assert!(
+        !smoke
+            .nth::<adw::SwitchRow>("capability-row", 0)
+            .is_sensitive()
+    );
+    written(smoke, "SaveTools", Ok(()));
+    config_read(
+        smoke,
+        Ok(config_with(|json| {
+            json["config"]["toolConfig"]["allowedTools"] =
+                serde_json::json!(["search_knowledge_base", "leave_message"]);
+        })),
+    );
+    assert!(smoke.shows_text("Saved."));
+    assert_eq!(smoke.count("capability-row"), 13, "the list read back");
+    smoke
+        .mapped("research_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap()
+        .set_active(false);
+    smoke.pump();
+    smoke.click("save_research_button");
+    let research = smoke.take("SavePersona");
+    assert!(format!("{research:?}").contains("dgi_enabled: Some(false)"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&research),
+        result: Err(ApiError::Rejected {
+            status: 400,
+            detail: ErrorDetail {
+                message: Some("Research is not available on this plan.".to_owned()),
+                ..ErrorDetail::default()
+            },
+        }),
+    });
+    assert!(smoke.shows_text("Research is not available on this plan."));
+    smoke.scroll_within_to_end("tools_view");
+    smoke.shot("104-tools-research-failed");
+    // Leaving with the switch moved asks, and discarding goes.
+    smoke.activate("settings-directory");
+    assert!(question(smoke).is_some());
+    smoke.respond("discard");
+    assert!(question(smoke).is_none());
+    assert!(smoke.pending("LoadWorkspaceConfig"), "the directory opens");
+}
+
+/// The transfer directory: a shape this build cannot carry, the entries, one
+/// added (refused first), edited, blanked and removed, and the question
+/// before a save, cancelled and answered.
+fn directory_section(smoke: &Smoke) {
+    config_read(
+        smoke,
+        Ok(config_with(|json| {
+            json["config"]["callDirectory"] = "a string".into();
+        })),
+    );
+    assert_eq!(smoke.status_title("status"), "Cannot be edited here");
+    assert!(!smoke.shown("retry_button"), "a retry cannot help");
+    assert!(!smoke.shown("save_button"));
+    smoke.shot("105-directory-unmodellable");
+    assert!(smoke.shown("refresh_button"));
+    smoke.click("refresh_button");
+    config_read(smoke, Ok(fixture("district-workspace-config.json")));
+    smoke.forget();
+    assert_eq!(smoke.count("directory-row"), 2);
+    assert!(smoke.shows_text("Ops desk"));
+    smoke.shot("106-directory");
+
+    smoke.type_into("new_name_row", "Front desk");
+    smoke.click("add_button");
+    assert!(smoke.shows_text(district_core::DirectorySection::ADD_REJECTED));
+    smoke.type_into("new_number_row", "+1 212 555 0142");
+    assert!(!smoke.shown("add_rejected"), "typing clears it");
+    smoke
+        .mapped("new_number_row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    assert_eq!(smoke.count("directory-row"), 3);
+    let new_name = smoke
+        .mapped("new_name_row")
+        .downcast::<gtk::Editable>()
+        .unwrap();
+    assert_eq!(new_name.text(), "", "the boxes empty for the next");
+    smoke
+        .nth::<adw::ExpanderRow>("directory-row", 0)
+        .set_expanded(true);
+    smoke.pump();
+    smoke.type_into("directory-name", "Ops desk (days)");
+    smoke.type_into("directory-number", "");
+    assert!(smoke.shows_part("One entry lacks a name or a number"));
+    smoke.shot("107-directory-edited");
+    smoke.click("directory-remove");
+    assert_eq!(smoke.count("directory-row"), 2);
+
+    smoke.click("save_button");
+    let asked = question(smoke).expect("asked before replacing");
+    assert_eq!(
+        asked.heading().as_deref(),
+        Some("Replace the transfer directory?")
+    );
+    assert!(asked.body().contains("exactly these 2 entries"));
+    smoke.shot("108-directory-question");
+    smoke.respond("cancel");
+    assert!(!smoke.pending("SaveDirectory"), "nothing is sent on a no");
+    smoke.click("save_button");
+    smoke.respond("confirm");
+    let saved = smoke.take("SaveDirectory");
+    assert!(format!("{saved:?}").contains("Front desk"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&saved),
+        result: Ok(()),
+    });
+    config_read(smoke, Ok(fixture("district-workspace-config.json")));
+    assert!(smoke.shows_text("Saved."));
+    // Removing everyone asks in its own words, and is not answered here.
+    smoke.click("directory-remove");
+    smoke.click("directory-remove");
+    assert!(smoke.shows_text(district_core::DirectorySection::EMPTY_TITLE));
+    smoke.click("save_button");
+    assert_eq!(
+        question(smoke).and_then(|asked| asked.heading()).as_deref(),
+        Some("Remove every transfer target?")
+    );
+    smoke.respond("cancel");
+    smoke.activate("settings-routing");
+    smoke.respond("discard");
+    assert!(
+        smoke.pending("LoadWorkspaceConfig"),
+        "the routing rules open"
+    );
+}
+
+/// The routing rules: rules in both stored shapes, a stored voice the
+/// builder does not list, a rule added, edited and removed, and a save that
+/// asks and then fails.
+fn routing_section(smoke: &Smoke) {
+    config_read(
+        smoke,
+        Ok(config_with(|json| {
+            json["config"]["routingRules"] = serde_json::json!({"rules": []});
+        })),
+    );
+    assert_eq!(smoke.status_title("status"), "Cannot be edited here");
+    smoke.click("refresh_button");
+    config_read(
+        smoke,
+        Ok(config_with(|json| {
+            json["config"]["routingRules"][2]["voice"] = "Orion".into();
+        })),
+    );
+    smoke.forget();
+    assert_eq!(smoke.count("rule-row"), 3);
+    assert!(smoke.shows_text("No condition set here"));
+    let third = smoke.nth::<adw::ExpanderRow>("rule-row", 2);
+    third.set_expanded(true);
+    smoke.pump();
+    let pickers: Vec<adw::ComboRow> = descendants(third.upcast_ref())
+        .into_iter()
+        .filter(WidgetExt::is_mapped)
+        .filter_map(|widget| widget.downcast::<adw::ComboRow>().ok())
+        .collect();
+    let labels: Vec<String> = pickers.iter().map(chosen).collect();
+    assert!(labels.contains(&"Industry".to_owned()), "{labels:?}");
+    assert!(labels.contains(&"Contains".to_owned()), "{labels:?}");
+    assert!(
+        labels.contains(&"Orion".to_owned()),
+        "a stored voice the builder does not list, as stored: {labels:?}"
+    );
+    assert!(smoke.shows_text("The persona's own"));
+    smoke.shot("109-routing");
+    third.set_expanded(false);
+    smoke
+        .nth::<adw::ExpanderRow>("rule-row", 0)
+        .set_expanded(true);
+    smoke.pump();
+    assert!(smoke.shows_part("Also stored: Action, Match, Target."));
+    smoke
+        .nth::<adw::ExpanderRow>("rule-row", 0)
+        .set_expanded(false);
+    smoke.click("add_button");
+    assert_eq!(smoke.count("rule-row"), 4);
+    let added = smoke.nth::<adw::ExpanderRow>("rule-row", 3);
+    added.set_expanded(true);
+    smoke.pump();
+    smoke.type_into("rule-value", "retail");
+    smoke.type_into("rule-instruction", "Offer the loyalty programme.");
+    let voice = descendants(added.upcast_ref())
+        .into_iter()
+        .filter_map(|widget| widget.downcast::<adw::ComboRow>().ok())
+        .find(|row| row.title() == "Voice")
+        .expect("the new rule's voice");
+    choose(smoke, &voice, "Kore");
+    assert!(smoke.shows_part("Industry contains \"retail\""));
+    smoke.shot("110-routing-edited");
+    smoke.click("rule-remove");
+    assert_eq!(smoke.count("rule-row"), 3);
+    smoke.click("save_button");
+    assert_eq!(
+        question(smoke).and_then(|asked| asked.heading()).as_deref(),
+        Some("Replace the routing rules?")
+    );
+    smoke.respond("cancel");
+    assert!(!smoke.pending("SaveRoutingRules"));
+    smoke.click("save_button");
+    smoke.respond("confirm");
+    let saved = smoke.take("SaveRoutingRules");
+    let sent = format!("{saved:?}");
+    assert!(sent.contains("retail") && sent.contains("Kore"), "{sent}");
+    assert!(
+        !sent.contains("rule-contract-1"),
+        "the removed rule is not sent"
+    );
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&saved),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_text("Something went wrong on our side. Please try again shortly."));
+    assert_eq!(smoke.count("rule-row"), 3, "the edits are kept");
+    smoke.scroll_within_to_end("routing_view");
+    smoke.shot("111-routing-save-failed");
+    smoke.activate("settings-call-handling");
+    smoke.respond("discard");
+}
+
+/// Call handling and availability: each failing on its own, the mode and the
+/// ring saved, and availability sent at once, failing and landing.
+fn call_handling_section(smoke: &Smoke) {
+    assert!(smoke.shown("handling_spinner"));
+    smoke.reply("LoadCallHandling", |ticket| Event::CallHandlingLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    smoke.reply("LoadAvailability", |ticket| Event::AvailabilityLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("handling_failed") && smoke.shown("availability_failed"));
+    assert!(!smoke.shown("save_button"), "no control from a failed read");
+    smoke.shot("112-call-handling-failed");
+    smoke.click("handling_retry");
+    smoke.reply("LoadCallHandling", |ticket| Event::CallHandlingLoaded {
+        ticket,
+        result: Ok(CallHandlingResponse {
+            success: true,
+            call_handling: "ai_then_app".to_owned(),
+            app_ring_seconds: 20,
+        }),
+    });
+    smoke.reply("LoadAvailability", |ticket| Event::AvailabilityLoaded {
+        ticket,
+        result: Ok(AvailabilityResponse {
+            success: true,
+            available_for_calls: false,
+            reason: None,
+        }),
+    });
+    smoke.forget();
+    assert!(
+        smoke
+            .mapped("ai_then_app_check")
+            .downcast::<gtk::CheckButton>()
+            .unwrap()
+            .is_active()
+    );
+    assert!(!smoke.sensitive("save_button"));
+    smoke.shot("113-call-handling");
+    smoke
+        .mapped("app_first_check")
+        .downcast::<gtk::CheckButton>()
+        .unwrap()
+        .set_active(true);
+    smoke.pump();
+    let ring = smoke.mapped("ring_scale").downcast::<gtk::Scale>().unwrap();
+    ring.set_value(12.0);
+    smoke.pump();
+    assert!(smoke.sensitive("save_button"));
+    smoke.click("save_button");
+    let saved = smoke.take("SaveCallHandling");
+    assert!(format!("{saved:?}").contains("app_ring_seconds: Some(12)"));
+    assert!(
+        !smoke.sensitive("ring_scale"),
+        "nothing moves while it saves"
+    );
+    smoke.answer(Event::CallHandlingLoaded {
+        ticket: ticket(&saved),
+        result: Ok(CallHandlingResponse {
+            success: true,
+            call_handling: "app_first".to_owned(),
+            app_ring_seconds: 12,
+        }),
+    });
+    assert!(smoke.shows_text("Saved."));
+    assert!((ring.value() - 12.0).abs() < f64::EPSILON);
+    smoke.shot("114-call-handling-saved");
+
+    let available = smoke
+        .mapped("availability_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap();
+    available.set_active(true);
+    smoke.pump();
+    let asked = smoke.take("SetAvailability");
+    assert!(smoke.shown("availability_spinner"));
+    smoke.answer(Event::AvailabilityLoaded {
+        ticket: ticket(&asked),
+        result: Err(server_error()),
+    });
+    assert!(!available.is_active(), "put back as stored");
+    available.set_active(true);
+    smoke.pump();
+    smoke.reply("SetAvailability", |ticket| Event::AvailabilityLoaded {
+        ticket,
+        result: Ok(AvailabilityResponse {
+            success: true,
+            available_for_calls: true,
+            reason: None,
+        }),
+    });
+    assert!(available.is_active());
+    smoke.forget();
+}
+
+/// The knowledge base: the documents failing apart from the mode, a document
+/// refused, added and deleted after a question, and the linked mode asked
+/// first.
+fn knowledge_section(smoke: &Smoke) {
+    smoke.activate("settings-knowledge");
+    smoke.reply("LoadKnowledge {", |ticket| Event::KnowledgeLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    smoke.reply("LoadKnowledgeMode", |ticket| Event::KnowledgeModeLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("documents_failed") && smoke.shown("mode_failed"));
+    assert!(
+        !smoke.shown("internal_row") && !smoke.shown("linked_row"),
+        "a mode not read is not shown as either"
+    );
+    smoke.shot("115-knowledge-failed");
+    smoke.click("documents_retry");
+    smoke.reply("LoadKnowledge {", |ticket| Event::KnowledgeLoaded {
+        ticket,
+        result: Ok(fixture("district-knowledge.json")),
+    });
+    smoke.reply("LoadKnowledgeMode", |ticket| Event::KnowledgeModeLoaded {
+        ticket,
+        result: Ok(KnowledgeModeResponse {
+            success: true,
+            mode: "internal".to_owned(),
+        }),
+    });
+    smoke.forget();
+    assert_eq!(smoke.count("document-row"), 2);
+    assert!(smoke.shows_text(district_core::KnowledgeSection::ADD_BILLED));
+    smoke.shot("116-knowledge");
+
+    smoke.click("add_button");
+    assert!(smoke.shows_text(district_core::KnowledgeSection::ADD_REJECTED));
+    smoke.type_into("title_row", "Holiday hours");
+    smoke
+        .mapped_buffer("content_view")
+        .set_text("Closed on public holidays.");
+    smoke.pump();
+    smoke.click("add_button");
+    let added = smoke.take("AddKnowledgeDocument");
+    assert!(format!("{added:?}").contains("Holiday hours"));
+    assert!(smoke.shown("add_spinner") && !smoke.sensitive("title_row"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&added),
+        result: Ok(()),
+    });
+    smoke.reply("LoadKnowledge {", |ticket| Event::KnowledgeLoaded {
+        ticket,
+        result: Ok(fixture("district-knowledge.json")),
+    });
+    assert!(smoke.shows_text("Saved."));
+    let title = smoke
+        .mapped("title_row")
+        .downcast::<gtk::Editable>()
+        .unwrap();
+    assert_eq!(title.text(), "", "added once, and the form empties");
+
+    smoke.click("document-delete");
+    let asked = question(smoke).expect("asked before deleting");
+    assert_eq!(asked.heading().as_deref(), Some("Delete this document?"));
+    assert!(asked.body().contains("\"Refund policy\""));
+    smoke.respond("cancel");
+    assert!(!smoke.pending("DeleteKnowledgeDocument"));
+    smoke.click("document-delete");
+    smoke.respond("confirm");
+    written(smoke, "DeleteKnowledgeDocument", Ok(()));
+    smoke.reply("LoadKnowledge {", |ticket| Event::KnowledgeLoaded {
+        ticket,
+        result: Ok(KnowledgeListResponse {
+            success: true,
+            documents: Vec::new(),
+        }),
+    });
+    assert!(smoke.shows_text(district_core::KnowledgeSection::EMPTY_TITLE));
+
+    smoke
+        .mapped("linked_check")
+        .downcast::<gtk::CheckButton>()
+        .unwrap()
+        .set_active(true);
+    smoke.pump();
+    let asked = question(smoke).expect("asked before sending questions away");
+    assert_eq!(
+        asked.heading().as_deref(),
+        Some("Send questions to Atlassian?")
+    );
+    smoke.shot("117-knowledge-linked-question");
+    smoke.respond("cancel");
+    assert!(
+        smoke
+            .mapped("internal_check")
+            .downcast::<gtk::CheckButton>()
+            .unwrap()
+            .is_active(),
+        "put back as stored"
+    );
+    smoke
+        .mapped("linked_check")
+        .downcast::<gtk::CheckButton>()
+        .unwrap()
+        .set_active(true);
+    smoke.pump();
+    smoke.respond("confirm");
+    smoke.reply("SetKnowledgeMode", |ticket| Event::KnowledgeModeLoaded {
+        ticket,
+        result: Ok(fixture("district-knowledge-mode.json")),
+    });
+    assert!(
+        smoke
+            .mapped("linked_check")
+            .downcast::<gtk::CheckButton>()
+            .unwrap()
+            .is_active(),
+        "the mode the service stored"
+    );
+    smoke.forget();
+}
+
+/// The carrier accounts: failing, read, the default and a channel's sender
+/// changed, an account added in the form (its keys checked, refused and
+/// accepted, the carrier changed, a save failing then landing), an account's
+/// form cancelled, one removed after a question, and the owner's number.
+fn messaging_section(smoke: &Smoke) {
+    smoke.activate("settings-messaging");
+    smoke.reply("LoadMessaging", |ticket| Event::MessagingLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("accounts_failed"));
+    smoke.click("accounts_retry");
+    let mut listed: MessagingResponse = fixture("district-messaging.json");
+    let mut retired = listed.accounts[0].clone();
+    retired.id = "acct-retired".to_owned();
+    retired.provider = "plivo".to_owned();
+    retired.label = "Plivo (retired)".to_owned();
+    retired.phone_numbers.clear();
+    listed.accounts.push(retired);
+    smoke.reply("LoadMessaging", |ticket| Event::MessagingLoaded {
+        ticket,
+        result: Ok(listed),
+    });
+    smoke.forget();
+    assert_eq!(smoke.count("account-row"), 3);
+    assert_eq!(
+        smoke.count("account-edit"),
+        2,
+        "a carrier this build does not know is not opened in the form"
+    );
+    assert!(smoke.shows_part("Plivo \u{b7} Your own carrier account \u{b7} No numbers"));
+    assert!(smoke.shows_text("Default"));
+    assert!(smoke.shows_part("+1 416 555 0190"));
+    let sms = combo(smoke, "channel-row", 0);
+    assert_eq!(chosen(&sms), "Twilio (main)");
+    assert_eq!(
+        chosen(&combo(smoke, "channel-row", 1)),
+        "The default account"
+    );
+    smoke.shot("118-messaging");
+
+    smoke.click("make-default-button");
+    let made = smoke.take("WriteMessaging");
+    assert!(format!("{made:?}").contains("acct-twilio"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&made),
+        result: Ok(()),
+    });
+    smoke.reply("LoadMessaging", |ticket| Event::MessagingLoaded {
+        ticket,
+        result: Ok(fixture("district-messaging.json")),
+    });
+    choose(smoke, &combo(smoke, "channel-row", 1), "Telnyx (overflow)");
+    let sender = smoke.take("WriteMessaging");
+    assert!(format!("{sender:?}").contains("Voice"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&sender),
+        result: Ok(()),
+    });
+    smoke.reply("LoadMessaging", |ticket| Event::MessagingLoaded {
+        ticket,
+        result: Ok(fixture("district-messaging.json")),
+    });
+    smoke.forget();
+
+    // A new account: every key is needed, and what is typed is never shown
+    // back, printed or kept after the form.
+    smoke.click("add_button");
+    assert!(smoke.first::<adw::Dialog>().is_some());
+    assert_eq!(smoke.count("secret-row"), 2);
+    assert!(!smoke.sensitive("save_button"), "every key is needed first");
+    assert!(smoke.shows_text(district_core::MessagingForm::TEST_NEEDS_EVERY_FIELD));
+    smoke.shot("119-messaging-form-new");
+    smoke.type_into("label_row", "Twilio (backup)");
+    let secrets: Vec<adw::PasswordEntryRow> = (0..2)
+        .map(|index| smoke.nth::<adw::PasswordEntryRow>("secret-row", index))
+        .collect();
+    assert!(
+        secrets.iter().all(|row| !row.enables_undo()),
+        "a key box keeps no undo history"
+    );
+    secrets[0].set_text("AC-smoke-sid");
+    secrets[1].set_text("smoke-token-typed");
+    smoke.pump();
+    assert!(smoke.sensitive("test_button"));
+    smoke.click("test_button");
+    let test = smoke.take("TestMessagingCredentials");
+    let printed = format!("{test:?}");
+    assert!(
+        !printed.contains("smoke-token-typed") && !printed.contains("AC-smoke-sid"),
+        "a key is never printed: {printed}"
+    );
+    smoke.answer(Event::MessagingCredentialsTested {
+        ticket: ticket(&test),
+        result: Ok(fixture("district-messaging-test-rejected.json")),
+    });
+    assert!(smoke.shows_text("The carrier refused these keys: Authenticate (20003)"));
+    smoke.shot("120-messaging-keys-refused");
+    smoke.click("test_button");
+    smoke.reply("TestMessagingCredentials", |ticket| {
+        Event::MessagingCredentialsTested {
+            ticket,
+            result: Ok(fixture("district-messaging-test.json")),
+        }
+    });
+    assert!(smoke.shows_part("accepted these keys, for Distronode Contract"));
+    // Another carrier: the boxes are its own, and the old ones are emptied.
+    choose(smoke, &combo(smoke, "provider_row", 0), "Sinch");
+    assert_eq!(secrets[1].text(), "", "the old carrier's key is gone");
+    assert_eq!(smoke.count("secret-row"), 4);
+    assert_eq!(smoke.count("key-row"), 1, "the project id is no secret");
+    choose(smoke, &combo(smoke, "provider_row", 0), "Twilio");
+    let secrets: Vec<adw::PasswordEntryRow> = (0..2)
+        .map(|index| smoke.nth::<adw::PasswordEntryRow>("secret-row", index))
+        .collect();
+    assert!(
+        secrets.iter().all(|row| row.text().is_empty()),
+        "never filled in"
+    );
+    secrets[0].set_text("AC-smoke-sid");
+    secrets[1].set_text("smoke-token-typed");
+    smoke.pump();
+    smoke
+        .mapped_buffer("numbers_view")
+        .set_text("+14165550141\n+14165550142");
+    smoke.pump();
+    smoke
+        .mapped("default_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap()
+        .set_active(true);
+    smoke.pump();
+    smoke.click("save_button");
+    let saving = smoke.take("WriteMessaging");
+    assert!(!format!("{saving:?}").contains("smoke-token-typed"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&saving),
+        result: Err(ApiError::Server {
+            status: 502,
+            detail: ErrorDetail {
+                message: Some(
+                    "The carrier could not be reached to confirm the numbers.".to_owned(),
+                ),
+                ..ErrorDetail::default()
+            },
+        }),
+    });
+    assert!(smoke.shows_text("The carrier could not be reached to confirm the numbers."));
+    assert_eq!(
+        secrets[1].text(),
+        "smoke-token-typed",
+        "kept for another try"
+    );
+    smoke.forget();
+    smoke.click("save_button");
+    written(smoke, "WriteMessaging", Ok(()));
+    assert!(smoke.first::<adw::Dialog>().is_none(), "the form closes");
+    assert!(
+        secrets.iter().all(|row| row.text().is_empty()),
+        "and its key boxes are emptied"
+    );
+    smoke.reply("LoadMessaging", |ticket| Event::MessagingLoaded {
+        ticket,
+        result: Ok(fixture("district-messaging.json")),
+    });
+
+    // An account's form: its keys are kept unless typed, and a new carrier
+    // drops them, which the form says.
+    smoke.click("account-edit");
+    assert_eq!(
+        smoke
+            .mapped("label_row")
+            .downcast::<gtk::Editable>()
+            .unwrap()
+            .text(),
+        "Twilio (main)"
+    );
+    assert!(smoke.shows_part(district_core::MessagingForm::SECRET_KEEP));
+    assert!(!smoke.shown("provider_switch"));
+    let kept = smoke.nth::<adw::PasswordEntryRow>("secret-row", 0);
+    assert_eq!(kept.text(), "", "a stored key is never shown");
+    choose(smoke, &combo(smoke, "provider_row", 0), "Telnyx");
+    assert!(smoke.shown("provider_switch"));
+    smoke.shot("121-messaging-form-edit");
+    smoke
+        .nth::<adw::PasswordEntryRow>("secret-row", 0)
+        .set_text("KEY-smoke");
+    smoke.pump();
+    let typed = smoke.nth::<adw::PasswordEntryRow>("secret-row", 0);
+    smoke.click("cancel_button");
+    assert!(smoke.first::<adw::Dialog>().is_none());
+    assert_eq!(typed.text(), "", "what was typed goes with the form");
+    // Closed from its own header too.
+    smoke.click("account-edit");
+    smoke.first::<adw::Dialog>().expect("the form").close();
+    smoke.pump();
+    assert!(smoke.first::<adw::Dialog>().is_none());
+
+    // Removing asks, naming what it releases.
+    smoke.click("account-remove");
+    smoke.respond("cancel");
+    assert!(!smoke.pending("WriteMessaging"));
+    smoke.click("account-remove");
+    let asked = question(smoke).expect("asked before removing");
+    assert_eq!(
+        asked.heading().as_deref(),
+        Some("Remove this carrier account?")
+    );
+    assert!(asked.body().contains("(2)"));
+    smoke.shot("122-messaging-remove-question");
+    smoke.respond("confirm");
+    written(smoke, "WriteMessaging", Ok(()));
+    smoke.reply("LoadMessaging", |ticket| Event::MessagingLoaded {
+        ticket,
+        result: Ok(fixture("district-messaging-unmanaged.json")),
+    });
+    assert!(smoke.shows_text(district_core::MessagingSection::EMPTY_TITLE));
+    assert!(!smoke.shown("channels_group"));
+
+    // The owner's number: typed, saved, and never shown.
+    let creator = smoke
+        .mapped("creator_row")
+        .downcast::<gtk::Editable>()
+        .unwrap();
+    assert_eq!(creator.text(), "");
+    assert!(!smoke.sensitive("creator_button"));
+    smoke.type_into("creator_row", "+1 212 555 0100");
+    smoke.click("creator_button");
+    assert!(smoke.shown("creator_spinner"));
+    written(smoke, "WriteMessaging", Ok(()));
+    assert_eq!(creator.text(), "", "saved, and not shown");
+    assert!(!smoke.pending("LoadMessaging"), "no read returns it");
+    smoke.scroll_within_to_end("messaging_view");
+    smoke.shot("123-messaging-empty");
+    smoke.forget();
+}
+
+/// Members: failing, read, an address refused and one already a member, a
+/// role change the service refuses, a removal after a question, and the
+/// workspace renamed.
+fn members_section(smoke: &Smoke) {
+    smoke.activate("settings-members");
+    smoke.reply("LoadMembers", |ticket| Event::MembersLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(smoke.status_title("status"), "Could not load the members");
+    smoke.click("retry_button");
+    let members = |smoke: &Smoke| {
+        smoke.reply("LoadMembers", |ticket| Event::MembersLoaded {
+            ticket,
+            result: Ok(fixture("district-members.json")),
+        });
+    };
+    members(smoke);
+    assert_eq!(smoke.count("member-row"), 3);
+    assert!(smoke.shows_text("Zulu Agency"), "the name in force");
+    assert!(!smoke.sensitive("rename_button"), "no new name yet");
+    smoke.shot("124-members");
+
+    smoke.click("add_button");
+    assert!(smoke.shows_text(district_core::MembersSection::ADD_REJECTED));
+    smoke.type_into("email_row", "Ada@Example.com ");
+    choose(smoke, &combo(smoke, "role_row", 0), "Viewer");
+    smoke
+        .mapped("email_row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    let added = smoke.take("WriteMember");
+    assert!(format!("{added:?}").contains("ada@example.com"));
+    let refused = |code: &str, message: &str| {
+        Err(ApiError::Conflict(ErrorDetail {
+            message: Some(message.to_owned()),
+            code: Some(code.to_owned()),
+            ..ErrorDetail::default()
+        }))
+    };
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&added),
+        result: refused(
+            "member_exists",
+            "That email is already a member of this workspace",
+        ),
+    });
+    assert!(smoke.shows_text("That email is already a member of this workspace"));
+    members(smoke);
+    smoke
+        .nth::<adw::ExpanderRow>("member-row", 0)
+        .set_expanded(true);
+    smoke.pump();
+    choose(smoke, &combo(smoke, "member-role", 0), "Client");
+    smoke.reply("WriteMember", |ticket| Event::SettingsWritten {
+        ticket,
+        result: refused(
+            "last_agency_member",
+            "Cannot demote the last agency member - the workspace would have no administrator",
+        ),
+    });
+    assert!(smoke.shows_part("Cannot demote the last agency member"));
+    members(smoke);
+    smoke.shot("125-members-refused");
+    smoke
+        .nth::<adw::ExpanderRow>("member-row", 2)
+        .set_expanded(true);
+    smoke.pump();
+    let removes = smoke.count("member-remove");
+    smoke
+        .nth::<gtk::Button>("member-remove", removes - 1)
+        .emit_clicked();
+    smoke.pump();
+    let asked = question(smoke).expect("asked before removing");
+    assert_eq!(asked.heading().as_deref(), Some("Remove this member?"));
+    smoke.respond("cancel");
+    assert!(!smoke.pending("WriteMember"));
+    smoke
+        .nth::<gtk::Button>("member-remove", smoke.count("member-remove") - 1)
+        .emit_clicked();
+    smoke.pump();
+    assert!(asked.body().starts_with("auditor@example.com loses access"));
+    smoke.respond("confirm");
+    let removed = smoke.take("WriteMember");
+    assert!(format!("{removed:?}").contains("auditor@example.com"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&removed),
+        result: Ok(()),
+    });
+    members(smoke);
+    assert!(smoke.shows_text("Saved."));
+
+    smoke.type_into("new_name_row", "  Renamed Workspace ");
+    assert!(smoke.sensitive("rename_button"));
+    smoke
+        .mapped("new_name_row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    assert!(smoke.shown("rename_spinner"));
+    smoke.reply("RenameWorkspace", |ticket| Event::WorkspaceRenamed {
+        ticket,
+        result: Ok(fixture("district-rename.json")),
+    });
+    assert_eq!(smoke.subtitle("current_name_row"), "Renamed Workspace");
+    let switcher = smoke
+        .find("workspace_dropdown")
+        .downcast::<gtk::DropDown>()
+        .unwrap();
+    assert_eq!(
+        switcher
+            .selected_item()
+            .and_downcast::<gtk::StringObject>()
+            .map(|name| name.string().to_string())
+            .as_deref(),
+        Some("Renamed Workspace"),
+        "the switcher shows the name stored too"
+    );
+    smoke.scroll_within_to_end("members_view");
+    smoke.shot("126-members-renamed");
+    smoke.forget();
+}
+
+/// A narrow window: a section has the whole window, the back button leads to
+/// the hub, and so does the split view's own way back.
+fn settings_narrow(smoke: &Smoke) {
+    smoke.resize(400, 760);
+    let split = smoke
+        .find("split_view")
+        .downcast::<adw::NavigationSplitView>()
+        .unwrap();
+    split.set_show_content(true);
+    smoke.pump();
+    assert!(smoke.shown("members_view"));
+    assert!(!smoke.shown("hub_list"), "one pane at a time");
+    assert!(smoke.shown("back_button"), "back to the hub");
+    smoke.shot("127-settings-narrow-section");
+    smoke.click("back_button");
+    assert!(smoke.shown("hub_list"));
+    smoke.shot("128-settings-narrow-hub");
+    smoke.activate("settings-knowledge");
+    assert!(smoke.shown("knowledge_view"));
+    inner_split(smoke, "settings_page").set_show_content(false);
+    smoke.pump();
+    assert!(smoke.shown("hub_list"), "the gesture leads back too");
+    // A section left with its rows lets them go.
+    smoke.activate("settings-directory");
+    config_read(smoke, Ok(fixture("district-workspace-config.json")));
+    assert_eq!(smoke.count("directory-row"), 2);
+    smoke.click("back_button");
+    assert_eq!(smoke.count("directory-row"), 0);
+    smoke.resize(1024, 720);
+    smoke.forget();
+}
+
+/// The settings as a viewer reads them: three sections, each with nothing to
+/// change.
+fn viewer_settings(smoke: &Smoke) {
+    smoke.activate("sidebar-settings");
+    assert!(smoke.shows_text(district_core::SETTINGS_VIEWER_NOTE));
+    for row in [
+        "settings-call-handling",
+        "settings-knowledge",
+        "settings-messaging",
+    ] {
+        assert!(smoke.shown(row), "{row}");
+    }
+    for closed in ["settings-persona", "settings-members", "settings-numbers"] {
+        assert!(!smoke.shown(closed), "{closed}");
+    }
+    smoke.shot("129-settings-hub-viewer");
+    smoke.activate("settings-call-handling");
+    smoke.reply("LoadCallHandling", |ticket| Event::CallHandlingLoaded {
+        ticket,
+        result: Ok(CallHandlingResponse {
+            success: true,
+            call_handling: "ai_first".to_owned(),
+            app_ring_seconds: 20,
+        }),
+    });
+    smoke.reply("LoadAvailability", |ticket| Event::AvailabilityLoaded {
+        ticket,
+        result: Ok(AvailabilityResponse {
+            success: true,
+            available_for_calls: false,
+            reason: Some("role".to_owned()),
+        }),
+    });
+    assert!(smoke.shows_text(district_core::CallHandlingSection::VIEWER));
+    assert!(smoke.shows_text("Viewers are not rung for calls."));
+    assert!(smoke.shows_text("20 seconds"));
+    assert!(!smoke.shown("save_button") && !smoke.shown("ring_scale"));
+    assert!(!smoke.shown("availability_row"));
+    assert!(!smoke.shown("ai_then_app_row"), "the mode in force only");
+    smoke.shot("130-call-handling-viewer");
+    smoke.activate("settings-knowledge");
+    smoke.reply("LoadKnowledge {", |ticket| Event::KnowledgeLoaded {
+        ticket,
+        result: Ok(fixture("district-knowledge.json")),
+    });
+    smoke.reply("LoadKnowledgeMode", |ticket| Event::KnowledgeModeLoaded {
+        ticket,
+        result: Ok(KnowledgeModeResponse {
+            success: true,
+            mode: "shared".to_owned(),
+        }),
+    });
+    assert!(smoke.shows_text(district_core::KnowledgeSection::VIEWER));
+    assert!(
+        smoke.shows_text("Stored as \"shared\"."),
+        "a mode added later"
+    );
+    assert!(!smoke.shown("add_group") && !smoke.shown("document-delete"));
+    smoke.shot("131-knowledge-viewer");
+    smoke.activate("settings-messaging");
+    smoke.reply("LoadMessaging", |ticket| Event::MessagingLoaded {
+        ticket,
+        result: Ok(fixture("district-messaging.json")),
+    });
+    assert!(smoke.shows_text(district_core::MessagingSection::VIEWER));
+    assert!(!smoke.shown("add_button") && !smoke.shown("account-remove"));
+    assert!(!smoke.shown("channel-row") && !smoke.shown("creator_group"));
+    assert!(smoke.shows_text("Twilio (main)"));
+    smoke.shot("132-messaging-viewer");
+    smoke.forget();
+    client_members(smoke);
+}
+
+/// Members as a client member reads them: the list and the workspace's name,
+/// which a client may change, and no change of who belongs.
+fn client_members(smoke: &Smoke) {
+    let dropdown = smoke
+        .find("workspace_dropdown")
+        .downcast::<gtk::DropDown>()
+        .unwrap();
+    dropdown.set_selected(2);
+    smoke.pump();
+    let Effect::LoadOverview { ticket, .. } = smoke.take("LoadOverview") else {
+        unreachable!()
+    };
+    smoke.answer(Event::OverviewLoaded {
+        ticket,
+        result: Ok(overview("ws-contract-client", "client")),
+    });
+    smoke.forget();
+    smoke.activate("sidebar-settings");
+    assert!(smoke.shown("settings-members") && smoke.shown("settings-persona"));
+    smoke.activate("settings-members");
+    smoke.reply("LoadMembers", |ticket| Event::MembersLoaded {
+        ticket,
+        result: Ok(fixture("district-members.json")),
+    });
+    assert_eq!(smoke.count("member-row"), 3);
+    assert!(smoke.shows_part("Only an agency member can add members"));
+    assert!(!smoke.shown("member-role") && !smoke.shown("add_group"));
+    assert!(smoke.shown("rename_group"));
+    assert_eq!(smoke.subtitle("current_name_row"), "Bravo Client");
+    smoke.shot("133-members-client");
+    smoke.activate("sidebar-overview");
+    smoke.forget();
+}
+
 fn main() {
     let smoke = start();
     restoring(&smoke);
     signing_in(&smoke);
     overview_page(&smoke);
     account_and_devices(&smoke);
-    later_screens(&smoke);
     inbox_and_thread(&smoke);
     calls_screens(&smoke);
     contacts_screens(&smoke);
@@ -3746,6 +5097,7 @@ fn main() {
     desk_screens(&smoke);
     support_screens(&smoke);
     rooms_screen(&smoke);
+    settings_screens(&smoke);
     live_updates(&smoke);
     viewer_workspace(&smoke);
     narrow(&smoke);

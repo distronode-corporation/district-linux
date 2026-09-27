@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The workspace settings: the hub's sections beside the one open, folding
+     to one pane at a time when narrow. src/pages/settings.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSettingsPage" parent="AdwBin">
+    <property name="child">
+      <object class="AdwBreakpointBin">
+        <property name="width-request">300</property>
+        <property name="height-request">300</property>
+        <child>
+          <object class="AdwBreakpoint">
+            <condition>max-width: 720sp</condition>
+            <setter object="split_view" property="collapsed">True</setter>
+          </object>
+        </child>
+        <property name="child">
+          <object class="AdwNavigationSplitView" id="split_view">
+            <property name="min-sidebar-width">220</property>
+            <property name="max-sidebar-width">300</property>
+            <property name="sidebar-width-fraction">0.3</property>
+            <property name="sidebar">
+              <object class="AdwNavigationPage">
+                <property name="title">Workspace settings</property>
+                <property name="tag">hub</property>
+                <property name="child">
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkListBox" id="hub_list">
+                            <property name="selection-mode">single</property>
+                            <accessibility>
+                              <property name="label">Settings sections</property>
+                            </accessibility>
+                            <style>
+                              <class name="boxed-list"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="hub_note">
+                            <property name="xalign">0</property>
+                            <property name="wrap">True</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="dim-label"/>
+                              <class name="caption"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+            <property name="content">
+              <object class="AdwNavigationPage" id="section_page">
+                <property name="title">Section</property>
+                <property name="tag">section</property>
+                <property name="child">
+                  <object class="GtkStack" id="section_stack">
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">none</property>
+                        <property name="child">
+                          <object class="AdwStatusPage">
+                            <property name="icon-name">emblem-system-symbolic</property>
+                            <property name="title">No section open</property>
+                            <property name="description">Choose a section to read its settings.</property>
+                            <style>
+                              <class name="compact"/>
+                            </style>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">persona</property>
+                        <property name="child">
+                          <object class="DistrictPersonaView" id="persona_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">tools</property>
+                        <property name="child">
+                          <object class="DistrictToolsView" id="tools_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">directory</property>
+                        <property name="child">
+                          <object class="DistrictDirectoryView" id="directory_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">routing</property>
+                        <property name="child">
+                          <object class="DistrictRoutingView" id="routing_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">call-handling</property>
+                        <property name="child">
+                          <object class="DistrictCallHandlingView" id="call_handling_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">knowledge</property>
+                        <property name="child">
+                          <object class="DistrictKnowledgeView" id="knowledge_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">messaging</property>
+                        <property name="child">
+                          <object class="DistrictMessagingView" id="messaging_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">members</property>
+                        <property name="child">
+                          <object class="DistrictMembersView" id="members_view"/>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

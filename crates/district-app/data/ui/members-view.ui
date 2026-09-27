@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The members: each with their role, changed and removed by an agency
+     member only, adding one, and renaming the workspace.
+     src/pages/members.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictMembersView" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">loading</property>
+            <property name="child">
+              <object class="GtkSpinner" id="loading_spinner">
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="width-request">32</property>
+                <property name="height-request">32</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">status</property>
+            <property name="child">
+              <object class="AdwStatusPage" id="status">
+                <property name="child">
+                  <object class="GtkButton" id="retry_button">
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">form</property>
+            <property name="child">
+              <object class="AdwPreferencesPage">
+                <child>
+                  <object class="AdwPreferencesGroup" id="top_group">
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <child>
+                          <object class="GtkLabel" id="role_note">
+                            <property name="xalign">0</property>
+                            <property name="wrap">True</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="DistrictSaveNotice" id="notice"/>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="members_group">
+                    <property name="title">Members</property>
+                    <property name="header-suffix">
+                      <object class="GtkSpinner" id="members_spinner">
+                        <property name="visible">False</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="add_group">
+                    <property name="title">Add a member</property>
+                    <child>
+                      <object class="AdwEntryRow" id="email_row">
+                        <property name="title">Email address</property>
+                        <property name="use-markup">False</property>
+                        <property name="input-purpose">email</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwComboRow" id="role_row">
+                        <property name="title">Role</property>
+                        <property name="use-markup">False</property>
+                        <property name="use-subtitle">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">10</property>
+                        <property name="margin-top">12</property>
+                        <child>
+                          <object class="GtkLabel" id="add_rejected">
+                            <property name="xalign">0</property>
+                            <property name="hexpand">True</property>
+                            <property name="wrap">True</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="error"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="add_button">
+                            <property name="label">Add</property>
+                            <property name="halign">end</property>
+                            <property name="hexpand">True</property>
+                            <style>
+                              <class name="pill"/>
+                              <class name="suggested-action"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="rename_group">
+                    <property name="title">The workspace's name</property>
+                    <child>
+                      <object class="AdwActionRow" id="current_name_row">
+                        <property name="use-markup">False</property>
+                        <property name="title">Now</property>
+                        <property name="subtitle-selectable">True</property>
+                        <style>
+                          <class name="property"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwEntryRow" id="new_name_row">
+                        <property name="title">New name</property>
+                        <property name="use-markup">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">10</property>
+                        <property name="margin-top">12</property>
+                        <property name="halign">end</property>
+                        <child>
+                          <object class="GtkSpinner" id="rename_spinner">
+                            <property name="visible">False</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="rename_button">
+                            <property name="label">Rename the workspace</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

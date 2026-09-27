@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The form adding or editing one carrier account, as a dialog. Its key
+     boxes are built for the carrier chosen; what is typed in them goes to the
+     core and is never written back into them, and they are emptied when the
+     form closes. src/pages/messaging_form.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictMessagingForm" parent="AdwDialog">
+    <property name="content-width">500</property>
+    <property name="content-height">640</property>
+    <property name="can-close">False</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="show-start-title-buttons">False</property>
+            <property name="show-end-title-buttons">False</property>
+            <child type="start">
+              <object class="GtkButton" id="cancel_button">
+                <property name="label">Cancel</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Save</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkSpinner" id="spinner">
+                <property name="visible">False</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+            <child>
+              <object class="AdwPreferencesGroup">
+                <child>
+                  <object class="AdwComboRow" id="provider_row">
+                    <property name="use-markup">False</property>
+                    <property name="title">Carrier</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwComboRow" id="source_row">
+                    <property name="use-markup">False</property>
+                    <property name="title">Whose account</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwEntryRow" id="label_row">
+                    <property name="title">Name</property>
+                    <property name="use-markup">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="provider_switch">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <property name="margin-top">12</property>
+                    <style>
+                      <class name="warning"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup" id="keys_group">
+                <property name="title">Keys</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">8</property>
+                    <property name="margin-top">12</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">10</property>
+                        <child>
+                          <object class="GtkButton" id="test_button">
+                            <property name="label">Check these keys</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkSpinner" id="test_spinner">
+                            <property name="visible">False</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="test_hint">
+                            <property name="xalign">0</property>
+                            <property name="hexpand">True</property>
+                            <property name="wrap">True</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="test_result">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup" id="numbers_group">
+                <property name="title">Phone numbers</property>
+                <child>
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="min-content-height">90</property>
+                    <style>
+                      <class name="card"/>
+                      <class name="composer-box"/>
+                    </style>
+                    <property name="child">
+                      <object class="GtkTextView" id="numbers_view">
+                        <property name="wrap-mode">word-char</property>
+                        <property name="accepts-tab">False</property>
+                        <property name="input-purpose">phone</property>
+                        <property name="top-margin">10</property>
+                        <property name="bottom-margin">10</property>
+                        <property name="left-margin">12</property>
+                        <property name="right-margin">12</property>
+                        <accessibility>
+                          <property name="label">Phone numbers, one per line</property>
+                        </accessibility>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup">
+                <child>
+                  <object class="AdwSwitchRow" id="default_row">
+                    <property name="title">Make it the default sender</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="failure_label">
+                    <property name="visible">False</property>
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <property name="margin-top">12</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

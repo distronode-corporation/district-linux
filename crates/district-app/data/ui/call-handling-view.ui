@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Call handling: who answers for the whole workspace, saved with a button,
+     and whether the member is rung, sent at once. Each is read on its own
+     and says so when it fails. src/pages/call_handling.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictCallHandlingView" parent="AdwBin">
+    <property name="child">
+      <object class="AdwPreferencesPage">
+        <child>
+          <object class="AdwPreferencesGroup" id="handling_group">
+            <property name="title">Who answers</property>
+            <property name="description">For every member of this workspace.</property>
+            <property name="header-suffix">
+              <object class="GtkSpinner" id="handling_spinner">
+                <property name="visible">False</property>
+              </object>
+            </property>
+            <child>
+              <object class="AdwActionRow" id="handling_failed">
+                <property name="use-markup">False</property>
+                <child type="suffix">
+                  <object class="GtkButton" id="handling_retry">
+                    <property name="label">Try again</property>
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="ai_first_row">
+                <property name="use-markup">False</property>
+                <property name="activatable-widget">ai_first_check</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="ai_first_check">
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="ai_then_app_row">
+                <property name="use-markup">False</property>
+                <property name="activatable-widget">ai_then_app_check</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="ai_then_app_check">
+                    <property name="valign">center</property>
+                    <property name="group">ai_first_check</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="app_first_row">
+                <property name="use-markup">False</property>
+                <property name="activatable-widget">app_first_check</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="app_first_check">
+                    <property name="valign">center</property>
+                    <property name="group">ai_first_check</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="unknown_row">
+                <property name="use-markup">False</property>
+                <property name="title">A setting this app does not know</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="ring_row">
+                <property name="use-markup">False</property>
+                <property name="title">How long your devices ring</property>
+                <child type="suffix">
+                  <object class="GtkScale" id="ring_scale">
+                    <property name="valign">center</property>
+                    <property name="width-request">180</property>
+                    <property name="draw-value">True</property>
+                    <property name="value-pos">left</property>
+                    <property name="digits">0</property>
+                    <property name="round-digits">0</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment">
+                        <property name="lower">5</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                      </object>
+                    </property>
+                    <accessibility>
+                      <property name="label">How long your devices ring, in seconds</property>
+                    </accessibility>
+                  </object>
+                </child>
+                <child type="suffix">
+                  <object class="GtkLabel" id="ring_value">
+                    <property name="valign">center</property>
+                    <style>
+                      <class name="numeric"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="viewer_note">
+                <property name="xalign">0</property>
+                <property name="wrap">True</property>
+                <property name="use-markup">False</property>
+                <property name="margin-top">12</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="save_box">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <property name="margin-top">12</property>
+                <child>
+                  <object class="DistrictSaveNotice" id="notice"/>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">10</property>
+                    <property name="halign">end</property>
+                    <child>
+                      <object class="GtkSpinner" id="save_spinner">
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="save_button">
+                        <property name="label">Save</property>
+                        <style>
+                          <class name="pill"/>
+                          <class name="suggested-action"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="availability_group">
+            <property name="title">Your availability</property>
+            <property name="description">Whether your own devices ring for this workspace's calls. A change is sent at once.</property>
+            <property name="header-suffix">
+              <object class="GtkSpinner" id="availability_spinner">
+                <property name="visible">False</property>
+              </object>
+            </property>
+            <child>
+              <object class="AdwActionRow" id="availability_failed">
+                <property name="use-markup">False</property>
+                <child type="suffix">
+                  <object class="GtkButton" id="availability_retry">
+                    <property name="label">Try again</property>
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="availability_row">
+                <property name="use-markup">False</property>
+                <property name="title">Ring me for calls</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="blocked_row">
+                <property name="use-markup">False</property>
+                <property name="title">Ring me for calls</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="margin-top">12</property>
+                <child>
+                  <object class="DistrictSaveNotice" id="availability_notice">
+                    <property name="hexpand">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
