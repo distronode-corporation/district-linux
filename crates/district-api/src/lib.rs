@@ -64,4 +64,4 @@ pub use error::{
     TransportError, TransportKind, UnauthorizedReason,
 };
 pub use exclusions::{Addition, EXCLUDED, Exclusion, LINUX_ONLY, PathMatch, normalize_template};
-pub use token::{AccessToken, ReauthReason, TokenCell, TokenError, TokenSource};
+pub use token::{AccessToken, ReauthReason, RetryReason, TokenCell, TokenError, TokenSource};

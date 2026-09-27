@@ -63,10 +63,35 @@ pub enum ReauthReason {
 pub enum TokenError {
     /// The session is over. Route the user to sign-in.
     SignInRequired(ReauthReason),
-    /// The session is intact but a refresh was rate limited, so no token right
-    /// now. Keep the user signed in and try again shortly: a rate-limited refresh
-    /// never consumed the refresh token.
-    RetryLater,
+    /// The session is intact, but there is no token right now. Keep the user
+    /// signed in: nothing was spent, and the same session works once the reason
+    /// goes away. The reason is carried because the remedy differs: waiting,
+    /// the network, or unlocking the keyring.
+    RetryLater(RetryReason),
+}
+
+/// Why a [`TokenSource`] cannot give a token right now, with the session intact.
+///
+/// Each of these needs a different sentence in front of the user, which is why
+/// they are not one value: "check your connection" is no help when the keyring
+/// is locked, and "unlock your keyring" is no help when the network is down.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum RetryReason {
+    /// The service rate limited the refresh, or refused its body before looking
+    /// at the token. The refresh token was not spent. Wait, then try again.
+    RateLimited,
+    /// The refresh never reached the service: no connection could be made, so
+    /// not one byte of it was sent.
+    Offline,
+    /// No secret store could be reached, so the stored session could not be
+    /// read or saved.
+    SecretStoreUnavailable,
+    /// The secret store is locked and was not unlocked (for example, the user
+    /// dismissed the unlock prompt).
+    SecretStoreLocked,
+    /// Reading or writing the stored session failed some other way: a file that
+    /// could not be written, or a record the store refused.
+    StorageFailed,
 }
 
 /// Supplies access tokens to the [`ApiClient`](crate::ApiClient).

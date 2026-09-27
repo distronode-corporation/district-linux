@@ -16,11 +16,15 @@ use common::{
 };
 use district_auth::{
     AccessToken, Clock, EARLY_REFRESH_MARGIN_MS, Persistence, ReauthReason, RefreshOutcome,
-    StoreErrorKind, SystemClock, TokenError, TokenRefreshCoordinator, TokenSource,
+    RetryReason, StoreErrorKind, SystemClock, TokenError, TokenRefreshCoordinator, TokenSource,
 };
 
 fn sign_in(reason: ReauthReason) -> Result<AccessToken, TokenError> {
     Err(TokenError::SignInRequired(reason))
+}
+
+fn retry<T>(reason: RetryReason) -> Result<T, TokenError> {
+    Err(TokenError::RetryLater(reason))
 }
 
 fn access(n: u32) -> Result<AccessToken, TokenError> {
@@ -283,7 +287,7 @@ async fn a_rate_limited_refresh_keeps_the_session() {
 
     assert_eq!(
         coordinator.access_token().await,
-        Err(TokenError::RetryLater)
+        retry(RetryReason::RateLimited)
     );
     assert_eq!(
         log.entries(),
@@ -305,7 +309,7 @@ async fn a_refresh_that_never_left_the_machine_keeps_the_session() {
 
     assert_eq!(
         coordinator.access_token().await,
-        Err(TokenError::RetryLater)
+        retry(RetryReason::Offline)
     );
     assert_eq!(store.marker(), None, "the token was never sent");
     assert_eq!(store.stored_token().as_deref(), Some("refresh-0"));
@@ -480,21 +484,30 @@ async fn a_store_that_cannot_be_read_keeps_the_session() {
     let api = FakeRefreshApi::rotating(&log, 1, 1);
     let (coordinator, _) = coordinator(&store, &api);
 
-    for kind in [StoreErrorKind::Unavailable, StoreErrorKind::Locked] {
+    // The reason names the store's failure, so the app can say "unlock your
+    // keyring" rather than "check your connection".
+    for (kind, reason) in [
+        (
+            StoreErrorKind::Unavailable,
+            RetryReason::SecretStoreUnavailable,
+        ),
+        (StoreErrorKind::Locked, RetryReason::SecretStoreLocked),
+        (StoreErrorKind::Io, RetryReason::StorageFailed),
+    ] {
         store.fail("load", kind);
-        assert_eq!(
-            coordinator.access_token().await,
-            Err(TokenError::RetryLater)
-        );
-        assert_eq!(coordinator.restore().await, Err(TokenError::RetryLater));
+        assert_eq!(coordinator.access_token().await, retry(reason));
+        assert_eq!(coordinator.restore().await, retry(reason));
     }
     store.heal("load");
-    for kind in [StoreErrorKind::Unavailable, StoreErrorKind::Io] {
+    for (kind, reason) in [
+        (
+            StoreErrorKind::Unavailable,
+            RetryReason::SecretStoreUnavailable,
+        ),
+        (StoreErrorKind::Io, RetryReason::StorageFailed),
+    ] {
         store.fail("pending", kind);
-        assert_eq!(
-            coordinator.access_token().await,
-            Err(TokenError::RetryLater)
-        );
+        assert_eq!(coordinator.access_token().await, retry(reason));
     }
     store.heal("pending");
     assert!(log.entries().is_empty(), "nothing was sent or changed");
@@ -544,7 +557,7 @@ async fn a_marker_that_cannot_be_written_cancels_the_refresh() {
 
     assert_eq!(
         coordinator.access_token().await,
-        Err(TokenError::RetryLater)
+        retry(RetryReason::StorageFailed)
     );
     assert_eq!(api.calls(), 0, "no refresh goes out without its marker");
     assert_eq!(log.entries(), ["mark(refresh-0)!"]);
@@ -567,7 +580,7 @@ async fn a_marker_stuck_after_a_rate_limit_ends_the_session_rather_than_replayin
 
     assert_eq!(
         coordinator.access_token().await,
-        Err(TokenError::RetryLater)
+        retry(RetryReason::RateLimited)
     );
     assert_eq!(
         coordinator.access_token().await,
@@ -614,9 +627,12 @@ async fn a_successor_the_store_refuses_is_kept_until_it_can_be_saved() {
     clock.advance(TEN_MINUTES);
     assert_eq!(
         coordinator.access_token().await,
-        Err(TokenError::RetryLater)
+        retry(RetryReason::SecretStoreLocked)
     );
-    assert_eq!(coordinator.restore().await, Err(TokenError::RetryLater));
+    assert_eq!(
+        coordinator.restore().await,
+        retry(RetryReason::SecretStoreLocked)
+    );
     assert_eq!(api.presented(), ["refresh-0"]);
 
     // Once the store works, the successor is saved first and then used.

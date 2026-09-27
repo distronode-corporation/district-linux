@@ -2,7 +2,8 @@
 //! secret store, and the store error type.
 
 use district_auth::{
-    MemorySessionStore, PersistedSession, RefreshToken, SessionStore, StoreError, StoreErrorKind,
+    MemorySessionStore, PersistedSession, RefreshToken, RetryReason, SessionStore, StoreError,
+    StoreErrorKind,
 };
 
 fn session(token: &str) -> PersistedSession {
@@ -76,5 +77,23 @@ fn store_errors_say_what_kind_they_are() {
         let error = StoreError::new(kind, "detail");
         assert_eq!(error.kind, kind);
         assert_eq!(error.to_string(), format!("{text}: detail"));
+    }
+}
+
+/// What a store failure tells a caller that wanted a token. The two a user can
+/// act on (start a keyring, unlock one) keep their own reasons.
+#[test]
+fn store_errors_become_the_reason_there_is_no_token() {
+    let cases = [
+        (
+            StoreErrorKind::Unavailable,
+            RetryReason::SecretStoreUnavailable,
+        ),
+        (StoreErrorKind::Locked, RetryReason::SecretStoreLocked),
+        (StoreErrorKind::Corrupt, RetryReason::StorageFailed),
+        (StoreErrorKind::Io, RetryReason::StorageFailed),
+    ];
+    for (kind, reason) in cases {
+        assert_eq!(kind.retry_reason(), reason, "{kind:?}");
     }
 }

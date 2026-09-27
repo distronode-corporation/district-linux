@@ -10,7 +10,8 @@ use std::time::{Duration, SystemTime};
 use common::{client, client_for};
 use district_api::{
     ApiClient, ApiConfig, ApiError, CODE_REGIONS_DEGRADED, ConfigError, DEFAULT_BASE_URL, Endpoint,
-    ErrorDetail, FALLBACK_MESSAGE, TransportError, TransportKind, USER_AGENT, UnauthorizedReason,
+    ErrorDetail, FALLBACK_MESSAGE, RetryReason, TransportError, TransportKind, USER_AGENT,
+    UnauthorizedReason,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -95,7 +96,6 @@ async fn a_rate_limit_reads_retry_after_in_seconds() {
         error,
         ApiError::RateLimited {
             retry_after: Some(Duration::from_secs(120)),
-            refresh_throttled: false,
             detail: detail(Some("Too many requests."), Some("rate_limited")),
         }
     );
@@ -521,11 +521,15 @@ fn every_error_describes_itself_without_secrets() {
         (
             ApiError::RateLimited {
                 retry_after: None,
-                refresh_throttled: true,
                 detail: detail_with(Some("Slow down.")),
             },
             "rate limited: Slow down.",
             Some("some_code"),
+        ),
+        (
+            ApiError::TokenUnavailable(RetryReason::SecretStoreLocked),
+            "not sent, no access token right now (SecretStoreLocked)",
+            None,
         ),
         (
             ApiError::Envelope {

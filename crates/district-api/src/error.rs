@@ -3,9 +3,11 @@
 //! The failures are not interchangeable, so they are not collapsed. The app has
 //! to act differently on each: an [`ApiError::Unauthorized`] may mean signing in
 //! again, [`ApiError::RateLimited`] means keeping the session and waiting,
-//! [`ApiError::Offline`] means checking the network, and an
-//! [`ApiError::Envelope`] with the code `REGIONS_DEGRADED` means the answer would
-//! have been incomplete, which must never be shown as an empty list.
+//! [`ApiError::Offline`] means checking the network,
+//! [`ApiError::TokenUnavailable`] says which of those (or a locked keyring)
+//! stopped the request before it was sent, and an [`ApiError::Envelope`] with
+//! the code `REGIONS_DEGRADED` means the answer would have been incomplete, which
+//! must never be shown as an empty list.
 //!
 //! No variant carries a token or a response body. A body can hold a call
 //! transcript, a phone number or, on the token endpoints, a credential, and an
@@ -18,7 +20,7 @@ use reqwest::{Response, StatusCode};
 use serde_json::Value;
 
 use crate::endpoints::Endpoint;
-use crate::token::ReauthReason;
+use crate::token::{ReauthReason, RetryReason};
 
 /// The response header some refusals carry their machine-readable code in,
 /// instead of in the body, so that a body with a fixed shape does not change.
@@ -183,18 +185,23 @@ pub enum ApiError {
     /// member who is already one.
     #[error("conflict: {}", .0.display_message())]
     Conflict(ErrorDetail),
-    /// 429, or a token refresh that was itself rate limited. The session is
-    /// intact either way: do not sign the user out.
+    /// 429: the service rate limited the request. The session is intact: do not
+    /// sign the user out. A rate-limited token refresh is
+    /// [`TokenUnavailable`](Self::TokenUnavailable) instead, because then the
+    /// request itself was never sent.
     #[error("rate limited: {}", .detail.display_message())]
     RateLimited {
         /// How long the service asked the client to wait, from `Retry-After`.
         retry_after: Option<Duration>,
-        /// True when it was the token refresh that was throttled, so the request
-        /// itself was never sent.
-        refresh_throttled: bool,
         /// What the service said.
         detail: ErrorDetail,
     },
+    /// No access token could be had right now, so the request was not sent. The
+    /// session is intact: keep the user signed in. The reason says what stands
+    /// in the way (a rate-limited refresh, no network, a locked or missing
+    /// keyring), because each needs its own remedy.
+    #[error("not sent, no access token right now ({0:?})")]
+    TokenUnavailable(RetryReason),
     /// Any other failure the service named with a machine-readable code, in the
     /// body or in the [`ERROR_CODE_HEADER`] header. The code is what to branch on
     /// and what to translate; the message is the English fallback.
@@ -305,7 +312,6 @@ impl ApiError {
             StatusCode::CONFLICT => Self::Conflict(detail),
             StatusCode::TOO_MANY_REQUESTS => Self::RateLimited {
                 retry_after: retry_after(&headers, SystemTime::now()),
-                refresh_throttled: false,
                 detail,
             },
             _ => match detail.code.clone() {

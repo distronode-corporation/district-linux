@@ -5,7 +5,7 @@ use std::future::Future;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use district_api::{AccessToken, ReauthReason, TokenError, TokenSource};
+use district_api::{AccessToken, ReauthReason, RetryReason, TokenError, TokenSource};
 use tokio::runtime::Handle;
 use tokio::sync::OwnedMutexGuard;
 
@@ -98,8 +98,12 @@ pub enum Persistence {
 /// not retry, least of all after
 /// [`InterruptedRefresh`](ReauthReason::InterruptedRefresh), where a retry is
 /// exactly the replay this type exists to prevent. [`TokenError::RetryLater`]
-/// keeps the user signed in: the refresh was rate limited, never left the
-/// machine, or the store could not be read or written just now.
+/// keeps the user signed in, and its [`RetryReason`] says why there is no token
+/// right now: the refresh was rate limited
+/// ([`RateLimited`](RetryReason::RateLimited)), never left the machine
+/// ([`Offline`](RetryReason::Offline)), or the store could not be read or written
+/// just now (the reason names the store's failure: see
+/// [`StoreErrorKind::retry_reason`]).
 pub struct TokenRefreshCoordinator<S, A> {
     inner: Arc<Inner<S, A>>,
 }
@@ -299,9 +303,9 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
         // predecessor, and a crash then would leave a spent token in the store
         // with nothing to say so.
         if let Some(successor) = rescue.take() {
-            if self.store.save_session(&successor).await.is_err() {
+            if let Err(error) = self.store.save_session(&successor).await {
                 *rescue = Some(successor);
-                return Err(TokenError::RetryLater);
+                return Err(retry_later(&error));
             }
             self.store.clear_refresh_pending().await.ok();
         }
@@ -313,7 +317,7 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
             Err(error) if error.kind == StoreErrorKind::Corrupt => {
                 return Err(self.discard(ReauthReason::NoSession).await);
             }
-            Err(_) => return Err(TokenError::RetryLater),
+            Err(error) => return Err(retry_later(&error)),
         };
 
         // A marker naming the stored token means a refresh was sent and its answer
@@ -324,7 +328,7 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
             // A marker that cannot be read might name this token. Presenting a
             // possibly spent token is the one risk never taken.
             Err(error) if error.kind == StoreErrorKind::Corrupt => true,
-            Err(_) => return Err(TokenError::RetryLater),
+            Err(error) => return Err(retry_later(&error)),
         };
         if interrupted {
             return Err(self.discard(ReauthReason::InterruptedRefresh).await);
@@ -345,8 +349,8 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
         // exactly the window the marker exists to close, so if it cannot be
         // written, nothing is sent.
         let fingerprint = session.refresh_token.fingerprint();
-        if self.store.set_refresh_pending(&fingerprint).await.is_err() {
-            return Err(TokenError::RetryLater);
+        if let Err(error) = self.store.set_refresh_pending(&fingerprint).await {
+            return Err(retry_later(&error));
         }
 
         match self.api.refresh(&session.refresh_token).await {
@@ -363,9 +367,13 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
             // The token was provably not consumed, so the marker comes off and the
             // session stays. If the marker cannot be removed, the next attempt
             // takes it for an interrupted refresh: a sign-in, never a replay.
-            RefreshOutcome::RateLimited | RefreshOutcome::NotSent => {
+            RefreshOutcome::RateLimited => {
                 self.store.clear_refresh_pending().await.ok();
-                Err(TokenError::RetryLater)
+                Err(TokenError::RetryLater(RetryReason::RateLimited))
+            }
+            RefreshOutcome::NotSent => {
+                self.store.clear_refresh_pending().await.ok();
+                Err(TokenError::RetryLater(RetryReason::Offline))
             }
             // The request may have reached the service and rotated the token, so
             // the marker stays set, and the next attempt (in this run or the next)
@@ -455,6 +463,12 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
         self.store.clear_session().await.ok();
         self.signed_out(reason)
     }
+}
+
+/// No token for now, because the store failed with `error`. The session is not
+/// ended: a locked keyring or a full disk says nothing about the token.
+fn retry_later(error: &StoreError) -> TokenError {
+    TokenError::RetryLater(error.kind.retry_reason())
 }
 
 /// A panic while the lock was held cannot leave an `Option` half-written, so a

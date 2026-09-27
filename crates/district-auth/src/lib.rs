@@ -62,7 +62,7 @@ pub use claims::{AccessClaims, ClaimsError};
 pub use coordinator::{
     Clock, EARLY_REFRESH_MARGIN_MS, Persistence, SystemClock, TokenRefreshCoordinator,
 };
-pub use district_api::{AccessToken, ReauthReason, TokenError, TokenSource};
+pub use district_api::{AccessToken, ReauthReason, RetryReason, TokenError, TokenSource};
 pub use login::{
     AUTHORIZE_PATH, AuthorizationCode, AuthorizationGrant, LoginError, LoginFlow, REDIRECT_SCHEME,
     REDIRECT_URI,

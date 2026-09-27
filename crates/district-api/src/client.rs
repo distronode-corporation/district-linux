@@ -71,11 +71,7 @@ impl<S: TokenSource> ApiClient<S> {
                 TokenError::SignInRequired(reason) => {
                     ApiError::Unauthorized(UnauthorizedReason::SignInRequired(reason))
                 }
-                TokenError::RetryLater => ApiError::RateLimited {
-                    retry_after: None,
-                    refresh_throttled: true,
-                    detail: Default::default(),
-                },
+                TokenError::RetryLater(reason) => ApiError::TokenUnavailable(reason),
             })?;
 
             let response = request

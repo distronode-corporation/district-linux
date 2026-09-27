@@ -4,6 +4,8 @@ use std::fmt;
 use std::future::Future;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
+use district_api::RetryReason;
+
 use crate::tokens::{PersistedSession, RefreshToken, TokenFingerprint};
 
 /// Durable storage for the signed-in session.
@@ -102,6 +104,20 @@ pub enum StoreErrorKind {
     Corrupt,
     /// Reading or writing a file failed.
     Io,
+}
+
+impl StoreErrorKind {
+    /// What this failure means to a caller that wanted a token: the session is
+    /// intact, and this is why there is no token right now. A corrupt record
+    /// and a failed file both come out as [`RetryReason::StorageFailed`]; the
+    /// user can do nothing different about either.
+    pub fn retry_reason(self) -> RetryReason {
+        match self {
+            Self::Unavailable => RetryReason::SecretStoreUnavailable,
+            Self::Locked => RetryReason::SecretStoreLocked,
+            Self::Corrupt | Self::Io => RetryReason::StorageFailed,
+        }
+    }
 }
 
 impl fmt::Display for StoreErrorKind {

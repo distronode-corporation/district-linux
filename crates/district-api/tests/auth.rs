@@ -5,7 +5,7 @@ mod common;
 
 use common::{ScriptedTokens, client, client_with};
 use district_api::{
-    AccessToken, ApiError, Endpoint, ReauthReason, RetryPolicy, TokenCell, TokenError,
+    AccessToken, ApiError, Endpoint, ReauthReason, RetryPolicy, RetryReason, TokenCell, TokenError,
     UnauthorizedReason,
 };
 use serde_json::{Value, json};
@@ -190,35 +190,39 @@ async fn no_session_means_no_request() {
     assert!(server.received_requests().await.unwrap().is_empty());
 }
 
-/// A throttled refresh keeps the session: it is a rate limit, not a sign-out.
+/// No token right now keeps the session, and the reason comes through intact:
+/// "rate limited", "offline" and "the keyring is locked" need different words in
+/// front of the user, so they must not arrive as one error.
 #[tokio::test]
-async fn a_throttled_refresh_is_a_rate_limit_with_the_session_intact() {
+async fn no_token_right_now_keeps_the_session_and_says_why() {
+    let reasons = [
+        RetryReason::RateLimited,
+        RetryReason::Offline,
+        RetryReason::SecretStoreUnavailable,
+        RetryReason::SecretStoreLocked,
+        RetryReason::StorageFailed,
+    ];
     let server = MockServer::start().await;
-    let client = client_with(
-        &server,
-        ScriptedTokens::scripted(vec![Err(TokenError::RetryLater)]),
-    );
+    for reason in reasons {
+        let client = client_with(
+            &server,
+            ScriptedTokens::scripted(vec![Err(TokenError::RetryLater(reason))]),
+        );
 
-    let error = client
-        .request(Endpoint::AuthMe)
-        .send::<Value>()
-        .await
-        .unwrap_err();
+        let error = client
+            .request(Endpoint::AuthMe)
+            .send::<Value>()
+            .await
+            .unwrap_err();
 
-    match &error {
-        ApiError::RateLimited {
-            retry_after,
-            refresh_throttled,
-            detail,
-        } => {
-            assert_eq!(*retry_after, None);
-            assert!(*refresh_throttled);
-            assert_eq!(detail.message, None);
-        }
-        other => panic!("expected a rate limit, got {other:?}"),
+        assert_eq!(error, ApiError::TokenUnavailable(reason));
+        assert!(!error.requires_sign_in(), "{reason:?}");
+        assert_eq!(error.code(), None);
     }
-    assert!(!error.requires_sign_in());
-    assert!(server.received_requests().await.unwrap().is_empty());
+    assert!(
+        server.received_requests().await.unwrap().is_empty(),
+        "nothing is sent without a token"
+    );
 }
 
 /// A refusal during the retry's refresh ends the call with the refresh's reason.
