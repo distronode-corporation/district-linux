@@ -771,18 +771,10 @@ impl SignedIn {
                 }),
                 None => Err(FailureText::unexpected()),
             });
-        let mut researching = false;
-        if let Some(screen) = self.contact.as_mut() {
-            match (result, &mut screen.contact) {
-                (Ok(details), view) => {
-                    researching = details.contact.dgi_in_progress();
-                    self.contacts.replace_row(&details.contact);
-                    *view = ContactView::Ready(Box::new(details));
-                }
-                (Err(failure), ContactView::Ready(_)) => screen.failure = Some(failure),
-                (Err(failure), view) => *view = ContactView::Failed(failure),
-            }
-        }
+        let researching = self
+            .contact
+            .as_mut()
+            .is_some_and(|screen| contact_read(screen, result, &mut self.contacts));
         // The only way a finished dossier reaches the screen: the service
         // answers "queued" at once and does the work later, with nothing to say
         // when it is done. A failed read stops the poll rather than retry a
@@ -873,6 +865,30 @@ impl SignedIn {
             screen.blocked = self.blocked.contains(&screen.contact_id);
         }
         stay()
+    }
+}
+
+/// The open contact was read. Answers whether its research is running.
+fn contact_read(
+    screen: &mut ContactDetailScreen,
+    result: Result<ContactDetails, FailureText>,
+    contacts: &mut ContactsScreen,
+) -> bool {
+    match (result, &mut screen.contact) {
+        (Ok(details), view) => {
+            let researching = details.contact.dgi_in_progress();
+            contacts.replace_row(&details.contact);
+            *view = ContactView::Ready(Box::new(details));
+            researching
+        }
+        (Err(failure), ContactView::Ready(_)) => {
+            screen.failure = Some(failure);
+            false
+        }
+        (Err(failure), view) => {
+            *view = ContactView::Failed(failure);
+            false
+        }
     }
 }
 

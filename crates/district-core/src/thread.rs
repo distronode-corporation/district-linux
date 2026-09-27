@@ -495,32 +495,11 @@ impl SignedIn {
         if !tickets.accept(Slot::Send, ticket) {
             return stay();
         }
-        let mut effects = Vec::new();
-        if let Some(screen) = self.thread.as_mut() {
-            let composer = &mut screen.composer;
-            composer.sending = false;
-            let (body, media) = composer.sent.take().unwrap_or_default();
-            match result {
-                Ok(_) => {
-                    // What was typed while it was on its way is kept, and saved,
-                    // because the draft went with the message.
-                    composer.attachments.retain(|url| !media.contains(url));
-                    if composer.text == body {
-                        composer.text.clear();
-                    } else {
-                        effects.extend(schedule_save(screen, tickets));
-                    }
-                    // Read back rather than drawn here: the sent message gets its
-                    // id, status and time from the service, and a status this app
-                    // made up is the one thing a user checks after sending.
-                    effects.push(newest(screen, tickets.issue(Slot::Timeline)));
-                }
-                Err(error) => {
-                    composer.failure = Some(FailureText::from_api_error(&error));
-                    effects.extend(schedule_save(screen, tickets));
-                }
-            }
-        }
+        let mut effects = self
+            .thread
+            .as_mut()
+            .map(|screen| sent(screen, result, tickets))
+            .unwrap_or_default();
         effects.extend(self.reload_conversations(tickets));
         Next::Stay(effects)
     }
@@ -576,6 +555,39 @@ impl SignedIn {
             .unwrap_or_default();
         Next::Stay(effects)
     }
+}
+
+/// The message on its way was sent, or refused.
+fn sent(
+    screen: &mut ThreadScreen,
+    result: Result<SendMessageResponse, ApiError>,
+    tickets: &mut Tickets,
+) -> Vec<Effect> {
+    let mut effects = Vec::new();
+    let composer = &mut screen.composer;
+    composer.sending = false;
+    let (body, media) = composer.sent.take().unwrap_or_default();
+    match result {
+        Ok(_) => {
+            // What was typed while it was on its way is kept, and saved,
+            // because the draft went with the message.
+            composer.attachments.retain(|url| !media.contains(url));
+            if composer.text == body {
+                composer.text.clear();
+            } else {
+                effects.extend(schedule_save(screen, tickets));
+            }
+            // Read back rather than drawn here: the sent message gets its id,
+            // status and time from the service, and a status this app made up
+            // is the one thing a user checks after sending.
+            effects.push(newest(screen, tickets.issue(Slot::Timeline)));
+        }
+        Err(error) => {
+            composer.failure = Some(FailureText::from_api_error(&error));
+            effects.extend(schedule_save(screen, tickets));
+        }
+    }
+    effects
 }
 
 /// The written reply goes into the composer as if it had been typed, and is

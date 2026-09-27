@@ -233,45 +233,12 @@ impl SignedIn {
     /// Reads the call `call_id` and its transcript again because it changed,
     /// quietly, if it is the one open.
     pub(crate) fn reload_call(&mut self, call_id: &str, tickets: &mut Tickets) -> Vec<Effect> {
-        if self
-            .call
-            .as_ref()
-            .is_none_or(|screen| screen.call_id != call_id)
-        {
-            return Vec::new();
-        }
         let workspace_id = self.workspace_id();
-        let mut effects: Vec<Effect> = tickets
-            .refresh(Slot::CallDetail)
-            .map(|ticket| Effect::LoadCall {
-                ticket,
-                workspace_id,
-                call_id: call_id.to_owned(),
-            })
-            .into_iter()
-            .collect();
-        effects.extend(self.reload_transcript(tickets));
-        effects
-    }
-
-    /// Reads the open call's transcript again because it may have changed: it
-    /// can still be written after the call ends.
-    fn reload_transcript(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
-        let workspace_id = self.workspace_id();
-        let call_id = self
-            .call
+        self.call
             .as_ref()
-            .map(|screen| screen.call_id.clone())
-            .unwrap_or_default();
-        tickets
-            .refresh(Slot::Transcript)
-            .map(|ticket| Effect::LoadTranscript {
-                ticket,
-                workspace_id,
-                call_id,
-            })
-            .into_iter()
-            .collect()
+            .filter(|screen| screen.call_id == call_id)
+            .map(|screen| reread(screen, workspace_id, tickets))
+            .unwrap_or_default()
     }
 
     /// Closes the open call.
@@ -289,30 +256,13 @@ impl SignedIn {
         if !tickets.accept(Slot::CallDetail, ticket) {
             return stay();
         }
-        if let Some(screen) = self.call.as_mut() {
-            // A success with no call in it is a malformed answer, not an absence:
-            // absence is a 404.
-            let result = result
-                .map_err(|error| FailureText::from_api_error(&error))
-                .and_then(|answer| answer.call.ok_or_else(FailureText::unexpected));
-            match (result, &mut screen.call) {
-                (Ok(call), view) => {
-                    *view = CallView::Ready(Box::new(call));
-                    screen.refresh_failure = None;
-                }
-                (Err(failure), CallView::Ready(_)) => screen.refresh_failure = Some(failure),
-                (Err(failure), view) => *view = CallView::Failed(failure),
-            }
-        }
-        if tickets.take_again(Slot::CallDetail) {
-            let call_id = self
-                .call
-                .as_ref()
-                .map(|screen| screen.call_id.clone())
-                .unwrap_or_default();
-            return Next::Stay(self.reload_call(&call_id, tickets));
-        }
-        stay()
+        let workspace_id = self.workspace_id();
+        let effects = self
+            .call
+            .as_mut()
+            .map(|screen| call_read(screen, result, workspace_id, tickets))
+            .unwrap_or_default();
+        Next::Stay(effects)
     }
 
     pub(crate) fn transcript_loaded(
@@ -324,24 +274,99 @@ impl SignedIn {
         if !tickets.accept(Slot::Transcript, ticket) {
             return stay();
         }
-        if let Some(screen) = self.call.as_mut() {
-            match (result, &mut screen.transcript) {
-                (Ok(answer), view) if answer.has_transcript() => {
-                    *view = TranscriptView::Ready(answer.transcript);
-                }
-                (Ok(_), view) => *view = TranscriptView::Absent,
-                // A failed read again keeps the transcript it had.
-                (Err(_), TranscriptView::Ready(_) | TranscriptView::Absent) => {}
-                (Err(error), view) => {
-                    *view = TranscriptView::Failed(FailureText::from_api_error(&error));
-                }
-            }
-        }
-        if tickets.take_again(Slot::Transcript) {
-            return Next::Stay(self.reload_transcript(tickets));
-        }
-        stay()
+        let workspace_id = self.workspace_id();
+        let effects = self
+            .call
+            .as_mut()
+            .map(|screen| transcript_read(screen, result, workspace_id, tickets))
+            .unwrap_or_default();
+        Next::Stay(effects)
     }
+}
+
+/// The open call was read. A success with no call in it is a malformed
+/// answer, not an absence: absence is a 404. The call is read again if a hint
+/// that it changed arrived while this read was on its way.
+fn call_read(
+    screen: &mut CallDetailScreen,
+    result: Result<CallDetailResponse, ApiError>,
+    workspace_id: String,
+    tickets: &mut Tickets,
+) -> Vec<Effect> {
+    let result = result
+        .map_err(|error| FailureText::from_api_error(&error))
+        .and_then(|answer| answer.call.ok_or_else(FailureText::unexpected));
+    match (result, &mut screen.call) {
+        (Ok(call), view) => {
+            *view = CallView::Ready(Box::new(call));
+            screen.refresh_failure = None;
+        }
+        (Err(failure), CallView::Ready(_)) => screen.refresh_failure = Some(failure),
+        (Err(failure), view) => *view = CallView::Failed(failure),
+    }
+    if tickets.take_again(Slot::CallDetail) {
+        return reread(screen, workspace_id, tickets);
+    }
+    Vec::new()
+}
+
+/// The open call's transcript was read, and is read again if it may have
+/// changed meanwhile.
+fn transcript_read(
+    screen: &mut CallDetailScreen,
+    result: Result<CallTranscriptResponse, ApiError>,
+    workspace_id: String,
+    tickets: &mut Tickets,
+) -> Vec<Effect> {
+    match (result, &mut screen.transcript) {
+        (Ok(answer), view) if answer.has_transcript() => {
+            *view = TranscriptView::Ready(answer.transcript);
+        }
+        (Ok(_), view) => *view = TranscriptView::Absent,
+        // A failed read again keeps the transcript it had.
+        (Err(_), TranscriptView::Ready(_) | TranscriptView::Absent) => {}
+        (Err(error), view) => {
+            *view = TranscriptView::Failed(FailureText::from_api_error(&error));
+        }
+    }
+    if tickets.take_again(Slot::Transcript) {
+        return retranscribe(screen, workspace_id, tickets);
+    }
+    Vec::new()
+}
+
+/// Reads `screen`'s call and its transcript again because they changed, each
+/// at most once at a time.
+fn reread(screen: &CallDetailScreen, workspace_id: String, tickets: &mut Tickets) -> Vec<Effect> {
+    let mut effects: Vec<Effect> = tickets
+        .refresh(Slot::CallDetail)
+        .map(|ticket| Effect::LoadCall {
+            ticket,
+            workspace_id: workspace_id.clone(),
+            call_id: screen.call_id.clone(),
+        })
+        .into_iter()
+        .collect();
+    effects.extend(retranscribe(screen, workspace_id, tickets));
+    effects
+}
+
+/// Reads `screen`'s transcript again because it may have changed: it can
+/// still be written after the call ends.
+fn retranscribe(
+    screen: &CallDetailScreen,
+    workspace_id: String,
+    tickets: &mut Tickets,
+) -> Vec<Effect> {
+    tickets
+        .refresh(Slot::Transcript)
+        .map(|ticket| Effect::LoadTranscript {
+            ticket,
+            workspace_id,
+            call_id: screen.call_id.clone(),
+        })
+        .into_iter()
+        .collect()
 }
 
 /// The read of the log's newest page, under `ticket`.

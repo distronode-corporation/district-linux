@@ -1095,3 +1095,73 @@ fn answers_no_longer_awaited_are_dropped() {
     );
     assert_eq!(signed_in(&model).blocked.confirming, None);
 }
+
+/// A contact opened straight from a link, before the list or the blocked list
+/// was read, is read, blocked and deleted all the same.
+#[test]
+fn a_contact_opened_before_its_lists_are_read_can_still_be_changed() {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    let effects = model.update(Event::Navigate(Route::ContactDetail {
+        contact_id: ADA.to_owned(),
+    }));
+    assert_eq!(*list(&model), ContactList::NotLoaded);
+    assert_eq!(signed_in(&model).blocked.list, BlockedList::Loading);
+    model.update(Event::ContactLoaded {
+        ticket: ticket(&effects[0]),
+        result: Ok(detail_of(contact(ADA, json!({})))),
+    });
+    assert_eq!(read(&model).id, ADA);
+
+    contacts_event(&mut model, ContactsEvent::AskBlock);
+    let (blocked, _) = write(&contacts_event(&mut model, ContactsEvent::Confirm));
+    model.update(Event::ContactWritten {
+        ticket: blocked,
+        result: Ok(ContactWritten::Blocked(blocked_answer(ADA, true))),
+    });
+    assert_eq!(screen(&model).blocked, Some(true));
+    // The list still being read is not claimed to hold only this caller.
+    assert_eq!(signed_in(&model).blocked.list, BlockedList::Loading);
+
+    contacts_event(&mut model, ContactsEvent::AskDelete);
+    let (deleted, _) = write(&contacts_event(&mut model, ContactsEvent::Confirm));
+    let effects = model.update(Event::ContactWritten {
+        ticket: deleted,
+        result: Ok(ContactWritten::Deleted),
+    });
+    assert!(matches!(effects.as_slice(), [Effect::LoadContacts { .. }]));
+    assert_eq!(signed_in(&model).route, Route::Contacts);
+}
+
+/// An unblock still on its way when the workspace changes belongs to the
+/// workspace left: its answer changes nothing in the new one.
+#[test]
+fn an_unblock_on_its_way_is_forgotten_with_its_workspace() {
+    let mut model = on_contacts("agency");
+    let effects = model.update(Event::Navigate(Route::BlockedContacts));
+    model.update(Event::BlockedLoaded {
+        ticket: last_ticket(&effects),
+        result: Ok(BlockedContactsResponse {
+            success: true,
+            blocked: vec![blocked_row("c1", Some("2026-09-02T00:00:00.000Z"))],
+        }),
+    });
+    contacts_event(
+        &mut model,
+        ContactsEvent::AskUnblock {
+            contact_id: "c1".to_owned(),
+        },
+    );
+    let unblock = last_ticket(&contacts_event(&mut model, ContactsEvent::ConfirmUnblock));
+    model.update(Event::SelectWorkspace(crate::support::CLIENT.to_owned()));
+    // The blocked list is the new workspace's, being read.
+    assert_eq!(signed_in(&model).blocked.list, BlockedList::Loading);
+    assert!(
+        model
+            .update(Event::ContactWritten {
+                ticket: unblock,
+                result: Ok(ContactWritten::Blocked(blocked_answer("c1", false))),
+            })
+            .is_empty()
+    );
+    assert!(signed_in(&model).blocked.unblocking.is_empty());
+}

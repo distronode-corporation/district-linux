@@ -794,6 +794,16 @@ fn an_image_is_uploaded_when_picked_and_goes_with_the_message() {
         result: Ok(fixture("district-media-upload.json")),
     });
     assert_eq!(screen(&model).composer.attachments, [IMAGE]);
+    // A second answer to the same upload attaches nothing twice.
+    assert!(
+        model
+            .update(Event::MediaUploaded {
+                ticket: *upload,
+                result: Ok(fixture("district-media-upload.json")),
+            })
+            .is_empty()
+    );
+    assert_eq!(screen(&model).composer.attachments, [IMAGE]);
     let effects = thread_event(&mut model, ThreadEvent::Send);
     let Effect::SendMessage { message, .. } = &effects[0] else {
         panic!("{effects:?}");
