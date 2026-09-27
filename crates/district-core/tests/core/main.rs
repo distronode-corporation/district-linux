@@ -6,6 +6,8 @@
 //! a keyring or the network.
 
 mod adapters;
+mod calls;
+mod contacts;
 mod devices;
 mod failure;
 mod inbox;
