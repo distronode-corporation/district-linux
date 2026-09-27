@@ -1,3 +1,0 @@
-[D-BUS Service]
-Name=com.distronode.DistrictAI
-Exec=/usr/bin/district-ai --gapplication-service

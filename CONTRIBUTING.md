@@ -87,8 +87,8 @@ mkdir -p ~/.local/share/applications ~/.local/share/dbus-1/services
 sed "s|^Exec=district-ai|Exec=$PWD/target/debug/district-ai|" \
   crates/district-app/data/com.distronode.DistrictAI.desktop \
   > ~/.local/share/applications/com.distronode.DistrictAI.desktop
-sed "s|^Exec=/usr/bin/district-ai|Exec=$PWD/target/debug/district-ai|" \
-  crates/district-app/data/com.distronode.DistrictAI.service \
+sed "s|@bindir@|$PWD/target/debug|" \
+  crates/district-app/data/com.distronode.DistrictAI.service.in \
   > ~/.local/share/dbus-1/services/com.distronode.DistrictAI.service
 update-desktop-database ~/.local/share/applications
 ```

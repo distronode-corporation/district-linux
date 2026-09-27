@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.distronode.DistrictAI
+Exec=@bindir@/district-ai --gapplication-service

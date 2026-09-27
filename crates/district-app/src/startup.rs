@@ -1,6 +1,7 @@
 //! The real app: every adapter the effect runner needs, built once, and the
 //! application run over them.
 
+use std::ffi::OsString;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
@@ -29,7 +30,15 @@ use crate::store::{AppStore, MEMORY_ONLY};
 const RUNTIME_SHUTDOWN: Duration = Duration::from_secs(2);
 
 /// Runs District AI for Linux, and returns its exit status.
+///
+/// `district-ai --version` prints [`version_line`] and exits before anything
+/// else happens: no GTK, no keyring, no files and no network, so a package's
+/// tests can run it on a machine with no display or desktop session.
 pub fn run() -> glib::ExitCode {
+    if version_requested(std::env::args_os()) {
+        println!("{}", version_line());
+        return glib::ExitCode::SUCCESS;
+    }
     match launch() {
         Ok(code) => code,
         Err(problem) => {
@@ -140,6 +149,26 @@ fn launch() -> Result<glib::ExitCode, String> {
     Ok(code)
 }
 
+/// Whether the command line, program name first, is `district-ai --version`
+/// and nothing else. Anything more is left to the application, which refuses
+/// an option it does not know.
+fn version_requested(args: impl IntoIterator<Item = OsString>) -> bool {
+    let mut args = args.into_iter().skip(1);
+    args.next().is_some_and(|arg| arg == "--version") && args.next().is_none()
+}
+
+/// What `district-ai --version` prints: the version, and whether this build
+/// carries calls (the `voice` feature), which is what tells a package built
+/// with them from one built without.
+fn version_line() -> String {
+    let calls = if CALLS_AVAILABLE {
+        "with calls"
+    } else {
+        "without calls"
+    };
+    format!("district-ai {} ({calls})", env!("CARGO_PKG_VERSION"))
+}
+
 /// Forwards everything `from` receives to the model as events, until the app
 /// stops reading them.
 fn forward<T: Send + 'static>(
@@ -155,4 +184,46 @@ fn forward<T: Send + 'static>(
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args(list: &[&str]) -> Vec<OsString> {
+        list.iter().map(OsString::from).collect()
+    }
+
+    #[test]
+    fn only_a_lone_version_flag_asks_for_the_version() {
+        assert!(version_requested(args(&["district-ai", "--version"])));
+        assert!(!version_requested(args(&["district-ai"])));
+        assert!(!version_requested(args(&[])));
+        assert!(!version_requested(args(&["district-ai", "--version", "x"])));
+        assert!(!version_requested(args(&["district-ai", "-v"])));
+        assert!(!version_requested(args(&[
+            "district-ai",
+            "--gapplication-service"
+        ])));
+        // A link handed over by the desktop is never read as the flag.
+        assert!(!version_requested(args(&[
+            "district-ai",
+            "districtai://auth?x=--version"
+        ])));
+    }
+
+    /// The line names the crate's version and says whether this build has
+    /// calls, which the package checks read to tell the release build apart.
+    #[test]
+    fn the_version_line_names_the_version_and_the_calls() {
+        let calls = if CALLS_AVAILABLE {
+            "with calls"
+        } else {
+            "without calls"
+        };
+        assert_eq!(
+            version_line(),
+            format!("district-ai {} ({calls})", env!("CARGO_PKG_VERSION"))
+        );
+    }
 }

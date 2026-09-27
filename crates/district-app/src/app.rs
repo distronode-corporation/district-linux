@@ -104,9 +104,16 @@ mod tests {
             assert!(desktop.lines().any(|l| l == line), "{line}");
         }
         assert_eq!(REDIRECT_SCHEME, "districtai");
-        let service = include_str!("../data/com.distronode.DistrictAI.service");
+        // A template: each package writes its own binary's directory over
+        // `@bindir@` (the .deb `/usr/bin`, the Flatpak `/app/bin`), because the
+        // desktop starts what `Exec` names without searching `PATH`.
+        let service = include_str!("../data/com.distronode.DistrictAI.service.in");
         assert!(service.lines().any(|l| l == format!("Name={APP_ID}")));
-        assert!(service.contains("district-ai --gapplication-service"));
+        assert!(
+            service
+                .lines()
+                .any(|l| l == "Exec=@bindir@/district-ai --gapplication-service")
+        );
         let metainfo = include_str!("../data/com.distronode.DistrictAI.metainfo.xml");
         assert!(metainfo.contains(&format!("<id>{APP_ID}</id>")));
         assert!(metainfo.contains(&format!(
