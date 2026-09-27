@@ -187,8 +187,9 @@ pub struct MediaUpdate {
     pub event: MediaEvent,
 }
 
-/// What the engine reports.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// What the engine reports. `Debug` leaves out who: a telephone participant's
+/// identity can be the caller's number.
+#[derive(Clone, PartialEq, Eq)]
 pub enum MediaEvent {
     /// Joining the room.
     Connecting,
@@ -220,6 +221,35 @@ pub enum MediaEvent {
     /// Media from someone in the room could not be decrypted: their key and
     /// this session's do not agree.
     EncryptionFailed,
+}
+
+impl fmt::Debug for MediaEvent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Connecting => f.write_str("Connecting"),
+            Self::Connected => f.write_str("Connected"),
+            Self::Reconnecting => f.write_str("Reconnecting"),
+            Self::Disconnected(reason) => f.debug_tuple("Disconnected").field(reason).finish(),
+            Self::ParticipantJoined(participant) => f
+                .debug_tuple("ParticipantJoined")
+                .field(participant)
+                .finish(),
+            Self::ParticipantLeft { .. } => f
+                .debug_struct("ParticipantLeft")
+                .field("identity", &"<redacted>")
+                .finish(),
+            Self::RemoteTrack {
+                kind, available, ..
+            } => f
+                .debug_struct("RemoteTrack")
+                .field("identity", &"<redacted>")
+                .field("kind", kind)
+                .field("available", available)
+                .finish(),
+            Self::Microphone(state) => f.debug_tuple("Microphone").field(state).finish(),
+            Self::EncryptionFailed => f.write_str("EncryptionFailed"),
+        }
+    }
 }
 
 /// Why a session ended.

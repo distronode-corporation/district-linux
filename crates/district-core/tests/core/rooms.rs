@@ -557,3 +557,32 @@ fn every_way_a_room_ends_has_its_words_or_none() {
         assert_eq!(reason.message(), words, "{reason:?}");
     }
 }
+
+/// Nothing the engine reports prints who: a telephone participant's identity
+/// can be the caller's number.
+#[test]
+fn no_report_of_the_engine_prints_who() {
+    let who = "sip_caller-number";
+    let reports = [
+        MediaEvent::Connecting,
+        MediaEvent::Connected,
+        MediaEvent::Reconnecting,
+        MediaEvent::Disconnected(DisconnectReason::Left),
+        MediaEvent::ParticipantJoined(person(who)),
+        MediaEvent::ParticipantLeft {
+            identity: who.to_owned(),
+        },
+        MediaEvent::RemoteTrack {
+            identity: who.to_owned(),
+            kind: TrackKind::Audio,
+            available: true,
+        },
+        MediaEvent::Microphone(district_core::MicrophoneState::On),
+        MediaEvent::EncryptionFailed,
+    ];
+    for report in reports {
+        let shown = format!("{report:?}");
+        assert!(!shown.contains(who) && !shown.contains("Grace"), "{shown}");
+        assert!(!shown.is_empty());
+    }
+}
