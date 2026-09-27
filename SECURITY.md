@@ -49,14 +49,23 @@ The project is pre-release, and parts of this are not implemented yet.
   before anything in it is used, so a code injected by another program, or an old
   callback replayed from the browser's history, is never exchanged. An attempt is
   used up by its first callback, whatever the outcome.
+- The desktop delivers the callback to the running app (its desktop entry claims
+  the `districtai` scheme, and the app handles being opened with a link). The
+  app stays running while an attempt waits for the browser, even with its window
+  closed, because the verifier lives only in that process. The link is handed to
+  the checks above exactly as it arrived; anything else the app is opened with is
+  ignored.
 
 ### Tokens
 
 - The refresh token is kept in the desktop secret store (the Secret Service, or
   inside a Flatpak an encrypted keyring file whose key comes from the secret
   portal). It is never written to a plain file, a log or a settings store. If no
-  secret store can be reached, the app says so and keeps the session in memory
-  only, so the user signs in again at the next start.
+  secret store can be reached at start-up, the app says so over every screen and
+  keeps the session in memory only, so the user signs in again at the next start.
+- The app's preferences file (`settings.toml` under `$XDG_CONFIG_HOME`, readable
+  by its owner only) holds "ring on this computer" and the id of the workspace
+  last chosen, and nothing secret.
 - The access token is kept only in memory.
 - The service rotates the refresh token on every refresh and treats a second
   presentation of one as theft. The app therefore refreshes one request at a
@@ -107,6 +116,11 @@ The project is pre-release, and parts of this are not implemented yet.
   desktop can read notifications; its action carries the workspace and message
   ids, and opening it asks the service for the message's thread under the app's
   own session.
+- A notification's actions are the app's own application actions, and any
+  program on the session bus can invoke them, with any parameter. They carry ids
+  only, a parameter the app did not write is ignored, and what one asks for goes
+  through the same checks as a click: the core answers only a call that is
+  ringing here, and opens only a workspace the account can open.
 
 ### Hand-offs and meeting rooms
 
@@ -130,6 +144,13 @@ The project is pre-release, and parts of this are not implemented yet.
   microphone off, and the app never asks to turn it on.
 
 ### Calls on the desktop
+
+The LiveKit call engine is not written yet, and a build without it has no calls
+at all (`CoreConfig::calls_available` is false): it registers no presence, so the
+service never holds a caller for it; it never rings, answers or dials, and starts
+no billed audition; and a meeting room it is asked to join fails, saying calls
+are not available in this build. What follows is the design those builds will
+follow.
 
 - A desktop has no push service. While "ring on this computer" is on and the
   machine is awake, it registers its presence with the service: the pair

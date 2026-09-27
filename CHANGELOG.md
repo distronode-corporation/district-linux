@@ -334,7 +334,73 @@ date, and bump `[workspace.package] version` to match.
   - The runner takes three more traits (`Presence`, `CallEngine`, `RingSurface`),
     `Settings` keeps the setting, and `Notifier` can take a notification away.
 
+- The app's first screens. `district-ai` is now a GTK 4 and libadwaita window over
+  `district-core` (application id `com.distronode.DistrictAI`), drawn from the
+  core's state after every event and deciding nothing itself: a controller on the
+  main thread owns the model, the effect runner runs on a Tokio runtime beside the
+  main loop, and results, live updates and the call engine's reports come back on
+  one channel. The window and its pages are composite templates from committed
+  `.ui` files, compiled into the binary with the stylesheet, the ringtone and the
+  icons.
+  - Before a session: resuming one (with the reason and "Try again" when it
+    cannot), the signed-out screen with "Sign in with your browser" and the last
+    sign-in's failure, the wait for the browser with Cancel, and signing out. A
+    `districtai://auth` link reaches the running app through the desktop (the
+    app handles `open`) and goes to the core as it arrived; the app stays running
+    while the browser has the sign-in, even with its window closed.
+  - Signed in: a sidebar with the workspace switcher (and the warning when the
+    list is short), the overview, the inbox with its unread badge, calls and
+    contacts, the workspace's own screens as the member's role allows them, and
+    the account; it folds away behind the page in a narrow window. The overview
+    shows the finish-setup card, the four figures, the latest calls and
+    "Read-only access" for a viewer, or why there is no overview to show. The
+    account shows this computer's name and the build, and opens the devices list,
+    sign-out and account deletion. The devices list marks this device, asks
+    before every sign-out (one device, or every device) in a dialog, says when a
+    device was already signed out, and shows each device's last renewal in this
+    computer's time. Every other screen says it arrives in a later build. A
+    sign-out's result is also shown as a toast.
+  - The notice over the signed-in screens (a sign-in that could not be saved) is
+    a banner, and so is the app's own start-up notice when no keyring can be
+    reached: the session is then kept in memory only, as the security model says.
+  - Desktop notifications (`gio::Notification`), whose buttons and default action
+    carry ids only and ignore a parameter the app did not write; the ringtone, a
+    short tone made by `scripts/make-ringtone.py`; the About dialog.
+  - The brand's accent and semantic colours over libadwaita's neutrals, for the
+    light and dark styles the desktop picks, and none under high contrast.
+  - The desktop entry (`x-scheme-handler/districtai`, D-Bus activation), the D-Bus
+    service file, the AppStream metadata, and the app icon and its symbolic
+    version, traced from the Distronode mark.
+  - A headless smoke test (`--features gtk-tests`, under Xvfb and a private
+    session bus) that builds the real window against a scripted stand-in for the
+    effect runner, clicks through restoring, signing in (the answer arriving
+    through `open`), the overview, the account, the devices and their questions,
+    a narrow window and signing out, and draws every screen, light and dark.
+- `district-core`: `palette`, the brand's accent and semantic colours, light and
+  dark, held by a test to `contracts/palette.snapshot.json`, which
+  `scripts/sync-palette.py` records from the design tokens with the source file,
+  the commit and the date.
+- `district-desktop`: `SettingsFile`, the app's preferences ("ring on this
+  computer" and the last workspace) in `settings.toml` under `$XDG_CONFIG_HOME`,
+  written whole and atomically, and read as the defaults when missing or invalid.
+  `XdgDirs` gains `config_home`.
+- `district-call`: `UnavailableCallEngine`, the engine of a build without the
+  `livekit` feature, which joins nothing and reports each attempt as
+  `DisconnectReason::Unavailable`, and `CALLS_AVAILABLE`.
+- CI runs the app's smoke test under Xvfb as part of the coverage run, so the app
+  is measured, and validates the desktop entry and the AppStream metadata.
+
 ### Changed
+
+- `district-core`: `CoreConfig` gains `calls_available`. A build without a call
+  engine reads no ring setting, never registers this desktop's presence, rings
+  nothing, answers nothing, offers no dialler and starts no persona audition,
+  because each would reach a person or a bill with nothing to carry the audio. A
+  meeting room is still tried, and fails with the new
+  `DisconnectReason::Unavailable` ("Calls and meeting rooms are not available in
+  this build of District AI."), which a call or an audition also shows as its
+  failure.
+- `district-app`'s coverage floor is 91, measured by the smoke test, up from 0.
 
 - `district-core`: `Auth::sign_out` takes the sign-out's ticket, which orders its
   unregistration of the presence after every change the session asked for, and

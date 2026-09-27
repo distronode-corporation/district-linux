@@ -1,7 +1,8 @@
 # Contributing to District AI for Linux
 
-The project is pre-release: most crates are still placeholders. Issues and pull
-requests are welcome, but expect the layout below to fill in quickly.
+The project is pre-release: the app has its first screens and the rest are on
+their way. Issues and pull requests are welcome, but expect the layout below to
+keep filling in.
 
 ## Layout
 
@@ -21,18 +22,27 @@ crates/district-core/     App state with no GTK and no IO of its own: the sessio
                           effect runner with the traits the app implements,
                           `CallEngine` among them.
 crates/district-desktop/  Linux adapters with no GTK in them: secret storage (oo7),
-                          device id, settings, autostart through the portals.
-crates/district-call/     The call engine. The LiveKit implementation is behind the
-                          optional `livekit` feature, off by default.
-crates/district-app/      The GTK 4 and libadwaita binary, `district-ai`. The only
-                          crate that links GTK.
+                          device id, the settings file; autostart through the
+                          portals to come.
+crates/district-call/     The call engine. The LiveKit implementation will sit
+                          behind the optional `livekit` feature, off by default;
+                          until it is written, a build has `UnavailableCallEngine`,
+                          which joins nothing and says so.
+crates/district-app/      The GTK 4 and libadwaita app, `district-ai`, and the only
+                          crate that links GTK: a library the binary and the smoke
+                          test share. data/ holds the .ui templates, the
+                          stylesheet, the icons, the ringtone, the desktop entry,
+                          the D-Bus service file and the AppStream metadata.
 contracts/                What this client is checked against: the server's recorded
                           responses, the Android set and the desktop-only set
-                          (vendored and sanitised by sync-contracts.py), and the
-                          Android app's endpoint snapshot (sync-endpoints.py).
+                          (vendored and sanitised by sync-contracts.py), the
+                          Android app's endpoint snapshot (sync-endpoints.py), and
+                          the brand colours from the design tokens
+                          (sync-palette.py).
 scripts/                  check-version.py, check-public-hygiene.py and
-                          check-coverage.py, run by CI; sync-contracts.py and
-                          sync-endpoints.py, run by hand.
+                          check-coverage.py, run by CI; sync-contracts.py,
+                          sync-endpoints.py, sync-palette.py and make-ringtone.py,
+                          run by hand.
 coverage-floors.toml      Each crate's line coverage floor (see Coverage below).
 ```
 
@@ -59,18 +69,80 @@ else by leaving the app crate out:
 cargo test --workspace --exclude district-app
 ```
 
+## Running the app
+
+`cargo run -p district-app` opens the window. Signing in opens your browser, and
+the browser hands the result back through a `districtai://auth` link, which the
+desktop delivers to the running app because the app's desktop entry claims the
+scheme. Until there are packages, install the entry for your user, pointing at
+your build; the D-Bus service file lets the desktop start the app for a link or a
+notification when it is not running:
+
+```
+cargo build -p district-app
+mkdir -p ~/.local/share/applications ~/.local/share/dbus-1/services
+sed "s|^Exec=district-ai|Exec=$PWD/target/debug/district-ai|" \
+  crates/district-app/data/com.distronode.DistrictAI.desktop \
+  > ~/.local/share/applications/com.distronode.DistrictAI.desktop
+sed "s|^Exec=/usr/bin/district-ai|Exec=$PWD/target/debug/district-ai|" \
+  crates/district-app/data/com.distronode.DistrictAI.service \
+  > ~/.local/share/dbus-1/services/com.distronode.DistrictAI.service
+update-desktop-database ~/.local/share/applications
+```
+
+The app talks to the District AI service at <https://www.distronode.com>, so you
+need an account there. It keeps its preferences in
+`~/.config/com.distronode.DistrictAI/settings.toml` and your sign-in in your
+keyring, and without a keyring it keeps the sign-in in memory until it quits.
+
+The icon and the ringtone are built into the binary from `data/`. The icons were
+traced from the Distronode mark; the ringtone is written by
+`python3 scripts/make-ringtone.py` (and `--check` says whether the committed file
+is what it writes). The brand colours come from the design tokens in the
+website's repository: a maintainer with access refreshes
+`contracts/palette.snapshot.json` with
+`python3 scripts/sync-palette.py --monorepo <checkout>`, and a test in
+`district-core` then holds `district_core::palette` to it.
+
+## The smoke test
+
+The app's own tests include a smoke test, `crates/district-app/tests/smoke.rs`,
+that builds the real window against a scripted stand-in for the effect runner
+and drives it the way a person would: signing in (with the browser's answer
+arriving through the desktop), the overview, the account, the devices and the
+question before each sign-out, a narrow window, signing out. It needs a display
+and a session bus, so it is built only with the `gtk-tests` feature and runs
+under Xvfb, as CI runs it (the packages are `xvfb`, `xauth` and `dbus`):
+
+```
+GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none GTK_MEDIA=none \
+  xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
+  cargo test -p district-app --locked --features gtk-tests
+```
+
+The environment makes it the same everywhere: the software renderer, X11 under
+Xvfb, no accessibility bus, and no media backend (a missing GStreamer plugin
+aborts GTK rather than failing the ringtone). Set `DISTRICT_SMOKE_SHOTS` to a
+directory to have it save every screen there as a PNG, light and dark; look at
+them after changing a page. Keep decisions out of the widgets: a page reads the
+core's state and sends events, and what it shows is tested in `district-core`
+wherever it can be.
+
 ## The whole local gate
 
 This is what CI's `rust` and `repo` jobs run:
 
 ```
 cargo fmt --all --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked --features district-app/gtk-tests -- -D warnings
+cargo test --workspace --locked --exclude district-app
+# then the app's tests, the smoke test included, as "The smoke test" says
 python3 scripts/check-version.py
 python3 scripts/check-public-hygiene.py --self-test
 python3 scripts/check-public-hygiene.py
 python3 scripts/check-coverage.py --self-test
+desktop-file-validate crates/district-app/data/com.distronode.DistrictAI.desktop
+appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
 ```
 
 CI runs those tests with line coverage measured and checks it against the floors;
@@ -94,19 +166,25 @@ rustup component add llvm-tools-preview
 cargo install cargo-llvm-cov --locked
 ```
 
-then:
+then, as CI does (the app's tests under Xvfb, as "The smoke test" says, so the
+window is measured too):
 
 ```
-cargo llvm-cov --workspace --locked --json --summary-only --output-path target/coverage.json
+source <(cargo llvm-cov show-env --sh)
+cargo llvm-cov clean --workspace
+cargo test --workspace --locked --exclude district-app
+GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none GTK_MEDIA=none \
+  xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
+  cargo test -p district-app --locked --features gtk-tests
+cargo llvm-cov report --json --summary-only --output-path target/coverage.json
 python3 scripts/check-coverage.py target/coverage.json
 ```
 
 The check prints a table of every crate either way. Without the GTK development
-files, add `--exclude district-app` to the first command: the check then fails on
-`district-app` as missing from the report, which is expected, and the other rows
-still say where each crate stands. `cargo llvm-cov --workspace --show-missing-lines`
-lists the lines no test runs, and `cargo llvm-cov --workspace --open` shows them in
-a browser.
+files, leave out the app's run: the check then fails on `district-app` as missing
+from the report, which is expected, and the other rows still say where each crate
+stands. `cargo llvm-cov report --show-missing-lines` lists the lines no test
+runs, and `cargo llvm-cov report --open` shows them in a browser.
 
 What the floors mean:
 
@@ -120,7 +198,9 @@ What the floors mean:
 - `district-desktop`, `district-call` and `district-app` have measured floors:
   Secret Service and portal calls, live media and the GTK main loop cannot all run
   in CI, so each floor is what the tests reached when it was set, rounded down.
-  `district-app` starts at 0, because CI does not run its GTK main loop yet.
+  The app's is measured by its smoke test under Xvfb; what it cannot reach is the
+  start-up wiring (the keyring, the network, the runtime) and the effect
+  runner's thread, which only the real app runs.
 - There is no exclusion list. Code CI cannot run stays in the measurement and
   holds its crate's floor down, where everyone can see it.
 - A crate missing from the report fails whatever its floor, and a floor above 0

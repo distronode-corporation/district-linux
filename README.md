@@ -3,10 +3,11 @@
 A native GTK 4 and libadwaita desktop client for District AI, the AI voice
 receptionist from Distronode.
 
-> **Status: pre-release, under active development, not yet usable.** The
-> repository holds the workspace layout and the build and CI scaffolding. The app
-> currently opens an empty window and does nothing else. There are no releases or
-> packages yet.
+> **Status: pre-release, under active development, not yet usable day to day.**
+> The app signs in through your browser and shows your workspace's overview, your
+> account and the devices signed in to it. Every other screen says it arrives in
+> a later build, and this build cannot take or place calls. There are no releases
+> or packages yet. Screenshots will follow with the first release.
 
 ## What it will do
 
@@ -58,6 +59,14 @@ cd district-linux
 cargo build --release --locked
 ./target/release/district-ai
 ```
+
+Signing in opens your browser, which hands the result back through a
+`districtai://` link. For the browser to find the app, the desktop entry has to
+be installed; until there are packages, [CONTRIBUTING.md](CONTRIBUTING.md#running-the-app)
+says how to install it for your user.
+
+Without a keyring (GNOME Keyring, KeePassXC or another Secret Service), the app
+works but keeps your sign-in only until it quits, and says so.
 
 ## Contributing
 
