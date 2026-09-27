@@ -122,6 +122,24 @@ The project is pre-release, and parts of this are not implemented yet.
   through the same checks as a click: the core answers only a call that is
   ringing here, and opens only a workspace the account can open.
 
+### The inbox, calls and contacts
+
+- What customers wrote or said (names, messages, transcripts, research) is shown
+  as the text it is, never read as markup, so text a customer chose cannot style
+  or rewrite the window around it.
+- A reply is sent only when the member presses Send or Enter, one at a time, and
+  a reply written by the model, which is billed, only when the member presses
+  its own button. Research on a contact, also billed, starts only on its button,
+  and deleting a contact, clearing its research, blocking and unblocking each ask
+  first.
+- An image is attached only from a file the member picks in the desktop's file
+  chooser (the file chooser portal inside a Flatpak). The app reads no more than
+  one byte past the service's five megabyte limit, attaches it only to the
+  thread it was picked for, and uploads it only after the core has checked its
+  type and size. A file chooser still open when the thread is left is closed.
+- Phone numbers are grouped for reading on screen; what is sent, and what a form
+  is filled with, is the number as stored or as typed.
+
 ### Hand-offs and meeting rooms
 
 - Managing booking pages opens the web in the system browser through a link the

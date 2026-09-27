@@ -389,6 +389,54 @@ date, and bump `[workspace.package] version` to match.
   `DisconnectReason::Unavailable`, and `CALLS_AVAILABLE`.
 - CI runs the app's smoke test under Xvfb as part of the coverage run, so the app
   is measured, and validates the desktop entry and the AppStream metadata.
+- The app's second screens: the inbox, a thread, the call log and contacts, drawn
+  from `district-core` as the first ones are, each list beside what is open in it
+  (a nested `adw::NavigationSplitView`) and one pane at a time in a narrow window,
+  where the back button leads from the open item to its list, as the split
+  view's own ways back (a swipe, the mouse's back button) do.
+  - The inbox: the threads with their unread counts and draft chips, the note
+    when the list may be short, and search across every message once the typing
+    stops, with its matches, its failure (never shown as no matches) and the note
+    when older matches are left out. Escape closes the search.
+  - A thread: its history by day, messages on their sides with the channel, the
+    time and how a sent message's delivery went, calls in line, and "Older
+    messages" on request; its failure and a retry. The composer restores the
+    saved draft, sends on Enter (Shift+Enter is a new line, and Enter belongs to
+    an input method while it is composing), and offers Send only when the core
+    says it can, never while a message or an image is on its way. "Draft a reply
+    with AI" is its own button, labelled, and billed. An image is picked in the
+    desktop's file chooser, read no further than one byte past the service's
+    limit, and handed to the core for the thread it was picked for; the chooser
+    closes if that thread is left. A thread with no composer says why.
+  - The call log, read a page at a time as the list nears its end, or at once
+    while it does not fill the window, and a call: its summary, transcript,
+    analysis, details and the follow-up sent, each part shown only when there is
+    one, and "No transcript for this call." when there is none.
+  - Contacts, read the same way: the list, adding a contact in a form that says
+    what is missing (`ContactForm::hint`) and sends only what `can_submit`
+    allows, a contact with its details, what is known about its number and what
+    research found, editing it in the same form, running and clearing research,
+    blocking, unblocking and deleting, each question asked in a dialog that
+    closes when its screen is left, and the change on its way shown. The blocked
+    callers are a screen of their own, reached from the list. A viewer is told
+    the contact is read only and offered nothing to change.
+  - Outcomes as toasts (a contact added, saved, deleted, a caller blocked or
+    unblocked, research started or cleared), the newest replacing the one
+    showing; the live updates' status as a banner, with Refresh when the socket
+    has stopped; and a new message's notification opening its thread.
+  - Phone numbers are grouped for reading everywhere they are shown, the
+    overview's recent calls included, which now open the call.
+  - Every icon-only button has a tooltip and an accessible name, and a test reads
+    the templates to hold them to it. Lists are keyboard navigable.
+  - The smoke test drives each of these screens with the recorded server
+    responses, the file chooser included, and draws each one light and dark. It keeps settings in memory
+    (`GSETTINGS_BACKEND=memory`, in CI too) and turns off recent files, because
+    it opens the file chooser, which saves its own.
+- `district-core`: `format_phone_number`, a phone number grouped for reading and
+  anything else left as it is; `contact_label` and `blocked_label` (a name, else
+  the number grouped, else the address, else `UNNAMED_CONTACT`); and
+  `ThreadScreen::read_only_note`, why a thread has no composer
+  (`READ_ONLY_ROLE`, `NO_REPLY_TARGET`).
 
 ### Changed
 
@@ -400,7 +448,7 @@ date, and bump `[workspace.package] version` to match.
   `DisconnectReason::Unavailable` ("Calls and meeting rooms are not available in
   this build of District AI."), which a call or an audition also shows as its
   failure.
-- `district-app`'s coverage floor is 91, measured by the smoke test, up from 0.
+- `district-app`'s coverage floor is 95, measured by the smoke test, up from 0.
 
 - `district-core`: `Auth::sign_out` takes the sign-out's ticket, which orders its
   unregistration of the presence after every change the session asked for, and

@@ -4,10 +4,12 @@ A native GTK 4 and libadwaita desktop client for District AI, the AI voice
 receptionist from Distronode.
 
 > **Status: pre-release, under active development, not yet usable day to day.**
-> The app signs in through your browser and shows your workspace's overview, your
-> account and the devices signed in to it. Every other screen says it arrives in
-> a later build, and this build cannot take or place calls. There are no releases
-> or packages yet. Screenshots will follow with the first release.
+> The app signs in through your browser and shows your workspace's overview, the
+> inbox with its threads and replies, the call log with each call's transcript,
+> contacts and the blocked callers, your account and the devices signed in to it.
+> The workspace's other screens say they arrive in a later build, and this build
+> cannot take or place calls. There are no releases or packages yet. Screenshots
+> will follow with the first release.
 
 ## What it will do
 
