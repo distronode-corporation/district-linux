@@ -61,3 +61,18 @@ updates:
           - webrtc-sys-build
       cargo-minor:
         update-types: [minor, patch]
+    ignore:
+      # These are the versions the rest of the tree already uses: sha2, hmac
+      # and pbkdf2 through oo7, base64 through reqwest 0.12 (the LiveKit SDK's),
+      # pbjson and wiremock. Moving only ours to the next generation compiles a
+      # second copy of each (and of digest and its helpers), adds them to the
+      # Flatpak's sources, and changes nothing the app does; patch releases
+      # still come through. Lift an entry once the crates named here have moved.
+      - dependency-name: sha2
+        versions: [">= 0.11"]
+      - dependency-name: hmac
+        versions: [">= 0.13"]
+      - dependency-name: pbkdf2
+        versions: [">= 0.13"]
+      - dependency-name: base64
+        versions: [">= 0.23"]
