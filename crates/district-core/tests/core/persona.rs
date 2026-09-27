@@ -466,13 +466,26 @@ fn an_audition_is_asked_for_only_on_start_and_its_credential_is_dropped() {
         "the dialog is not dropped"
     );
 
-    model.update(Event::PersonaPreviewIssued {
+    let joined = model.update(Event::PersonaPreviewIssued {
         ticket: ticket(&effects[0]),
         result: Ok(credential()),
     });
     let held = persona(&model).preview_credential().unwrap();
     assert_eq!(held.room_name, credential().room_name);
-    let shown = format!("{:?} {:?}", model, signed_in(&model));
+    let [
+        Effect::ConnectMedia {
+            credential: media,
+            microphone: true,
+            ..
+        },
+    ] = joined.as_slice()
+    else {
+        panic!("{joined:?}");
+    };
+    // Handed over as the text it is, never decoded.
+    let key = credential().e2ee.unwrap().key;
+    assert_eq!(media.passphrase(), Some(key.as_str()));
+    let shown = format!("{:?} {:?} {joined:?}", model, signed_in(&model));
     for secret in [
         "contract-livekit-preview-jwt",
         "YfxKDUkaaGp2WrLLGHCHbe2nn5ArCWBd",
@@ -486,10 +499,12 @@ fn an_audition_is_asked_for_only_on_start_and_its_credential_is_dropped() {
             delay,
             ticket: wait,
         },
+        Effect::DisconnectMedia { .. },
     ] = stopped.as_slice()
     else {
         panic!("{stopped:?}");
     };
+    assert_eq!(signed_in(&model).media, None, "the room is left with it");
     assert_eq!(*delay, PREVIEW_COOLDOWN);
     let section = persona(&model);
     assert_eq!(section.preview, Some(PersonaPreview::Ended));

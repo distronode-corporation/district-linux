@@ -121,6 +121,9 @@ pub enum Route {
     },
     /// Meeting rooms: the meetings held, their records, and starting a room.
     Rooms,
+    /// The dialler, below the call log. Closed to a viewer, whom the dial
+    /// route refuses.
+    Dialer,
     /// The account.
     Account,
     /// The installations signed in to the account. Like the account, not tied to
@@ -162,7 +165,7 @@ impl Route {
     pub fn tab(&self) -> Tab {
         match self {
             Self::Inbox | Self::Thread { .. } => Tab::Inbox,
-            Self::Calls | Self::CallDetail { .. } => Tab::Calls,
+            Self::Calls | Self::CallDetail { .. } | Self::Dialer => Tab::Calls,
             Self::Contacts | Self::ContactDetail { .. } | Self::BlockedContacts => Tab::Contacts,
             Self::Account | Self::Devices => Tab::Account,
             _ => Tab::Overview,
@@ -179,7 +182,7 @@ impl Route {
     pub fn parent(&self) -> Option<Route> {
         match self {
             Self::Thread { .. } => Some(Self::Inbox),
-            Self::CallDetail { .. } => Some(Self::Calls),
+            Self::CallDetail { .. } | Self::Dialer => Some(Self::Calls),
             Self::ContactDetail { .. } | Self::BlockedContacts => Some(Self::Contacts),
             Self::DeskTicket { .. } | Self::DeskSettings => Some(Self::Desk),
             Self::SupportRequest { .. } => Some(Self::Support),
@@ -202,9 +205,10 @@ impl Route {
     /// Where to be after the open workspace changes.
     ///
     /// A detail names something in the old workspace, so it gives way to its
-    /// list. A settings section, the help desk and support give way to the
-    /// overview, because the member's role in the new workspace, which decides
-    /// whether they open at all, is not known until the new overview arrives.
+    /// list. A settings section, the help desk, support and the dialler give
+    /// way to the overview, because the member's role in the new workspace,
+    /// which decides whether they open at all, is not known until the new
+    /// overview arrives. A call under way is not a route, and goes on.
     /// Tabs, the workspace's other sections, the blocked list, the account and
     /// the devices list stay, and read the new workspace's data.
     pub fn after_workspace_switch(&self) -> Route {
@@ -214,7 +218,8 @@ impl Route {
             | Self::DeskTicket { .. }
             | Self::DeskSettings
             | Self::Support
-            | Self::SupportRequest { .. } => Self::Overview,
+            | Self::SupportRequest { .. }
+            | Self::Dialer => Self::Overview,
             Self::Thread { .. } | Self::CallDetail { .. } | Self::ContactDetail { .. } => {
                 self.tab().route()
             }

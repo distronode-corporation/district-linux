@@ -7,10 +7,11 @@ use std::time::Duration;
 use district_api::{ApiError, ErrorDetail};
 use district_auth::{AccessClaims, DrainReport, RevokeStatus, SignOutReport};
 use district_core::{
-    Auth, ContactWrite, ContactWritten, DistrictApi, Effect, EffectRunner, Event, ExchangeFailure,
-    InboxEvent, LiveUpdates, Model, Notification, Notifier, OneTimeUrl, OverviewScreen,
-    PickedAttachment, RestoreError, Route, SEARCH_DEBOUNCE, Settings, SignInError, SignedInSession,
-    Ticket, TokioClock, UrlOpener,
+    Auth, CallEngine, ContactWrite, ContactWritten, DistrictApi, Effect, EffectRunner, Event,
+    ExchangeFailure, InboxEvent, LiveUpdates, MediaCredential, Model, Notification, Notifier,
+    OneTimeUrl, OverviewScreen, PickedAttachment, Presence, RestoreError, RingSurface, Route,
+    SEARCH_DEBOUNCE, Settings, SignInError, SignedInSession, Ticket, TokioClock, Urgency,
+    UrlOpener,
 };
 use district_core::{MemberWrite, MessagingWrite};
 use district_model::{
@@ -34,15 +35,16 @@ use district_model::{
     WorkspaceBillingResponse, WorkspaceListResponse,
 };
 use district_model::{
-    AvailabilityResponse, CallHandlingPatch, CallHandlingResponse, DirectoryEntry,
-    KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeDocumentDraft,
-    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MemberListResponse,
-    MemberRemovalResponse, MemberResponse, MemberRole, MessagingAccountSave,
-    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingCreatorCell,
-    MessagingCredentials, MessagingDefaultResponse, MessagingDelete, MessagingMetaResponse,
-    MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault, MessagingTestResponse,
-    PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
-    RenameResponse, RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+    AvailabilityResponse, CallAnswerResponse, CallHandlingPatch, CallHandlingResponse,
+    CallHangUpResponse, DialResponse, DirectoryEntry, KnowledgeCreateResponse,
+    KnowledgeDeleteResponse, KnowledgeDocumentDraft, KnowledgeListResponse, KnowledgeMode,
+    KnowledgeModeResponse, MemberListResponse, MemberRemovalResponse, MemberResponse, MemberRole,
+    MessagingAccountSave, MessagingAccountSaveResponse, MessagingChannelDefaultResponse,
+    MessagingCreatorCell, MessagingCredentials, MessagingDefaultResponse, MessagingDelete,
+    MessagingMetaResponse, MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault,
+    MessagingTestResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
+    PersonaPreviewTokenResponse, RenameResponse, RoutingRule, WorkspaceConfigResponse,
+    WorkspaceSaveResponse,
 };
 use district_model::{
     CallHandlingMode, MessagingChannel, MessagingCredentialSource, TwilioCredentials,
@@ -938,6 +940,29 @@ impl DistrictApi for FakeApi {
         self.0.push(format!("rename {workspace_id} {name}"));
         Ok(fixture("district-rename.json"))
     }
+
+    async fn dial(&self, workspace_id: &str, to: &str) -> Result<DialResponse, ApiError> {
+        self.0.push(format!("dial {workspace_id} {to}"));
+        Ok(fixture("district-dial.json"))
+    }
+
+    async fn answer_call(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> Result<CallAnswerResponse, ApiError> {
+        self.0.push(format!("answer {workspace_id} {call_id}"));
+        Ok(fixture("district-call-answer.json"))
+    }
+
+    async fn hang_up_call(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> Result<CallHangUpResponse, ApiError> {
+        self.0.push(format!("hang up {workspace_id} {call_id}"));
+        Err(server_error())
+    }
 }
 
 fn handling_answer(mode: &str, seconds: i64) -> CallHandlingResponse {
@@ -983,6 +1008,59 @@ impl Notifier for FakeNotifier {
             notification.id, notification.title, notification.body
         ));
     }
+
+    fn withdraw(&self, id: &str) {
+        self.0.push(format!("withdraw {id}"));
+    }
+}
+
+struct FakePresence(Log);
+
+impl Presence for FakePresence {
+    async fn set(&self, _revision: Ticket, registered: bool) -> Result<(), ApiError> {
+        self.0.push(format!("presence {registered}"));
+        if registered {
+            Ok(())
+        } else {
+            Err(server_error())
+        }
+    }
+}
+
+struct FakeEngine(Log);
+
+impl CallEngine for FakeEngine {
+    async fn connect(&self, _session: Ticket, credential: MediaCredential, microphone: bool) {
+        self.0.push(format!(
+            "connect {} passphrase {} microphone {microphone}",
+            credential.url(),
+            credential.passphrase().is_some()
+        ));
+    }
+
+    async fn set_microphone(&self, _session: Ticket, enabled: bool) {
+        self.0.push(format!("microphone {enabled}"));
+    }
+
+    async fn disconnect(&self, _session: Ticket) {
+        self.0.push("disconnect");
+    }
+}
+
+struct FakeRing(Log);
+
+impl RingSurface for FakeRing {
+    fn start_ringtone(&self) {
+        self.0.push("ringtone on");
+    }
+
+    fn stop_ringtone(&self) {
+        self.0.push("ringtone off");
+    }
+
+    fn present_window(&self) {
+        self.0.push("present window");
+    }
 }
 
 struct FakeAuth(Log);
@@ -1007,7 +1085,7 @@ impl Auth for FakeAuth {
         Err(SignInError::Exchange(ExchangeFailure::Rejected))
     }
 
-    async fn sign_out(&self) -> SignOutReport {
+    async fn sign_out(&self, _revision: Ticket) -> SignOutReport {
         self.0.push("sign out");
         signed_out()
     }
@@ -1018,7 +1096,7 @@ impl Auth for FakeAuth {
     }
 }
 
-struct FakeSettings(Mutex<Option<String>>, Log);
+struct FakeSettings(Mutex<Option<String>>, Log, Mutex<bool>);
 
 impl Settings for FakeSettings {
     fn last_workspace(&self) -> Option<String> {
@@ -1028,6 +1106,15 @@ impl Settings for FakeSettings {
     fn set_last_workspace(&self, workspace_id: Option<&str>) {
         self.1.push(format!("remember {workspace_id:?}"));
         *self.0.lock().unwrap() = workspace_id.map(str::to_owned);
+    }
+
+    fn ring_on_this_computer(&self) -> bool {
+        *self.2.lock().unwrap()
+    }
+
+    fn set_ring_on_this_computer(&self, ring_here: bool) {
+        self.1.push(format!("ring here {ring_here}"));
+        *self.2.lock().unwrap() = ring_here;
     }
 }
 
@@ -1040,19 +1127,38 @@ impl UrlOpener for FakeOpener {
     }
 }
 
-type Runner =
-    EffectRunner<FakeApi, FakeAuth, FakeSettings, FakeOpener, TokioClock, FakeLive, FakeNotifier>;
+type Runner = EffectRunner<
+    FakeApi,
+    FakeAuth,
+    FakeSettings,
+    FakeOpener,
+    TokioClock,
+    FakeLive,
+    FakeNotifier,
+    FakePresence,
+    FakeEngine,
+    FakeRing,
+>;
 
+/// A runner over fakes that log what they are asked, with "ring on this
+/// computer" off, so a loop run to its end sets no heartbeat going.
 fn fakes(remembered: Option<&str>, browser: bool) -> (Runner, Log) {
     let log = Log::default();
     let runner = EffectRunner::new(
         FakeApi(log.clone()),
         FakeAuth(log.clone()),
-        FakeSettings(Mutex::new(remembered.map(str::to_owned)), log.clone()),
+        FakeSettings(
+            Mutex::new(remembered.map(str::to_owned)),
+            log.clone(),
+            Mutex::new(false),
+        ),
         FakeOpener(browser, log.clone()),
         TokioClock,
         FakeLive(log.clone()),
         FakeNotifier(log.clone()),
+        FakePresence(log.clone()),
+        FakeEngine(log.clone()),
+        FakeRing(log.clone()),
     );
     (runner, log)
 }
@@ -1656,6 +1762,8 @@ async fn watching_and_notifying_report_nothing_back() {
         id: "message:msg_1".to_owned(),
         title: Notification::MESSAGE_TITLE.to_owned(),
         body: Notification::MESSAGE_BODY.to_owned(),
+        urgency: Urgency::Normal,
+        actions: Vec::new(),
         target: district_core::NotificationTarget::Message {
             workspace_id: AGENCY.to_owned(),
             message_id: "msg_1".to_owned(),

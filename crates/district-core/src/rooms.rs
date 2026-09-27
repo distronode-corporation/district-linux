@@ -1,13 +1,16 @@
 //! The rooms lobby: the meetings held in the workspace's rooms, one meeting's
 //! record, and starting or rejoining a room.
 //!
-//! No media here. Starting a room names it and asks the service for the
-//! credential to join it, and the lobby keeps that credential for the call
-//! engine, which a later milestone adds. The credential holds three secrets (the
-//! media token, the room's end-to-end encryption passphrase and, for a member
-//! who may speak, a signed guest link); none of them is printed in `Debug`, the
-//! passphrase is kept as the text it is and never decoded, and all of it is
-//! dropped when the lobby is left.
+//! Starting a room names it and asks the service for the credential to join
+//! it, and the room is then joined through the call engine, with the microphone
+//! on for a member who may speak and off for a viewer, who listens. The
+//! credential holds three secrets (the media token, the room's end-to-end
+//! encryption passphrase and, for a member who may speak, a signed guest link);
+//! none of them is printed in `Debug`, the passphrase is kept as the text it is
+//! and handed to the engine as that text, and all of it is dropped when the
+//! room is left: by the member, by the room ending under them, or by leaving
+//! the lobby, which leaves the room. A room cannot be started while a call, an
+//! audition or another room holds the engine.
 //!
 //! A room is named only through [`MeetRoomName`], which cannot name the other
 //! kind of room the credential route serves, a billed AI video avatar session.
@@ -22,6 +25,7 @@ use district_api::ApiError;
 use district_model::{MeetRoomName, MeetingDetail, MeetingSummary, RoomTokenResponse};
 
 use crate::failure::FailureText;
+use crate::media::{DisconnectReason, MediaCredential, MediaOwner, MediaSession};
 use crate::model::{CoreConfig, Effect, Slot, Ticket, Tickets};
 use crate::signed_in::{Next, SignedIn, stay};
 
@@ -45,8 +49,12 @@ pub struct RoomsScreen {
     pub joining: Option<MeetRoomName>,
     /// Why the last credential request failed.
     pub join_failure: Option<FailureText>,
-    /// The room joined, with its credential, for the call engine.
+    /// The room joined, with its credential. Its people are the session's:
+    /// [`SignedIn::room_session`].
     pub room: Option<RoomJoin>,
+    /// Why the last room ended under the member, when there is something to
+    /// say ([`DisconnectReason::message`]).
+    pub ended: Option<DisconnectReason>,
 }
 
 impl RoomsScreen {
@@ -58,6 +66,11 @@ impl RoomsScreen {
     /// The note that the note-taker is in every room.
     pub const COMPANION_NOTE: &'static str =
         "The Companion joins every room and writes up the minutes.";
+    /// The note while a call or an audition holds the microphone.
+    pub const BUSY_NOTE: &'static str = "Finish the call you are on to join a room.";
+    /// The note for a viewer, who joins to listen.
+    pub const LISTENER_NOTE: &'static str =
+        "You are in this workspace as a viewer, so you join rooms to listen.";
 
     /// What the typed name makes the room's name: letters, digits and hyphens,
     /// in lower case. Empty when nothing usable was typed.
@@ -206,29 +219,46 @@ impl SignedIn {
         }]
     }
 
-    /// Leaves the lobby: the record, the credential and its passphrase go.
-    pub(crate) fn close_rooms(&mut self, tickets: &mut Tickets) {
+    /// Leaves the lobby: the record, the credential and its passphrase go, and
+    /// the room joined is left.
+    pub(crate) fn close_rooms(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         tickets.cancel_each(&LOBBY_SLOTS);
         let rooms = &mut self.rooms;
         rooms.record = None;
         rooms.joining = None;
         rooms.join_failure = None;
-        rooms.room = None;
+        rooms.ended = None;
+        self.leave_room()
+    }
+
+    /// Leaves the room joined, if one is: its credential goes, and the engine
+    /// leaves it.
+    pub(crate) fn leave_room(&mut self) -> Vec<Effect> {
+        self.rooms.room = None;
+        self.leave_media_of(MediaOwner::Room)
+    }
+
+    /// The session of the room joined, for its people and its microphone.
+    pub fn room_session(&self) -> Option<&MediaSession> {
+        self.media
+            .as_ref()
+            .filter(|media| media.owner == MediaOwner::Room)
     }
 
     pub(crate) fn rooms_event(&mut self, event: RoomsEvent, tickets: &mut Tickets) -> Next {
         let workspace_id = self.workspace_id();
+        let busy = self.media_busy();
         let rooms = &mut self.rooms;
         let effects = match event {
             RoomsEvent::EditRoomName(name) => {
                 rooms.room_name = name;
                 Vec::new()
             }
-            RoomsEvent::Start if rooms.can_start() => {
+            RoomsEvent::Start if rooms.can_start() && !busy => {
                 let room = MeetRoomName::new(&workspace_id, &rooms.room_name);
                 join(rooms, room, tickets)
             }
-            RoomsEvent::Rejoin { meeting_id } if rooms.joining.is_none() => {
+            RoomsEvent::Rejoin { meeting_id } if !busy => {
                 let room = rejoinable(rooms, &meeting_id, &workspace_id);
                 join(rooms, room, tickets)
             }
@@ -246,12 +276,10 @@ impl SignedIn {
                 rooms.record = None;
                 Vec::new()
             }
-            RoomsEvent::LeaveRoom => {
-                rooms.room = None;
-                Vec::new()
-            }
+            RoomsEvent::LeaveRoom => self.leave_room(),
             RoomsEvent::DismissJoinFailure => {
                 rooms.join_failure = None;
+                rooms.ended = None;
                 Vec::new()
             }
             RoomsEvent::Start | RoomsEvent::Rejoin { .. } => Vec::new(),
@@ -298,15 +326,28 @@ impl SignedIn {
         result: Result<RoomTokenResponse, ApiError>,
         tickets: &mut Tickets,
     ) -> Next {
+        let mut effects = Vec::new();
         if tickets.accept(Slot::RoomToken, ticket)
             && let Some(room) = self.rooms.joining.take()
         {
             match result {
-                Ok(credential) => self.rooms.room = Some(RoomJoin { room, credential }),
+                Ok(credential) => {
+                    let media = MediaCredential::from_room(&credential);
+                    self.rooms.room = Some(RoomJoin { room, credential });
+                    let speak = self.capabilities().can_publish_in_rooms;
+                    effects = self.start_media(MediaOwner::Room, media, speak, tickets);
+                }
                 Err(error) => self.rooms.join_failure = Some(FailureText::from_api_error(&error)),
             }
         }
-        stay()
+        Next::Stay(effects)
+    }
+
+    /// The room ended under the member: its credential goes, and the lobby says
+    /// why when there is something to say.
+    pub(crate) fn room_media_ended(&mut self, reason: DisconnectReason) {
+        self.rooms.room = None;
+        self.rooms.ended = Some(reason);
     }
 }
 
@@ -317,7 +358,7 @@ fn join(rooms: &mut RoomsScreen, room: Option<MeetRoomName>, tickets: &mut Ticke
     };
     rooms.joining = Some(room.clone());
     rooms.join_failure = None;
-    rooms.room = None;
+    rooms.ended = None;
     vec![Effect::RequestRoomToken {
         ticket: tickets.issue(Slot::RoomToken),
         room,

@@ -110,7 +110,10 @@ fn a_stored_session_signs_in_and_reads_the_workspaces() {
     let (model, effects) = started(Ok(claims()));
     assert!(matches!(
         effects.as_slice(),
-        [Effect::LoadWorkspaces { .. }]
+        [
+            Effect::ReadRingSetting { .. },
+            Effect::LoadWorkspaces { .. }
+        ]
     ));
     let signed_in = signed_in(&model);
     assert_eq!(
@@ -359,7 +362,10 @@ fn signing_in_opens_the_browser_waits_and_exchanges() {
     });
     assert!(matches!(
         effects.as_slice(),
-        [Effect::LoadWorkspaces { .. }]
+        [
+            Effect::ReadRingSetting { .. },
+            Effect::LoadWorkspaces { .. }
+        ]
     ));
     assert_eq!(signed_in(&model).identity.device_id, THIS_DEVICE);
     assert_eq!(signed_in(&model).notice, None);

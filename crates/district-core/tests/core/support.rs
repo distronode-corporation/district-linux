@@ -155,7 +155,11 @@ pub fn ticket(effect: &Effect) -> Ticket {
         | Effect::SetAvailability { ticket, .. }
         | Effect::LoadMembers { ticket, .. }
         | Effect::WriteMember { ticket, .. }
-        | Effect::RenameWorkspace { ticket, .. } => *ticket,
+        | Effect::RenameWorkspace { ticket, .. }
+        | Effect::ReadRingSetting { ticket }
+        | Effect::SetPresence { ticket, .. }
+        | Effect::Dial { ticket, .. }
+        | Effect::AnswerCall { ticket, .. } => *ticket,
         other => panic!("{other:?} carries no ticket"),
     }
 }

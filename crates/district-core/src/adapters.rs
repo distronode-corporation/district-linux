@@ -1,5 +1,5 @@
-//! The real implementations of the runner's API, sign-in and live updates
-//! traits, over `district-api`, `district-auth` and `district-live`.
+//! The real implementations of the runner's API, sign-in, live updates and
+//! presence traits, over `district-api`, `district-auth` and `district-live`.
 
 use std::future::Future;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use district_api::{ApiClient, ApiConfig, ApiError, TokenSource};
 use district_auth::{
     AccessClaims, AuthorizationGrant, DrainReport, ExchangeOutcome, LoginError, LoginFlow,
-    NativeAuthApi, NoPresence, RefreshApi, RevokeApi, SessionStore, SignOut, SignOutReport,
+    NativeAuthApi, RefreshApi, RevokeApi, SessionStore, SignOut, SignOutReport,
     TokenRefreshCoordinator,
 };
 use district_live::{LiveConfig, TelemetryHub, TokenMinter, WorkspaceUpdate};
@@ -32,20 +32,22 @@ use district_model::{
     WorkspaceListResponse,
 };
 use district_model::{
-    AvailabilityResponse, CallHandlingPatch, CallHandlingResponse, DirectoryEntry,
-    KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeDocumentDraft,
-    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MemberListResponse,
-    MemberRemovalResponse, MemberResponse, MemberRole, MessagingAccountSave,
-    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingCreatorCell,
-    MessagingCredentials, MessagingDefaultResponse, MessagingDelete, MessagingMetaResponse,
-    MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault, MessagingTestResponse,
-    PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
-    RenameResponse, RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+    AvailabilityResponse, CallAnswerResponse, CallHandlingPatch, CallHandlingResponse,
+    CallHangUpResponse, DialResponse, DirectoryEntry, KnowledgeCreateResponse,
+    KnowledgeDeleteResponse, KnowledgeDocumentDraft, KnowledgeListResponse, KnowledgeMode,
+    KnowledgeModeResponse, MemberListResponse, MemberRemovalResponse, MemberResponse, MemberRole,
+    MessagingAccountSave, MessagingAccountSaveResponse, MessagingChannelDefaultResponse,
+    MessagingCreatorCell, MessagingCredentials, MessagingDefaultResponse, MessagingDelete,
+    MessagingMetaResponse, MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault,
+    MessagingTestResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
+    PersonaPreviewTokenResponse, PresenceRegistration, PushRegistrationResponse, RenameResponse,
+    RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 use url::Url;
 
 use crate::model::Ticket;
+use crate::presence::{Presence, PresenceApi, PresenceSignOut};
 use crate::runner::{Auth, DistrictApi, LiveUpdates};
 use crate::session::{ExchangeFailure, RestoreError, SignInError, SignedInSession};
 
@@ -776,6 +778,45 @@ impl<S: TokenSource> DistrictApi for ApiClient<S> {
     ) -> impl Future<Output = Result<RenameResponse, ApiError>> + Send {
         ApiClient::rename_workspace(self, workspace_id, name)
     }
+
+    fn dial(
+        &self,
+        workspace_id: &str,
+        to: &str,
+    ) -> impl Future<Output = Result<DialResponse, ApiError>> + Send {
+        ApiClient::dial(self, workspace_id, to)
+    }
+
+    fn answer_call(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> impl Future<Output = Result<CallAnswerResponse, ApiError>> + Send {
+        ApiClient::answer_call(self, workspace_id, call_id)
+    }
+
+    fn hang_up_call(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> impl Future<Output = Result<CallHangUpResponse, ApiError>> + Send {
+        ApiClient::hang_up_call(self, workspace_id, call_id)
+    }
+}
+
+impl<S: TokenSource + 'static> PresenceApi for ApiClient<S> {
+    fn register_presence(
+        &self,
+        registration: &PresenceRegistration,
+    ) -> impl Future<Output = Result<PushRegistrationResponse, ApiError>> + Send {
+        ApiClient::register_presence(self, registration)
+    }
+
+    fn unregister_presence(
+        &self,
+    ) -> impl Future<Output = Result<PushRegistrationResponse, ApiError>> + Send {
+        ApiClient::unregister_presence(self)
+    }
 }
 
 /// [`LiveUpdates`] over the telemetry hub.
@@ -848,31 +889,37 @@ impl CodeExchange for NativeAuthApi {
 /// Build the coordinator once for the app and hand the same one (it is cheap to
 /// clone and clones share everything) to the API client as its token source and
 /// to this. Two coordinators over one store would be two refresh locks, which
-/// is no lock at all.
-pub struct NativeAuth<S, A, R, X> {
+/// is no lock at all. The same goes for the presence: hand this the one the
+/// runner has, so a sign-out's unregistration is ordered after every change
+/// the runner sent.
+pub struct NativeAuth<S, A, R, X, P> {
     flow: Mutex<LoginFlow>,
     exchange: X,
     coordinator: TokenRefreshCoordinator<S, A>,
     sign_out: SignOut<S, A, R>,
+    presence: P,
     device_id: String,
     device_name: Option<String>,
 }
 
-impl<S, A, R, X> NativeAuth<S, A, R, X>
+impl<S, A, R, X, P> NativeAuth<S, A, R, X, P>
 where
     S: SessionStore,
     A: RefreshApi,
     R: RevokeApi,
     X: CodeExchange,
+    P: Presence,
 {
     /// Sign-in against the service `config` points at, exchanging codes through
-    /// `exchange`, keeping the session in `coordinator` and revoking it through
-    /// `revoke`, as the installation `device_id` named `device_name`.
+    /// `exchange`, keeping the session in `coordinator`, revoking it through
+    /// `revoke` and unregistering this desktop's presence through `presence`
+    /// first, as the installation `device_id` named `device_name`.
     pub fn new(
         config: &ApiConfig,
         exchange: X,
         coordinator: TokenRefreshCoordinator<S, A>,
         revoke: R,
+        presence: P,
         device_id: impl Into<String>,
         device_name: Option<String>,
     ) -> Self {
@@ -881,6 +928,7 @@ where
             exchange,
             sign_out: SignOut::new(coordinator.clone(), revoke),
             coordinator,
+            presence,
             device_id: device_id.into(),
             device_name,
         }
@@ -907,12 +955,13 @@ where
     }
 }
 
-impl<S, A, R, X> Auth for NativeAuth<S, A, R, X>
+impl<S, A, R, X, P> Auth for NativeAuth<S, A, R, X, P>
 where
     S: SessionStore,
     A: RefreshApi,
     R: RevokeApi,
     X: CodeExchange,
+    P: Presence,
 {
     async fn restore(&self) -> Result<AccessClaims, RestoreError> {
         let token = self
@@ -956,11 +1005,15 @@ where
         })
     }
 
-    async fn sign_out(&self) -> SignOutReport {
-        // The desktop's presence is not registered yet, so there is nothing to
-        // unregister before the session goes. The live sockets are the model's
-        // to close, and it closes them as it signs out.
-        self.sign_out.sign_out(&NoPresence).await
+    async fn sign_out(&self, revision: Ticket) -> SignOutReport {
+        // The presence goes first, while the access token still works. The
+        // live sockets are the model's to close, and it closes them as it
+        // signs out.
+        let presence = PresenceSignOut {
+            presence: &self.presence,
+            revision,
+        };
+        self.sign_out.sign_out(&presence).await
     }
 
     async fn drain_revoke_outbox(&self) -> DrainReport {

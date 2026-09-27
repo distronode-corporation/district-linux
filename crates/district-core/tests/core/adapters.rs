@@ -14,7 +14,7 @@ use district_auth::{
 };
 use district_core::{
     Auth, CodeExchange, DistrictApi, Effect, ExchangeFailure, LiveHub, LiveUpdates, NativeAuth,
-    RestoreError, SignInError, Ticket,
+    Presence, RestoreError, SignInError, Ticket,
 };
 use district_live::{
     LiveConfig, LiveError, LiveUpdate, OpenFuture, SystemClock, TokenMinter, Transport,
@@ -1054,6 +1054,28 @@ impl RevokeApi for Revokes {
     }
 }
 
+/// Records every change of presence, in order, and what else happened around
+/// it (a revoke).
+#[derive(Clone, Default)]
+struct Timeline(Arc<Mutex<Vec<String>>>);
+
+impl Timeline {
+    fn push(&self, entry: String) {
+        self.0.lock().unwrap().push(entry);
+    }
+}
+
+/// A presence that records each change it is asked for.
+#[derive(Clone, Default)]
+struct RecordedPresence(Timeline);
+
+impl Presence for RecordedPresence {
+    async fn set(&self, revision: Ticket, registered: bool) -> Result<(), ApiError> {
+        self.0.push(format!("presence {revision:?} {registered}"));
+        Ok(())
+    }
+}
+
 type Coordinator = TokenRefreshCoordinator<MemorySessionStore, NoRefresh>;
 
 /// Far enough ahead that no refresh is ever due.
@@ -1072,7 +1094,18 @@ fn native_auth<X: CodeExchange>(
     config: &ApiConfig,
     exchange: X,
 ) -> (
-    NativeAuth<MemorySessionStore, NoRefresh, Revokes, X>,
+    NativeAuth<MemorySessionStore, NoRefresh, Revokes, X, RecordedPresence>,
+    Coordinator,
+) {
+    native_auth_with(config, exchange, RecordedPresence::default())
+}
+
+fn native_auth_with<X: CodeExchange, P: Presence>(
+    config: &ApiConfig,
+    exchange: X,
+    presence: P,
+) -> (
+    NativeAuth<MemorySessionStore, NoRefresh, Revokes, X, P>,
     Coordinator,
 ) {
     let coordinator = TokenRefreshCoordinator::new(MemorySessionStore::new(), NoRefresh);
@@ -1081,6 +1114,7 @@ fn native_auth<X: CodeExchange>(
         exchange,
         coordinator.clone(),
         Revokes,
+        presence,
         THIS_DEVICE,
         Some("Ubuntu 24.04.1 LTS".to_owned()),
     );
@@ -1134,7 +1168,7 @@ async fn a_sign_in_in_the_browser_is_exchanged_kept_and_signed_out() {
     assert_eq!(restored.user_id, claims().user_id);
     assert_eq!(restored.device_id, claims().device_id);
 
-    let report = auth.sign_out().await;
+    let report = auth.sign_out(revisions()[0]).await;
     assert_eq!(report.revoke, RevokeStatus::Revoked);
     assert_eq!(report.cleared, Ok(()));
     assert!(report.presence_unregistered);

@@ -83,8 +83,10 @@ pub struct Capabilities {
     /// phone numbers and the operator's own prompt, so for a viewer the sections
     /// are not offered at all.
     pub can_read_configuration: bool,
-    /// Placing a call from the desktop. The dial route refuses a viewer, so the
-    /// dialler is not offered at all rather than offered and refused.
+    /// Placing a call from the desktop, and answering one rung here. The dial
+    /// and answer routes both refuse a viewer, so the dialler is not offered at
+    /// all rather than offered and refused, and a call does not ring here for a
+    /// role that could not answer it.
     pub can_dial: bool,
     /// The customer desk: the tickets the workspace's own customers raised. Every
     /// route behind it refuses a viewer, reads included, because tickets carry a
@@ -126,11 +128,12 @@ impl Capabilities {
     /// billing, workflows, booking pages and rooms, whose reads all admit a
     /// viewer and whose screens withhold their own controls.
     ///
-    /// What is closed is the four sections backed by the configuration read; the
-    /// members and phone numbers settings sections, which are kept from a viewer
-    /// as a deliberate stopping point even though their reads would answer (each
-    /// needs its controls audited before it is opened); and the help desk and
-    /// support, every route of which refuses a viewer, reads included.
+    /// What is closed is the dialler, to a viewer; the four sections backed by
+    /// the configuration read; the members and phone numbers settings
+    /// sections, which are kept from a viewer as a deliberate stopping point
+    /// even though their reads would answer (each needs its controls audited
+    /// before it is opened); and the help desk and support, every route of
+    /// which refuses a viewer, reads included.
     pub fn allows(&self, route: &Route) -> bool {
         match route {
             Route::Workspace(
@@ -144,6 +147,7 @@ impl Capabilities {
             }
             Route::Desk | Route::DeskTicket { .. } | Route::DeskSettings => self.can_use_desk,
             Route::Support | Route::SupportRequest { .. } => self.can_use_support,
+            Route::Dialer => self.can_dial,
             _ => true,
         }
     }

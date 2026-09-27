@@ -13,14 +13,17 @@
 //!    workspace" or "open this page in the browser".
 //! 2. The GTK app renders the model and forwards what the user does as events.
 //!    It decides nothing.
-//! 3. [`EffectRunner`] runs each effect against seven traits ([`DistrictApi`],
+//! 3. [`EffectRunner`] runs each effect against ten traits ([`DistrictApi`],
 //!    [`Auth`], [`Settings`], [`UrlOpener`], [`Clock`], [`LiveUpdates`],
-//!    [`Notifier`]) and turns its result into an event for the model.
+//!    [`Notifier`], [`Presence`], [`CallEngine`], [`RingSurface`]) and turns its
+//!    result into an event for the model.
 //!
-//! Live updates are the one input that is not the result of an effect: the app
-//! reads the receiver [`LiveHub::new`] hands it and forwards each update to the
-//! model as [`Event::Live`]. The model decides which workspace is watched
-//! ([`Effect::WatchLive`]) and what each update reads again.
+//! Two inputs are not the result of an effect. Live updates: the app reads the
+//! receiver [`LiveHub::new`] hands it and forwards each update to the model as
+//! [`Event::Live`]; the model decides which workspace is watched
+//! ([`Effect::WatchLive`]) and what each update reads again. And the call
+//! engine's reports, which the app forwards as [`Event::Media`], each naming
+//! the session it is about.
 //!
 //! Tests drive the model with events directly, and the runner with fakes and a
 //! paused clock, so every decision here is checked without a display, a network
@@ -62,14 +65,22 @@
 //!   ([`CallHandlingSection`]), the knowledge base ([`KnowledgeSection`]), the
 //!   carrier accounts ([`MessagingSection`]) and the members and the
 //!   workspace's name ([`MembersSection`]).
+//! - Calls on the desktop: the dialler ([`DialerScreen`]), a call rung here
+//!   and its answer ([`RingController`]), the call itself, placed or answered
+//!   ([`ActiveCall`]), meeting rooms and persona auditions joined through the
+//!   engine, and the one media session all of them share ([`MediaSession`],
+//!   through [`CallEngine`]); and this desktop's presence, which is what lets a
+//!   call ring it ([`PresenceState`], [`DesktopPresence`]).
 //! - [`FailureText`]: the words for every failure, in one place.
-//! - [`NativeAuth`], [`LiveHub`] and the [`DistrictApi`] implementation for
-//!   [`ApiClient`](district_api::ApiClient): the real sign-in, live updates and
-//!   API behind the runner's traits.
+//! - [`NativeAuth`], [`LiveHub`], [`DesktopPresence`] and the [`DistrictApi`]
+//!   implementation for [`ApiClient`](district_api::ApiClient): the real
+//!   sign-in, live updates, presence and API behind the runner's traits.
 //!
-//! The app implements the other four traits: [`Settings`] over its settings
-//! store, [`UrlOpener`] over the desktop's way of opening a link, [`Notifier`]
-//! over its notifications, and [`Clock`], for which [`TokioClock`] will do.
+//! The app implements the other traits: [`Settings`] over its settings store,
+//! [`UrlOpener`] over the desktop's way of opening a link, [`Notifier`] over
+//! its notifications, [`RingSurface`] over its ringtone and window,
+//! [`CallEngine`] over the media library (in `district-call`), and [`Clock`],
+//! for which [`TokioClock`] will do.
 //!
 //! No user-facing string in this crate contains an em dash or an en dash.
 
@@ -79,17 +90,22 @@ mod account;
 mod adapters;
 mod analytics;
 mod billing;
+mod call;
 mod calls;
 mod contacts;
 mod desk;
 mod devices;
+mod dialer;
 mod failure;
 mod hq;
 mod inbox;
 mod live;
 mod marketplace;
+mod media;
 mod model;
 mod overview;
+mod presence;
+mod ringing;
 mod role;
 mod rooms;
 mod route;
@@ -115,6 +131,7 @@ pub use billing::{
     AccountSection, BILLING_WEB_PATH, BillingEvent, BillingScreen, PlanCard, PlanStatus, Renewal,
     format_cents, invoice_amount, meter_fraction, minutes_used, overage_note, plan_name,
 };
+pub use call::{ActiveCall, CALL_TICK, CallDirection, CallEnd, CallEvent, CallPhase};
 pub use calls::{
     CALL_PAGE_SIZE, CallDetailScreen, CallLog, CallRows, CallView, CallsEvent, TranscriptView,
 };
@@ -131,27 +148,42 @@ pub use desk::{
     desk_status_label,
 };
 pub use devices::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen};
+pub use dialer::{
+    DialerEvent, DialerScreen, MIN_DIAL_DIGITS, format_call_duration, format_dial_entry,
+};
 pub use failure::FailureText;
 pub use hq::{HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqScreen, HqText};
 pub use inbox::{
     ConversationList, Conversations, InboxEvent, InboxScreen, SEARCH_DEBOUNCE, SearchState,
 };
-pub use live::{LiveState, LiveStatus, Notification, NotificationTarget, RingingCall};
+pub use live::{
+    LiveState, LiveStatus, Notification, NotificationAction, NotificationTarget, Urgency,
+};
 pub use marketplace::{
     MARKETPLACE_WEB_PATH, MarketplaceEvent, MarketplaceScreen, MarketplaceTab,
     NUMBER_SEARCH_DEBOUNCE, NumberSearchForm, NumberSearchState, OwnedNumbers, OwnedNumbersList,
     price_label,
+};
+pub use media::{
+    CallEngine, DisconnectReason, MediaConnection, MediaCredential, MediaEvent, MediaOwner,
+    MediaSession, MediaUpdate, MicrophoneState, Participant, TrackKind,
 };
 pub use model::{CoreConfig, Effect, Event, Model, RESTORE_RETRY_FIRST, RESTORE_RETRY_MAX, Ticket};
 pub use overview::{
     FINISH_SETUP_ACTION, FINISH_SETUP_BODY, FINISH_SETUP_TITLE, OverviewContent, OverviewScreen,
     SETUP_WEB_PATH,
 };
+pub use presence::{
+    DesktopPresence, PRESENCE_HEARTBEAT, PRESENCE_RETRY, Presence, PresenceApi, PresenceState,
+    PresenceStatus,
+};
+pub use ringing::{IncomingRing, RING_DEADLINE, RingController, RingEnd, RingEvent, RingPhase};
 pub use role::{Capabilities, WorkspaceRole};
 pub use rooms::{MeetingList, MeetingRecord, RoomJoin, RoomsEvent, RoomsScreen, is_in_progress};
 pub use route::{Route, Tab, WorkspaceSection};
 pub use runner::{
-    Auth, Clock, DistrictApi, EffectRunner, LiveUpdates, Notifier, Settings, TokioClock, UrlOpener,
+    Auth, Clock, DistrictApi, EffectRunner, LiveUpdates, Notifier, RingSurface, Settings,
+    TokioClock, UrlOpener,
 };
 pub use scheduling::{
     OneTimeUrl, SCHEDULING_WEB_PATH, SchedulingEvent, SchedulingPresentation, SchedulingScreen,

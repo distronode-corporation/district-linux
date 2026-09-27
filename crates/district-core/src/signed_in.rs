@@ -20,17 +20,22 @@ use district_model::{
 use crate::account::ACCOUNT_DELETION_PATH;
 use crate::analytics::AnalyticsScreen;
 use crate::billing::BillingScreen;
+use crate::call::{ActiveCall, CallEnd};
 use crate::calls::{CallDetailScreen, CallLog};
 use crate::contacts::{BlockedScreen, ContactDetailScreen, ContactsScreen};
 use crate::desk::{DeskScreen, DeskSettingsView, DeskTicketScreen};
 use crate::devices::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen};
+use crate::dialer::{DialerScreen, PendingDial};
 use crate::failure::FailureText;
 use crate::hq::HqScreen;
 use crate::inbox::InboxScreen;
 use crate::live::LiveState;
 use crate::marketplace::MarketplaceScreen;
+use crate::media::MediaSession;
 use crate::model::{CoreConfig, Effect, Slot, Ticket, Tickets, WORKSPACE_SLOTS};
 use crate::overview::{OverviewContent, OverviewScreen, SETUP_WEB_PATH, workspace_mismatch};
+use crate::presence::PresenceState;
+use crate::ringing::RingController;
 use crate::role::Capabilities;
 use crate::rooms::RoomsScreen;
 use crate::route::{Route, WorkspaceSection};
@@ -124,6 +129,19 @@ pub struct SignedIn {
     pub live: LiveState,
     /// Whether the main window is showing, as the app last reported it.
     pub window_visible: bool,
+    /// The dialler.
+    pub dialer: DialerScreen,
+    /// The phone call on this desktop, placed or answered, until its summary
+    /// is put away. It outlives a change of workspace.
+    pub active_call: Option<ActiveCall>,
+    /// A call ringing here.
+    pub ring: RingController,
+    /// The one media session held: a call's, a room's or an audition's.
+    pub media: Option<MediaSession>,
+    /// This desktop's presence, which is what lets calls ring it.
+    pub presence: PresenceState,
+    /// The dial whose answer is awaited.
+    pub(crate) pending_dial: Option<PendingDial>,
 }
 
 /// What a signed-in step decided.
@@ -178,6 +196,12 @@ impl SignedIn {
             members: None,
             live: LiveState::default(),
             window_visible,
+            dialer: DialerScreen::default(),
+            active_call: None,
+            ring: RingController::default(),
+            media: None,
+            presence: PresenceState::default(),
+            pending_dial: None,
         }
     }
 
@@ -242,14 +266,15 @@ impl SignedIn {
         if self.route == *next {
             return Vec::new();
         }
-        self.close_settings(tickets);
+        let mut effects = self.close_settings(tickets);
         self.close_call(tickets);
         self.close_contact(tickets);
         self.close_desk_ticket(tickets);
         self.close_desk_settings(tickets);
         self.close_support_request(tickets);
-        self.close_rooms(tickets);
-        self.close_thread(tickets)
+        effects.extend(self.close_rooms(tickets));
+        effects.extend(self.close_thread(tickets));
+        effects
     }
 
     /// What showing the current route needs read. Every visit to a list reads
@@ -284,8 +309,10 @@ impl SignedIn {
             Route::Rooms => self.enter_rooms(tickets),
             Route::Workspace(section) => self.enter_settings(section, tickets),
             // A thread is opened by `navigate`, which reads its key first. The HQ
-            // conversation is held, not read.
-            Route::Overview | Route::Account | Route::Thread { .. } | Route::Hq => Vec::new(),
+            // conversation is held, not read, and the dialler reads nothing.
+            Route::Overview | Route::Account | Route::Thread { .. } | Route::Hq | Route::Dialer => {
+                Vec::new()
+            }
         }
     }
 
@@ -386,7 +413,9 @@ impl SignedIn {
     /// Drops every screen of the open workspace, and sends a reply still waiting
     /// to be saved.
     fn close_screens(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
-        let effects = self.close_thread(tickets);
+        let mut effects = self.close_thread(tickets);
+        effects.extend(self.close_rooms(tickets));
+        effects.extend(self.close_settings(tickets));
         tickets.cancel_each(&WORKSPACE_SLOTS);
         self.unread = None;
         self.inbox = InboxScreen::default();
@@ -407,7 +436,19 @@ impl SignedIn {
         self.support = SupportScreen::default();
         self.support_request = None;
         self.rooms = RoomsScreen::default();
-        self.close_settings(tickets);
+        self.dialer = DialerScreen::default();
+        effects
+    }
+
+    /// Ends everything that rings or holds the microphone, for a desktop about
+    /// to sleep, quit or sign out: a ring is silenced (nothing is told to the
+    /// service, as for a decline), the call is hung up (a placed one ended at
+    /// the carrier), and a room or an audition is left.
+    pub(crate) fn end_voice(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
+        let mut effects = self.drop_ring(tickets);
+        effects.extend(self.hang_up(CallEnd::HungUp, tickets));
+        effects.extend(self.leave_room());
+        effects.extend(self.stop_audition(tickets));
         effects
     }
 

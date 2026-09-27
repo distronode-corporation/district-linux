@@ -40,6 +40,7 @@ use district_api::ApiError;
 use district_model::{WorkspaceConfig, WorkspaceConfigResponse};
 
 use crate::failure::FailureText;
+use crate::media::MediaOwner;
 use crate::model::{Effect, Slot, Ticket, Tickets};
 use crate::role::Capabilities;
 use crate::route::{Route, WorkspaceSection};
@@ -303,8 +304,9 @@ impl SignedIn {
     }
 
     /// Leaves every settings section: its state goes, edits and typed
-    /// credentials included, and a late answer for it is dropped.
-    pub(crate) fn close_settings(&mut self, tickets: &mut Tickets) {
+    /// credentials included, a late answer for it is dropped, and an audition
+    /// under way is left.
+    pub(crate) fn close_settings(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         tickets.cancel_each(&SETTINGS_SLOTS);
         self.persona = None;
         self.tools = None;
@@ -314,6 +316,7 @@ impl SignedIn {
         self.messaging = None;
         self.call_handling = None;
         self.members = None;
+        self.leave_media_of(MediaOwner::Audition)
     }
 
     /// Whether the open settings section holds edits that would be lost by

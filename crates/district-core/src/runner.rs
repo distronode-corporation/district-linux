@@ -1,13 +1,16 @@
-//! What turns effects into events: the runner, and the seven things it runs them
+//! What turns effects into events: the runner, and the ten things it runs them
 //! against.
 //!
 //! Every outside dependency is a trait, so the whole loop runs in a test with
 //! fakes and a paused clock. The app supplies real implementations: the API
-//! client, the sign-in adapter and the live updates hub from this crate
-//! ([`ApiClient`](district_api::ApiClient) implements [`DistrictApi`],
-//! [`NativeAuth`](crate::NativeAuth) implements [`Auth`] and
-//! [`LiveHub`](crate::LiveHub) implements [`LiveUpdates`]), a settings store,
-//! the desktop's way of opening a URL, its notifications, and [`TokioClock`].
+//! client, the sign-in adapter, the live updates hub and the presence from this
+//! crate ([`ApiClient`](district_api::ApiClient) implements [`DistrictApi`],
+//! [`NativeAuth`](crate::NativeAuth) implements [`Auth`],
+//! [`LiveHub`](crate::LiveHub) implements [`LiveUpdates`] and
+//! [`DesktopPresence`](crate::DesktopPresence) implements
+//! [`Presence`](crate::Presence)), the call engine from `district-call`, a
+//! settings store, the desktop's way of opening a URL, its notifications, its
+//! ringtone and window, and [`TokioClock`].
 
 use std::future::Future;
 use std::time::Duration;
@@ -35,20 +38,23 @@ use district_model::{
     WorkspaceListResponse,
 };
 use district_model::{
-    AvailabilityResponse, CallHandlingPatch, CallHandlingResponse, DirectoryEntry,
-    KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeDocumentDraft,
-    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MemberListResponse,
-    MemberRemovalResponse, MemberResponse, MemberRole, MessagingAccountSave,
-    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingCreatorCell,
-    MessagingCredentials, MessagingDefaultResponse, MessagingDelete, MessagingMetaResponse,
-    MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault, MessagingTestResponse,
-    PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
-    RenameResponse, RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+    AvailabilityResponse, CallAnswerResponse, CallHandlingPatch, CallHandlingResponse,
+    CallHangUpResponse, DialResponse, DirectoryEntry, KnowledgeCreateResponse,
+    KnowledgeDeleteResponse, KnowledgeDocumentDraft, KnowledgeListResponse, KnowledgeMode,
+    KnowledgeModeResponse, MemberListResponse, MemberRemovalResponse, MemberResponse, MemberRole,
+    MessagingAccountSave, MessagingAccountSaveResponse, MessagingChannelDefaultResponse,
+    MessagingCreatorCell, MessagingCredentials, MessagingDefaultResponse, MessagingDelete,
+    MessagingMetaResponse, MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault,
+    MessagingTestResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
+    PersonaPreviewTokenResponse, RenameResponse, RoutingRule, WorkspaceConfigResponse,
+    WorkspaceSaveResponse,
 };
 
 use crate::contacts::{ContactWrite, ContactWritten};
 use crate::live::Notification;
+use crate::media::CallEngine;
 use crate::model::{Effect, Event, Ticket};
+use crate::presence::Presence;
 use crate::scheduling::SCHEDULING_WEB_PATH;
 use crate::session::{RestoreError, SignInError, SignedInSession};
 use crate::settings::{MemberWrite, MessagingWrite};
@@ -598,6 +604,25 @@ pub trait DistrictApi: Send + Sync {
         workspace_id: &str,
         name: &str,
     ) -> impl Future<Output = Result<RenameResponse, ApiError>> + Send;
+    /// Places a call to `to`, as typed. Rings a telephone and is billed; sent
+    /// once.
+    fn dial(
+        &self,
+        workspace_id: &str,
+        to: &str,
+    ) -> impl Future<Output = Result<DialResponse, ApiError>> + Send;
+    /// Takes the call `call_id`, ringing for this member. Sent once.
+    fn answer_call(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> impl Future<Output = Result<CallAnswerResponse, ApiError>> + Send;
+    /// Ends a placed call at the carrier. Sent once.
+    fn hang_up_call(
+        &self,
+        workspace_id: &str,
+        call_id: &str,
+    ) -> impl Future<Output = Result<CallHangUpResponse, ApiError>> + Send;
 }
 
 /// Signing in and out.
@@ -615,8 +640,11 @@ pub trait Auth: Send + Sync {
         &self,
         callback: &str,
     ) -> impl Future<Output = Result<SignedInSession, SignInError>> + Send;
-    /// Signs out.
-    fn sign_out(&self) -> impl Future<Output = SignOutReport> + Send;
+    /// Signs out. Its first step unregisters this desktop's presence as the
+    /// change `revision`, the sign-out's own ticket: later than every change
+    /// the session asked for, so none still on its way can register a desktop
+    /// that has signed out.
+    fn sign_out(&self, revision: Ticket) -> impl Future<Output = SignOutReport> + Send;
     /// Presents the refresh tokens a past sign-out could not get revoked.
     fn drain_revoke_outbox(&self) -> impl Future<Output = DrainReport> + Send;
 }
@@ -630,6 +658,12 @@ pub trait Settings: Send + Sync {
     fn last_workspace(&self) -> Option<String>;
     /// Remembers the chosen workspace, or forgets it with `None`.
     fn set_last_workspace(&self, workspace_id: Option<&str>);
+    /// Whether calls handed to this member ring on this computer. On until the
+    /// member turns it off is the suggested default: the member already chose to
+    /// take calls in the workspace's call handling.
+    fn ring_on_this_computer(&self) -> bool;
+    /// Keeps the "ring on this computer" setting.
+    fn set_ring_on_this_computer(&self, ring_here: bool);
 }
 
 /// Opens a page in the user's own browser (never in a view inside the app, so
@@ -653,8 +687,23 @@ pub trait LiveUpdates: Send + Sync {
 
 /// The desktop's notifications.
 pub trait Notifier: Send + Sync {
-    /// Shows `notification`, replacing any shown with the same id.
+    /// Shows `notification`, replacing any shown with the same id. An
+    /// [`Urgent`](crate::Urgency::Urgent) one is kept on screen until it is
+    /// dealt with; each of its actions, pressed, sends the event
+    /// [`NotificationAction::event`](crate::NotificationAction::event) names.
     fn notify(&self, notification: &Notification);
+    /// Takes away the notification `id`, if it is showing.
+    fn withdraw(&self, id: &str);
+}
+
+/// What a ringing call does to the desktop besides its notification.
+pub trait RingSurface: Send + Sync {
+    /// Starts the ringtone, looping, until [`stop_ringtone`](Self::stop_ringtone).
+    fn start_ringtone(&self);
+    /// Stops the ringtone, if it is sounding.
+    fn stop_ringtone(&self);
+    /// Brings the main window forward: shown, raised and focused.
+    fn present_window(&self);
 }
 
 /// How the runner waits.
@@ -680,7 +729,7 @@ impl Clock for TokioClock {
 /// Effects are independent of each other, so they may run concurrently; the
 /// model's tickets sort out any answer that arrives after it stopped mattering.
 #[derive(Clone, Debug)]
-pub struct EffectRunner<A, U, S, O, C, L, N> {
+pub struct EffectRunner<A, U, S, O, C, L, N, P, E, R> {
     api: A,
     auth: U,
     settings: S,
@@ -688,9 +737,12 @@ pub struct EffectRunner<A, U, S, O, C, L, N> {
     clock: C,
     live: L,
     notifier: N,
+    presence: P,
+    engine: E,
+    ring: R,
 }
 
-impl<A, U, S, O, C, L, N> EffectRunner<A, U, S, O, C, L, N>
+impl<A, U, S, O, C, L, N, P, E, R> EffectRunner<A, U, S, O, C, L, N, P, E, R>
 where
     A: DistrictApi,
     U: Auth,
@@ -699,9 +751,29 @@ where
     C: Clock,
     L: LiveUpdates,
     N: Notifier,
+    P: Presence,
+    E: CallEngine,
+    R: RingSurface,
 {
-    /// A runner over these.
-    pub fn new(api: A, auth: U, settings: S, opener: O, clock: C, live: L, notifier: N) -> Self {
+    /// A runner over these. The presence is the same one
+    /// [`NativeAuth`](crate::NativeAuth) holds, so sign-out and the runner
+    /// share one order of changes.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "one argument per outside dependency, each a trait the tests fake"
+    )]
+    pub fn new(
+        api: A,
+        auth: U,
+        settings: S,
+        opener: O,
+        clock: C,
+        live: L,
+        notifier: N,
+        presence: P,
+        engine: E,
+        ring: R,
+    ) -> Self {
         Self {
             api,
             auth,
@@ -710,6 +782,9 @@ where
             clock,
             live,
             notifier,
+            presence,
+            engine,
+            ring,
         }
     }
 
@@ -748,7 +823,7 @@ where
             },
             Effect::SignOut { ticket } => Event::SignOutFinished {
                 ticket,
-                report: self.auth.sign_out().await,
+                report: self.auth.sign_out(ticket).await,
             },
             Effect::LoadWorkspaces { ticket } => {
                 // Read before the list, so the answer and the memory it is
@@ -1488,6 +1563,75 @@ where
                 ticket,
                 result: self.api.rename_workspace(&workspace_id, &name).await,
             },
+            Effect::ReadRingSetting { ticket } => Event::RingSettingRead {
+                ticket,
+                ring_here: self.settings.ring_on_this_computer(),
+            },
+            Effect::SaveRingSetting { ring_here } => {
+                self.settings.set_ring_on_this_computer(ring_here);
+                return None;
+            }
+            Effect::SetPresence { ticket, registered } => Event::PresenceSet {
+                ticket,
+                result: self.presence.set(ticket, registered).await,
+            },
+            Effect::Dial {
+                ticket,
+                workspace_id,
+                to,
+            } => Event::Dialled {
+                ticket,
+                result: self.api.dial(&workspace_id, &to).await,
+            },
+            Effect::AnswerCall {
+                ticket,
+                workspace_id,
+                call_id,
+            } => Event::CallAnswered {
+                ticket,
+                result: self.api.answer_call(&workspace_id, &call_id).await,
+            },
+            Effect::HangUpCall {
+                workspace_id,
+                call_id,
+            } => {
+                // Recorded nowhere: the call is over here whatever the answer,
+                // and a failure is not tried again.
+                let _ = self.api.hang_up_call(&workspace_id, &call_id).await;
+                return None;
+            }
+            Effect::ConnectMedia {
+                session,
+                credential,
+                microphone,
+            } => {
+                self.engine.connect(session, credential, microphone).await;
+                return None;
+            }
+            Effect::SetMicrophone { session, enabled } => {
+                self.engine.set_microphone(session, enabled).await;
+                return None;
+            }
+            Effect::DisconnectMedia { session } => {
+                self.engine.disconnect(session).await;
+                return None;
+            }
+            Effect::StartRingtone => {
+                self.ring.start_ringtone();
+                return None;
+            }
+            Effect::StopRingtone => {
+                self.ring.stop_ringtone();
+                return None;
+            }
+            Effect::PresentWindow => {
+                self.ring.present_window();
+                return None;
+            }
+            Effect::WithdrawNotification { id } => {
+                self.notifier.withdraw(&id);
+                return None;
+            }
         };
         Some(event)
     }

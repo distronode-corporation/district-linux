@@ -6,7 +6,7 @@
 use district_api::{ApiError, ErrorDetail};
 use district_core::{
     ContactsEvent, Effect, Event, FailureText, LiveStatus, Model, Notification, NotificationTarget,
-    Route, SessionState, SignedOutWhy, ThreadEvent,
+    Route, SessionState, SignedOutWhy, ThreadEvent, Urgency,
 };
 use district_live::{Disconnect, EndpointError, LiveError, LiveUpdate, WorkspaceUpdate};
 use district_model::{
@@ -17,9 +17,8 @@ use serde_json::json;
 
 use crate::inbox::{ADA, conversations, on_inbox};
 use crate::support::{
-    AGENCY, CLIENT, USER, VIEWER, claims, config, desktop_fixture, fixture, has, last_ticket,
-    listed, loaded, overview, pick, server_error, signed_in, signed_out_error, ticket,
-    workspace_list,
+    AGENCY, CLIENT, VIEWER, claims, config, desktop_fixture, fixture, has, last_ticket, listed,
+    loaded, overview, pick, server_error, signed_in, signed_out_error, ticket, workspace_list,
 };
 
 fn live(workspace_id: &str, update: LiveUpdate) -> Event {
@@ -62,6 +61,8 @@ fn notification(message_id: &str) -> Effect {
         id: format!("message:{message_id}"),
         title: "New message".to_owned(),
         body: "Open District AI to read it.".to_owned(),
+        urgency: Urgency::Normal,
+        actions: Vec::new(),
         target: NotificationTarget::Message {
             workspace_id: AGENCY.to_owned(),
             message_id: message_id.to_owned(),
@@ -491,11 +492,13 @@ fn a_call_event_reads_the_log_and_the_open_call_again() {
     );
 }
 
-/// Recorded for the call milestone: whether it rings this user. Nothing
-/// rings yet.
+/// A ring for another member, or one whose list cannot be read, rings
+/// nothing here; the rings themselves are `ringing.rs`'s. An event type this
+/// build does not act on reads nothing.
 #[test]
-fn a_ringing_call_is_recorded_and_nothing_else() {
+fn a_ring_for_someone_else_and_the_events_nothing_reads_change_nothing() {
     let (mut model, _) = loaded(AGENCY, "agency");
+    model.update(Event::SetRingOnThisComputer(true));
     let recorded: TelemetryEnvelope = desktop_fixture("telemetry-event-call-ringing.json");
     assert_eq!(recorded.event_type, TelemetryEventType::CallRinging);
     let effects = model.update(live(
@@ -505,23 +508,15 @@ fn a_ringing_call_is_recorded_and_nothing_else() {
             ..recorded.clone()
         }),
     ));
-    assert!(effects.is_empty());
-    let ringing = signed_in(&model).live.ringing.clone().unwrap();
-    assert_eq!(ringing.call_id, "call_desktop_contract");
-    assert!(!ringing.rings_here, "rings another member");
-
-    let mut for_us = envelope(TelemetryEventType::CallRinging, "call_2");
-    for_us.data = json!({"callId": "call_2", "userIds": ["someone", USER]});
-    assert!(
-        model
-            .update(live(AGENCY, LiveUpdate::Event(for_us)))
-            .is_empty()
-    );
-    assert!(signed_in(&model).live.ringing.as_ref().unwrap().rings_here);
+    assert!(effects.is_empty(), "rings another member: {effects:?}");
     let mut garbled = envelope(TelemetryEventType::CallRinging, "call_3");
     garbled.data = json!({"userIds": "everyone"});
-    model.update(live(AGENCY, LiveUpdate::Event(garbled)));
-    assert!(!signed_in(&model).live.ringing.as_ref().unwrap().rings_here);
+    assert!(
+        model
+            .update(live(AGENCY, LiveUpdate::Event(garbled)))
+            .is_empty()
+    );
+    assert_eq!(signed_in(&model).ring.ring, None);
 
     for other in [
         TelemetryEventType::ToolOutcome,

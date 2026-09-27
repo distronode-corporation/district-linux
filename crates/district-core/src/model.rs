@@ -34,18 +34,18 @@ use district_auth::{AccessClaims, LoginError, SignOutReport};
 use district_live::WorkspaceUpdate;
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse,
-    AvailabilityResponse, BlockedContactsResponse, CallDetailResponse, CallHandlingPatch,
-    CallHandlingResponse, CallSummary, CallTranscriptResponse, CampaignStatusResponse,
-    ContactDetailResponse, ContactListResponse, ContactMutationResponse, ConversationsResponse,
-    CreateContactRequest, DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsPatch,
-    DeskSettingsResponse, DeskTicketCreateResponse, DeskTicketDraft, DeskTicketResponse,
-    DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse, DeviceListResponse,
-    DeviceRevokeResponse, DirectoryEntry, DraftListResponse, DraftResponse, DraftSaveRequest,
-    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, KnowledgeDocumentDraft,
-    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MarkReadResponse,
-    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MemberListResponse,
-    MessageSearchResponse, MessageThreadResponse, MessagingCredentials, MessagingResponse,
-    MessagingTestResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
+    AvailabilityResponse, BlockedContactsResponse, CallAnswerResponse, CallDetailResponse,
+    CallHandlingPatch, CallHandlingResponse, CallSummary, CallTranscriptResponse,
+    CampaignStatusResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
+    ConversationsResponse, CreateContactRequest, DeskLogoRemovalResponse, DeskReplyResponse,
+    DeskSettingsPatch, DeskSettingsResponse, DeskTicketCreateResponse, DeskTicketDraft,
+    DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse,
+    DeviceListResponse, DeviceRevokeResponse, DialResponse, DirectoryEntry, DraftListResponse,
+    DraftResponse, DraftSaveRequest, HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn,
+    KnowledgeDocumentDraft, KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse,
+    MarkReadResponse, MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary,
+    MemberListResponse, MessageSearchResponse, MessageThreadResponse, MessagingCredentials,
+    MessagingResponse, MessagingTestResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
     OwnedNumbersResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
     PersonaPreviewTokenResponse, RenameResponse, RoomTokenResponse, RoutingRule,
     SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
@@ -60,14 +60,18 @@ use district_model::{
 use crate::account::AccountView;
 use crate::analytics::AnalyticsEvent;
 use crate::billing::BillingEvent;
+use crate::call::CallEvent;
 use crate::calls::CallsEvent;
 use crate::contacts::{ContactWrite, ContactWritten, ContactsEvent};
 use crate::desk::DeskEvent;
 use crate::devices::DevicesEvent;
+use crate::dialer::DialerEvent;
 use crate::hq::HqEvent;
 use crate::inbox::InboxEvent;
 use crate::live::{Notification, NotificationTarget};
 use crate::marketplace::MarketplaceEvent;
+use crate::media::{MediaCredential, MediaUpdate};
+use crate::ringing::RingEvent;
 use crate::role::Capabilities;
 use crate::rooms::RoomsEvent;
 use crate::route::Route;
@@ -205,6 +209,30 @@ pub enum Event {
     /// A live update from the telemetry hub, forwarded by the app from the
     /// receiver [`LiveHub::new`](crate::LiveHub::new) handed it.
     Live(WorkspaceUpdate),
+    /// Something on the dialler.
+    Dialer(DialerEvent),
+    /// Something done to the phone call.
+    Call(CallEvent),
+    /// Something done to a call ringing here, from the window or from the
+    /// notification's buttons.
+    Ring(RingEvent),
+    /// Turn the microphone on or off, in whatever call, room or audition is
+    /// under way.
+    Microphone(bool),
+    /// A report from the call engine, forwarded by the app from the receiver
+    /// its [`CallEngine`](crate::CallEngine) handed it.
+    Media(MediaUpdate),
+    /// The member turned "ring on this computer" on or off.
+    SetRingOnThisComputer(bool),
+    /// The desktop is about to sleep: the app sends it when the system says so
+    /// (logind's `PrepareForSleep`), and holds the sleep until the effects it
+    /// returns have run, or a short while has passed.
+    Suspending,
+    /// The desktop woke up.
+    Resumed,
+    /// The app is quitting. Run the effects it returns, for a short while at
+    /// most, before exiting.
+    Quitting,
 
     /// The start-up check finished.
     SessionRestored {
@@ -763,6 +791,35 @@ pub enum Event {
         /// The service's answer: the name stored.
         result: Result<RenameResponse, ApiError>,
     },
+    /// The "ring on this computer" setting was read.
+    RingSettingRead {
+        /// The ticket of [`Effect::ReadRingSetting`].
+        ticket: Ticket,
+        /// The setting.
+        ring_here: bool,
+    },
+    /// This desktop's presence was registered or unregistered, or not.
+    PresenceSet {
+        /// The ticket of [`Effect::SetPresence`].
+        ticket: Ticket,
+        /// Whether it was.
+        result: Result<(), ApiError>,
+    },
+    /// The dial answered. Its `Debug` output leaves the credential out.
+    Dialled {
+        /// The ticket of [`Effect::Dial`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DialResponse, ApiError>,
+    },
+    /// The answer to a call ringing here landed. Its `Debug` output leaves the
+    /// credential out.
+    CallAnswered {
+        /// The ticket of [`Effect::AnswerCall`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<CallAnswerResponse, ApiError>,
+    },
     /// No browser would open a page from [`Effect::OpenUrl`] or
     /// [`Effect::OpenOneTimeUrl`].
     UrlOpenFailed,
@@ -1058,6 +1115,18 @@ impl Event {
                 result: Err(error),
             }
             | Event::WorkspaceRenamed {
+                ticket,
+                result: Err(error),
+            }
+            | Event::PresenceSet {
+                ticket,
+                result: Err(error),
+            }
+            | Event::Dialled {
+                ticket,
+                result: Err(error),
+            }
+            | Event::CallAnswered {
                 ticket,
                 result: Err(error),
             } => Some((*ticket, error)),
@@ -1857,6 +1926,89 @@ pub enum Effect {
         /// The name, trimmed.
         name: String,
     },
+    /// Read the "ring on this computer" setting.
+    ReadRingSetting {
+        /// Returned in [`Event::RingSettingRead`].
+        ticket: Ticket,
+    },
+    /// Keep the "ring on this computer" setting. Reports nothing back: it is a
+    /// preference, and the model already holds it.
+    SaveRingSetting {
+        /// The setting.
+        ring_here: bool,
+    },
+    /// Register this desktop's presence, or unregister it. The ticket also
+    /// orders the changes: one arriving after a later one was sent is dropped
+    /// (see [`Presence`](crate::Presence)).
+    SetPresence {
+        /// Returned in [`Event::PresenceSet`], and the change's order.
+        ticket: Ticket,
+        /// Registered, or not.
+        registered: bool,
+    },
+    /// Place a call. Rings a telephone and is billed: sent once, never
+    /// repeated by the runner.
+    Dial {
+        /// Returned in [`Event::Dialled`].
+        ticket: Ticket,
+        /// The workspace that places it.
+        workspace_id: String,
+        /// The number, as typed.
+        to: String,
+    },
+    /// Take a call ringing here. Tells the receptionist a person took it: sent
+    /// once, only on the member's press.
+    AnswerCall {
+        /// Returned in [`Event::CallAnswered`].
+        ticket: Ticket,
+        /// The call's workspace.
+        workspace_id: String,
+        /// The call.
+        call_id: String,
+    },
+    /// End a placed call at the carrier. Reports nothing back: the call is
+    /// over here whatever the service says, and it is not tried again.
+    HangUpCall {
+        /// The call's workspace.
+        workspace_id: String,
+        /// The id the dial answered with.
+        call_id: String,
+    },
+    /// Join a room through the call engine, as the session `session`. Reports
+    /// nothing back: the engine reports on the session as [`Event::Media`]. Its
+    /// `Debug` output leaves the credential out.
+    ConnectMedia {
+        /// The session's name.
+        session: Ticket,
+        /// Where and with what.
+        credential: MediaCredential,
+        /// Whether to publish the microphone once joined.
+        microphone: bool,
+    },
+    /// Turn a session's microphone on or off. Reports nothing back.
+    SetMicrophone {
+        /// The session.
+        session: Ticket,
+        /// On or off.
+        enabled: bool,
+    },
+    /// Leave a session's room. Reports nothing back.
+    DisconnectMedia {
+        /// The session.
+        session: Ticket,
+    },
+    /// Start the ringtone. Reports nothing back.
+    StartRingtone,
+    /// Stop the ringtone. Reports nothing back.
+    StopRingtone,
+    /// Bring the window forward, for a call just answered. Reports nothing
+    /// back.
+    PresentWindow,
+    /// Take away the notification `id`. Reports nothing back.
+    WithdrawNotification {
+        /// The notification's id.
+        id: String,
+    },
 }
 
 /// The slots a result can be waited for in. One ticket per slot at a time,
@@ -1964,9 +2116,16 @@ pub(crate) enum Slot {
     Members,
     MemberWrite,
     WorkspaceRename,
+    RingSetting,
+    Presence,
+    PresenceHeartbeat,
+    Dial,
+    CallAnswer,
+    CallTick,
+    RingDeadline,
 }
 
-const SLOTS: usize = Slot::WorkspaceRename as usize + 1;
+const SLOTS: usize = Slot::RingDeadline as usize + 1;
 
 /// The slots that belong to the open workspace's screens, forgotten when it
 /// closes. The settings sections' are [`SETTINGS_SLOTS`](crate::settings),
@@ -2308,6 +2467,34 @@ impl Model {
                 self.signed_in(|s, tickets, _| s.open_notification(target, tickets))
             }
             Event::Live(update) => self.signed_in(|s, tickets, _| s.live(update, tickets)),
+            Event::Dialer(event) => self.signed_in(|s, tickets, _| s.dialer_event(event, tickets)),
+            Event::Call(event) => self.signed_in(|s, tickets, _| s.call_event(event, tickets)),
+            Event::Ring(event) => self.signed_in(|s, tickets, _| s.ring_event(event, tickets)),
+            Event::Microphone(enabled) => {
+                self.signed_in(|s, _, _| Next::Stay(s.set_microphone(enabled)))
+            }
+            Event::Media(update) => {
+                self.signed_in(|s, tickets, _| Next::Stay(s.media_update(update, tickets)))
+            }
+            Event::SetRingOnThisComputer(on) => {
+                self.signed_in(|s, tickets, _| s.set_ring_here(on, tickets))
+            }
+            Event::Suspending | Event::Quitting => {
+                self.signed_in(|s, tickets, _| s.suspend(tickets))
+            }
+            Event::Resumed => self.signed_in(|s, tickets, _| s.resume(tickets)),
+            Event::RingSettingRead { ticket, ring_here } => {
+                self.signed_in(|s, tickets, _| s.ring_setting_read(ticket, ring_here, tickets))
+            }
+            Event::PresenceSet { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.presence_set(ticket, result, tickets))
+            }
+            Event::Dialled { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.dialled(ticket, result, tickets))
+            }
+            Event::CallAnswered { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.call_answered(ticket, result, tickets))
+            }
             Event::WaitOver { ticket } => {
                 self.signed_in(|s, tickets, _| s.wait_over(ticket, tickets))
             }
@@ -2757,15 +2944,21 @@ impl Model {
         }
     }
 
+    /// Someone is signed in: read the workspaces, and whether this desktop
+    /// rings for calls.
     fn start_signed_in(&mut self, identity: Identity, notice: Option<Notice>) -> Vec<Effect> {
         self.tickets.cancel_all();
+        let setting = self.tickets.issue(Slot::RingSetting);
         let ticket = self.tickets.issue(Slot::Workspaces);
         self.session = SessionState::SignedIn(Box::new(SignedIn::new(
             identity,
             notice,
             self.window_visible,
         )));
-        vec![Effect::LoadWorkspaces { ticket }]
+        vec![
+            Effect::ReadRingSetting { ticket: setting },
+            Effect::LoadWorkspaces { ticket },
+        ]
     }
 
     /// The session ended without the user asking. With no session stored at all,
@@ -2798,10 +2991,16 @@ impl Model {
         effects
     }
 
-    /// Closes the live sockets of a session that is ending, if it has any open.
+    /// Ends what a session that is ending has under way: a ring, a call, a
+    /// room or an audition, and the live sockets. Its presence is sign-out's
+    /// first step ([`Auth::sign_out`](crate::Auth::sign_out)).
     fn stop_live(&mut self) -> Vec<Effect> {
         match &mut self.session {
-            SessionState::SignedIn(signed_in) => signed_in.unwatch(&mut self.tickets),
+            SessionState::SignedIn(signed_in) => {
+                let mut effects = signed_in.end_voice(&mut self.tickets);
+                effects.extend(signed_in.unwatch(&mut self.tickets));
+                effects
+            }
             _ => Vec::new(),
         }
     }

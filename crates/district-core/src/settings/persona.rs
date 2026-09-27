@@ -25,10 +25,12 @@
 //! audition dialog, which says so; one at a time; never again by itself after a
 //! failure; and not again for a few seconds after one ends or fails
 //! ([`PREVIEW_COOLDOWN`]), a cheaper guard than the service's own limit. Its
-//! credential (the media token and the room's encryption passphrase) is kept for
-//! the call engine to join with, printed by no `Debug`, and dropped when the
-//! audition is stopped or the dialog closed. An audition room is always
-//! encrypted, so an answer without a passphrase is not joined.
+//! credential (the media token and the room's encryption passphrase) is joined
+//! through the call engine, with the microphone on, printed by no `Debug`, and
+//! dropped, the room left with it, when the audition is stopped, the dialog
+//! closed, the section left or the room ends. An audition room is always
+//! encrypted, so an answer without a passphrase is not joined. It cannot start
+//! while a call or a room holds the engine.
 
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -42,6 +44,7 @@ use district_model::{
 
 use super::{ConfigLoad, SaveState, read_config, settle};
 use crate::failure::{FailureText, PREVIEW_UNENCRYPTED};
+use crate::media::{DisconnectReason, MediaCredential, MediaOwner};
 use crate::model::{Effect, Slot, Ticket, Tickets};
 use crate::signed_in::{Next, SignedIn, stay};
 
@@ -51,6 +54,9 @@ pub const PERSONA_GEMINI_LIVE_ENGINE: &str = "gemini-live-2.5-flash-native-audio
 
 /// How long after an audition ends, or fails to start, before another may start.
 pub const PREVIEW_COOLDOWN: Duration = Duration::from_secs(5);
+
+/// An audition whose room could not be joined.
+const PREVIEW_NOT_JOINED: &str = "The audition could not be joined. Try again in a moment.";
 
 /// The smallest change of the variation that counts as one: a number read back
 /// from the service is not always bit for bit the one sent.
@@ -539,6 +545,11 @@ impl PersonaSection {
         }
     }
 
+    /// Whether an audition's credential is being asked for.
+    pub(crate) fn preview_minting(&self) -> bool {
+        self.preview == Some(PersonaPreview::Minting)
+    }
+
     /// Whether the section has something on its way that a refresh must not
     /// drop: a save, or an audition dialog.
     fn busy(&self) -> bool {
@@ -756,14 +767,67 @@ impl SignedIn {
 
     pub(crate) fn persona_event(&mut self, event: PersonaEvent, tickets: &mut Tickets) -> Next {
         let can_change = self.capabilities().can_change;
+        // Nothing else may hold the engine when an audition starts.
+        let refused = event == PersonaEvent::StartPreview && self.media_busy();
         let workspace_id = self.workspace_id();
-        Next::Stay(
-            self.persona
-                .as_mut()
-                .filter(|_| can_change)
-                .map(|section| section.update(event, workspace_id, tickets))
-                .unwrap_or_default(),
-        )
+        let mut effects = self
+            .persona
+            .as_mut()
+            .filter(|_| can_change && !refused)
+            .map(|section| section.update(event, workspace_id, tickets))
+            .unwrap_or_default();
+        effects.extend(self.settle_audition());
+        Next::Stay(effects)
+    }
+
+    /// Leaves the audition's room once its credential has gone: stopped, or the
+    /// dialog closed.
+    fn settle_audition(&mut self) -> Vec<Effect> {
+        let held = self
+            .persona
+            .as_ref()
+            .is_some_and(|section| section.preview_credential().is_some());
+        if held {
+            Vec::new()
+        } else {
+            self.leave_media_of(MediaOwner::Audition)
+        }
+    }
+
+    /// Stops an audition under way, for a desktop about to sleep or quit.
+    pub(crate) fn stop_audition(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
+        let workspace_id = self.workspace_id();
+        let mut effects = self
+            .persona
+            .as_mut()
+            .map(|section| section.update(PersonaEvent::StopPreview, workspace_id, tickets))
+            .unwrap_or_default();
+        effects.extend(self.settle_audition());
+        effects
+    }
+
+    /// The audition's room ended under it. A room that could not be joined is
+    /// a failure to say; one that ended is an ended audition. Either way the
+    /// credential goes, and the cooldown starts.
+    pub(crate) fn audition_media_ended(
+        &mut self,
+        reason: DisconnectReason,
+        tickets: &mut Tickets,
+    ) -> Vec<Effect> {
+        // The section is there: leaving it leaves the audition's room first.
+        let ended = match reason {
+            DisconnectReason::ConnectFailed => {
+                PersonaPreview::Failed(FailureText::final_(PREVIEW_NOT_JOINED))
+            }
+            _ => PersonaPreview::Ended,
+        };
+        self.persona
+            .as_mut()
+            .map(|section| {
+                section.preview = Some(ended);
+                section.cool_down(tickets)
+            })
+            .unwrap_or_default()
     }
 
     /// The settings arrived: the texts and the engine half start again from
@@ -818,12 +882,20 @@ impl SignedIn {
         if !tickets.accept(Slot::PersonaPreview, ticket) {
             return stay();
         }
-        Next::Stay(
-            self.persona
-                .as_mut()
-                .map(|section| section.preview_issued(result, tickets))
-                .unwrap_or_default(),
-        )
+        let mut effects = self
+            .persona
+            .as_mut()
+            .map(|section| section.preview_issued(result, tickets))
+            .unwrap_or_default();
+        let credential = self
+            .persona
+            .as_ref()
+            .and_then(PersonaSection::preview_credential)
+            .map(MediaCredential::from_audition);
+        if let Some(credential) = credential {
+            effects.extend(self.start_media(MediaOwner::Audition, credential, true, tickets));
+        }
+        Next::Stay(effects)
     }
 
     /// The cooldown after an audition is over.

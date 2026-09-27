@@ -17,10 +17,10 @@
 use district_api::ApiError;
 use district_live::{Disconnect, LiveUpdate, WorkspaceUpdate};
 use district_model::{MessageThreadResponse, TelemetryEnvelope, TelemetryEventType};
-use serde_json::Value;
 
 use crate::failure::FailureText;
-use crate::model::{Effect, Slot, Ticket, Tickets};
+use crate::model::{Effect, Event, Slot, Ticket, Tickets};
+use crate::ringing::{IncomingRing, RingEvent};
 use crate::route::Route;
 use crate::signed_in::{Next, SignedIn, stay};
 
@@ -29,9 +29,6 @@ use crate::signed_in::{Next, SignedIn, stay};
 pub struct LiveState {
     /// Where the socket stands, for a status line.
     pub status: LiveStatus,
-    /// The last call that rang members of the workspace on their desktops.
-    /// Recorded for the call milestone; nothing rings yet.
-    pub ringing: Option<RingingCall>,
     /// The workspace watched.
     pub(crate) workspace_id: Option<String>,
     /// Whether the socket has been open since the workspace was watched, so the
@@ -69,50 +66,75 @@ impl LiveStatus {
     }
 }
 
-/// A call ringing members of the workspace on their desktops.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct RingingCall {
-    /// The call.
-    pub call_id: String,
-    /// Whether this installation's user is one of those it rings.
-    pub rings_here: bool,
-}
-
-impl RingingCall {
-    /// Reads a `call_ringing` event. It carries ids only: the call, and the users
-    /// it rings. A malformed list rings nobody here.
-    fn read(envelope: &TelemetryEnvelope, user_id: &str) -> Self {
-        let rings_here = envelope
-            .data
-            .get("userIds")
-            .and_then(Value::as_array)
-            .is_some_and(|ids| ids.iter().any(|id| id.as_str() == Some(user_id)));
-        Self {
-            call_id: envelope.call_id.clone(),
-            rings_here,
-        }
-    }
-}
-
 /// A desktop notification for the app to show.
 ///
-/// It says a message arrived and nothing about it: no sender, no number, no
-/// text. A notification is readable by the desktop and by anything else
-/// watching notifications, which is why the Android app's push carries ids only
-/// and its notification says no more than this. The app reads the message when
+/// It names nothing about a customer: no sender, no number, no text. A
+/// notification is readable by the desktop and by anything else watching
+/// notifications, which is why the Android app's push carries ids only and its
+/// notifications say no more than these. The app reads what it is about when
 /// the user opens it.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Notification {
-    /// An id for the notification, the same for the same message, so a second
-    /// delivery replaces the first rather than stacking.
+    /// An id for the notification, the same for the same message or call, so a
+    /// second one replaces the first rather than stacking.
     pub id: String,
     /// The heading.
     pub title: String,
     /// The body.
     pub body: String,
+    /// How it interrupts.
+    pub urgency: Urgency,
+    /// Its buttons, in order. Each sends the event it names.
+    pub actions: Vec<NotificationAction>,
     /// What opening it does, returned in
     /// [`Event::OpenNotification`](crate::Event::OpenNotification).
     pub target: NotificationTarget,
+}
+
+/// How a notification interrupts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Urgency {
+    /// As the desktop shows notifications.
+    Normal,
+    /// Over everything, and kept until it is dealt with: a call ringing now.
+    Urgent,
+}
+
+/// A button on a notification.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum NotificationAction {
+    /// Answer the call ringing: sends [`RingEvent::Answer`].
+    Answer {
+        /// The call.
+        call_id: String,
+    },
+    /// Decline it: sends [`RingEvent::Decline`].
+    Decline {
+        /// The call.
+        call_id: String,
+    },
+}
+
+impl NotificationAction {
+    /// The button's label.
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Answer { .. } => "Answer",
+            Self::Decline { .. } => "Decline",
+        }
+    }
+
+    /// The event pressing it sends.
+    pub fn event(&self) -> Event {
+        Event::Ring(match self {
+            Self::Answer { call_id } => RingEvent::Answer {
+                call_id: call_id.clone(),
+            },
+            Self::Decline { call_id } => RingEvent::Decline {
+                call_id: call_id.clone(),
+            },
+        })
+    }
 }
 
 impl Notification {
@@ -120,6 +142,12 @@ impl Notification {
     pub const MESSAGE_TITLE: &'static str = "New message";
     /// The body of a new message's notification.
     pub const MESSAGE_BODY: &'static str = "Open District AI to read it.";
+    /// The heading of a call that rang behind another.
+    pub const WAITING_TITLE: &'static str = "Another call is ringing";
+    /// The heading of a missed call's notification.
+    pub const MISSED_TITLE: &'static str = "Missed call";
+    /// The body of a missed call's notification.
+    pub const MISSED_BODY: &'static str = "Open District AI to see it in the call log.";
 
     /// The notification for the message `message_id`.
     pub(crate) fn message(workspace_id: String, message_id: String) -> Self {
@@ -127,9 +155,70 @@ impl Notification {
             id: format!("message:{message_id}"),
             title: Self::MESSAGE_TITLE.to_owned(),
             body: Self::MESSAGE_BODY.to_owned(),
+            urgency: Urgency::Normal,
+            actions: Vec::new(),
             target: NotificationTarget::Message {
                 workspace_id,
                 message_id,
+            },
+        }
+    }
+
+    /// The id every notification about the call `call_id` shares.
+    pub(crate) fn call_id(call_id: &str) -> String {
+        format!("call:{call_id}")
+    }
+
+    /// A call ringing here: urgent, with Answer and Decline.
+    pub(crate) fn incoming_call(workspace_id: &str, call_id: &str) -> Self {
+        Self {
+            id: Self::call_id(call_id),
+            title: IncomingRing::TITLE.to_owned(),
+            body: IncomingRing::BODY.to_owned(),
+            urgency: Urgency::Urgent,
+            actions: vec![
+                NotificationAction::Answer {
+                    call_id: call_id.to_owned(),
+                },
+                NotificationAction::Decline {
+                    call_id: call_id.to_owned(),
+                },
+            ],
+            target: NotificationTarget::IncomingCall {
+                workspace_id: workspace_id.to_owned(),
+                call_id: call_id.to_owned(),
+            },
+        }
+    }
+
+    /// A call that rang while another was under way: no sound, no Answer.
+    pub(crate) fn call_waiting(workspace_id: &str, call_id: &str) -> Self {
+        Self {
+            id: Self::call_id(call_id),
+            title: Self::WAITING_TITLE.to_owned(),
+            body: IncomingRing::WAITING_BODY.to_owned(),
+            urgency: Urgency::Normal,
+            actions: vec![NotificationAction::Decline {
+                call_id: call_id.to_owned(),
+            }],
+            target: NotificationTarget::IncomingCall {
+                workspace_id: workspace_id.to_owned(),
+                call_id: call_id.to_owned(),
+            },
+        }
+    }
+
+    /// A call that rang here and was not answered. Opening it opens the call.
+    pub(crate) fn missed_call(workspace_id: &str, call_id: &str) -> Self {
+        Self {
+            id: Self::call_id(call_id),
+            title: Self::MISSED_TITLE.to_owned(),
+            body: Self::MISSED_BODY.to_owned(),
+            urgency: Urgency::Normal,
+            actions: Vec::new(),
+            target: NotificationTarget::Call {
+                workspace_id: workspace_id.to_owned(),
+                call_id: call_id.to_owned(),
             },
         }
     }
@@ -146,6 +235,20 @@ pub enum NotificationTarget {
         /// The message.
         message_id: String,
     },
+    /// A call ringing: the window, where the ring is.
+    IncomingCall {
+        /// The workspace.
+        workspace_id: String,
+        /// The call.
+        call_id: String,
+    },
+    /// A call in the call log: its workspace, then the call.
+    Call {
+        /// The workspace.
+        workspace_id: String,
+        /// The call.
+        call_id: String,
+    },
 }
 
 impl SignedIn {
@@ -153,7 +256,6 @@ impl SignedIn {
     pub(crate) fn watch(&mut self, workspace_id: &str, tickets: &mut Tickets) -> Effect {
         self.live = LiveState {
             status: LiveStatus::Connecting,
-            ringing: None,
             workspace_id: Some(workspace_id.to_owned()),
             connected_before: false,
         };
@@ -228,21 +330,25 @@ impl SignedIn {
                 effects
             }
             TelemetryEventType::MessageSent => self.messages_changed(tickets),
-            TelemetryEventType::CallStarted
-            | TelemetryEventType::CallUpdated
-            | TelemetryEventType::CallEnded => {
-                let mut effects = self.reload_call_log(tickets);
-                effects.extend(self.reload_call(&envelope.call_id, tickets));
+            TelemetryEventType::CallStarted => self.calls_changed(&envelope.call_id, tickets),
+            TelemetryEventType::CallUpdated | TelemetryEventType::CallEnded => {
+                let mut effects = self.calls_changed(&envelope.call_id, tickets);
+                effects.extend(self.ringing_call_changed(&envelope, tickets));
                 effects
             }
-            TelemetryEventType::CallRinging => {
-                self.live.ringing = Some(RingingCall::read(&envelope, &self.identity.user_id));
-                Vec::new()
-            }
+            TelemetryEventType::CallRinging => self.call_ringing(&envelope, tickets),
             // An event type added after this build is left alone for the same
             // reason as a message that could not be read.
             TelemetryEventType::ToolOutcome | TelemetryEventType::Unknown(_) => Vec::new(),
         }
+    }
+
+    /// A call started, changed or ended: the log if it has been read, and the
+    /// call if it is open.
+    fn calls_changed(&mut self, call_id: &str, tickets: &mut Tickets) -> Vec<Effect> {
+        let mut effects = self.reload_call_log(tickets);
+        effects.extend(self.reload_call(call_id, tickets));
+        effects
     }
 
     /// A message came in or went out: the badge, the list if it has been read,
@@ -325,13 +431,23 @@ impl SignedIn {
     /// the list opens nothing.
     pub(crate) fn open_notification(
         &mut self,
-        target: crate::live::NotificationTarget,
+        target: NotificationTarget,
         tickets: &mut Tickets,
     ) -> Next {
-        let NotificationTarget::Message {
-            workspace_id,
-            message_id,
-        } = target;
+        let (workspace_id, message_id, route) = match target {
+            // The ring is on the window already: bring the window forward.
+            NotificationTarget::IncomingCall { .. } => {
+                return Next::Stay(vec![Effect::PresentWindow]);
+            }
+            NotificationTarget::Message {
+                workspace_id,
+                message_id,
+            } => (workspace_id, Some(message_id), Route::Inbox),
+            NotificationTarget::Call {
+                workspace_id,
+                call_id,
+            } => (workspace_id, None, Route::CallDetail { call_id }),
+        };
         let mut effects = Vec::new();
         if self.active_id().as_deref() != Some(workspace_id.as_str()) {
             let Some(switched) = self.switch_to(&workspace_id, tickets) else {
@@ -339,8 +455,8 @@ impl SignedIn {
             };
             effects = switched;
         }
-        effects.extend(self.show(Route::Inbox, tickets));
-        if self.capabilities().can_change {
+        effects.extend(self.show(route, tickets));
+        if let Some(message_id) = message_id.filter(|_| self.capabilities().can_change) {
             effects.push(Effect::FindMessageThread {
                 ticket: tickets.issue(Slot::OpenLookup),
                 workspace_id,
@@ -393,6 +509,12 @@ impl SignedIn {
         } else if tickets.accept(Slot::PersonaCooldown, ticket) {
             self.persona_cooled();
             Vec::new()
+        } else if tickets.accept(Slot::CallTick, ticket) {
+            self.call_ticked(tickets)
+        } else if tickets.accept(Slot::RingDeadline, ticket) {
+            self.ring_deadline()
+        } else if tickets.accept(Slot::PresenceHeartbeat, ticket) {
+            self.presence_due(tickets)
         } else {
             Vec::new()
         };
