@@ -27,17 +27,19 @@ use district_model::{
     ConversationsResponse, DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsResponse,
     DeskTicketCreateResponse, DeskTicketResponse, DeskTicketStatusResponse, DeskTicketsResponse,
     DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
-    MediaUploadResponse, MeetingDetail, MeetingSummary, MessageThreadResponse,
-    NativeRevokeResponse, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse,
-    PersonaOptionsResponse, PersonaPreviewTokenResponse, PkceVector, PushRegistrationResponse,
-    RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
-    SchedulingStatusResponse, SendMessageResponse, SetupResponse, SupportCloseResponse,
-    SupportReplyResponse, SupportRequestCreateResponse, SupportRequestResponse,
-    SupportRequestsResponse, TelemetryEnvelope, TelemetryToken, TimelineResponse,
-    UnreadCountResponse, UsageHistoryResponse, UsageResponse, WorkflowListResponse,
-    WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
-    WorkspaceConfigResponse, WorkspaceListResponse, WorkspaceSaveResponse,
+    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, KnowledgeCreateResponse,
+    KnowledgeDeleteResponse, KnowledgeListResponse, KnowledgeModeResponse, MarkReadResponse,
+    MediaUploadResponse, MeetingDetail, MeetingSummary, MemberListResponse, MemberRemovalResponse,
+    MemberResponse, MessageThreadResponse, NativeRevokeResponse, NumberSearchResponse,
+    OverviewResponse, OwnedNumbersResponse, PersonaOptionsResponse, PersonaPreviewTokenResponse,
+    PkceVector, PushRegistrationResponse, RenameResponse, RoomTokenResponse,
+    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
+    SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
+    SupportRequestCreateResponse, SupportRequestResponse, SupportRequestsResponse,
+    TelemetryEnvelope, TelemetryToken, TimelineResponse, UnreadCountResponse, UsageHistoryResponse,
+    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
+    WorkspaceBillingResponse, WorkspaceConfigResponse, WorkspaceListResponse,
+    WorkspaceSaveResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -229,12 +231,45 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-hq-confirm.json", codec::<HqConfirmResponse>),
     // POST /api/district/hq with a prompt: a change proposed, not applied.
     ("district-hq-pending-write.json", codec::<HqPromptResponse>),
+    // POST /api/district/workspace/knowledge: the document stored, without its source address.
+    (
+        "district-knowledge-create.json",
+        codec::<KnowledgeCreateResponse>,
+    ),
+    // DELETE /api/district/workspace/knowledge.
+    (
+        "district-knowledge-delete.json",
+        codec::<KnowledgeDeleteResponse>,
+    ),
+    // PATCH /api/district/workspace/knowledge-mode.
+    (
+        "district-knowledge-mode-patch.json",
+        codec::<KnowledgeModeResponse>,
+    ),
+    // GET /api/district/workspace/knowledge-mode.
+    (
+        "district-knowledge-mode.json",
+        codec::<KnowledgeModeResponse>,
+    ),
+    // GET /api/district/workspace/knowledge: a pasted document and a fetched one.
+    ("district-knowledge.json", codec::<KnowledgeListResponse>),
     // POST /api/district/messages/media: an uploaded attachment.
     ("district-media-upload.json", codec::<MediaUploadResponse>),
     // GET /api/district/meetings/{meetingId}: the whole row, no envelope.
     ("district-meeting-detail.json", codec::<MeetingDetail>),
     // GET /api/district/meetings: a bare array, a running and an ended meeting.
     ("district-meetings.json", codec::<Vec<MeetingSummary>>),
+    // POST /api/district/workspace/members.
+    ("district-member-add.json", codec::<MemberResponse>),
+    // DELETE /api/district/workspace/members.
+    (
+        "district-member-remove.json",
+        codec::<MemberRemovalResponse>,
+    ),
+    // PATCH /api/district/workspace/members.
+    ("district-member-role-patch.json", codec::<MemberResponse>),
+    // GET /api/district/workspace/members: one member of each role.
+    ("district-members.json", codec::<MemberListResponse>),
     // POST /api/district/messages/mark-read.
     ("district-message-mark-read.json", codec::<MarkReadResponse>),
     // POST /api/district/messages/send, the email branch.
@@ -295,6 +330,8 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
         "district-provider-numbers.json",
         codec::<OwnedNumbersResponse>,
     ),
+    // PATCH /api/district/workspace/rename.
+    ("district-rename.json", codec::<RenameResponse>),
     // POST /api/auth/native/revoke-all: every device signed out.
     ("district-revoke-all.json", codec::<DeviceRevokeResponse>),
     // POST /api/district/calls/token for a viewer: no guest invitation.
@@ -413,7 +450,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 28;
+pub const NOT_YET_MODELLED_BASELINE: usize = 18;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -426,17 +463,8 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-dial-subscription.json",
     "district-dial.json",
     "district-enrich-disabled.json",
-    "district-knowledge-create.json",
-    "district-knowledge-delete.json",
-    "district-knowledge-mode-patch.json",
-    "district-knowledge-mode.json",
-    "district-knowledge.json",
-    "district-member-add.json",
     "district-member-duplicate.json",
     "district-member-last-agency.json",
-    "district-member-remove.json",
-    "district-member-role-patch.json",
-    "district-members.json",
     "district-messaging-channel-default.json",
     "district-messaging-delete.json",
     "district-messaging-meta.json",
@@ -446,7 +474,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-messaging-unmanaged.json",
     "district-messaging-upsert.json",
     "district-messaging.json",
-    "district-rename.json",
     "district-workspace-list-degraded.json",
 ];
 

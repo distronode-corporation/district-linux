@@ -16,12 +16,14 @@ use district_model::{
     DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsResponse, DeskTicketCreateResponse,
     DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse,
     DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, MarkReadResponse,
-    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageThreadResponse,
+    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, KnowledgeCreateResponse,
+    KnowledgeDeleteResponse, KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse,
+    MarkReadResponse, MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary,
+    MemberListResponse, MemberRemovalResponse, MemberResponse, MemberRole, MessageThreadResponse,
     NativeRevokeResponse, NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP,
     OverviewResponse, OwnedNumbersResponse, PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX,
     PersonaLabelledValue, PersonaOptionsResponse, PersonaPreviewTokenResponse, PkceVector,
-    PushRegistrationResponse, RoomTokenResponse, RoutingRuleField, SETUP_STEP_DONE,
+    PushRegistrationResponse, RenameResponse, RoomTokenResponse, RoutingRuleField, SETUP_STEP_DONE,
     SETUP_STEP_TODO, SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
     SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
     SupportRequestCreateResponse, SupportRequestFiling, SupportRequestResponse,
@@ -1103,6 +1105,57 @@ fn an_audition_is_an_encrypted_preview_room_on_a_named_server() {
     assert!(answer.room_name.starts_with(PREVIEW_ROOM_PREFIX));
     let e2ee = answer.e2ee.as_ref().expect("an audition is encrypted");
     assert!(!e2ee.key.trim().is_empty() && !answer.token.is_empty());
+}
+
+#[test]
+fn knowledge_covers_a_pasted_and_a_fetched_document_and_both_modes() {
+    let list: KnowledgeListResponse = decode("district-knowledge.json");
+    let documents = &list.documents;
+    assert!(
+        documents
+            .iter()
+            .any(|d| d.source_url.is_none() && d.source_type == "text")
+    );
+    assert!(
+        documents
+            .iter()
+            .any(|d| d.source_url.is_some() && d.source_type == "url")
+    );
+    assert!(
+        documents
+            .iter()
+            .any(|d| d.status == "processing" && d.chunk_count == 0)
+    );
+
+    let created: KnowledgeCreateResponse = decode("district-knowledge-create.json");
+    assert!(created.document.status == "ready" && created.document.chunk_count > 0);
+    let deleted: KnowledgeDeleteResponse = decode("district-knowledge-delete.json");
+    assert!(deleted.success);
+
+    let read: KnowledgeModeResponse = decode("district-knowledge-mode.json");
+    let saved: KnowledgeModeResponse = decode("district-knowledge-mode-patch.json");
+    assert_eq!(read.mode, KnowledgeMode::Linked.as_str());
+    assert_eq!(saved.mode, KnowledgeMode::Internal.as_str());
+}
+
+#[test]
+fn members_cover_every_role_oldest_first_and_each_change() {
+    let list: MemberListResponse = decode("district-members.json");
+    let roles: BTreeSet<&str> = list.members.iter().map(|m| m.role.as_str()).collect();
+    let known = [MemberRole::Agency, MemberRole::Client, MemberRole::Viewer];
+    assert_eq!(roles, known.iter().map(|r| r.as_str()).collect());
+    let joined: Vec<&str> = list.members.iter().map(|m| m.created_at.as_str()).collect();
+    assert!(joined.is_sorted(), "oldest first");
+
+    let added: MemberResponse = decode("district-member-add.json");
+    assert_eq!(added.member.role, MemberRole::Viewer.as_str());
+    let changed: MemberResponse = decode("district-member-role-patch.json");
+    assert!(list.members.iter().any(|m| m.email == changed.member.email));
+    let removed: MemberRemovalResponse = decode("district-member-remove.json");
+    assert!(removed.success);
+    let renamed: RenameResponse = decode("district-rename.json");
+    assert_eq!(renamed.name, renamed.name.trim());
+    assert!(!renamed.name.is_empty());
 }
 
 // PKCE vectors.

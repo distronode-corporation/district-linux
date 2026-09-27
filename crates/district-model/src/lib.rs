@@ -37,6 +37,7 @@
 mod analytics;
 mod auth;
 mod billing;
+mod call_handling;
 mod calls;
 mod compose;
 mod contacts;
@@ -44,6 +45,8 @@ mod desk;
 mod devices;
 mod hq;
 mod inbox;
+mod knowledge;
+mod members;
 mod numbers;
 mod overview;
 mod persona;
@@ -68,6 +71,11 @@ pub use auth::AuthMeResponse;
 pub use billing::{
     AccountBillingResponse, BillingDiscount, BillingInvoice, BillingSubscription,
     OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, WorkspaceBilling, WorkspaceBillingResponse,
+};
+pub use call_handling::{
+    AVAILABILITY_REASON_NO_MEMBER_ROW, AVAILABILITY_REASON_ROLE, AvailabilityResponse,
+    CallHandlingMode, CallHandlingPatch, CallHandlingResponse, DEFAULT_APP_RING_SECONDS,
+    MAX_APP_RING_SECONDS, MIN_APP_RING_SECONDS, clamp_app_ring_seconds,
 };
 pub use calls::{
     CallAnalysis, CallDetailResponse, CallFollowUp, CallHangUpResponse, CallSummary,
@@ -97,6 +105,14 @@ pub use inbox::{
     MessageSearchResponse, MessageThreadMessage, MessageThreadResponse, MessageThreadTarget,
     ReplyTarget, ThreadRef, TimelineCursor, TimelineEvent, TimelinePageInfo, TimelineResponse,
     UnreadCountResponse,
+};
+pub use knowledge::{
+    KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeDocument, KnowledgeDocumentCreated,
+    KnowledgeDocumentDraft, KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse,
+};
+pub use members::{
+    CODE_LAST_AGENCY_MEMBER, CODE_MEMBER_EXISTS, MAX_WORKSPACE_NAME_LENGTH, MemberListResponse,
+    MemberRemovalResponse, MemberResponse, MemberRole, RenameResponse, WorkspaceMember,
 };
 pub use numbers::{
     AvailableNumber, NumberSearch, NumberSearchResponse, OwnedNumber, OwnedNumbersResponse,
