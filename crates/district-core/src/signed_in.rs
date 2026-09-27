@@ -7,8 +7,10 @@
 //! workspace can be shown under another's name.
 //!
 //! The steps for each screen live beside its state (`inbox.rs`, `thread.rs`,
-//! `calls.rs`, `contacts.rs`, `live.rs`); this file holds what they share:
-//! navigation, the workspace switch and the overview.
+//! `calls.rs`, `contacts.rs`, `live.rs`, `hq.rs`, `analytics.rs`,
+//! `marketplace.rs`, `billing.rs`, `workflows.rs`, `scheduling.rs`, `desk.rs`,
+//! `support.rs`, `rooms.rs`); this file holds what they share: navigation, the
+//! workspace switch and the overview.
 
 use district_api::ApiError;
 use district_model::{
@@ -16,22 +18,33 @@ use district_model::{
 };
 
 use crate::account::ACCOUNT_DELETION_PATH;
+use crate::analytics::AnalyticsScreen;
+use crate::billing::BillingScreen;
 use crate::calls::{CallDetailScreen, CallLog};
 use crate::contacts::{BlockedScreen, ContactDetailScreen, ContactsScreen};
+use crate::desk::{DeskScreen, DeskSettingsView, DeskTicketScreen};
 use crate::devices::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen};
 use crate::failure::FailureText;
+use crate::hq::HqScreen;
 use crate::inbox::InboxScreen;
 use crate::live::LiveState;
+use crate::marketplace::MarketplaceScreen;
 use crate::model::{CoreConfig, Effect, Slot, Ticket, Tickets, WORKSPACE_SLOTS};
 use crate::overview::{OverviewContent, OverviewScreen, SETUP_WEB_PATH, workspace_mismatch};
 use crate::role::Capabilities;
+use crate::rooms::RoomsScreen;
 use crate::route::Route;
+use crate::scheduling::SchedulingScreen;
 use crate::session::{Identity, Notice, SignOutScope};
+use crate::support::{SupportRequestScreen, SupportScreen};
 use crate::thread::ThreadScreen;
+use crate::workflows::WorkflowsScreen;
 use crate::workspaces::{self, Resolved, WorkspacesState};
 
 /// The signed-in session and its screens.
-#[derive(Clone, Debug, PartialEq, Eq)]
+///
+/// `PartialEq` and not `Eq`: usage, billing and number prices are fractional.
+#[derive(Clone, Debug, PartialEq)]
 pub struct SignedIn {
     /// Who is signed in, and as which installation.
     pub identity: Identity,
@@ -63,6 +76,30 @@ pub struct SignedIn {
     pub contact: Option<ContactDetailScreen>,
     /// The blocked callers.
     pub blocked: BlockedScreen,
+    /// The District HQ conversation, kept while the workspace is open.
+    pub hq: HqScreen,
+    /// Analytics and usage.
+    pub analytics: AnalyticsScreen,
+    /// The phone numbers.
+    pub marketplace: MarketplaceScreen,
+    /// Billing.
+    pub billing: BillingScreen,
+    /// Workflows and the campaign.
+    pub workflows: WorkflowsScreen,
+    /// Booking pages.
+    pub scheduling: SchedulingScreen,
+    /// The help desk's queue.
+    pub desk: DeskScreen,
+    /// The open help desk ticket, while [`Route::DeskTicket`] shows.
+    pub desk_ticket: Option<DeskTicketScreen>,
+    /// The help desk's settings form, while [`Route::DeskSettings`] shows.
+    pub desk_settings: Option<DeskSettingsView>,
+    /// The support requests.
+    pub support: SupportScreen,
+    /// The open support request, while [`Route::SupportRequest`] shows.
+    pub support_request: Option<SupportRequestScreen>,
+    /// The rooms lobby.
+    pub rooms: RoomsScreen,
     /// The open workspace's live updates.
     pub live: LiveState,
     /// Whether the main window is showing, as the app last reported it.
@@ -99,6 +136,18 @@ impl SignedIn {
             contacts: ContactsScreen::default(),
             contact: None,
             blocked: BlockedScreen::default(),
+            hq: HqScreen::default(),
+            analytics: AnalyticsScreen::default(),
+            marketplace: MarketplaceScreen::default(),
+            billing: BillingScreen::default(),
+            workflows: WorkflowsScreen::default(),
+            scheduling: SchedulingScreen::default(),
+            desk: DeskScreen::default(),
+            desk_ticket: None,
+            desk_settings: None,
+            support: SupportScreen::default(),
+            support_request: None,
+            rooms: RoomsScreen::default(),
             live: LiveState::default(),
             window_visible,
         }
@@ -152,13 +201,18 @@ impl SignedIn {
         effects
     }
 
-    /// Closes the detail screen showing, unless `next` is the same screen.
+    /// Closes the detail screen showing, unless `next` is the same screen. The
+    /// rooms lobby drops the credential it held.
     fn leave(&mut self, next: &Route, tickets: &mut Tickets) -> Vec<Effect> {
         if self.route == *next {
             return Vec::new();
         }
         self.close_call(tickets);
         self.close_contact(tickets);
+        self.close_desk_ticket(tickets);
+        self.close_desk_settings(tickets);
+        self.close_support_request(tickets);
+        self.close_rooms(tickets);
         self.close_thread(tickets)
     }
 
@@ -181,10 +235,24 @@ impl SignedIn {
             Route::Contacts => self.enter_contacts(tickets),
             Route::ContactDetail { contact_id } => self.open_contact(contact_id, tickets),
             Route::BlockedContacts => self.load_blocked(tickets),
-            // A thread is opened by `navigate`, which reads its key first.
-            Route::Overview | Route::Account | Route::Workspace(_) | Route::Thread { .. } => {
-                Vec::new()
-            }
+            Route::Analytics => self.enter_analytics(tickets),
+            Route::Marketplace => self.enter_marketplace(tickets),
+            Route::Billing => self.enter_billing(tickets),
+            Route::Workflows => self.enter_workflows(tickets),
+            Route::Scheduling => self.enter_scheduling(tickets),
+            Route::Desk => self.enter_desk(tickets),
+            Route::DeskTicket { ticket_id } => self.open_desk_ticket(ticket_id, tickets),
+            Route::DeskSettings => self.enter_desk_settings(tickets),
+            Route::Support => self.enter_support(tickets),
+            Route::SupportRequest { key } => self.open_support_request(key, tickets),
+            Route::Rooms => self.enter_rooms(tickets),
+            // A thread is opened by `navigate`, which reads its key first. The HQ
+            // conversation is held, not read.
+            Route::Overview
+            | Route::Account
+            | Route::Workspace(_)
+            | Route::Thread { .. }
+            | Route::Hq => Vec::new(),
         }
     }
 
@@ -214,8 +282,10 @@ impl SignedIn {
             Route::CallDetail { .. } => self.refresh_call(tickets),
             Route::Contacts => self.enter_contacts(tickets),
             Route::ContactDetail { .. } => self.refresh_contact(tickets),
-            Route::BlockedContacts => self.load_blocked(tickets),
-            _ => Vec::new(),
+            Route::DeskTicket { .. } => self.refresh_desk_ticket(tickets),
+            Route::SupportRequest { .. } => self.refresh_support_request(tickets),
+            // Every other screen reads again what entering it reads.
+            _ => self.enter(tickets),
         });
         Next::Stay(effects)
     }
@@ -292,6 +362,18 @@ impl SignedIn {
         self.contacts = ContactsScreen::default();
         self.contact = None;
         self.blocked = BlockedScreen::default();
+        self.hq = HqScreen::default();
+        self.analytics = AnalyticsScreen::default();
+        self.marketplace = MarketplaceScreen::default();
+        self.billing = BillingScreen::default();
+        self.workflows = WorkflowsScreen::default();
+        self.scheduling = SchedulingScreen::default();
+        self.desk = DeskScreen::default();
+        self.desk_ticket = None;
+        self.desk_settings = None;
+        self.support = SupportScreen::default();
+        self.support_request = None;
+        self.rooms = RoomsScreen::default();
         effects
     }
 

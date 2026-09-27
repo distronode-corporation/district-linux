@@ -13,18 +13,29 @@ use district_core::{
     TokioClock, UrlOpener,
 };
 use district_model::{
-    AiDraftResponse, BlockTarget, BlockedContactsResponse, CallDetailResponse, CallSummary,
-    CallTranscriptResponse, ClearIntelResponse, ContactBlockResponse, ContactDetailResponse,
+    AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse, BlockTarget,
+    BlockedContactsResponse, CallDetailResponse, CallSummary, CallTranscriptResponse,
+    CampaignStatusResponse, ClearIntelResponse, ContactBlockResponse, ContactDetailResponse,
     ContactListResponse, ContactMutationResponse, ConversationsResponse, CreateContactRequest,
-    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, DraftSaveRequest, EnrichResponse, MarkReadResponse, MediaUploadResponse,
-    MessageSearchResponse, MessageThreadResponse, OverviewResponse, SendMessageRequest,
-    SendMessageResponse, SetupResponse, ThreadRef, TimelineCursor, TimelineResponse,
-    UnreadCountResponse, UpdateContactRequest, WorkspaceListResponse,
+    DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsPatch, DeskSettingsResponse,
+    DeskTicketCreateResponse, DeskTicketDraft, DeskTicketResponse, DeskTicketStatus,
+    DeskTicketStatusResponse, DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse,
+    DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest, EnrichResponse,
+    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, MarkReadResponse,
+    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageSearchResponse,
+    MessageThreadResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
+    OwnedNumbersResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageRequest, SendMessageResponse, SetupResponse,
+    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDraft,
+    SupportRequestResponse, SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse,
+    UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse, UsageResponse,
+    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceListResponse,
 };
 
 use crate::support::{
-    AGENCY, CLIENT, claims, config, content, fixture, loaded, overview, workspace_list,
+    AGENCY, CLIENT, claims, config, content, desktop_fixture, fixture, loaded, overview,
+    workspace_list,
 };
 
 /// What every fake did, in order.
@@ -319,6 +330,325 @@ impl DistrictApi for FakeApi {
         self.0
             .push(format!("block {workspace_id} {target:?} {blocked}"));
         Ok(blocked_answer(blocked))
+    }
+
+    async fn hq_prompt(
+        &self,
+        workspace_id: &str,
+        prompt: &str,
+        history: &[HqTurn],
+    ) -> Result<HqPromptResponse, ApiError> {
+        self.0.push(format!(
+            "hq {workspace_id} {prompt} after {}",
+            history.len()
+        ));
+        Ok(fixture("district-hq-pending-write.json"))
+    }
+
+    async fn hq_confirm(
+        &self,
+        workspace_id: &str,
+        proposal: &HqPendingWrite,
+    ) -> Result<HqConfirmResponse, ApiError> {
+        self.0
+            .push(format!("hq confirm {workspace_id} {}", proposal.tool));
+        Ok(fixture("district-hq-confirm.json"))
+    }
+
+    async fn analytics(
+        &self,
+        workspace_id: &str,
+        range: AnalyticsRange,
+    ) -> Result<AnalyticsResponse, ApiError> {
+        self.0
+            .push(format!("analytics {workspace_id} {}", range.as_str()));
+        Ok(fixture("district-analytics.json"))
+    }
+
+    async fn usage(&self, workspace_id: &str) -> Result<UsageResponse, ApiError> {
+        self.0.push(format!("usage {workspace_id}"));
+        Ok(fixture("district-usage.json"))
+    }
+
+    async fn usage_history(
+        &self,
+        workspace_id: &str,
+        months: u32,
+    ) -> Result<UsageHistoryResponse, ApiError> {
+        self.0
+            .push(format!("usage history {workspace_id} {months}"));
+        Ok(fixture("district-usage-history.json"))
+    }
+
+    async fn number_search(
+        &self,
+        workspace_id: &str,
+        search: &NumberSearch,
+    ) -> Result<NumberSearchResponse, ApiError> {
+        self.0.push(format!(
+            "number search {workspace_id} {:?}",
+            search.area_code
+        ));
+        Ok(fixture("district-numbers-search.json"))
+    }
+
+    async fn owned_numbers(&self, workspace_id: &str) -> Result<OwnedNumbersResponse, ApiError> {
+        self.0.push(format!("owned numbers {workspace_id}"));
+        Ok(fixture("district-provider-numbers.json"))
+    }
+
+    async fn workspace_billing(
+        &self,
+        workspace_id: &str,
+    ) -> Result<WorkspaceBillingResponse, ApiError> {
+        self.0.push(format!("workspace billing {workspace_id}"));
+        Ok(fixture("district-workspace-billing.json"))
+    }
+
+    async fn account_billing(&self) -> Result<AccountBillingResponse, ApiError> {
+        self.0.push("account billing");
+        Ok(fixture("district-billing.json"))
+    }
+
+    async fn workflows(&self, workspace_id: &str) -> Result<WorkflowListResponse, ApiError> {
+        self.0.push(format!("workflows {workspace_id}"));
+        Ok(fixture("district-workflows.json"))
+    }
+
+    async fn workflow_runs(
+        &self,
+        workspace_id: &str,
+        workflow_id: &str,
+        limit: u32,
+        offset: u32,
+    ) -> Result<WorkflowRunsResponse, ApiError> {
+        self.0.push(format!(
+            "runs {workspace_id} {workflow_id} {limit} {offset}"
+        ));
+        Ok(fixture("district-workflow-runs.json"))
+    }
+
+    async fn set_workflow_active(
+        &self,
+        workspace_id: &str,
+        workflow_id: &str,
+        active: bool,
+    ) -> Result<WorkflowToggleResponse, ApiError> {
+        self.0
+            .push(format!("workflow {workspace_id} {workflow_id} {active}"));
+        Ok(fixture("district-workflow-toggle.json"))
+    }
+
+    async fn campaign_status(
+        &self,
+        workspace_id: &str,
+    ) -> Result<CampaignStatusResponse, ApiError> {
+        self.0.push(format!("campaign {workspace_id}"));
+        Ok(fixture("district-campaign-status.json"))
+    }
+
+    async fn set_campaign_enabled(
+        &self,
+        workspace_id: &str,
+        enabled: bool,
+    ) -> Result<CampaignStatusResponse, ApiError> {
+        self.0.push(format!("campaign {workspace_id} {enabled}"));
+        Ok(fixture("district-campaign-pause.json"))
+    }
+
+    async fn scheduling_status(
+        &self,
+        workspace_id: &str,
+    ) -> Result<SchedulingStatusResponse, ApiError> {
+        self.0.push(format!("scheduling {workspace_id}"));
+        Ok(fixture("district-scheduling-status-ready.json"))
+    }
+
+    async fn enable_scheduling(
+        &self,
+        workspace_id: &str,
+    ) -> Result<SchedulingEnableResponse, ApiError> {
+        self.0.push(format!("enable scheduling {workspace_id}"));
+        Ok(fixture("district-scheduling-enable.json"))
+    }
+
+    async fn scheduling_hand_off(
+        &self,
+        workspace_id: &str,
+        next: Option<&str>,
+    ) -> Result<SchedulingHandOffResponse, ApiError> {
+        self.0.push(format!("hand-off {workspace_id} {next:?}"));
+        Ok(desktop_fixture("district-scheduling-handoff.json"))
+    }
+
+    async fn desk_settings(&self, workspace_id: &str) -> Result<DeskSettingsResponse, ApiError> {
+        self.0.push(format!("desk settings {workspace_id}"));
+        Ok(fixture("district-desk-settings.json"))
+    }
+
+    async fn save_desk_settings(
+        &self,
+        workspace_id: &str,
+        patch: &DeskSettingsPatch,
+    ) -> Result<DeskSettingsResponse, ApiError> {
+        self.0.push(format!(
+            "save desk settings {workspace_id} {:?}",
+            patch.enabled
+        ));
+        Ok(fixture("district-desk-settings-patch.json"))
+    }
+
+    async fn upload_desk_logo(
+        &self,
+        workspace_id: &str,
+        file_name: &str,
+        mime_type: &str,
+        bytes: Vec<u8>,
+    ) -> Result<DeskSettingsResponse, ApiError> {
+        self.0.push(format!(
+            "desk logo {workspace_id} {file_name} {mime_type} {}",
+            bytes.len()
+        ));
+        Ok(fixture("district-desk-logo.json"))
+    }
+
+    async fn delete_desk_logo(
+        &self,
+        workspace_id: &str,
+    ) -> Result<DeskLogoRemovalResponse, ApiError> {
+        self.0.push(format!("delete desk logo {workspace_id}"));
+        Ok(fixture("district-desk-logo-delete.json"))
+    }
+
+    async fn desk_tickets(
+        &self,
+        workspace_id: &str,
+        status: Option<DeskTicketStatus>,
+    ) -> Result<DeskTicketsResponse, ApiError> {
+        self.0
+            .push(format!("desk tickets {workspace_id} {status:?}"));
+        Ok(fixture("district-desk-tickets.json"))
+    }
+
+    async fn create_desk_ticket(
+        &self,
+        workspace_id: &str,
+        draft: &DeskTicketDraft,
+        idempotency_key: Option<&str>,
+    ) -> Result<DeskTicketCreateResponse, ApiError> {
+        self.0.push(format!(
+            "create desk ticket {workspace_id} {} {}",
+            draft.subject,
+            idempotency_key.map_or(0, str::len)
+        ));
+        Ok(fixture("district-desk-ticket-create.json"))
+    }
+
+    async fn desk_ticket(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+    ) -> Result<DeskTicketResponse, ApiError> {
+        self.0
+            .push(format!("desk ticket {workspace_id} {ticket_id}"));
+        Ok(fixture("district-desk-ticket.json"))
+    }
+
+    async fn reply_to_desk_ticket(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+        message: &str,
+        idempotency_key: Option<&str>,
+    ) -> Result<DeskReplyResponse, ApiError> {
+        self.0.push(format!(
+            "desk reply {workspace_id} {ticket_id} {message} {}",
+            idempotency_key.map_or(0, str::len)
+        ));
+        Ok(fixture("district-desk-ticket-reply.json"))
+    }
+
+    async fn set_desk_ticket_status(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+        status: DeskTicketStatus,
+    ) -> Result<DeskTicketStatusResponse, ApiError> {
+        self.0.push(format!(
+            "desk status {workspace_id} {ticket_id} {}",
+            status.as_str()
+        ));
+        Ok(fixture("district-desk-ticket-status.json"))
+    }
+
+    async fn support_requests(
+        &self,
+        workspace_id: &str,
+    ) -> Result<SupportRequestsResponse, ApiError> {
+        self.0.push(format!("support {workspace_id}"));
+        Ok(fixture("district-support-requests.json"))
+    }
+
+    async fn create_support_request(
+        &self,
+        workspace_id: &str,
+        draft: &SupportRequestDraft,
+        idempotency_key: Option<&str>,
+    ) -> Result<SupportRequestCreateResponse, ApiError> {
+        self.0.push(format!(
+            "create support {workspace_id} {} {}",
+            draft.subject,
+            idempotency_key.map_or(0, str::len)
+        ));
+        Ok(fixture("district-support-request-create.json"))
+    }
+
+    async fn support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+    ) -> Result<SupportRequestResponse, ApiError> {
+        self.0.push(format!("support request {workspace_id} {key}"));
+        Ok(fixture("district-support-request.json"))
+    }
+
+    async fn reply_to_support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+        body: &str,
+    ) -> Result<SupportReplyResponse, ApiError> {
+        self.0
+            .push(format!("support reply {workspace_id} {key} {body}"));
+        Ok(fixture("district-support-reply.json"))
+    }
+
+    async fn close_support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+    ) -> Result<SupportCloseResponse, ApiError> {
+        self.0.push(format!("support close {workspace_id} {key}"));
+        Ok(fixture("district-support-close.json"))
+    }
+
+    async fn meetings(&self, workspace_id: &str) -> Result<Vec<MeetingSummary>, ApiError> {
+        self.0.push(format!("meetings {workspace_id}"));
+        Ok(fixture("district-meetings.json"))
+    }
+
+    async fn meeting_detail(
+        &self,
+        workspace_id: &str,
+        meeting_id: &str,
+    ) -> Result<MeetingDetail, ApiError> {
+        self.0.push(format!("meeting {workspace_id} {meeting_id}"));
+        Ok(fixture("district-meeting-detail.json"))
+    }
+
+    async fn room_token(&self, room: &MeetRoomName) -> Result<RoomTokenResponse, ApiError> {
+        self.0.push(format!("room token {room}"));
+        Ok(fixture("district-room-token.json"))
     }
 }
 

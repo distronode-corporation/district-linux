@@ -388,6 +388,8 @@ impl SignedIn {
             self.save_draft_now(tickets)
         } else if tickets.accept(Slot::ContactPoll, ticket) {
             self.poll_contact(tickets)
+        } else if tickets.accept(Slot::NumberSearchTimer, ticket) {
+            self.number_search_due(tickets)
         } else {
             Vec::new()
         };

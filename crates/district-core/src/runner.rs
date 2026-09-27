@@ -15,19 +15,30 @@ use std::time::Duration;
 use district_api::ApiError;
 use district_auth::{AccessClaims, DrainReport, SignOutReport};
 use district_model::{
-    AiDraftResponse, BlockTarget, BlockedContactsResponse, CallDetailResponse, CallSummary,
-    CallTranscriptResponse, ClearIntelResponse, ContactBlockResponse, ContactDetailResponse,
+    AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse, BlockTarget,
+    BlockedContactsResponse, CallDetailResponse, CallSummary, CallTranscriptResponse,
+    CampaignStatusResponse, ClearIntelResponse, ContactBlockResponse, ContactDetailResponse,
     ContactListResponse, ContactMutationResponse, ConversationsResponse, CreateContactRequest,
-    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, DraftSaveRequest, EnrichResponse, MarkReadResponse, MediaUploadResponse,
-    MessageSearchResponse, MessageThreadResponse, OverviewResponse, SendMessageRequest,
-    SendMessageResponse, SetupResponse, ThreadRef, TimelineCursor, TimelineResponse,
-    UnreadCountResponse, UpdateContactRequest, WorkspaceListResponse,
+    DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsPatch, DeskSettingsResponse,
+    DeskTicketCreateResponse, DeskTicketDraft, DeskTicketResponse, DeskTicketStatus,
+    DeskTicketStatusResponse, DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse,
+    DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest, EnrichResponse,
+    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, MarkReadResponse,
+    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageSearchResponse,
+    MessageThreadResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
+    OwnedNumbersResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageRequest, SendMessageResponse, SetupResponse,
+    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDraft,
+    SupportRequestResponse, SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse,
+    UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse, UsageResponse,
+    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceListResponse,
 };
 
 use crate::contacts::{ContactWrite, ContactWritten};
 use crate::live::Notification;
 use crate::model::{Effect, Event, Ticket};
+use crate::scheduling::SCHEDULING_WEB_PATH;
 use crate::session::{RestoreError, SignInError, SignedInSession};
 
 /// The District AI API, as far as the app's screens use it.
@@ -209,6 +220,210 @@ pub trait DistrictApi: Send + Sync {
         target: &BlockTarget,
         blocked: bool,
     ) -> impl Future<Output = Result<ContactBlockResponse, ApiError>> + Send;
+    /// District HQ's answer to `prompt`, after the conversation in `history`. A
+    /// billed model run; sent once.
+    fn hq_prompt(
+        &self,
+        workspace_id: &str,
+        prompt: &str,
+        history: &[HqTurn],
+    ) -> impl Future<Output = Result<HqPromptResponse, ApiError>> + Send;
+    /// Applies the change `proposal` describes. Sent once.
+    fn hq_confirm(
+        &self,
+        workspace_id: &str,
+        proposal: &HqPendingWrite,
+    ) -> impl Future<Output = Result<HqConfirmResponse, ApiError>> + Send;
+    /// Call analytics over `range`.
+    fn analytics(
+        &self,
+        workspace_id: &str,
+        range: AnalyticsRange,
+    ) -> impl Future<Output = Result<AnalyticsResponse, ApiError>> + Send;
+    /// This month's metered usage.
+    fn usage(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<UsageResponse, ApiError>> + Send;
+    /// The last `months` months of metered usage.
+    fn usage_history(
+        &self,
+        workspace_id: &str,
+        months: u32,
+    ) -> impl Future<Output = Result<UsageHistoryResponse, ApiError>> + Send;
+    /// Numbers for sale matching `search`.
+    fn number_search(
+        &self,
+        workspace_id: &str,
+        search: &NumberSearch,
+    ) -> impl Future<Output = Result<NumberSearchResponse, ApiError>> + Send;
+    /// The numbers the workspace holds.
+    fn owned_numbers(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<OwnedNumbersResponse, ApiError>> + Send;
+    /// The workspace's plan.
+    fn workspace_billing(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<WorkspaceBillingResponse, ApiError>> + Send;
+    /// The account's subscriptions and invoices.
+    fn account_billing(
+        &self,
+    ) -> impl Future<Output = Result<AccountBillingResponse, ApiError>> + Send;
+    /// The workflows.
+    fn workflows(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<WorkflowListResponse, ApiError>> + Send;
+    /// A page of a workflow's runs.
+    fn workflow_runs(
+        &self,
+        workspace_id: &str,
+        workflow_id: &str,
+        limit: u32,
+        offset: u32,
+    ) -> impl Future<Output = Result<WorkflowRunsResponse, ApiError>> + Send;
+    /// Turns a workflow on or off. Sent once.
+    fn set_workflow_active(
+        &self,
+        workspace_id: &str,
+        workflow_id: &str,
+        active: bool,
+    ) -> impl Future<Output = Result<WorkflowToggleResponse, ApiError>> + Send;
+    /// The outbound campaign's state.
+    fn campaign_status(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<CampaignStatusResponse, ApiError>> + Send;
+    /// Resumes or pauses the outbound campaign. Sent once.
+    fn set_campaign_enabled(
+        &self,
+        workspace_id: &str,
+        enabled: bool,
+    ) -> impl Future<Output = Result<CampaignStatusResponse, ApiError>> + Send;
+    /// Where the booking pages stand.
+    fn scheduling_status(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<SchedulingStatusResponse, ApiError>> + Send;
+    /// Turns booking pages on. Sent once.
+    fn enable_scheduling(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<SchedulingEnableResponse, ApiError>> + Send;
+    /// A link that signs the browser in to manage booking pages, landing on
+    /// `next`. A credential; sent once.
+    fn scheduling_hand_off(
+        &self,
+        workspace_id: &str,
+        next: Option<&str>,
+    ) -> impl Future<Output = Result<SchedulingHandOffResponse, ApiError>> + Send;
+    /// The help desk's settings.
+    fn desk_settings(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<DeskSettingsResponse, ApiError>> + Send;
+    /// Changes what `patch` names of the help desk's settings. Sent once.
+    fn save_desk_settings(
+        &self,
+        workspace_id: &str,
+        patch: &DeskSettingsPatch,
+    ) -> impl Future<Output = Result<DeskSettingsResponse, ApiError>> + Send;
+    /// Publishes an image as the help desk's logo. Sent once.
+    fn upload_desk_logo(
+        &self,
+        workspace_id: &str,
+        file_name: &str,
+        mime_type: &str,
+        bytes: Vec<u8>,
+    ) -> impl Future<Output = Result<DeskSettingsResponse, ApiError>> + Send;
+    /// Takes the help desk's logo down. Sent once.
+    fn delete_desk_logo(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<DeskLogoRemovalResponse, ApiError>> + Send;
+    /// The help desk's queue, or only the tickets in `status`.
+    fn desk_tickets(
+        &self,
+        workspace_id: &str,
+        status: Option<DeskTicketStatus>,
+    ) -> impl Future<Output = Result<DeskTicketsResponse, ApiError>> + Send;
+    /// Raises a ticket for a customer. Sent once.
+    fn create_desk_ticket(
+        &self,
+        workspace_id: &str,
+        draft: &DeskTicketDraft,
+        idempotency_key: Option<&str>,
+    ) -> impl Future<Output = Result<DeskTicketCreateResponse, ApiError>> + Send;
+    /// One ticket and its thread.
+    fn desk_ticket(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+    ) -> impl Future<Output = Result<DeskTicketResponse, ApiError>> + Send;
+    /// Replies to a ticket's customer. Sent once.
+    fn reply_to_desk_ticket(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+        message: &str,
+        idempotency_key: Option<&str>,
+    ) -> impl Future<Output = Result<DeskReplyResponse, ApiError>> + Send;
+    /// Moves a ticket to `status`. Sent once.
+    fn set_desk_ticket_status(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+        status: DeskTicketStatus,
+    ) -> impl Future<Output = Result<DeskTicketStatusResponse, ApiError>> + Send;
+    /// The workspace's support requests.
+    fn support_requests(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<SupportRequestsResponse, ApiError>> + Send;
+    /// Raises a support request. Sent once.
+    fn create_support_request(
+        &self,
+        workspace_id: &str,
+        draft: &SupportRequestDraft,
+        idempotency_key: Option<&str>,
+    ) -> impl Future<Output = Result<SupportRequestCreateResponse, ApiError>> + Send;
+    /// One support request and its conversation.
+    fn support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+    ) -> impl Future<Output = Result<SupportRequestResponse, ApiError>> + Send;
+    /// Replies on a support request. Sent once.
+    fn reply_to_support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+        body: &str,
+    ) -> impl Future<Output = Result<SupportReplyResponse, ApiError>> + Send;
+    /// Closes a support request. Sent once.
+    fn close_support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+    ) -> impl Future<Output = Result<SupportCloseResponse, ApiError>> + Send;
+    /// The meetings held.
+    fn meetings(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<Vec<MeetingSummary>, ApiError>> + Send;
+    /// One meeting's record.
+    fn meeting_detail(
+        &self,
+        workspace_id: &str,
+        meeting_id: &str,
+    ) -> impl Future<Output = Result<MeetingDetail, ApiError>> + Send;
+    /// The credential to join a meeting room.
+    fn room_token(
+        &self,
+        room: &MeetRoomName,
+    ) -> impl Future<Output = Result<RoomTokenResponse, ApiError>> + Send;
 }
 
 /// Signing in and out.
@@ -609,6 +824,305 @@ where
                 ticket,
                 result: self.api.blocked_contacts(&workspace_id).await,
             },
+            Effect::AskHq {
+                ticket,
+                workspace_id,
+                prompt,
+                history,
+            } => Event::HqAnswered {
+                ticket,
+                result: self.api.hq_prompt(&workspace_id, &prompt, &history).await,
+            },
+            Effect::ConfirmHq {
+                ticket,
+                workspace_id,
+                proposal,
+            } => Event::HqConfirmed {
+                ticket,
+                result: self.api.hq_confirm(&workspace_id, &proposal).await,
+            },
+            Effect::LoadAnalytics {
+                ticket,
+                workspace_id,
+                range,
+            } => Event::AnalyticsLoaded {
+                ticket,
+                result: self.api.analytics(&workspace_id, range).await,
+            },
+            Effect::LoadUsage {
+                ticket,
+                workspace_id,
+            } => Event::UsageLoaded {
+                ticket,
+                result: self.api.usage(&workspace_id).await,
+            },
+            Effect::LoadUsageHistory {
+                ticket,
+                workspace_id,
+                months,
+            } => Event::UsageHistoryLoaded {
+                ticket,
+                result: self.api.usage_history(&workspace_id, months).await,
+            },
+            Effect::SearchNumbers {
+                ticket,
+                workspace_id,
+                search,
+            } => Event::NumbersFound {
+                ticket,
+                result: self.api.number_search(&workspace_id, &search).await,
+            },
+            Effect::LoadOwnedNumbers {
+                ticket,
+                workspace_id,
+            } => Event::OwnedNumbersLoaded {
+                ticket,
+                result: self.api.owned_numbers(&workspace_id).await,
+            },
+            Effect::LoadWorkspaceBilling {
+                ticket,
+                workspace_id,
+            } => Event::WorkspaceBillingLoaded {
+                ticket,
+                result: self.api.workspace_billing(&workspace_id).await,
+            },
+            Effect::LoadAccountBilling { ticket } => Event::AccountBillingLoaded {
+                ticket,
+                result: self.api.account_billing().await,
+            },
+            Effect::LoadWorkflows {
+                ticket,
+                workspace_id,
+            } => Event::WorkflowsLoaded {
+                ticket,
+                result: self.api.workflows(&workspace_id).await,
+            },
+            Effect::LoadWorkflowRuns {
+                ticket,
+                workspace_id,
+                workflow_id,
+                limit,
+                offset,
+            } => Event::WorkflowRunsLoaded {
+                ticket,
+                result: self
+                    .api
+                    .workflow_runs(&workspace_id, &workflow_id, limit, offset)
+                    .await,
+            },
+            Effect::SetWorkflowActive {
+                ticket,
+                workspace_id,
+                workflow_id,
+                active,
+            } => Event::WorkflowActiveSet {
+                ticket,
+                result: self
+                    .api
+                    .set_workflow_active(&workspace_id, &workflow_id, active)
+                    .await,
+            },
+            Effect::LoadCampaign {
+                ticket,
+                workspace_id,
+            } => Event::CampaignLoaded {
+                ticket,
+                result: self.api.campaign_status(&workspace_id).await,
+            },
+            Effect::SetCampaignEnabled {
+                ticket,
+                workspace_id,
+                enabled,
+            } => Event::CampaignSet {
+                ticket,
+                result: self.api.set_campaign_enabled(&workspace_id, enabled).await,
+            },
+            Effect::LoadSchedulingStatus {
+                ticket,
+                workspace_id,
+            } => Event::SchedulingStatusLoaded {
+                ticket,
+                result: self.api.scheduling_status(&workspace_id).await,
+            },
+            Effect::EnableScheduling {
+                ticket,
+                workspace_id,
+            } => Event::SchedulingEnabled {
+                ticket,
+                result: self.api.enable_scheduling(&workspace_id).await,
+            },
+            Effect::RequestSchedulingHandOff {
+                ticket,
+                workspace_id,
+            } => Event::SchedulingHandOffReady {
+                ticket,
+                result: self
+                    .api
+                    .scheduling_hand_off(&workspace_id, Some(SCHEDULING_WEB_PATH))
+                    .await,
+            },
+            Effect::LoadDeskSettings {
+                ticket,
+                workspace_id,
+            } => Event::DeskSettingsLoaded {
+                ticket,
+                result: self.api.desk_settings(&workspace_id).await,
+            },
+            Effect::SaveDeskSettings {
+                ticket,
+                workspace_id,
+                patch,
+            } => Event::DeskSettingsSaved {
+                ticket,
+                result: self.api.save_desk_settings(&workspace_id, &patch).await,
+            },
+            Effect::UploadDeskLogo {
+                ticket,
+                workspace_id,
+                logo,
+            } => Event::DeskLogoUploaded {
+                ticket,
+                result: self
+                    .api
+                    .upload_desk_logo(&workspace_id, &logo.file_name, &logo.mime_type, logo.bytes)
+                    .await,
+            },
+            Effect::DeleteDeskLogo {
+                ticket,
+                workspace_id,
+            } => Event::DeskLogoDeleted {
+                ticket,
+                result: self.api.delete_desk_logo(&workspace_id).await,
+            },
+            Effect::LoadDeskTickets {
+                ticket,
+                workspace_id,
+            } => Event::DeskTicketsLoaded {
+                ticket,
+                result: self.api.desk_tickets(&workspace_id, None).await,
+            },
+            Effect::CreateDeskTicket {
+                ticket,
+                workspace_id,
+                draft,
+                idempotency_key,
+            } => Event::DeskTicketCreated {
+                ticket,
+                result: self
+                    .api
+                    .create_desk_ticket(&workspace_id, &draft, Some(&idempotency_key))
+                    .await,
+            },
+            Effect::LoadDeskTicket {
+                ticket,
+                workspace_id,
+                ticket_id,
+            } => Event::DeskTicketLoaded {
+                ticket,
+                result: self.api.desk_ticket(&workspace_id, &ticket_id).await,
+            },
+            Effect::ReplyToDeskTicket {
+                ticket,
+                workspace_id,
+                ticket_id,
+                message,
+                idempotency_key,
+            } => Event::DeskReplied {
+                ticket,
+                result: self
+                    .api
+                    .reply_to_desk_ticket(
+                        &workspace_id,
+                        &ticket_id,
+                        &message,
+                        Some(&idempotency_key),
+                    )
+                    .await,
+            },
+            Effect::SetDeskTicketStatus {
+                ticket,
+                workspace_id,
+                ticket_id,
+                status,
+            } => Event::DeskTicketStatusSet {
+                ticket,
+                result: self
+                    .api
+                    .set_desk_ticket_status(&workspace_id, &ticket_id, status)
+                    .await,
+            },
+            Effect::LoadSupportRequests {
+                ticket,
+                workspace_id,
+            } => Event::SupportRequestsLoaded {
+                ticket,
+                result: self.api.support_requests(&workspace_id).await,
+            },
+            Effect::CreateSupportRequest {
+                ticket,
+                workspace_id,
+                draft,
+                idempotency_key,
+            } => Event::SupportRequestCreated {
+                ticket,
+                result: self
+                    .api
+                    .create_support_request(&workspace_id, &draft, Some(&idempotency_key))
+                    .await,
+            },
+            Effect::LoadSupportRequest {
+                ticket,
+                workspace_id,
+                key,
+            } => Event::SupportRequestLoaded {
+                ticket,
+                result: self.api.support_request(&workspace_id, &key).await,
+            },
+            Effect::ReplyToSupportRequest {
+                ticket,
+                workspace_id,
+                key,
+                body,
+            } => Event::SupportReplied {
+                ticket,
+                result: self
+                    .api
+                    .reply_to_support_request(&workspace_id, &key, &body)
+                    .await,
+            },
+            Effect::CloseSupportRequest {
+                ticket,
+                workspace_id,
+                key,
+            } => Event::SupportRequestClosed {
+                ticket,
+                result: self.api.close_support_request(&workspace_id, &key).await,
+            },
+            Effect::LoadMeetings {
+                ticket,
+                workspace_id,
+            } => Event::MeetingsLoaded {
+                ticket,
+                result: self.api.meetings(&workspace_id).await,
+            },
+            Effect::LoadMeeting {
+                ticket,
+                workspace_id,
+                meeting_id,
+            } => Event::MeetingLoaded {
+                ticket,
+                result: self.api.meeting_detail(&workspace_id, &meeting_id).await,
+            },
+            Effect::RequestRoomToken { ticket, room } => Event::RoomTokenIssued {
+                ticket,
+                result: self.api.room_token(&room).await,
+            },
+            Effect::OpenOneTimeUrl { url } => {
+                if self.opener.open(url.expose()).await {
+                    return None;
+                }
+                Event::UrlOpenFailed
+            }
         };
         Some(event)
     }

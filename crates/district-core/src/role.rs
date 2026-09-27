@@ -62,8 +62,10 @@ pub struct Capabilities {
     pub role: Option<WorkspaceRole>,
     /// Changes of any kind: creating and editing contacts, replying in the inbox,
     /// confirming a change the workspace assistant proposes, turning a workflow on
-    /// or off, and editing the knowledge base, messaging accounts and call
-    /// handling. The service admits `agency` and `client` to every such route.
+    /// or off, pausing or resuming the outbound campaign, and editing the
+    /// knowledge base, messaging accounts and call handling. It also decides the
+    /// links to buy numbers and manage billing on the web, which a viewer could
+    /// not use there either. The service admits `agency` and `client` to every such route.
     /// When this is false the app should say the access is read-only up front,
     /// rather than let the member find out by clicking.
     pub can_change: bool,
@@ -120,10 +122,15 @@ impl Capabilities {
     /// Every top-level destination is open to every role; so is the workspace
     /// settings hub, and the three sections whose reads admit a viewer (call
     /// handling, the knowledge base and messaging), each of which withholds its
-    /// own controls from one. What is closed is the four sections backed by the
-    /// configuration read, and the members and phone numbers sections, which are
-    /// kept from a viewer as a deliberate stopping point even though their reads
-    /// would answer: each needs its controls audited before it is opened.
+    /// own controls from one. So are District HQ, analytics, phone numbers,
+    /// billing, workflows, booking pages and rooms, whose reads all admit a
+    /// viewer and whose screens withhold their own controls.
+    ///
+    /// What is closed is the four sections backed by the configuration read; the
+    /// members and phone numbers settings sections, which are kept from a viewer
+    /// as a deliberate stopping point even though their reads would answer (each
+    /// needs its controls audited before it is opened); and the help desk and
+    /// support, every route of which refuses a viewer, reads included.
     pub fn allows(&self, route: &Route) -> bool {
         match route {
             Route::Workspace(
@@ -135,6 +142,8 @@ impl Capabilities {
             Route::Workspace(WorkspaceSection::Members | WorkspaceSection::Numbers) => {
                 self.can_change
             }
+            Route::Desk | Route::DeskTicket { .. } | Route::DeskSettings => self.can_use_desk,
+            Route::Support | Route::SupportRequest { .. } => self.can_use_support,
             _ => true,
         }
     }

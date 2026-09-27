@@ -1,5 +1,5 @@
-//! Where the app is: the top-level destinations, their detail screens, and the
-//! workspace settings sections.
+//! Where the app is: the top-level destinations, their detail screens, the
+//! workspace's other sections, and the workspace settings sections.
 //!
 //! Workspace-scoped routes do not name their workspace. There is one open
 //! workspace at a time, held by the session, and every request is made for it
@@ -87,6 +87,40 @@ pub enum Route {
     },
     /// The callers the workspace has blocked, below contacts.
     BlockedContacts,
+    /// District HQ, the workspace assistant.
+    Hq,
+    /// Call analytics and metered usage.
+    Analytics,
+    /// The workspace's phone numbers and the numbers for sale, read only.
+    Marketplace,
+    /// The workspace's plan and the account's subscriptions and invoices, read
+    /// only.
+    Billing,
+    /// Workflows, their runs and the outbound campaign's switch.
+    Workflows,
+    /// Booking pages.
+    Scheduling,
+    /// The help desk: the tickets the workspace's own customers raised. Closed
+    /// to a viewer, reads included.
+    Desk,
+    /// One help desk ticket.
+    DeskTicket {
+        /// The ticket's id (not its `T-` reference).
+        ticket_id: String,
+    },
+    /// The help desk's settings and logo.
+    DeskSettings,
+    /// Support requests from the workspace to Distronode. Closed to a viewer,
+    /// reads included.
+    Support,
+    /// One support request.
+    SupportRequest {
+        /// The request's support desk key (such as `DA-42`), or the service's
+        /// own id for a request not filed yet.
+        key: String,
+    },
+    /// Meeting rooms: the meetings held, their records, and starting a room.
+    Rooms,
     /// The account.
     Account,
     /// The installations signed in to the account. Like the account, not tied to
@@ -123,14 +157,15 @@ pub enum WorkspaceSection {
 }
 
 impl Route {
-    /// The tab to highlight while this route shows.
+    /// The tab to highlight while this route shows. The workspace's sections
+    /// are reached from the overview, so they highlight it.
     pub fn tab(&self) -> Tab {
         match self {
-            Self::Overview | Self::Workspace(_) => Tab::Overview,
             Self::Inbox | Self::Thread { .. } => Tab::Inbox,
             Self::Calls | Self::CallDetail { .. } => Tab::Calls,
             Self::Contacts | Self::ContactDetail { .. } | Self::BlockedContacts => Tab::Contacts,
             Self::Account | Self::Devices => Tab::Account,
+            _ => Tab::Overview,
         }
     }
 
@@ -146,9 +181,20 @@ impl Route {
             Self::Thread { .. } => Some(Self::Inbox),
             Self::CallDetail { .. } => Some(Self::Calls),
             Self::ContactDetail { .. } | Self::BlockedContacts => Some(Self::Contacts),
+            Self::DeskTicket { .. } | Self::DeskSettings => Some(Self::Desk),
+            Self::SupportRequest { .. } => Some(Self::Support),
             Self::Devices => Some(Self::Account),
             Self::Workspace(WorkspaceSection::Hub) => Some(Self::Overview),
             Self::Workspace(_) => Some(Self::Workspace(WorkspaceSection::Hub)),
+            Self::Hq
+            | Self::Analytics
+            | Self::Marketplace
+            | Self::Billing
+            | Self::Workflows
+            | Self::Scheduling
+            | Self::Desk
+            | Self::Support
+            | Self::Rooms => Some(Self::Overview),
             Self::Overview | Self::Inbox | Self::Calls | Self::Contacts | Self::Account => None,
         }
     }
@@ -156,13 +202,19 @@ impl Route {
     /// Where to be after the open workspace changes.
     ///
     /// A detail names something in the old workspace, so it gives way to its
-    /// list. A settings section gives way to the overview, because the member's
-    /// role in the new workspace, which decides the sections, is not known until
-    /// the new overview arrives. Tabs, the blocked list, the account and the
-    /// devices list stay.
+    /// list. A settings section, the help desk and support give way to the
+    /// overview, because the member's role in the new workspace, which decides
+    /// whether they open at all, is not known until the new overview arrives.
+    /// Tabs, the workspace's other sections, the blocked list, the account and
+    /// the devices list stay, and read the new workspace's data.
     pub fn after_workspace_switch(&self) -> Route {
         match self {
-            Self::Workspace(_) => Self::Overview,
+            Self::Workspace(_)
+            | Self::Desk
+            | Self::DeskTicket { .. }
+            | Self::DeskSettings
+            | Self::Support
+            | Self::SupportRequest { .. } => Self::Overview,
             Self::Thread { .. } | Self::CallDetail { .. } | Self::ContactDetail { .. } => {
                 self.tab().route()
             }

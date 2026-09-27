@@ -46,6 +46,27 @@ pub(crate) const UNSUPPORTED_ATTACHMENT: &str =
 pub(crate) const ATTACHMENT_SIZE: &str = "Attachments must be between 1 byte and 5 MB.";
 pub(crate) const UNREADABLE_ATTACHMENT: &str =
     "That image could not be read. Try picking it again.";
+/// Turning booking pages on, refused by the service's list of workspaces that
+/// may have them (a 403 from that route is this, not the member's role).
+pub(crate) const SCHEDULING_NOT_OFFERED: &str = "Booking pages are not offered to this workspace.";
+/// Turning booking pages on, refused because it was tried too often: the budget
+/// is a few attempts an hour for the whole workspace.
+pub(crate) const SCHEDULING_TOO_MANY: &str = "Booking pages were turned on several times in the \
+    last hour for this workspace. Try again later.";
+/// Setting up booking pages ran and failed, and the service gave no reason.
+pub(crate) const SCHEDULING_SETUP_FAILED: &str =
+    "Setting up booking pages did not finish, and no reason was given.";
+/// The web hand-off refused the session it was asked with (a 403 there is the
+/// sign-in, not the role).
+pub(crate) const HAND_OFF_REFUSED: &str = "District AI could not confirm your sign-in for the \
+    web. Sign out, sign in again, and try again.";
+/// The web hand-off asked for too often: its budget is per account, per minute.
+pub(crate) const HAND_OFF_TOO_MANY: &str =
+    "The web was opened several times just now. Wait a moment and try again.";
+/// A hand-off link that is not on the service's own address. It carries a
+/// sign-in, so it is not opened.
+pub(crate) const HAND_OFF_ELSEWHERE: &str = "District AI sent a sign-in link for another \
+    address, so it was not opened. Updating the app may fix it.";
 
 /// What to tell the user about one failure.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

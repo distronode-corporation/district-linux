@@ -12,14 +12,24 @@ use district_auth::{
 };
 use district_live::{LiveConfig, TelemetryHub, TokenMinter, WorkspaceUpdate};
 use district_model::{
-    AiDraftResponse, BlockTarget, BlockedContactsResponse, CallDetailResponse, CallSummary,
-    CallTranscriptResponse, ClearIntelResponse, ContactBlockResponse, ContactDetailResponse,
+    AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse, BlockTarget,
+    BlockedContactsResponse, CallDetailResponse, CallSummary, CallTranscriptResponse,
+    CampaignStatusResponse, ClearIntelResponse, ContactBlockResponse, ContactDetailResponse,
     ContactListResponse, ContactMutationResponse, ConversationsResponse, CreateContactRequest,
-    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, DraftSaveRequest, EnrichResponse, MarkReadResponse, MediaUploadResponse,
-    MessageSearchResponse, MessageThreadResponse, OverviewResponse, SendMessageRequest,
-    SendMessageResponse, SetupResponse, ThreadRef, TimelineCursor, TimelineResponse,
-    UnreadCountResponse, UpdateContactRequest, WorkspaceListResponse,
+    DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsPatch, DeskSettingsResponse,
+    DeskTicketCreateResponse, DeskTicketDraft, DeskTicketResponse, DeskTicketStatus,
+    DeskTicketStatusResponse, DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse,
+    DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest, EnrichResponse,
+    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, MarkReadResponse,
+    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageSearchResponse,
+    MessageThreadResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
+    OwnedNumbersResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageRequest, SendMessageResponse, SetupResponse,
+    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDraft,
+    SupportRequestResponse, SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse,
+    UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse, UsageResponse,
+    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceListResponse,
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 use url::Url;
@@ -266,6 +276,276 @@ impl<S: TokenSource> DistrictApi for ApiClient<S> {
         blocked: bool,
     ) -> impl Future<Output = Result<ContactBlockResponse, ApiError>> + Send {
         ApiClient::set_contact_blocked(self, workspace_id, target, blocked)
+    }
+
+    fn hq_prompt(
+        &self,
+        workspace_id: &str,
+        prompt: &str,
+        history: &[HqTurn],
+    ) -> impl Future<Output = Result<HqPromptResponse, ApiError>> + Send {
+        ApiClient::hq_prompt(self, workspace_id, prompt, history)
+    }
+
+    fn hq_confirm(
+        &self,
+        workspace_id: &str,
+        proposal: &HqPendingWrite,
+    ) -> impl Future<Output = Result<HqConfirmResponse, ApiError>> + Send {
+        ApiClient::hq_confirm(self, workspace_id, proposal)
+    }
+
+    fn analytics(
+        &self,
+        workspace_id: &str,
+        range: AnalyticsRange,
+    ) -> impl Future<Output = Result<AnalyticsResponse, ApiError>> + Send {
+        ApiClient::analytics(self, workspace_id, range)
+    }
+
+    fn usage(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<UsageResponse, ApiError>> + Send {
+        ApiClient::usage(self, workspace_id)
+    }
+
+    fn usage_history(
+        &self,
+        workspace_id: &str,
+        months: u32,
+    ) -> impl Future<Output = Result<UsageHistoryResponse, ApiError>> + Send {
+        ApiClient::usage_history(self, workspace_id, months)
+    }
+
+    fn number_search(
+        &self,
+        workspace_id: &str,
+        search: &NumberSearch,
+    ) -> impl Future<Output = Result<NumberSearchResponse, ApiError>> + Send {
+        ApiClient::number_search(self, workspace_id, search)
+    }
+
+    fn owned_numbers(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<OwnedNumbersResponse, ApiError>> + Send {
+        ApiClient::owned_numbers(self, workspace_id)
+    }
+
+    fn workspace_billing(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<WorkspaceBillingResponse, ApiError>> + Send {
+        ApiClient::workspace_billing(self, workspace_id)
+    }
+
+    fn account_billing(
+        &self,
+    ) -> impl Future<Output = Result<AccountBillingResponse, ApiError>> + Send {
+        ApiClient::account_billing(self)
+    }
+
+    fn workflows(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<WorkflowListResponse, ApiError>> + Send {
+        ApiClient::workflows(self, workspace_id)
+    }
+
+    fn workflow_runs(
+        &self,
+        workspace_id: &str,
+        workflow_id: &str,
+        limit: u32,
+        offset: u32,
+    ) -> impl Future<Output = Result<WorkflowRunsResponse, ApiError>> + Send {
+        ApiClient::workflow_runs(self, workspace_id, workflow_id, limit, offset)
+    }
+
+    fn set_workflow_active(
+        &self,
+        workspace_id: &str,
+        workflow_id: &str,
+        active: bool,
+    ) -> impl Future<Output = Result<WorkflowToggleResponse, ApiError>> + Send {
+        ApiClient::set_workflow_active(self, workspace_id, workflow_id, active)
+    }
+
+    fn campaign_status(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<CampaignStatusResponse, ApiError>> + Send {
+        ApiClient::campaign_status(self, workspace_id)
+    }
+
+    fn set_campaign_enabled(
+        &self,
+        workspace_id: &str,
+        enabled: bool,
+    ) -> impl Future<Output = Result<CampaignStatusResponse, ApiError>> + Send {
+        ApiClient::set_campaign_enabled(self, workspace_id, enabled)
+    }
+
+    fn scheduling_status(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<SchedulingStatusResponse, ApiError>> + Send {
+        ApiClient::scheduling_status(self, workspace_id)
+    }
+
+    fn enable_scheduling(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<SchedulingEnableResponse, ApiError>> + Send {
+        ApiClient::enable_scheduling(self, workspace_id)
+    }
+
+    fn scheduling_hand_off(
+        &self,
+        workspace_id: &str,
+        next: Option<&str>,
+    ) -> impl Future<Output = Result<SchedulingHandOffResponse, ApiError>> + Send {
+        ApiClient::scheduling_hand_off(self, workspace_id, next)
+    }
+
+    fn desk_settings(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<DeskSettingsResponse, ApiError>> + Send {
+        ApiClient::desk_settings(self, workspace_id)
+    }
+
+    fn save_desk_settings(
+        &self,
+        workspace_id: &str,
+        patch: &DeskSettingsPatch,
+    ) -> impl Future<Output = Result<DeskSettingsResponse, ApiError>> + Send {
+        ApiClient::save_desk_settings(self, workspace_id, patch)
+    }
+
+    fn upload_desk_logo(
+        &self,
+        workspace_id: &str,
+        file_name: &str,
+        mime_type: &str,
+        bytes: Vec<u8>,
+    ) -> impl Future<Output = Result<DeskSettingsResponse, ApiError>> + Send {
+        ApiClient::upload_desk_logo(self, workspace_id, file_name, mime_type, bytes)
+    }
+
+    fn delete_desk_logo(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<DeskLogoRemovalResponse, ApiError>> + Send {
+        ApiClient::delete_desk_logo(self, workspace_id)
+    }
+
+    fn desk_tickets(
+        &self,
+        workspace_id: &str,
+        status: Option<DeskTicketStatus>,
+    ) -> impl Future<Output = Result<DeskTicketsResponse, ApiError>> + Send {
+        ApiClient::desk_tickets(self, workspace_id, status)
+    }
+
+    fn create_desk_ticket(
+        &self,
+        workspace_id: &str,
+        draft: &DeskTicketDraft,
+        idempotency_key: Option<&str>,
+    ) -> impl Future<Output = Result<DeskTicketCreateResponse, ApiError>> + Send {
+        ApiClient::create_desk_ticket(self, workspace_id, draft, idempotency_key)
+    }
+
+    fn desk_ticket(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+    ) -> impl Future<Output = Result<DeskTicketResponse, ApiError>> + Send {
+        ApiClient::desk_ticket(self, workspace_id, ticket_id)
+    }
+
+    fn reply_to_desk_ticket(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+        message: &str,
+        idempotency_key: Option<&str>,
+    ) -> impl Future<Output = Result<DeskReplyResponse, ApiError>> + Send {
+        ApiClient::reply_to_desk_ticket(self, workspace_id, ticket_id, message, idempotency_key)
+    }
+
+    fn set_desk_ticket_status(
+        &self,
+        workspace_id: &str,
+        ticket_id: &str,
+        status: DeskTicketStatus,
+    ) -> impl Future<Output = Result<DeskTicketStatusResponse, ApiError>> + Send {
+        ApiClient::set_desk_ticket_status(self, workspace_id, ticket_id, status)
+    }
+
+    fn support_requests(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<SupportRequestsResponse, ApiError>> + Send {
+        ApiClient::support_requests(self, workspace_id)
+    }
+
+    fn create_support_request(
+        &self,
+        workspace_id: &str,
+        draft: &SupportRequestDraft,
+        idempotency_key: Option<&str>,
+    ) -> impl Future<Output = Result<SupportRequestCreateResponse, ApiError>> + Send {
+        ApiClient::create_support_request(self, workspace_id, draft, idempotency_key)
+    }
+
+    fn support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+    ) -> impl Future<Output = Result<SupportRequestResponse, ApiError>> + Send {
+        ApiClient::support_request(self, workspace_id, key)
+    }
+
+    fn reply_to_support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+        body: &str,
+    ) -> impl Future<Output = Result<SupportReplyResponse, ApiError>> + Send {
+        ApiClient::reply_to_support_request(self, workspace_id, key, body)
+    }
+
+    fn close_support_request(
+        &self,
+        workspace_id: &str,
+        key: &str,
+    ) -> impl Future<Output = Result<SupportCloseResponse, ApiError>> + Send {
+        ApiClient::close_support_request(self, workspace_id, key)
+    }
+
+    fn meetings(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<Vec<MeetingSummary>, ApiError>> + Send {
+        ApiClient::meetings(self, workspace_id)
+    }
+
+    fn meeting_detail(
+        &self,
+        workspace_id: &str,
+        meeting_id: &str,
+    ) -> impl Future<Output = Result<MeetingDetail, ApiError>> + Send {
+        ApiClient::meeting_detail(self, workspace_id, meeting_id)
+    }
+
+    fn room_token(
+        &self,
+        room: &MeetRoomName,
+    ) -> impl Future<Output = Result<RoomTokenResponse, ApiError>> + Send {
+        ApiClient::room_token(self, room)
     }
 }
 

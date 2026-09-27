@@ -12,7 +12,7 @@ use crate::failure::FailureText;
 use crate::signed_in::SignedIn;
 
 /// Where the session is.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SessionState {
     /// The app has just started and is looking for a stored session, or found
     /// one it cannot use yet (no network, a locked keyring) and is waiting to try

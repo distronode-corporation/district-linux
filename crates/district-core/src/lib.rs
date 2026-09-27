@@ -45,6 +45,15 @@
 //!   and the blocked callers ([`ContactsScreen`], [`ContactDetailScreen`],
 //!   [`BlockedScreen`]), and live updates with the notification for a new
 //!   message ([`LiveState`], [`Notification`]).
+//! - The screens of the third: District HQ with its confirmation in front of
+//!   every change ([`HqScreen`]), analytics and usage with their charts'
+//!   arithmetic ([`AnalyticsScreen`]), phone numbers and billing, read only
+//!   ([`MarketplaceScreen`], [`BillingScreen`]), workflows and the campaign's
+//!   switch ([`WorkflowsScreen`]), booking pages with the hand-off to the web
+//!   ([`SchedulingScreen`], [`OneTimeUrl`]), the help desk ([`DeskScreen`],
+//!   [`DeskTicketScreen`], [`DeskSettingsView`]), support requests
+//!   ([`SupportScreen`], [`SupportRequestScreen`]) and the rooms lobby with its
+//!   meeting records ([`RoomsScreen`]).
 //! - [`FailureText`]: the words for every failure, in one place.
 //! - [`NativeAuth`], [`LiveHub`] and the [`DistrictApi`] implementation for
 //!   [`ApiClient`](district_api::ApiClient): the real sign-in, live updates and
@@ -60,24 +69,43 @@
 
 mod account;
 mod adapters;
+mod analytics;
+mod billing;
 mod calls;
 mod contacts;
+mod desk;
 mod devices;
 mod failure;
+mod hq;
 mod inbox;
 mod live;
+mod marketplace;
 mod model;
 mod overview;
 mod role;
+mod rooms;
 mod route;
 mod runner;
+mod scheduling;
 mod session;
 mod signed_in;
+mod support;
 mod thread;
+mod workflows;
 mod workspaces;
 
 pub use account::{ACCOUNT_DELETION_PATH, AccountView};
 pub use adapters::{CodeExchange, LiveHub, NativeAuth};
+pub use analytics::{
+    AnalyticsCard, AnalyticsEvent, AnalyticsReport, AnalyticsScreen, ChartBar, HistoryCard,
+    HistoryRow, NOT_RECORDED, SentimentShare, USAGE_HISTORY_MONTHS, UsageCard, UsageLine,
+    VolumeChange, format_amount, format_duration, fractions, history_rows, metered_fractions,
+    month_label, parse_hex_color, shares, sum_metered, usage_lines,
+};
+pub use billing::{
+    AccountSection, BILLING_WEB_PATH, BillingEvent, BillingScreen, PlanCard, PlanStatus, Renewal,
+    format_cents, invoice_amount, meter_fraction, minutes_used, overage_note, plan_name,
+};
 pub use calls::{
     CALL_PAGE_SIZE, CallDetailScreen, CallLog, CallRows, CallView, CallsEvent, TranscriptView,
 };
@@ -87,21 +115,38 @@ pub use contacts::{
     ContactView, ContactWrite, ContactWritten, ContactsEvent, ContactsScreen, CreateContact,
     RESEARCH_POLL_INTERVAL,
 };
+pub use desk::{
+    DESK_MESSAGE_MAX, DESK_SUBJECT_MAX, DESK_SUBJECT_MIN, DeskCompose, DeskEvent, DeskQueue,
+    DeskScreen, DeskSettingsForm, DeskSettingsView, DeskSubmitted, DeskTicketControls,
+    DeskTicketForm, DeskTicketScreen, DeskTicketView, DeskTickets, desk_author_label, desk_status,
+    desk_status_label,
+};
 pub use devices::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen};
 pub use failure::FailureText;
+pub use hq::{HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqScreen, HqText};
 pub use inbox::{
     ConversationList, Conversations, InboxEvent, InboxScreen, SEARCH_DEBOUNCE, SearchState,
 };
 pub use live::{LiveState, LiveStatus, Notification, NotificationTarget, RingingCall};
+pub use marketplace::{
+    MARKETPLACE_WEB_PATH, MarketplaceEvent, MarketplaceScreen, MarketplaceTab,
+    NUMBER_SEARCH_DEBOUNCE, NumberSearchForm, NumberSearchState, OwnedNumbers, OwnedNumbersList,
+    price_label,
+};
 pub use model::{CoreConfig, Effect, Event, Model, RESTORE_RETRY_FIRST, RESTORE_RETRY_MAX, Ticket};
 pub use overview::{
     FINISH_SETUP_ACTION, FINISH_SETUP_BODY, FINISH_SETUP_TITLE, OverviewContent, OverviewScreen,
     SETUP_WEB_PATH,
 };
 pub use role::{Capabilities, WorkspaceRole};
+pub use rooms::{MeetingList, MeetingRecord, RoomJoin, RoomsEvent, RoomsScreen, is_in_progress};
 pub use route::{Route, Tab, WorkspaceSection};
 pub use runner::{
     Auth, Clock, DistrictApi, EffectRunner, LiveUpdates, Notifier, Settings, TokioClock, UrlOpener,
+};
+pub use scheduling::{
+    OneTimeUrl, SCHEDULING_WEB_PATH, SchedulingEvent, SchedulingPresentation, SchedulingScreen,
+    SchedulingStatus,
 };
 pub use session::{
     ExchangeFailure, Identity, Notice, RestoreError, Restoring, ServiceSignOut, SessionEnd,
@@ -109,8 +154,17 @@ pub use session::{
     SignedOut, SignedOutWhy, SigningIn, SigningOut,
 };
 pub use signed_in::SignedIn;
+pub use support::{
+    SUPPORT_LIST_CAP, SUPPORT_MESSAGE_MAX, SUPPORT_SUBJECT_MAX, SUPPORT_SUBJECT_MIN,
+    SupportCompose, SupportEvent, SupportForm, SupportList, SupportRequestScreen,
+    SupportRequestView, SupportRequests, SupportScreen, support_request_key,
+};
 pub use thread::{
     ATTACHMENT_TYPES, Composer, DRAFT_SAVE_DEBOUNCE, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS,
     PickedAttachment, ThreadControls, ThreadEvent, ThreadEvents, ThreadHistory, ThreadScreen,
+};
+pub use workflows::{
+    CampaignCard, CampaignConfirm, RUNS_PAGE_SIZE, RunHistory, Tone, WorkflowControls,
+    WorkflowList, WorkflowsEvent, WorkflowsScreen, trigger_label,
 };
 pub use workspaces::{Workspaces, WorkspacesState};

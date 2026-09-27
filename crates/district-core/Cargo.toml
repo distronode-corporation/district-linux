@@ -21,6 +21,10 @@ serde_json = { workspace = true }
 # `sync` for the lock `LiveHub` keeps the telemetry hub behind.
 tokio = { workspace = true, features = ["sync", "time"] }
 url = { workspace = true }
+# The idempotency keys of the help desk's and support's creates and replies: a
+# random (version 4) UUID, minted as the service asks, one per submit (the desk)
+# or one per draft (support).
+uuid = { workspace = true }
 
 [dev-dependencies]
 # Test only: to build access tokens whose claims the sign-in code can read.

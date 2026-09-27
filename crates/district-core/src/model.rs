@@ -33,29 +33,47 @@ use district_api::{ApiError, ReauthReason, RetryReason, TokenError};
 use district_auth::{AccessClaims, LoginError, SignOutReport};
 use district_live::WorkspaceUpdate;
 use district_model::{
-    AiDraftResponse, BlockedContactsResponse, CallDetailResponse, CallSummary,
-    CallTranscriptResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
-    ConversationsResponse, CreateContactRequest, DeviceListResponse, DeviceRevokeResponse,
-    DraftListResponse, DraftResponse, DraftSaveRequest, MarkReadResponse, MediaUploadResponse,
-    MessageSearchResponse, MessageThreadResponse, OverviewResponse, SendMessageRequest,
-    SendMessageResponse, ThreadRef, TimelineCursor, TimelineResponse, UnreadCountResponse,
-    WorkspaceListResponse,
+    AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse,
+    BlockedContactsResponse, CallDetailResponse, CallSummary, CallTranscriptResponse,
+    CampaignStatusResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
+    ConversationsResponse, CreateContactRequest, DeskLogoRemovalResponse, DeskReplyResponse,
+    DeskSettingsPatch, DeskSettingsResponse, DeskTicketCreateResponse, DeskTicketDraft,
+    DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse,
+    DeviceListResponse, DeviceRevokeResponse, DraftListResponse, DraftResponse, DraftSaveRequest,
+    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, MarkReadResponse,
+    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageSearchResponse,
+    MessageThreadResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
+    OwnedNumbersResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageRequest, SendMessageResponse, SupportCloseResponse,
+    SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDraft,
+    SupportRequestResponse, SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse,
+    UnreadCountResponse, UsageHistoryResponse, UsageResponse, WorkflowListResponse,
+    WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse, WorkspaceListResponse,
 };
 
 use crate::account::AccountView;
+use crate::analytics::AnalyticsEvent;
+use crate::billing::BillingEvent;
 use crate::calls::CallsEvent;
 use crate::contacts::{ContactWrite, ContactWritten, ContactsEvent};
+use crate::desk::DeskEvent;
 use crate::devices::DevicesEvent;
+use crate::hq::HqEvent;
 use crate::inbox::InboxEvent;
 use crate::live::{Notification, NotificationTarget};
+use crate::marketplace::MarketplaceEvent;
 use crate::role::Capabilities;
+use crate::rooms::RoomsEvent;
 use crate::route::Route;
+use crate::scheduling::{OneTimeUrl, SchedulingEvent};
 use crate::session::{
     Identity, Notice, RestoreError, Restoring, SessionEnd, SessionState, SignInError, SignInPhase,
     SignOutOutcome, SignOutScope, SignedInSession, SignedOut, SignedOutWhy, SigningIn, SigningOut,
 };
 use crate::signed_in::{Next, SignedIn};
+use crate::support::SupportEvent;
 use crate::thread::{PickedAttachment, ThreadEvent};
+use crate::workflows::WorkflowsEvent;
 
 /// How long the app waits before its first attempt to resume a session again
 /// after the network was down or the refresh was rate limited. Each further
@@ -92,7 +110,9 @@ pub struct Ticket(u64);
 
 /// Something that happened: an action of the user's, forwarded by the app, or
 /// the result of an effect, reported by the runner.
-#[derive(Clone, Debug, PartialEq, Eq)]
+///
+/// `PartialEq` and not `Eq`: usage, billing and number prices are fractional.
+#[derive(Clone, Debug, PartialEq)]
 pub enum Event {
     /// Start signing in, from the signed-out screen.
     SignIn,
@@ -130,6 +150,24 @@ pub enum Event {
     Calls(CallsEvent),
     /// Something on the contacts screens.
     Contacts(ContactsEvent),
+    /// Something on the District HQ screen.
+    Hq(HqEvent),
+    /// Something on the analytics screen.
+    Analytics(AnalyticsEvent),
+    /// Something on the phone numbers screen.
+    Marketplace(MarketplaceEvent),
+    /// Something on the billing screen.
+    Billing(BillingEvent),
+    /// Something on the workflows screen.
+    Workflows(WorkflowsEvent),
+    /// Something on the booking pages screen.
+    Scheduling(SchedulingEvent),
+    /// Something on the help desk's screens.
+    Desk(DeskEvent),
+    /// Something on the support screens.
+    Support(SupportEvent),
+    /// Something in the rooms lobby.
+    Rooms(RoomsEvent),
     /// Dismiss the notice over the signed-in screens.
     DismissNotice,
     /// The main window was shown (`true`) or hidden (`false`). The app starts
@@ -367,7 +405,246 @@ pub enum Event {
         /// The list.
         result: Result<BlockedContactsResponse, ApiError>,
     },
-    /// No browser would open a page from [`Effect::OpenUrl`].
+    /// District HQ answered a prompt, or the prompt failed.
+    HqAnswered {
+        /// The ticket of [`Effect::AskHq`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<HqPromptResponse, ApiError>,
+    },
+    /// A confirmed change was applied, or not.
+    HqConfirmed {
+        /// The ticket of [`Effect::ConfirmHq`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<HqConfirmResponse, ApiError>,
+    },
+    /// Call analytics were read.
+    AnalyticsLoaded {
+        /// The ticket of [`Effect::LoadAnalytics`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<AnalyticsResponse, ApiError>,
+    },
+    /// This month's usage was read.
+    UsageLoaded {
+        /// The ticket of [`Effect::LoadUsage`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<UsageResponse, ApiError>,
+    },
+    /// The usage history was read.
+    UsageHistoryLoaded {
+        /// The ticket of [`Effect::LoadUsageHistory`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<UsageHistoryResponse, ApiError>,
+    },
+    /// A number search finished.
+    NumbersFound {
+        /// The ticket of [`Effect::SearchNumbers`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<NumberSearchResponse, ApiError>,
+    },
+    /// The numbers held were read.
+    OwnedNumbersLoaded {
+        /// The ticket of [`Effect::LoadOwnedNumbers`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<OwnedNumbersResponse, ApiError>,
+    },
+    /// The workspace's plan was read.
+    WorkspaceBillingLoaded {
+        /// The ticket of [`Effect::LoadWorkspaceBilling`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<WorkspaceBillingResponse, ApiError>,
+    },
+    /// The account's billing was read.
+    AccountBillingLoaded {
+        /// The ticket of [`Effect::LoadAccountBilling`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<AccountBillingResponse, ApiError>,
+    },
+    /// The workflows were read.
+    WorkflowsLoaded {
+        /// The ticket of [`Effect::LoadWorkflows`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<WorkflowListResponse, ApiError>,
+    },
+    /// A page of a workflow's runs was read.
+    WorkflowRunsLoaded {
+        /// The ticket of [`Effect::LoadWorkflowRuns`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<WorkflowRunsResponse, ApiError>,
+    },
+    /// A workflow was turned on or off, or refused.
+    WorkflowActiveSet {
+        /// The ticket of [`Effect::SetWorkflowActive`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<WorkflowToggleResponse, ApiError>,
+    },
+    /// The campaign's state was read.
+    CampaignLoaded {
+        /// The ticket of [`Effect::LoadCampaign`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<CampaignStatusResponse, ApiError>,
+    },
+    /// The campaign was paused or resumed, or refused.
+    CampaignSet {
+        /// The ticket of [`Effect::SetCampaignEnabled`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<CampaignStatusResponse, ApiError>,
+    },
+    /// The booking pages' status was read.
+    SchedulingStatusLoaded {
+        /// The ticket of [`Effect::LoadSchedulingStatus`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SchedulingStatusResponse, ApiError>,
+    },
+    /// Turning booking pages on finished.
+    SchedulingEnabled {
+        /// The ticket of [`Effect::EnableScheduling`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SchedulingEnableResponse, ApiError>,
+    },
+    /// The hand-off link arrived, or was refused. Its `Debug` output leaves the link out.
+    SchedulingHandOffReady {
+        /// The ticket of [`Effect::RequestSchedulingHandOff`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SchedulingHandOffResponse, ApiError>,
+    },
+    /// The help desk's settings were read.
+    DeskSettingsLoaded {
+        /// The ticket of [`Effect::LoadDeskSettings`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskSettingsResponse, ApiError>,
+    },
+    /// The help desk's settings were saved, or refused.
+    DeskSettingsSaved {
+        /// The ticket of [`Effect::SaveDeskSettings`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskSettingsResponse, ApiError>,
+    },
+    /// The logo was published, or refused.
+    DeskLogoUploaded {
+        /// The ticket of [`Effect::UploadDeskLogo`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskSettingsResponse, ApiError>,
+    },
+    /// The logo was taken down, or refused.
+    DeskLogoDeleted {
+        /// The ticket of [`Effect::DeleteDeskLogo`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskLogoRemovalResponse, ApiError>,
+    },
+    /// The queue was read.
+    DeskTicketsLoaded {
+        /// The ticket of [`Effect::LoadDeskTickets`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskTicketsResponse, ApiError>,
+    },
+    /// A ticket was raised, or refused.
+    DeskTicketCreated {
+        /// The ticket of [`Effect::CreateDeskTicket`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskTicketCreateResponse, ApiError>,
+    },
+    /// A ticket was read.
+    DeskTicketLoaded {
+        /// The ticket of [`Effect::LoadDeskTicket`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskTicketResponse, ApiError>,
+    },
+    /// A reply was sent, or refused.
+    DeskReplied {
+        /// The ticket of [`Effect::ReplyToDeskTicket`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskReplyResponse, ApiError>,
+    },
+    /// A ticket's status was changed, or refused.
+    DeskTicketStatusSet {
+        /// The ticket of [`Effect::SetDeskTicketStatus`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<DeskTicketStatusResponse, ApiError>,
+    },
+    /// The support requests were read.
+    SupportRequestsLoaded {
+        /// The ticket of [`Effect::LoadSupportRequests`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SupportRequestsResponse, ApiError>,
+    },
+    /// A support request was raised, or refused.
+    SupportRequestCreated {
+        /// The ticket of [`Effect::CreateSupportRequest`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SupportRequestCreateResponse, ApiError>,
+    },
+    /// A support request was read.
+    SupportRequestLoaded {
+        /// The ticket of [`Effect::LoadSupportRequest`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SupportRequestResponse, ApiError>,
+    },
+    /// A reply was sent, or refused.
+    SupportReplied {
+        /// The ticket of [`Effect::ReplyToSupportRequest`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SupportReplyResponse, ApiError>,
+    },
+    /// A support request was closed, or refused.
+    SupportRequestClosed {
+        /// The ticket of [`Effect::CloseSupportRequest`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<SupportCloseResponse, ApiError>,
+    },
+    /// The meetings were read.
+    MeetingsLoaded {
+        /// The ticket of [`Effect::LoadMeetings`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<Vec<MeetingSummary>, ApiError>,
+    },
+    /// A meeting's record was read.
+    MeetingLoaded {
+        /// The ticket of [`Effect::LoadMeeting`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<MeetingDetail, ApiError>,
+    },
+    /// The credential to join a room arrived, or was refused. Its `Debug` output leaves its secrets out.
+    RoomTokenIssued {
+        /// The ticket of [`Effect::RequestRoomToken`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<RoomTokenResponse, ApiError>,
+    },
+    /// No browser would open a page from [`Effect::OpenUrl`] or
+    /// [`Effect::OpenOneTimeUrl`].
     UrlOpenFailed,
 }
 
@@ -477,6 +754,142 @@ impl Event {
                 result: Err(error),
             }
             | Event::BlockedLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::HqAnswered {
+                ticket,
+                result: Err(error),
+            }
+            | Event::HqConfirmed {
+                ticket,
+                result: Err(error),
+            }
+            | Event::AnalyticsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::UsageLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::UsageHistoryLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::NumbersFound {
+                ticket,
+                result: Err(error),
+            }
+            | Event::OwnedNumbersLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::WorkspaceBillingLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::AccountBillingLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::WorkflowsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::WorkflowRunsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::WorkflowActiveSet {
+                ticket,
+                result: Err(error),
+            }
+            | Event::CampaignLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::CampaignSet {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SchedulingStatusLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SchedulingEnabled {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SchedulingHandOffReady {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskSettingsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskSettingsSaved {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskLogoUploaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskLogoDeleted {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskTicketsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskTicketCreated {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskTicketLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskReplied {
+                ticket,
+                result: Err(error),
+            }
+            | Event::DeskTicketStatusSet {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SupportRequestsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SupportRequestCreated {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SupportRequestLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SupportReplied {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SupportRequestClosed {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MeetingsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MeetingLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::RoomTokenIssued {
                 ticket,
                 result: Err(error),
             } => Some((*ticket, error)),
@@ -787,6 +1200,306 @@ pub enum Effect {
         /// The workspace.
         workspace_id: String,
     },
+    /// Ask District HQ a prompt. A billed model run, sent once.
+    AskHq {
+        /// Returned in [`Event::HqAnswered`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The prompt.
+        prompt: String,
+        /// The conversation before it, oldest first.
+        history: Vec<HqTurn>,
+    },
+    /// Apply the change District HQ proposed, exactly as proposed. Sent once.
+    ConfirmHq {
+        /// Returned in [`Event::HqConfirmed`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The change, as the service proposed it.
+        proposal: HqPendingWrite,
+    },
+    /// Read call analytics over a window.
+    LoadAnalytics {
+        /// Returned in [`Event::AnalyticsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The window.
+        range: AnalyticsRange,
+    },
+    /// Read this month's metered usage.
+    LoadUsage {
+        /// Returned in [`Event::UsageLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read the last months of metered usage.
+    LoadUsageHistory {
+        /// Returned in [`Event::UsageHistoryLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// How many months.
+        months: u32,
+    },
+    /// Search the numbers for sale.
+    SearchNumbers {
+        /// Returned in [`Event::NumbersFound`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The filters.
+        search: NumberSearch,
+    },
+    /// Read the numbers the workspace holds.
+    LoadOwnedNumbers {
+        /// Returned in [`Event::OwnedNumbersLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read the workspace's plan.
+    LoadWorkspaceBilling {
+        /// Returned in [`Event::WorkspaceBillingLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read the account's subscriptions and invoices.
+    LoadAccountBilling {
+        /// Returned in [`Event::AccountBillingLoaded`].
+        ticket: Ticket,
+    },
+    /// Read the workflows.
+    LoadWorkflows {
+        /// Returned in [`Event::WorkflowsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read a page of a workflow's runs.
+    LoadWorkflowRuns {
+        /// Returned in [`Event::WorkflowRunsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The workflow.
+        workflow_id: String,
+        /// At most this many.
+        limit: u32,
+        /// After skipping this many.
+        offset: u32,
+    },
+    /// Turn a workflow on or off. Sent once.
+    SetWorkflowActive {
+        /// Returned in [`Event::WorkflowActiveSet`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The workflow.
+        workflow_id: String,
+        /// On or off.
+        active: bool,
+    },
+    /// Read the outbound campaign's state.
+    LoadCampaign {
+        /// Returned in [`Event::CampaignLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Pause or resume the outbound campaign. Sent once.
+    SetCampaignEnabled {
+        /// Returned in [`Event::CampaignSet`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// Resume (`true`) or pause.
+        enabled: bool,
+    },
+    /// Read where the booking pages stand.
+    LoadSchedulingStatus {
+        /// Returned in [`Event::SchedulingStatusLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Turn booking pages on. Sent once.
+    EnableScheduling {
+        /// Returned in [`Event::SchedulingEnabled`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Ask for the link that signs the browser in to manage booking pages. Sent once: each is a credential.
+    RequestSchedulingHandOff {
+        /// Returned in [`Event::SchedulingHandOffReady`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read the help desk's settings.
+    LoadDeskSettings {
+        /// Returned in [`Event::DeskSettingsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Change what `patch` names of the help desk's settings. Sent once.
+    SaveDeskSettings {
+        /// Returned in [`Event::DeskSettingsSaved`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// Only what changed.
+        patch: DeskSettingsPatch,
+    },
+    /// Publish an image as the help desk's logo. Sent once.
+    UploadDeskLogo {
+        /// Returned in [`Event::DeskLogoUploaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The image.
+        logo: PickedAttachment,
+    },
+    /// Take the help desk's logo down. Sent once.
+    DeleteDeskLogo {
+        /// Returned in [`Event::DeskLogoDeleted`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read the help desk's whole queue.
+    LoadDeskTickets {
+        /// Returned in [`Event::DeskTicketsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Raise a ticket for a customer. Sent once.
+    CreateDeskTicket {
+        /// Returned in [`Event::DeskTicketCreated`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The ticket.
+        draft: DeskTicketDraft,
+        /// Minted for this one press.
+        idempotency_key: String,
+    },
+    /// Read one ticket and its thread.
+    LoadDeskTicket {
+        /// Returned in [`Event::DeskTicketLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The ticket's id.
+        ticket_id: String,
+    },
+    /// Reply to a ticket's customer. Sent once.
+    ReplyToDeskTicket {
+        /// Returned in [`Event::DeskReplied`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The ticket's id.
+        ticket_id: String,
+        /// The reply.
+        message: String,
+        /// Minted for this one press.
+        idempotency_key: String,
+    },
+    /// Move a ticket to a status. Sent once.
+    SetDeskTicketStatus {
+        /// Returned in [`Event::DeskTicketStatusSet`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The ticket's id.
+        ticket_id: String,
+        /// The status.
+        status: DeskTicketStatus,
+    },
+    /// Read the workspace's support requests.
+    LoadSupportRequests {
+        /// Returned in [`Event::SupportRequestsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Raise a support request. Sent once per press; a retry of the same draft carries the same key.
+    CreateSupportRequest {
+        /// Returned in [`Event::SupportRequestCreated`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The request.
+        draft: SupportRequestDraft,
+        /// The draft's key.
+        idempotency_key: String,
+    },
+    /// Read one support request and its conversation.
+    LoadSupportRequest {
+        /// Returned in [`Event::SupportRequestLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The request's key.
+        key: String,
+    },
+    /// Reply on a support request. Sent once.
+    ReplyToSupportRequest {
+        /// Returned in [`Event::SupportReplied`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The request's key.
+        key: String,
+        /// The reply.
+        body: String,
+    },
+    /// Close a support request. Sent once.
+    CloseSupportRequest {
+        /// Returned in [`Event::SupportRequestClosed`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The request's key.
+        key: String,
+    },
+    /// Read the meetings held.
+    LoadMeetings {
+        /// Returned in [`Event::MeetingsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Read one meeting's record.
+    LoadMeeting {
+        /// Returned in [`Event::MeetingLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The meeting.
+        meeting_id: String,
+    },
+    /// Ask for the credential to join a meeting room.
+    RequestRoomToken {
+        /// Returned in [`Event::RoomTokenIssued`].
+        ticket: Ticket,
+        /// The room.
+        room: MeetRoomName,
+    },
+    /// Open a link that carries a sign-in of its own, at once. Reports back only
+    /// a failure, as [`Event::UrlOpenFailed`]. The link is redacted in `Debug`.
+    OpenOneTimeUrl {
+        /// The link.
+        url: OneTimeUrl,
+    },
 }
 
 /// The slots a result can be waited for in. One ticket per slot at a time,
@@ -832,13 +1545,51 @@ pub(crate) enum Slot {
     Blocked,
     /// Keyed by contact id.
     BlockedWrite,
+    HqAsk,
+    HqConfirm,
+    AnalyticsReport,
+    Usage,
+    UsageHistory,
+    NumberSearch,
+    NumberSearchTimer,
+    OwnedNumbers,
+    WorkspaceBilling,
+    AccountBilling,
+    Campaign,
+    CampaignWrite,
+    Workflows,
+    /// Keyed by workflow id.
+    WorkflowRuns,
+    /// Keyed by workflow id.
+    WorkflowToggle,
+    SchedulingStatus,
+    SchedulingEnable,
+    SchedulingHandOff,
+    DeskQueueSettings,
+    DeskTickets,
+    DeskEnable,
+    DeskCreate,
+    DeskTicket,
+    DeskReply,
+    DeskStatus,
+    DeskSettingsLoad,
+    DeskSettingsSave,
+    DeskLogo,
+    SupportRequests,
+    SupportCreate,
+    SupportRequest,
+    SupportReply,
+    SupportClose,
+    Meetings,
+    Meeting,
+    RoomToken,
 }
 
-const SLOTS: usize = Slot::BlockedWrite as usize + 1;
+const SLOTS: usize = Slot::RoomToken as usize + 1;
 
 /// The slots that belong to the open workspace's screens, forgotten when it
 /// closes.
-pub(crate) const WORKSPACE_SLOTS: [Slot; 28] = [
+pub(crate) const WORKSPACE_SLOTS: [Slot; 64] = [
     Slot::Unread,
     Slot::Conversations,
     Slot::DraftKeys,
@@ -867,6 +1618,42 @@ pub(crate) const WORKSPACE_SLOTS: [Slot; 28] = [
     Slot::ContactWrite,
     Slot::Blocked,
     Slot::BlockedWrite,
+    Slot::HqAsk,
+    Slot::HqConfirm,
+    Slot::AnalyticsReport,
+    Slot::Usage,
+    Slot::UsageHistory,
+    Slot::NumberSearch,
+    Slot::NumberSearchTimer,
+    Slot::OwnedNumbers,
+    Slot::WorkspaceBilling,
+    Slot::AccountBilling,
+    Slot::Campaign,
+    Slot::CampaignWrite,
+    Slot::Workflows,
+    Slot::WorkflowRuns,
+    Slot::WorkflowToggle,
+    Slot::SchedulingStatus,
+    Slot::SchedulingEnable,
+    Slot::SchedulingHandOff,
+    Slot::DeskQueueSettings,
+    Slot::DeskTickets,
+    Slot::DeskEnable,
+    Slot::DeskCreate,
+    Slot::DeskTicket,
+    Slot::DeskReply,
+    Slot::DeskStatus,
+    Slot::DeskSettingsLoad,
+    Slot::DeskSettingsSave,
+    Slot::DeskLogo,
+    Slot::SupportRequests,
+    Slot::SupportCreate,
+    Slot::SupportRequest,
+    Slot::SupportReply,
+    Slot::SupportClose,
+    Slot::Meetings,
+    Slot::Meeting,
+    Slot::RoomToken,
 ];
 
 /// The ticket counter and the tickets awaited.
@@ -1092,6 +1879,25 @@ impl Model {
             Event::Contacts(event) => {
                 self.signed_in(|s, tickets, _| s.contacts_event(event, tickets))
             }
+            Event::Hq(event) => self.signed_in(|s, tickets, _| s.hq_event(event, tickets)),
+            Event::Analytics(event) => {
+                self.signed_in(|s, tickets, _| s.analytics_event(event, tickets))
+            }
+            Event::Marketplace(event) => {
+                self.signed_in(|s, tickets, config| s.marketplace_event(event, tickets, config))
+            }
+            Event::Billing(event) => self.signed_in(|s, _, config| s.billing_event(event, config)),
+            Event::Workflows(event) => {
+                self.signed_in(|s, tickets, _| s.workflows_event(event, tickets))
+            }
+            Event::Scheduling(event) => {
+                self.signed_in(|s, tickets, _| s.scheduling_event(event, tickets))
+            }
+            Event::Desk(event) => self.signed_in(|s, tickets, _| s.desk_event(event, tickets)),
+            Event::Support(event) => {
+                self.signed_in(|s, tickets, _| s.support_event(event, tickets))
+            }
+            Event::Rooms(event) => self.signed_in(|s, tickets, _| s.rooms_event(event, tickets)),
             Event::DismissNotice => self.signed_in(|s, _, _| s.dismiss_notice()),
             Event::UrlOpenFailed => self.signed_in(|s, _, _| s.url_open_failed()),
             Event::OpenNotification(target) => {
@@ -1182,6 +1988,110 @@ impl Model {
             }
             Event::BlockedLoaded { ticket, result } => {
                 self.signed_in(|s, tickets, _| s.blocked_loaded(ticket, result, tickets))
+            }
+            Event::HqAnswered { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.hq_answered(ticket, result, tickets))
+            }
+            Event::HqConfirmed { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.hq_confirmed(ticket, result, tickets))
+            }
+            Event::AnalyticsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.analytics_loaded(ticket, result, tickets))
+            }
+            Event::UsageLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.usage_loaded(ticket, result, tickets))
+            }
+            Event::UsageHistoryLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.usage_history_loaded(ticket, result, tickets))
+            }
+            Event::NumbersFound { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.numbers_found(ticket, result, tickets))
+            }
+            Event::OwnedNumbersLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.owned_numbers_loaded(ticket, result, tickets))
+            }
+            Event::WorkspaceBillingLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.workspace_billing_loaded(ticket, result, tickets))
+            }
+            Event::AccountBillingLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.account_billing_loaded(ticket, result, tickets))
+            }
+            Event::WorkflowsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.workflows_loaded(ticket, result, tickets))
+            }
+            Event::WorkflowRunsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.workflow_runs_loaded(ticket, result, tickets))
+            }
+            Event::WorkflowActiveSet { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.workflow_active_set(ticket, result, tickets))
+            }
+            Event::CampaignLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.campaign_loaded(ticket, result, tickets))
+            }
+            Event::CampaignSet { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.campaign_set(ticket, result, tickets))
+            }
+            Event::SchedulingStatusLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.scheduling_status_loaded(ticket, result, tickets))
+            }
+            Event::SchedulingEnabled { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.scheduling_enabled(ticket, result, tickets))
+            }
+            Event::SchedulingHandOffReady { ticket, result } => {
+                self.signed_in(|s, tickets, config| {
+                    s.scheduling_hand_off(ticket, result, tickets, config)
+                })
+            }
+            Event::DeskSettingsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_settings_loaded(ticket, result, tickets))
+            }
+            Event::DeskSettingsSaved { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_settings_saved(ticket, result, tickets))
+            }
+            Event::DeskLogoUploaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_logo_uploaded(ticket, result, tickets))
+            }
+            Event::DeskLogoDeleted { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_logo_deleted(ticket, result, tickets))
+            }
+            Event::DeskTicketsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_tickets_loaded(ticket, result, tickets))
+            }
+            Event::DeskTicketCreated { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_ticket_created(ticket, result, tickets))
+            }
+            Event::DeskTicketLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_ticket_loaded(ticket, result, tickets))
+            }
+            Event::DeskReplied { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_replied(ticket, result, tickets))
+            }
+            Event::DeskTicketStatusSet { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.desk_ticket_status_set(ticket, result, tickets))
+            }
+            Event::SupportRequestsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.support_requests_loaded(ticket, result, tickets))
+            }
+            Event::SupportRequestCreated { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.support_request_created(ticket, result, tickets))
+            }
+            Event::SupportRequestLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.support_request_loaded(ticket, result, tickets))
+            }
+            Event::SupportReplied { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.support_replied(ticket, result, tickets))
+            }
+            Event::SupportRequestClosed { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.support_request_closed(ticket, result, tickets))
+            }
+            Event::MeetingsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.meetings_loaded(ticket, result, tickets))
+            }
+            Event::MeetingLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.meeting_loaded(ticket, result, tickets))
+            }
+            Event::RoomTokenIssued { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.room_token_issued(ticket, result, tickets))
             }
         }
     }
