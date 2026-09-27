@@ -1,0 +1,47 @@
+# Line coverage floors, one entry per workspace crate.
+#
+# CI's `rust` job measures line coverage while it runs the tests, and
+# scripts/check-coverage.py fails the job when a crate is under its floor, when a
+# crate is missing from the report, or when an entry here is incomplete.
+#
+#   floor   The whole-number percentage of the crate's lines under src/ that the
+#           tests must execute. 100 means every line.
+#   reason  One line saying why the floor is where it is.
+#
+# Floors only ratchet up. A change that raises a crate's coverage raises its floor
+# in the same change, and lowering a floor needs a reason stated in review. There
+# is no exclusion list: code that CI cannot exercise stays in the measurement and
+# holds its crate's floor down where everyone can see it. See "Coverage" in
+# CONTRIBUTING.md.
+
+[crates.district-model]
+floor = 100
+reason = "Plain data types with no IO, so the unit and contract tests reach every line."
+
+[crates.district-api]
+floor = 100
+reason = "Tested against a local mock HTTP server, so every path, failures included, runs in CI."
+
+[crates.district-auth]
+floor = 100
+reason = "Protocol logic a test can drive end to end, with a local server standing in for the real one."
+
+[crates.district-live]
+floor = 100
+reason = "A local test server can drive the telemetry client through every state."
+
+[crates.district-core]
+floor = 100
+reason = "App state with no GTK and no IO: plain functions the tests call directly."
+
+[crates.district-desktop]
+floor = 100
+reason = "Measured, not a target: the Secret Service and XDG portal calls need a desktop session CI does not have."
+
+[crates.district-call]
+floor = 100
+reason = "Measured, not a target: live media needs a LiveKit server and audio devices CI does not have."
+
+[crates.district-app]
+floor = 0
+reason = "CI runs the app's unit tests but not the GTK main loop; a GTK smoke job under a virtual display will measure the rest and raise this."
