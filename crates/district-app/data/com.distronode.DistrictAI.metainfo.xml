@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Distronode Corporation -->
+<component type="desktop-application">
+  <id>com.distronode.DistrictAI</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+
+  <name>District AI</name>
+  <summary>Your AI receptionist's calls, messages and contacts</summary>
+  <description>
+    <p>
+      District AI answers your business's phone calls. This app brings your
+      District AI workspace to the Linux desktop, following your system's light
+      and dark style.
+    </p>
+    <p>
+      This is an early build. It signs in through your browser, so it never sees
+      your password; shows your workspace's overview, with its latest calls; and
+      lets you see, and sign out, the devices signed in to your account. The
+      inbox, the call log, contacts, workspace settings and calls on the desktop
+      arrive in later builds.
+    </p>
+    <p>You need a District AI account to use it.</p>
+  </description>
+
+  <developer id="com.distronode">
+    <name>Distronode Corporation</name>
+  </developer>
+
+  <launchable type="desktop-id">com.distronode.DistrictAI.desktop</launchable>
+  <provides>
+    <binary>district-ai</binary>
+  </provides>
+
+  <url type="homepage">https://www.distronode.com</url>
+  <url type="bugtracker">https://github.com/distronode-corporation/district-linux/issues</url>
+  <url type="vcs-browser">https://github.com/distronode-corporation/district-linux</url>
+  <url type="contribute">https://github.com/distronode-corporation/district-linux/blob/main/CONTRIBUTING.md</url>
+
+  <!-- Each banner wants a colour of its own lightness: the dark theme's light
+       teal accent on a light banner, the light theme's deep teal on a dark
+       one. Both are district_core::palette's, which a test holds them to. -->
+  <branding>
+    <color type="primary" scheme_preference="light">#67cded</color>
+    <color type="primary" scheme_preference="dark">#01657d</color>
+  </branding>
+
+  <content_rating type="oars-1.1"/>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+
+  <keywords>
+    <keyword>calls</keyword>
+    <keyword>phone</keyword>
+    <keyword>receptionist</keyword>
+    <keyword>voice</keyword>
+    <keyword>inbox</keyword>
+    <keyword>contacts</keyword>
+  </keywords>
+</component>

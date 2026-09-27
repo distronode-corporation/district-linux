@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=District AI
+GenericName=AI Receptionist
+Comment=Your AI receptionist's calls, messages and contacts
+Icon=com.distronode.DistrictAI
+Exec=district-ai %U
+Terminal=false
+StartupNotify=true
+DBusActivatable=true
+Categories=Network;Telephony;
+Keywords=calls;phone;receptionist;voice;inbox;messages;contacts;
+MimeType=x-scheme-handler/districtai;
