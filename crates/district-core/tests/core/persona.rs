@@ -721,6 +721,22 @@ fn a_build_without_calls_starts_no_audition() {
             "an audition is billed whether or not it can be heard"
         );
         assert!(persona(&model).preview_credential().is_none());
+        // Start fails, saying why, rather than doing nothing at all.
+        let failed = Some(PersonaPreview::Failed(FailureText {
+            message: DisconnectReason::UNAVAILABLE.to_owned(),
+            degraded_regions: Vec::new(),
+            session_ended: None,
+            retryable: false,
+        }));
+        assert_eq!(persona(&model).preview, failed);
+        assert!(!persona(&model).preview_cooling, "nothing started to cool");
+        assert!(event(&mut model, PersonaEvent::StartPreview).is_empty());
+        assert_eq!(persona(&model).preview, failed, "and again, the same");
+        event(&mut model, PersonaEvent::ClosePreview);
+        assert_eq!(persona(&model).preview, None);
+        // Without the dialog, or for a viewer, Start is nothing.
+        assert!(event(&mut model, PersonaEvent::StartPreview).is_empty());
+        assert_eq!(persona(&model).preview, None);
     });
 }
 
