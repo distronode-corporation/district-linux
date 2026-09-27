@@ -12,7 +12,8 @@ use district_core::{
     CoreConfig, DesktopPresence, EffectRunner, Event, LiveHub, NativeAuth, TokioClock,
 };
 use district_desktop::{
-    DeviceIdentity, Oo7SessionStore, RefreshMarkerFile, SettingsFile, XdgDirs, device_name,
+    DeviceIdentity, Logind, Oo7SessionStore, RefreshMarkerFile, SLEEP_HOLD, SettingsFile, XdgDirs,
+    device_name, watch_sleep,
 };
 use district_live::LiveConfig;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -65,6 +66,16 @@ fn launch() -> Result<glib::ExitCode, String> {
 
     let (events, receiver) = async_channel::unbounded();
     let (commands, command_receiver) = async_channel::unbounded();
+    // The machine about to sleep, and waking: told to the model through the
+    // main thread, with the sleep held until what it asks for has run. Without
+    // logind (or, in a Flatpak, without permission to talk to it) nothing is
+    // held or announced, and the presence lapses by itself.
+    let sleep = UiBridge::new(commands.clone());
+    runtime.spawn(async move {
+        if let Ok(logind) = Logind::system().await {
+            watch_sleep(logind, sleep, SLEEP_HOLD).await;
+        }
+    });
     let effects = {
         // The coordinator and the live hub take the runtime they are built in.
         let _entered = runtime.enter();

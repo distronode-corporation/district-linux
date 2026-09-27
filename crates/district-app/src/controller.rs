@@ -311,6 +311,13 @@ impl Controller {
                 }
             }
             UiCommand::PresentWindow => self.present(),
+            // Not through `handle`: the machine sleeps whatever is on screen.
+            UiCommand::Suspending { done } => {
+                let effects = self.model.borrow_mut().update(Event::Suspending);
+                self.render();
+                self.effects.settle(effects, done);
+            }
+            UiCommand::Resumed => self.update(Event::Resumed),
         }
     }
 

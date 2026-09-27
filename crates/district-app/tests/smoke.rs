@@ -42,6 +42,7 @@ use district_core::{
     MicrophoneState, Notification, NotificationAction, NotificationTarget, Notifier, Participant,
     RestoreError, RingSurface, SignedInSession, Ticket, Urgency, UrlOpener,
 };
+use district_desktop::SleepHandler;
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
 use district_model::{
     AiDraftResponse, AvailabilityResponse, BlockedContact, BlockedContactsResponse,
@@ -75,11 +76,21 @@ const DEVICE_NAME: &str = "Ubuntu 26.04 LTS";
 struct Script {
     pending: RefCell<VecDeque<Effect>>,
     finished: RefCell<Vec<Effect>>,
+    /// How many times effects were settled: the machine going to sleep.
+    settled: std::cell::Cell<usize>,
 }
 
 impl Effects for Script {
     fn run(&self, effect: Effect) {
         self.pending.borrow_mut().push_back(effect);
+    }
+
+    /// The sleep's effects are kept for the script like any others, and the
+    /// sleep is let go at once: nothing here takes time to run.
+    fn settle(&self, effects: Vec<Effect>, done: tokio::sync::oneshot::Sender<()>) {
+        self.pending.borrow_mut().extend(effects);
+        self.settled.set(self.settled.get() + 1);
+        done.send(()).ok();
     }
 
     fn finish(&self, effects: Vec<Effect>, _limit: Duration) {
@@ -3701,6 +3712,28 @@ fn desktop_calls(smoke: &Smoke) {
     smoke.pump();
     assert!(smoke.pending("LoadCall {"), "the call opens");
     assert!(smoke.shown("call_view"));
+    smoke.script.pending.borrow_mut().clear();
+
+    // The machine going to sleep: the sleep is let go once what the core asks
+    // for has been run (a build without calls asks for nothing), and waking
+    // is told too.
+    let bridge = smoke.bridge.clone();
+    let sleeper = std::thread::spawn(move || {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("a runtime")
+            .block_on(bridge.suspending());
+    });
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !sleeper.is_finished() {
+        assert!(Instant::now() < deadline, "the sleep was never let go");
+        smoke.pump();
+    }
+    sleeper.join().expect("the sleeping thread");
+    assert_eq!(smoke.script.settled.get(), 1);
+    smoke.bridge.resumed();
+    smoke.pump();
+    assert!(!smoke.pending("SetPresence"), "nothing rings in this build");
     smoke.script.pending.borrow_mut().clear();
 
     smoke.app.activate_action("about", None);

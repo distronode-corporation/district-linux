@@ -3,11 +3,14 @@
 //! The runner runs on the Tokio runtime's threads, and a link, a notification,
 //! the ringtone and the window belong to the GTK main thread. [`UiBridge`] is
 //! the runner's [`UrlOpener`], [`Notifier`] and [`RingSurface`]: each call
-//! becomes a [`UiCommand`] on a channel the main loop reads.
+//! becomes a [`UiCommand`] on a channel the main loop reads. It is also what
+//! the machine's sleep is reported through ([`SleepHandler`]), because the
+//! model, which answers it, lives on the main thread too.
 
 use std::fmt;
 
 use district_core::{Notification, Notifier, RingSurface, UrlOpener};
+use district_desktop::SleepHandler;
 use tokio::sync::oneshot;
 
 /// Something only the main thread may do.
@@ -29,6 +32,14 @@ pub enum UiCommand {
     StopRingtone,
     /// Bring the window forward.
     PresentWindow,
+    /// The machine is about to sleep: tell the model, run what it asks for,
+    /// and answer on `done` once that has finished.
+    Suspending {
+        /// Where the answer goes.
+        done: oneshot::Sender<()>,
+    },
+    /// The machine woke up: tell the model.
+    Resumed,
 }
 
 impl fmt::Debug for UiCommand {
@@ -40,6 +51,8 @@ impl fmt::Debug for UiCommand {
             Self::StartRingtone => f.write_str("StartRingtone"),
             Self::StopRingtone => f.write_str("StopRingtone"),
             Self::PresentWindow => f.write_str("PresentWindow"),
+            Self::Suspending { .. } => f.write_str("Suspending"),
+            Self::Resumed => f.write_str("Resumed"),
         }
     }
 }
@@ -100,6 +113,19 @@ impl RingSurface for UiBridge {
     }
 }
 
+impl SleepHandler for UiBridge {
+    async fn suspending(&self) {
+        let (done, finished) = oneshot::channel();
+        self.send(UiCommand::Suspending { done });
+        // No answer (the app quit first) is nothing left to wait for.
+        finished.await.ok();
+    }
+
+    fn resumed(&self) {
+        self.send(UiCommand::Resumed);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use district_core::{NotificationTarget, Urgency};
@@ -139,6 +165,28 @@ mod tests {
             shown[2..],
             ["StartRingtone", "StopRingtone", "PresentWindow"]
         );
+    }
+
+    #[tokio::test]
+    async fn the_sleep_waits_for_the_main_thread_to_answer() {
+        let (sender, receiver) = async_channel::unbounded();
+        let bridge = UiBridge::new(sender);
+        let main_thread = tokio::spawn(async move {
+            let command = receiver.recv().await.expect("a command");
+            assert_eq!(format!("{command:?}"), "Suspending");
+            if let UiCommand::Suspending { done } = command {
+                done.send(()).ok();
+            }
+            receiver
+        });
+        bridge.suspending().await;
+        let receiver = main_thread.await.unwrap();
+        bridge.resumed();
+        let command = receiver.try_recv().expect("a command");
+        assert_eq!(format!("{command:?}"), "Resumed");
+        // The app gone before it answered: nothing is waited for.
+        drop(receiver);
+        bridge.suspending().await;
     }
 
     #[tokio::test]

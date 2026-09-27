@@ -14,7 +14,9 @@
 //!   loop, through `district_core::EffectRunner`, and sends each result back on
 //!   the channel. The few things only the main thread may do (open a link,
 //!   show a notification, play the ringtone, raise the window) come back to it
-//!   as a [`UiCommand`] from the [`UiBridge`] the runner holds.
+//!   as a [`UiCommand`] from the [`UiBridge`] the runner holds, and so does the
+//!   machine going to sleep and waking, which logind reports to the same
+//!   bridge.
 //! - The window and its pages are composite templates, from the `.ui` files
 //!   under `data/ui/`, compiled into the binary with the rest of `data/`.
 //!
