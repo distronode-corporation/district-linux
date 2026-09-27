@@ -20,15 +20,16 @@ use district_live::{
     LiveConfig, LiveError, LiveUpdate, OpenFuture, SystemClock, TokenMinter, Transport,
 };
 use district_model::{
-    BlockTarget, CreateContactRequest, DraftSaveRequest, SendMessageRequest, TelemetryToken,
-    ThreadRef, UpdateContactRequest,
+    AnalyticsRange, BlockTarget, CreateContactRequest, DeskSettingsPatch, DeskTicketDraft,
+    DeskTicketStatus, DraftSaveRequest, MeetRoomName, NumberSearch, SendMessageRequest,
+    SupportRequestDraft, SupportRequestKind, TelemetryToken, ThreadRef, UpdateContactRequest,
 };
 use serde_json::json;
 use url::Url;
-use wiremock::matchers::{method, path, query_param};
+use wiremock::matchers::{body_string_contains, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::support::{THIS_DEVICE, USER, claims, fixture, listed, ticket};
+use crate::support::{THIS_DEVICE, USER, claims, desktop_fixture, fixture, listed, ticket};
 
 /// A compact JWT whose payload carries `sub`, `did` and `exp`. Unsigned, which
 /// is all the app ever reads of one.
@@ -480,6 +481,457 @@ async fn the_api_client_serves_the_screens_of_the_inbox_calls_and_contacts() {
             .unwrap()
             .blocked_at
             .is_some()
+    );
+}
+
+/// Every read and write of the third milestone, through the API client, against
+/// a server that answers each with its recording.
+#[tokio::test]
+async fn the_api_client_serves_the_workspaces_other_sections() {
+    let server = MockServer::start().await;
+    // More specific first: the first mounted mock that matches answers.
+    Mock::given(method("POST"))
+        .and(path("/api/district/hq"))
+        .and(body_string_contains("\"confirm\""))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(fixture::<serde_json::Value>("district-hq-confirm.json")),
+        )
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/district/workspace/usage"))
+        .and(query_param("history", "true"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(fixture::<serde_json::Value>("district-usage-history.json")),
+        )
+        .mount(&server)
+        .await;
+    let routes: [(&str, &str, serde_json::Value); 32] = [
+        (
+            "POST",
+            "/api/district/hq",
+            fixture("district-hq-pending-write.json"),
+        ),
+        (
+            "GET",
+            "/api/district/analytics",
+            fixture("district-analytics.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/usage",
+            fixture("district-usage.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/numbers/search",
+            fixture("district-numbers-search.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/provider/numbers",
+            fixture("district-provider-numbers.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/billing",
+            fixture("district-workspace-billing.json"),
+        ),
+        ("GET", "/api/billing", fixture("district-billing.json")),
+        (
+            "GET",
+            "/api/district/workflows",
+            fixture("district-workflows.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workflows/runs",
+            fixture("district-workflow-runs.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workflows",
+            fixture("district-workflow-toggle.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/campaign-status",
+            fixture("district-campaign-status.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/campaign-status",
+            fixture("district-campaign-pause.json"),
+        ),
+        (
+            "GET",
+            "/api/district/scheduling/status",
+            fixture("district-scheduling-status-ready.json"),
+        ),
+        (
+            "POST",
+            "/api/district/scheduling/enable",
+            fixture("district-scheduling-enable.json"),
+        ),
+        (
+            "POST",
+            "/api/district/scheduling/handoff",
+            desktop_fixture("district-scheduling-handoff.json"),
+        ),
+        (
+            "GET",
+            "/api/district/desk/settings",
+            fixture("district-desk-settings.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/desk/settings",
+            fixture("district-desk-settings-patch.json"),
+        ),
+        (
+            "POST",
+            "/api/district/desk/logo",
+            fixture("district-desk-logo.json"),
+        ),
+        (
+            "DELETE",
+            "/api/district/desk/logo",
+            fixture("district-desk-logo-delete.json"),
+        ),
+        (
+            "GET",
+            "/api/district/desk/tickets",
+            fixture("district-desk-tickets.json"),
+        ),
+        (
+            "POST",
+            "/api/district/desk/tickets",
+            fixture("district-desk-ticket-create.json"),
+        ),
+        (
+            "GET",
+            "/api/district/desk/tickets/desk_ticket_open",
+            fixture("district-desk-ticket.json"),
+        ),
+        (
+            "POST",
+            "/api/district/desk/tickets/desk_ticket_open/reply",
+            fixture("district-desk-ticket-reply.json"),
+        ),
+        (
+            "POST",
+            "/api/district/desk/tickets/desk_ticket_open/status",
+            fixture("district-desk-ticket-status.json"),
+        ),
+        (
+            "GET",
+            "/api/district/support/requests",
+            fixture("district-support-requests.json"),
+        ),
+        (
+            "POST",
+            "/api/district/support/requests",
+            fixture("district-support-request-create.json"),
+        ),
+        (
+            "GET",
+            "/api/district/support/requests/DA-42",
+            fixture("district-support-request.json"),
+        ),
+        (
+            "POST",
+            "/api/district/support/requests/DA-42/reply",
+            fixture("district-support-reply.json"),
+        ),
+        (
+            "POST",
+            "/api/district/support/requests/DA-42/close",
+            fixture("district-support-close.json"),
+        ),
+        (
+            "GET",
+            "/api/district/meetings",
+            fixture("district-meetings.json"),
+        ),
+        (
+            "GET",
+            "/api/district/meetings/meeting_contract_completed",
+            fixture("district-meeting-detail.json"),
+        ),
+        (
+            "POST",
+            "/api/district/calls/token",
+            fixture("district-room-token.json"),
+        ),
+    ];
+    for (verb, route, body) in routes {
+        serve(&server, verb, route, body).await;
+    }
+    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let client = ApiClient::new(config, OneToken).unwrap();
+    let ws = "ws-contract-test";
+    let key = Some("7a1c4b52-0d8e-4f3a-9b6c-2e5d8f1a3c70");
+
+    let answer = DistrictApi::hq_prompt(&client, ws, "Change the greeting", &[])
+        .await
+        .unwrap();
+    let proposal = answer.pending_write.unwrap();
+    assert!(
+        DistrictApi::hq_confirm(&client, ws, &proposal)
+            .await
+            .unwrap()
+            .is_the_proposal(&proposal)
+    );
+    assert_eq!(
+        DistrictApi::analytics(&client, ws, AnalyticsRange::SevenDays)
+            .await
+            .unwrap()
+            .metrics
+            .total_calls,
+        48
+    );
+    assert!(
+        DistrictApi::usage(&client, ws)
+            .await
+            .unwrap()
+            .usage
+            .is_some()
+    );
+    assert_eq!(
+        DistrictApi::usage_history(&client, ws, 3)
+            .await
+            .unwrap()
+            .usage
+            .len(),
+        3
+    );
+    assert_eq!(
+        DistrictApi::number_search(&client, ws, &NumberSearch::default())
+            .await
+            .unwrap()
+            .numbers
+            .len(),
+        2
+    );
+    assert_eq!(
+        DistrictApi::owned_numbers(&client, ws)
+            .await
+            .unwrap()
+            .numbers
+            .len(),
+        3
+    );
+    assert_eq!(
+        DistrictApi::workspace_billing(&client, ws)
+            .await
+            .unwrap()
+            .billing
+            .plan,
+        "voicepro"
+    );
+    assert_eq!(
+        DistrictApi::account_billing(&client)
+            .await
+            .unwrap()
+            .invoices
+            .len(),
+        2
+    );
+    assert_eq!(
+        DistrictApi::workflows(&client, ws)
+            .await
+            .unwrap()
+            .workflows
+            .len(),
+        2
+    );
+    assert_eq!(
+        DistrictApi::workflow_runs(&client, ws, "wf_contract_active", 10, 0)
+            .await
+            .unwrap()
+            .total,
+        9
+    );
+    assert!(
+        DistrictApi::set_workflow_active(&client, ws, "wf_contract_active", false)
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::campaign_status(&client, ws)
+            .await
+            .unwrap()
+            .campaign
+            .infinite_sdr_enabled
+    );
+    assert!(
+        !DistrictApi::set_campaign_enabled(&client, ws, false)
+            .await
+            .unwrap()
+            .campaign
+            .infinite_sdr_enabled
+    );
+    assert!(
+        DistrictApi::scheduling_status(&client, ws)
+            .await
+            .unwrap()
+            .eligible
+    );
+    assert!(
+        DistrictApi::enable_scheduling(&client, ws)
+            .await
+            .unwrap()
+            .ok
+    );
+    assert_eq!(
+        DistrictApi::scheduling_hand_off(&client, ws, Some("/dashboard/district/scheduling"))
+            .await
+            .unwrap()
+            .expires_in,
+        60
+    );
+    assert!(
+        DistrictApi::desk_settings(&client, ws)
+            .await
+            .unwrap()
+            .settings
+            .enabled
+    );
+    let patch = DeskSettingsPatch {
+        enabled: Some(false),
+        ..DeskSettingsPatch::default()
+    };
+    assert!(
+        !DistrictApi::save_desk_settings(&client, ws, &patch)
+            .await
+            .unwrap()
+            .settings
+            .enabled
+    );
+    assert!(
+        DistrictApi::upload_desk_logo(&client, ws, "logo.png", "image/png", vec![1; 8])
+            .await
+            .unwrap()
+            .settings
+            .public_logo_url
+            .is_some()
+    );
+    assert!(
+        DistrictApi::delete_desk_logo(&client, ws)
+            .await
+            .unwrap()
+            .object_removed
+    );
+    assert_eq!(
+        DistrictApi::desk_tickets(&client, ws, None)
+            .await
+            .unwrap()
+            .tickets
+            .len(),
+        3
+    );
+    let draft = DeskTicketDraft {
+        subject: "Invoice question".to_owned(),
+        message: "Which card?".to_owned(),
+        requester_name: None,
+        requester_email: None,
+        requester_phone: None,
+        contact_id: None,
+    };
+    assert!(
+        DistrictApi::create_desk_ticket(&client, ws, &draft, key)
+            .await
+            .unwrap()
+            .ticket
+            .is_some()
+    );
+    assert_eq!(
+        DistrictApi::desk_ticket(&client, ws, "desk_ticket_open")
+            .await
+            .unwrap()
+            .ticket
+            .messages
+            .len(),
+        3
+    );
+    assert_eq!(
+        DistrictApi::reply_to_desk_ticket(&client, ws, "desk_ticket_open", "Moved", key)
+            .await
+            .unwrap()
+            .notified,
+        Some(true)
+    );
+    assert_eq!(
+        DistrictApi::set_desk_ticket_status(
+            &client,
+            ws,
+            "desk_ticket_open",
+            DeskTicketStatus::Resolved
+        )
+        .await
+        .unwrap()
+        .ticket
+        .status,
+        "resolved"
+    );
+    assert_eq!(
+        DistrictApi::support_requests(&client, ws)
+            .await
+            .unwrap()
+            .requests
+            .len(),
+        3
+    );
+    let request = SupportRequestDraft {
+        kind: SupportRequestKind::Question,
+        subject: "Billing question".to_owned(),
+        message: "Which card?".to_owned(),
+    };
+    assert_eq!(
+        DistrictApi::create_support_request(&client, ws, &request, key)
+            .await
+            .unwrap()
+            .issue_key
+            .as_deref(),
+        Some("DA-43")
+    );
+    assert!(
+        DistrictApi::support_request(&client, ws, "DA-42")
+            .await
+            .unwrap()
+            .request
+            .closeable
+    );
+    assert_eq!(
+        DistrictApi::reply_to_support_request(&client, ws, "DA-42", "Still failing")
+            .await
+            .unwrap()
+            .message
+            .id,
+        "support_msg_reply"
+    );
+    assert_eq!(
+        DistrictApi::close_support_request(&client, ws, "DA-42")
+            .await
+            .unwrap()
+            .status_name,
+        "Done"
+    );
+    assert_eq!(DistrictApi::meetings(&client, ws).await.unwrap().len(), 2);
+    assert_eq!(
+        DistrictApi::meeting_detail(&client, ws, "meeting_contract_completed")
+            .await
+            .unwrap()
+            .workspace_id,
+        ws
+    );
+    let room = MeetRoomName::new(ws, "weekly-review").unwrap();
+    assert_eq!(
+        DistrictApi::room_token(&client, &room).await.unwrap().url,
+        "wss://media.example.com"
     );
 }
 

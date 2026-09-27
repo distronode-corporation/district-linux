@@ -8,9 +8,9 @@ use district_api::{ApiError, ErrorDetail};
 use district_auth::{AccessClaims, DrainReport, RevokeStatus, SignOutReport};
 use district_core::{
     Auth, ContactWrite, ContactWritten, DistrictApi, Effect, EffectRunner, Event, ExchangeFailure,
-    InboxEvent, LiveUpdates, Model, Notification, Notifier, OverviewScreen, PickedAttachment,
-    RestoreError, Route, SEARCH_DEBOUNCE, Settings, SignInError, SignedInSession, Ticket,
-    TokioClock, UrlOpener,
+    InboxEvent, LiveUpdates, Model, Notification, Notifier, OneTimeUrl, OverviewScreen,
+    PickedAttachment, RestoreError, Route, SEARCH_DEBOUNCE, Settings, SignInError, SignedInSession,
+    Ticket, TokioClock, UrlOpener,
 };
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse, BlockTarget,
@@ -21,16 +21,16 @@ use district_model::{
     DeskTicketCreateResponse, DeskTicketDraft, DeskTicketResponse, DeskTicketStatus,
     DeskTicketStatusResponse, DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse,
     DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest, EnrichResponse,
-    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, MarkReadResponse,
+    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqRole, HqTurn, MarkReadResponse,
     MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageSearchResponse,
     MessageThreadResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
     OwnedNumbersResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
     SchedulingStatusResponse, SendMessageRequest, SendMessageResponse, SetupResponse,
     SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDraft,
-    SupportRequestResponse, SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse,
-    UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse, UsageResponse,
-    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
-    WorkspaceListResponse,
+    SupportRequestKind, SupportRequestResponse, SupportRequestsResponse, ThreadRef, TimelineCursor,
+    TimelineResponse, UnreadCountResponse, UpdateContactRequest, UsageHistoryResponse,
+    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
+    WorkspaceBillingResponse, WorkspaceListResponse,
 };
 
 use crate::support::{
@@ -1406,4 +1406,476 @@ async fn only_the_last_keystrokes_wait_sends_a_search() {
     let result = runner.run(search.clone()).await.unwrap();
     model.update(result);
     assert_eq!(log.take(), ["search ws-contract-active roof"]);
+}
+
+/// The third milestone's reads and writes: each effect calls its endpoint with
+/// what it carries, and reports the answer under its ticket.
+#[tokio::test]
+async fn each_section_effect_calls_its_endpoint_and_reports_back() {
+    let (runner, log) = fakes(None, true);
+    let ticket = a_ticket();
+    let ws = || AGENCY.to_owned();
+    let proposal = fixture::<HqPromptResponse>("district-hq-pending-write.json")
+        .pending_write
+        .unwrap();
+    let logo = PickedAttachment {
+        file_name: "logo.png".to_owned(),
+        mime_type: "image/png".to_owned(),
+        bytes: vec![1, 2, 3, 4],
+    };
+    let desk_draft = DeskTicketDraft {
+        subject: "Invoice question".to_owned(),
+        message: "Which card?".to_owned(),
+        requester_name: None,
+        requester_email: None,
+        requester_phone: None,
+        contact_id: None,
+    };
+    let support_draft = SupportRequestDraft {
+        kind: SupportRequestKind::Question,
+        subject: "Billing question".to_owned(),
+        message: "Which card?".to_owned(),
+    };
+    let key = "7a1c4b52-0d8e-4f3a-9b6c-2e5d8f1a3c70".to_owned();
+    let room = MeetRoomName::new(AGENCY, "standup").unwrap();
+
+    let cases: Vec<(Effect, Event)> = vec![
+        (
+            Effect::AskHq {
+                ticket,
+                workspace_id: ws(),
+                prompt: "Change the greeting".to_owned(),
+                history: vec![HqTurn {
+                    role: HqRole::User,
+                    text: "Hi".to_owned(),
+                }],
+            },
+            Event::HqAnswered {
+                ticket,
+                result: Ok(fixture("district-hq-pending-write.json")),
+            },
+        ),
+        (
+            Effect::ConfirmHq {
+                ticket,
+                workspace_id: ws(),
+                proposal,
+            },
+            Event::HqConfirmed {
+                ticket,
+                result: Ok(fixture("district-hq-confirm.json")),
+            },
+        ),
+        (
+            Effect::LoadAnalytics {
+                ticket,
+                workspace_id: ws(),
+                range: AnalyticsRange::ThirtyDays,
+            },
+            Event::AnalyticsLoaded {
+                ticket,
+                result: Ok(fixture("district-analytics.json")),
+            },
+        ),
+        (
+            Effect::LoadUsage {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::UsageLoaded {
+                ticket,
+                result: Ok(fixture("district-usage.json")),
+            },
+        ),
+        (
+            Effect::LoadUsageHistory {
+                ticket,
+                workspace_id: ws(),
+                months: 3,
+            },
+            Event::UsageHistoryLoaded {
+                ticket,
+                result: Ok(fixture("district-usage-history.json")),
+            },
+        ),
+        (
+            Effect::SearchNumbers {
+                ticket,
+                workspace_id: ws(),
+                search: NumberSearch {
+                    area_code: Some("416".to_owned()),
+                    ..NumberSearch::default()
+                },
+            },
+            Event::NumbersFound {
+                ticket,
+                result: Ok(fixture("district-numbers-search.json")),
+            },
+        ),
+        (
+            Effect::LoadOwnedNumbers {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::OwnedNumbersLoaded {
+                ticket,
+                result: Ok(fixture("district-provider-numbers.json")),
+            },
+        ),
+        (
+            Effect::LoadWorkspaceBilling {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::WorkspaceBillingLoaded {
+                ticket,
+                result: Ok(fixture("district-workspace-billing.json")),
+            },
+        ),
+        (
+            Effect::LoadAccountBilling { ticket },
+            Event::AccountBillingLoaded {
+                ticket,
+                result: Ok(fixture("district-billing.json")),
+            },
+        ),
+        (
+            Effect::LoadWorkflows {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::WorkflowsLoaded {
+                ticket,
+                result: Ok(fixture("district-workflows.json")),
+            },
+        ),
+        (
+            Effect::LoadWorkflowRuns {
+                ticket,
+                workspace_id: ws(),
+                workflow_id: "wf_contract_active".to_owned(),
+                limit: 10,
+                offset: 20,
+            },
+            Event::WorkflowRunsLoaded {
+                ticket,
+                result: Ok(fixture("district-workflow-runs.json")),
+            },
+        ),
+        (
+            Effect::SetWorkflowActive {
+                ticket,
+                workspace_id: ws(),
+                workflow_id: "wf_contract_active".to_owned(),
+                active: false,
+            },
+            Event::WorkflowActiveSet {
+                ticket,
+                result: Ok(fixture("district-workflow-toggle.json")),
+            },
+        ),
+        (
+            Effect::LoadCampaign {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::CampaignLoaded {
+                ticket,
+                result: Ok(fixture("district-campaign-status.json")),
+            },
+        ),
+        (
+            Effect::SetCampaignEnabled {
+                ticket,
+                workspace_id: ws(),
+                enabled: false,
+            },
+            Event::CampaignSet {
+                ticket,
+                result: Ok(fixture("district-campaign-pause.json")),
+            },
+        ),
+        (
+            Effect::LoadSchedulingStatus {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::SchedulingStatusLoaded {
+                ticket,
+                result: Ok(fixture("district-scheduling-status-ready.json")),
+            },
+        ),
+        (
+            Effect::EnableScheduling {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::SchedulingEnabled {
+                ticket,
+                result: Ok(fixture("district-scheduling-enable.json")),
+            },
+        ),
+        (
+            Effect::RequestSchedulingHandOff {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::SchedulingHandOffReady {
+                ticket,
+                result: Ok(desktop_fixture("district-scheduling-handoff.json")),
+            },
+        ),
+        (
+            Effect::LoadDeskSettings {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::DeskSettingsLoaded {
+                ticket,
+                result: Ok(fixture("district-desk-settings.json")),
+            },
+        ),
+        (
+            Effect::SaveDeskSettings {
+                ticket,
+                workspace_id: ws(),
+                patch: DeskSettingsPatch {
+                    enabled: Some(false),
+                    ..DeskSettingsPatch::default()
+                },
+            },
+            Event::DeskSettingsSaved {
+                ticket,
+                result: Ok(fixture("district-desk-settings-patch.json")),
+            },
+        ),
+        (
+            Effect::UploadDeskLogo {
+                ticket,
+                workspace_id: ws(),
+                logo,
+            },
+            Event::DeskLogoUploaded {
+                ticket,
+                result: Ok(fixture("district-desk-logo.json")),
+            },
+        ),
+        (
+            Effect::DeleteDeskLogo {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::DeskLogoDeleted {
+                ticket,
+                result: Ok(fixture("district-desk-logo-delete.json")),
+            },
+        ),
+        (
+            Effect::LoadDeskTickets {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::DeskTicketsLoaded {
+                ticket,
+                result: Ok(fixture("district-desk-tickets.json")),
+            },
+        ),
+        (
+            Effect::CreateDeskTicket {
+                ticket,
+                workspace_id: ws(),
+                draft: desk_draft,
+                idempotency_key: key.clone(),
+            },
+            Event::DeskTicketCreated {
+                ticket,
+                result: Ok(fixture("district-desk-ticket-create.json")),
+            },
+        ),
+        (
+            Effect::LoadDeskTicket {
+                ticket,
+                workspace_id: ws(),
+                ticket_id: "desk_ticket_open".to_owned(),
+            },
+            Event::DeskTicketLoaded {
+                ticket,
+                result: Ok(fixture("district-desk-ticket.json")),
+            },
+        ),
+        (
+            Effect::ReplyToDeskTicket {
+                ticket,
+                workspace_id: ws(),
+                ticket_id: "desk_ticket_open".to_owned(),
+                message: "Moved".to_owned(),
+                idempotency_key: key.clone(),
+            },
+            Event::DeskReplied {
+                ticket,
+                result: Ok(fixture("district-desk-ticket-reply.json")),
+            },
+        ),
+        (
+            Effect::SetDeskTicketStatus {
+                ticket,
+                workspace_id: ws(),
+                ticket_id: "desk_ticket_open".to_owned(),
+                status: DeskTicketStatus::Resolved,
+            },
+            Event::DeskTicketStatusSet {
+                ticket,
+                result: Ok(fixture("district-desk-ticket-status.json")),
+            },
+        ),
+        (
+            Effect::LoadSupportRequests {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::SupportRequestsLoaded {
+                ticket,
+                result: Ok(fixture("district-support-requests.json")),
+            },
+        ),
+        (
+            Effect::CreateSupportRequest {
+                ticket,
+                workspace_id: ws(),
+                draft: support_draft,
+                idempotency_key: key.clone(),
+            },
+            Event::SupportRequestCreated {
+                ticket,
+                result: Ok(fixture("district-support-request-create.json")),
+            },
+        ),
+        (
+            Effect::LoadSupportRequest {
+                ticket,
+                workspace_id: ws(),
+                key: "DA-42".to_owned(),
+            },
+            Event::SupportRequestLoaded {
+                ticket,
+                result: Ok(fixture("district-support-request.json")),
+            },
+        ),
+        (
+            Effect::ReplyToSupportRequest {
+                ticket,
+                workspace_id: ws(),
+                key: "DA-42".to_owned(),
+                body: "Still failing".to_owned(),
+            },
+            Event::SupportReplied {
+                ticket,
+                result: Ok(fixture("district-support-reply.json")),
+            },
+        ),
+        (
+            Effect::CloseSupportRequest {
+                ticket,
+                workspace_id: ws(),
+                key: "DA-42".to_owned(),
+            },
+            Event::SupportRequestClosed {
+                ticket,
+                result: Ok(fixture("district-support-close.json")),
+            },
+        ),
+        (
+            Effect::LoadMeetings {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::MeetingsLoaded {
+                ticket,
+                result: Ok(fixture("district-meetings.json")),
+            },
+        ),
+        (
+            Effect::LoadMeeting {
+                ticket,
+                workspace_id: ws(),
+                meeting_id: "meeting_contract_completed".to_owned(),
+            },
+            Event::MeetingLoaded {
+                ticket,
+                result: Ok(fixture("district-meeting-detail.json")),
+            },
+        ),
+        (
+            Effect::RequestRoomToken { ticket, room },
+            Event::RoomTokenIssued {
+                ticket,
+                result: Ok(fixture("district-room-token.json")),
+            },
+        ),
+    ];
+    for (effect, event) in cases {
+        assert_eq!(runner.run(effect.clone()).await, Some(event), "{effect:?}");
+    }
+    assert_eq!(
+        log.take(),
+        [
+            "hq ws-contract-active Change the greeting after 1",
+            "hq confirm ws-contract-active update_persona",
+            "analytics ws-contract-active 30d",
+            "usage ws-contract-active",
+            "usage history ws-contract-active 3",
+            "number search ws-contract-active Some(\"416\")",
+            "owned numbers ws-contract-active",
+            "workspace billing ws-contract-active",
+            "account billing",
+            "workflows ws-contract-active",
+            "runs ws-contract-active wf_contract_active 10 20",
+            "workflow ws-contract-active wf_contract_active false",
+            "campaign ws-contract-active",
+            "campaign ws-contract-active false",
+            "scheduling ws-contract-active",
+            "enable scheduling ws-contract-active",
+            "hand-off ws-contract-active Some(\"/dashboard/district/scheduling\")",
+            "desk settings ws-contract-active",
+            "save desk settings ws-contract-active Some(false)",
+            "desk logo ws-contract-active logo.png image/png 4",
+            "delete desk logo ws-contract-active",
+            "desk tickets ws-contract-active None",
+            "create desk ticket ws-contract-active Invoice question 36",
+            "desk ticket ws-contract-active desk_ticket_open",
+            "desk reply ws-contract-active desk_ticket_open Moved 36",
+            "desk status ws-contract-active desk_ticket_open resolved",
+            "support ws-contract-active",
+            "create support ws-contract-active Billing question 36",
+            "support request ws-contract-active DA-42",
+            "support reply ws-contract-active DA-42 Still failing",
+            "support close ws-contract-active DA-42",
+            "meetings ws-contract-active",
+            "meeting ws-contract-active meeting_contract_completed",
+            "room token meet_ws-contract-active_standup",
+        ]
+    );
+}
+
+/// The hand-off link is opened like any page, reports only a failure, and the
+/// open is the only place its text is read.
+#[tokio::test]
+async fn a_one_time_link_is_opened_and_reports_only_a_failure() {
+    let url = OneTimeUrl::new("https://www.distronode.com/dashboard/handoff?code=c");
+    let (runner, log) = fakes(None, true);
+    assert_eq!(
+        runner
+            .run(Effect::OpenOneTimeUrl { url: url.clone() })
+            .await,
+        None
+    );
+    assert_eq!(
+        log.take(),
+        ["open https://www.distronode.com/dashboard/handoff?code=c"]
+    );
+    let (runner, _) = fakes(None, false);
+    assert_eq!(
+        runner.run(Effect::OpenOneTimeUrl { url }).await,
+        Some(Event::UrlOpenFailed)
+    );
 }
