@@ -709,6 +709,18 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   runtime first, which is what routes libwebrtc's own logging away from stderr.
 - `district-app` builds its engine with `district_call::engine()`.
 - `district-call`: `CALLS_AVAILABLE` follows the `livekit` feature.
+- `district-call`: a process has the desktop's devices or a frame microphone,
+  never both: whichever it asks for second is refused, reported as the
+  microphone being unavailable. The LiveKit SDK's libwebrtc lets the devices'
+  capture reach a frame microphone's stream after a renegotiation, which sent the
+  desktop's microphone inside the frames and aborted the process
+  (`Check failed: !race_checker404.RaceDetected()` in `audio_send_stream.cc`) in
+  12 of 30 runs of the device test, whose peer shared its process; it also
+  leaves that stream registered once it is gone, and a frame track's unmute
+  opens the desktop's microphone. The app has only the devices and is never
+  refused. The device tests' peers now run in processes of their own
+  (`FarEnd`), and two tests make the pair on purpose, in each order. See
+  SECURITY.md.
 
 - `district-core`: `CoreConfig` gains `calls_available`. A build without a call
   engine reads no ring setting, never registers this desktop's presence, rings

@@ -302,6 +302,37 @@ What the call engine itself does (district-call, with its `livekit` feature):
   refuses (a viewer's) is closed again. When they cannot be opened the call goes
   on, the others hear nothing, and the app says the microphone could not be
   used.
+- A process has the desktop's devices or a frame microphone (`Audio::Frames`,
+  which is for tests and anything that is not a desktop), never both, for its
+  whole life: whichever it asks for first, the other is refused, as a microphone
+  that is unavailable (and, for the devices, a call that hears nothing). The app
+  builds only the devices, so it is never refused. The reason is three defects
+  in the libwebrtc the LiveKit SDK links (webrtc-sys 0.3.47, the prebuilt
+  `webrtc-89d790b`), found when a test that held both aborted in 12 of 30 runs:
+  - `AudioSendStream::StoreEncoderProperties` registers a stream for the
+    devices' capture whenever it is sending, without the check the SDK's
+    `external_audio_source.patch` adds to `Start()`. So when a renegotiation
+    gives a frame microphone's stream a new encoder (`SetupSendCodec`), the
+    devices' capture thread starts delivering to it alongside the frame
+    source's own thread: the desktop's microphone goes out inside the frame
+    track, in whatever room that track is, and when two deliveries overlap
+    `RTC_CHECK_RUNS_SERIALIZED` in `AudioSendStream::SendAudioData` aborts the
+    process (`Check failed: !race_checker404.RaceDetected()`).
+  - The same patch drops `sending_ = false` from `Stop()` and skips
+    `RemoveSendingStream` for such a stream, so the registration is never
+    removed: once the stream is destroyed the capture thread still delivers to
+    it (measured once: a segmentation fault in
+    `AudioTransportImpl::SendProcessedData`).
+  - The webrtc-sdk fork's `AudioDeviceModule::IsStopOnMuteModeEnabled()` is
+    true by default and the SDK's `AdmProxy` keeps it, so unmuting any send
+    stream starts the devices' capture: a frame track opens the desktop's
+    microphone while the member has theirs off (with the refusal taken out,
+    in all 13 runs of the test that tries it).
+
+  `devices::` in the engine's tests holds the engine to the refusal in both
+  orders, with the renegotiation that sets the first defect off. These are to
+  be reported to the LiveKit Rust SDK; until they are fixed there, the refusal
+  stays.
 
 ### The help desk and support requests
 

@@ -4,6 +4,7 @@
 use std::borrow::Cow;
 use std::fmt;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 use futures_util::StreamExt;
 use livekit::options::TrackPublishOptions;
@@ -29,8 +30,9 @@ pub enum Audio {
     /// The devices are opened when a session starts and closed when it ends,
     /// and the microphone is open only while it is on: turning it off mutes
     /// it and stops the capture, so the device is let go at once. When the
-    /// devices cannot be opened (no sound server, or the desktop refused), the
-    /// session still joins and hears nothing, and the microphone is reported
+    /// devices cannot be opened (no sound server, the desktop refused, or this
+    /// process has had a [`Frames`](Self::Frames) microphone), the session
+    /// still joins and hears nothing, and the microphone is reported
     /// [`Unavailable`](district_core::MicrophoneState::Unavailable), as it is
     /// when the room refuses it or the device cannot be opened again.
     Devices,
@@ -38,8 +40,55 @@ pub enum Audio {
     /// microphone is whatever [`FrameAudio`]'s microphone writes, and each
     /// remote audio track is handed to its speaker. For tests, and for anything
     /// that is not a desktop. Everything else a session does is the same as
-    /// with [`Devices`](Self::Devices).
+    /// with [`Devices`](Self::Devices), except that its microphone is
+    /// [`Unavailable`](district_core::MicrophoneState::Unavailable) in a process
+    /// that has opened the devices.
+    ///
+    /// A process has one or the other for its whole life: whichever of the
+    /// devices and a frame microphone it asks for first, it never gets the
+    /// other. The media library cannot hold both (see [`claim`]).
     Frames(FrameAudio),
+}
+
+/// What a process's microphones are, once it has asked for one: the desktop's
+/// devices or the caller's frames.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+enum Kind {
+    Devices = 1,
+    Frames = 2,
+}
+
+/// The kind this process asked for first, or 0 before it asked for any.
+static PROCESS_KIND: AtomicU8 = AtomicU8::new(0);
+
+/// Whether this process may have `kind`: true when it is the first kind the
+/// process asks for, or the same one again, and false for good once the
+/// process has asked for the other.
+///
+/// The media library cannot hold the desktop's devices and a frame microphone
+/// in one process. While the devices record, their capture thread hands every
+/// frame to each send stream registered for it, and libwebrtc as the SDK builds
+/// it (webrtc-sys 0.3.47's `external_audio_source.patch`) registers a frame
+/// microphone's stream as well whenever a renegotiation gives it a new encoder.
+/// From then on two threads deliver audio to one stream: the desktop's
+/// microphone goes out inside the frames, whatever room each is in, and when
+/// two deliveries overlap libwebrtc aborts the whole process (`Check failed:
+/// !race_checker404.RaceDetected()` in `audio_send_stream.cc`). Nothing undoes
+/// the registration, so once the frame microphone is gone the capture thread
+/// delivers to a stream that no longer exists. And unmuting any send stream
+/// starts the devices' capture, so a frame track opens the desktop's
+/// microphone even while the member has it off. So the two never share a
+/// process, not only never at once. SECURITY.md has the details.
+fn claim(kind: Kind) -> bool {
+    claim_in(&PROCESS_KIND, kind)
+}
+
+fn claim_in(held: &AtomicU8, kind: Kind) -> bool {
+    match held.compare_exchange(0, kind as u8, Ordering::SeqCst, Ordering::SeqCst) {
+        Ok(_) => true,
+        Err(first) => first == kind as u8,
+    }
 }
 
 /// Fills one frame the microphone sends.
@@ -82,9 +131,13 @@ impl fmt::Debug for FrameAudio {
 }
 
 /// Opens the desktop's audio devices for a session, or `None` when they cannot
-/// be opened. Off the runtime's threads, because connecting to the sound
+/// be opened, or may not be because this process has had a frame microphone
+/// (see [`claim`]). Off the runtime's threads, because connecting to the sound
 /// server blocks.
 pub(super) async fn open_devices() -> Option<PlatformAudio> {
+    if !claim(Kind::Devices) {
+        return None;
+    }
     tokio::task::spawn_blocking(PlatformAudio::new)
         .await
         .ok()
@@ -123,8 +176,9 @@ enum Capture {
 
 impl Microphone {
     /// Publishes the microphone in `room`, on. `None` when there is nothing
-    /// to publish from (the devices could not be opened, or cannot capture)
-    /// or the room refused it.
+    /// to publish from (the devices could not be opened, or cannot capture,
+    /// or frames in a process that has opened the devices) or the room
+    /// refused it.
     pub(super) async fn publish(
         room: &Room,
         audio: &Audio,
@@ -139,6 +193,9 @@ impl Microphone {
                 (devices.rtc_source(), Capture::Devices)
             }
             Audio::Frames(frame_audio) => {
+                if !claim(Kind::Frames) {
+                    return None;
+                }
                 // 100 ms of queue: `capture_frame` waits while it is full,
                 // which is what paces the frames at the rate the library
                 // sends them.
@@ -265,4 +322,22 @@ pub(super) fn hear(audio: &Audio, track: &RemoteAudioTrack) -> Option<Task> {
             speaker(&frame.data);
         }
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::AtomicU8;
+
+    use super::{Kind, claim_in};
+
+    #[test]
+    fn a_process_keeps_the_first_kind_of_microphone_it_asks_for() {
+        for (first, other) in [(Kind::Devices, Kind::Frames), (Kind::Frames, Kind::Devices)] {
+            let held = AtomicU8::new(0);
+            assert!(claim_in(&held, first), "{first:?} first");
+            assert!(claim_in(&held, first), "{first:?} again");
+            assert!(!claim_in(&held, other), "{other:?} after {first:?}");
+            assert!(claim_in(&held, first), "{first:?} after refusing {other:?}");
+        }
+    }
 }

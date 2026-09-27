@@ -165,6 +165,18 @@ every test stays on it: an ordinary desktop or CI runner has one, and a containe
 started with `--network none` needs a dummy interface added
 (`ip link add lan0 type dummy`, an address, `up`).
 
+A process never holds the desktop's devices and a frame microphone at once, or one
+after the other: the LiveKit SDK's libwebrtc lets the devices' capture reach a frame
+microphone's stream, which aborts the process or sends the desktop's microphone in
+the frames (SECURITY.md has the three defects), so the engine refuses whichever
+comes second. The tests keep to it: each test of the devices runs in a child
+process of its own, and whoever it talks to is a `FarEnd`, the test binary run
+again as an engine on frame audio in a third process, which prints what it hears
+for the test to read. A test that put a frame microphone in the child would be
+refused, as the last two `devices::` tests show. Before this, the device test's
+peer shared its process and the test aborted inside libwebrtc (`Check failed:
+!race_checker404.RaceDetected()` in `audio_send_stream.cc`) in 12 of 30 runs.
+
 ## Packaging
 
 There are two packages, both x86_64 and both built with calls: a .deb for Ubuntu

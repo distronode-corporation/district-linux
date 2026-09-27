@@ -4,11 +4,11 @@
 
 use std::f64::consts::PI;
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::process::{Child, ChildStdin, Command, Stdio};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -17,8 +17,8 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use district_auth::AccessClaims;
 use district_call::{Audio, FrameAudio, LiveKitCallEngine};
 use district_core::{
-    CoreConfig, Effect, Event, MediaCredential, MediaEvent, MediaUpdate, Model, RoomsEvent, Route,
-    Ticket,
+    CallEngine, CoreConfig, Effect, Event, MediaCredential, MediaEvent, MediaUpdate, Model,
+    RoomsEvent, Route, Ticket,
 };
 use district_model::{MeetingSummary, OverviewResponse, RoomTokenResponse, WorkspaceListResponse};
 use hmac::{Hmac, Mac};
@@ -53,22 +53,34 @@ pub struct Server {
 }
 
 impl Server {
-    /// Starts one and waits until it answers.
+    /// Starts one and waits until it answers. A port is free when it is
+    /// chosen and can be taken by another process's socket before the server
+    /// binds it (measured once in 60 runs of the device tests, whose far ends
+    /// are processes of their own), so a server that exits while starting is
+    /// started again on other ports.
     pub fn start() -> Self {
-        let mut server = Self {
-            child: None,
-            http: free_tcp_port(),
-            tcp: free_tcp_port(),
-            udp: free_udp_port(),
-            log: PathBuf::new(),
-        };
-        server.log = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
-            .join(format!("livekit-server-{}.log", server.http));
-        server.run();
-        server
+        let mut logs = Vec::new();
+        for _ in 0..5 {
+            let mut server = Self {
+                child: None,
+                http: free_tcp_port(),
+                tcp: free_tcp_port(),
+                udp: free_udp_port(),
+                log: PathBuf::new(),
+            };
+            server.log = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+                .join(format!("livekit-server-{}.log", server.http));
+            if server.run() {
+                return server;
+            }
+            logs.push(server.log.display().to_string());
+        }
+        panic!("livekit-server exited while starting, five times; see {logs:?}");
     }
 
-    fn run(&mut self) {
+    /// Starts the server on its ports and waits until it answers: false when
+    /// it exits first, as it does when one of its ports has been taken.
+    fn run(&mut self) -> bool {
         let binary = std::env::var("LIVEKIT_SERVER").expect(
             "LIVEKIT_SERVER must name a livekit-server binary: see \"Building with calls\" in \
              CONTRIBUTING.md",
@@ -98,6 +110,12 @@ impl Server {
         self.child = Some(child);
         let deadline = Instant::now() + Duration::from_secs(15);
         while !self.answers() {
+            if let Some(child) = self.child.as_mut()
+                && matches!(child.try_wait(), Ok(Some(_)))
+            {
+                self.child = None;
+                return false;
+            }
             assert!(
                 Instant::now() < deadline,
                 "livekit-server did not answer; see {}",
@@ -105,6 +123,7 @@ impl Server {
             );
             std::thread::sleep(Duration::from_millis(50));
         }
+        true
     }
 
     fn answers(&self) -> bool {
@@ -137,7 +156,11 @@ impl Server {
     /// Starts it again on the same ports, knowing nothing of before.
     pub fn restart(&mut self) {
         self.kill();
-        self.run();
+        assert!(
+            self.run(),
+            "livekit-server exited while starting again; see {}",
+            self.log.display()
+        );
     }
 }
 
@@ -373,6 +396,17 @@ impl Meter {
         heard.recent.drain(..excess);
     }
 
+    /// Takes in one frame heard somewhere else, as its number of samples and
+    /// the sum of their squares (full scale 1.0): what a [`FarEnd`] reports.
+    /// Its tone share is not measured.
+    fn heard_elsewhere(&self, samples: u64, sum_of_squares: f64) {
+        let mut heard = self.0.lock().expect("the meter");
+        heard.frames += 1;
+        heard.first.get_or_insert_with(Instant::now);
+        heard.sum_of_squares += sum_of_squares;
+        heard.samples += samples;
+    }
+
     /// Forgets everything heard so far.
     pub fn reset(&self) {
         *self.0.lock().expect("the meter") = Heard::default();
@@ -425,21 +459,165 @@ impl Meter {
 /// Frame audio whose microphone plays the tone, or silence, and whose speaker
 /// is `meter`.
 pub fn frame_audio(tone: bool, meter: &Meter) -> FrameAudio {
-    let sample = AtomicU64::new(0);
     let meter = meter.clone();
-    FrameAudio::new(
-        move |frame: &mut [i16]| {
-            for out in frame.iter_mut() {
-                let n = sample.fetch_add(1, Ordering::Relaxed) as f64;
-                *out = if tone {
-                    (TONE_PEAK * (2.0 * PI * TONE_HZ * n / 48_000.0).sin() * 32767.0) as i16
-                } else {
-                    0
-                };
-            }
-        },
-        move |frame: &[i16]| meter.hear(frame),
-    )
+    FrameAudio::new(microphone(tone), move |frame: &[i16]| meter.hear(frame))
+}
+
+/// A frame microphone that plays the tone, or silence.
+fn microphone(tone: bool) -> impl Fn(&mut [i16]) + Send + Sync + 'static {
+    let sample = AtomicU64::new(0);
+    move |frame: &mut [i16]| {
+        for out in frame.iter_mut() {
+            let n = sample.fetch_add(1, Ordering::Relaxed) as f64;
+            *out = if tone {
+                (TONE_PEAK * (2.0 * PI * TONE_HZ * n / 48_000.0).sin() * 32767.0) as i16
+            } else {
+                0
+            };
+        }
+    }
+}
+
+/// Makes a test's process the far end of the test it names (see [`FarEnd`]).
+const FAR_END: &str = "DISTRICT_CALL_TEST_FAR_END";
+/// Where the far end joins, and whether it plays the tone.
+const FAR_END_URL: &str = "DISTRICT_CALL_TEST_FAR_END_URL";
+const FAR_END_TOKEN: &str = "DISTRICT_CALL_TEST_FAR_END_TOKEN";
+const FAR_END_TONE: &str = "DISTRICT_CALL_TEST_FAR_END_TONE";
+/// What starts each line the far end reports on.
+const FAR_END_SAYS: &str = "FAR_END ";
+
+/// An engine on frame audio in a process of its own, joined to a room, with
+/// the tone as its microphone (or no microphone), and what it hears measured
+/// here.
+///
+/// The tests of the desktop's devices need someone in the room to hear the
+/// microphone and to send a tone to the speakers, and that someone cannot be an
+/// engine with a frame microphone in the same process: a process has the
+/// devices or a frame microphone, never both (see `district_call::Audio`). So
+/// the test's own binary runs again, as the far end, and prints a line for
+/// every frame it hears, which this reads. Dropping it closes the far end's
+/// input, which is its cue to leave.
+pub struct FarEnd {
+    child: Child,
+    input: Option<ChildStdin>,
+    connected: Arc<AtomicBool>,
+    reader: Option<std::thread::JoinHandle<()>>,
+    /// What the far end hears, of everyone in the room. Its tone share is not
+    /// measured.
+    pub heard: Meter,
+}
+
+impl FarEnd {
+    /// Whether this process is the far end of the test `name`. The test then
+    /// calls [`serve`](Self::serve) and nothing else.
+    pub fn asked(name: &str) -> bool {
+        std::env::var(FAR_END).is_ok_and(|asked| asked == name)
+    }
+
+    /// Starts the far end of the test `name`, joining the room at `url` with
+    /// `token`, its microphone on and playing the tone when `tone`, and off
+    /// otherwise.
+    pub fn start(name: &str, url: &str, token: &str, tone: bool) -> Self {
+        let mut child = Command::new(std::env::current_exe().expect("this test binary"))
+            .args([name, "--exact", "--nocapture", "--test-threads=1"])
+            .env(FAR_END, name)
+            .env(FAR_END_URL, url)
+            .env(FAR_END_TOKEN, token)
+            .env(FAR_END_TONE, if tone { "1" } else { "0" })
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("the far end starts");
+        let heard = Meter::default();
+        let connected = Arc::new(AtomicBool::new(false));
+        let output = child.stdout.take().expect("the far end's output");
+        let reader = {
+            let (heard, connected) = (heard.clone(), Arc::clone(&connected));
+            std::thread::spawn(move || {
+                for line in BufReader::new(output).lines().map_while(Result::ok) {
+                    // The test harness's own words can share the line.
+                    let Some(at) = line.find(FAR_END_SAYS) else {
+                        continue;
+                    };
+                    let mut words = line[at + FAR_END_SAYS.len()..].split_whitespace();
+                    match words.next() {
+                        Some("connected") => connected.store(true, Ordering::SeqCst),
+                        Some("heard") => {
+                            let samples = words.next().and_then(|word| word.parse().ok());
+                            let squares = words.next().and_then(|word| word.parse().ok());
+                            if let (Some(samples), Some(squares)) = (samples, squares) {
+                                heard.heard_elsewhere(samples, squares);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            })
+        };
+        Self {
+            input: child.stdin.take(),
+            child,
+            connected,
+            reader: Some(reader),
+            heard,
+        }
+    }
+
+    /// Waits until the far end has joined, failing after `limit`.
+    pub async fn connected(&self, limit: Duration) {
+        eventually(limit, "the far end joins", || {
+            self.connected.load(Ordering::SeqCst)
+        })
+        .await;
+    }
+
+    /// The far end itself: joins the room the environment names, says so,
+    /// reports every frame it hears, and leaves once its input closes.
+    pub fn serve() {
+        let url = std::env::var(FAR_END_URL).expect("the far end's server");
+        let token = std::env::var(FAR_END_TOKEN).expect("the far end's credential");
+        let tone = std::env::var(FAR_END_TONE).is_ok_and(|tone| tone == "1");
+        runtime().block_on(async {
+            let speaker = |frame: &[i16]| {
+                let squares: f64 = frame
+                    .iter()
+                    .map(|&sample| (f64::from(sample) / 32768.0).powi(2))
+                    .sum();
+                println!("{FAR_END_SAYS}heard {} {squares}", frame.len());
+            };
+            let (engine, reports) =
+                LiveKitCallEngine::new(Audio::Frames(FrameAudio::new(microphone(tone), speaker)));
+            let mut reports = Reports::new(reports);
+            let (session, credential) = Member::new().join(&url, &token, None);
+            engine.connect(session, credential, tone).await;
+            reports
+                .until_event(Duration::from_secs(20), session, &MediaEvent::Connected)
+                .await;
+            println!("{FAR_END_SAYS}connected");
+            tokio::task::spawn_blocking(|| {
+                std::io::copy(&mut std::io::stdin(), &mut std::io::sink())
+            })
+            .await
+            .ok();
+            engine.disconnect(session).await;
+        });
+    }
+}
+
+impl Drop for FarEnd {
+    fn drop(&mut self) {
+        drop(self.input.take());
+        let deadline = Instant::now() + Duration::from_secs(15);
+        while matches!(self.child.try_wait(), Ok(None)) && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        self.child.kill().ok();
+        self.child.wait().ok();
+        if let Some(reader) = self.reader.take() {
+            reader.join().ok();
+        }
+    }
 }
 
 /// An engine on frame audio, what it reports, and what it hears.
