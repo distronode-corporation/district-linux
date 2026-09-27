@@ -59,6 +59,30 @@ date, and bump `[workspace.package] version` to match.
   screen, the devices list with a question before every sign-out, and
   `FailureText`, the words for every failure. `NativeAuth` and the API client
   implement the sign-in and API traits.
+- The desktop contract fixtures: `contracts/desktop/` holds the server's recordings of
+  the shapes only this client reads (the telemetry credential, one telemetry frame per
+  event type, the call hang-up, the booking-pages hand-off and the desktop's presence
+  registration), vendored by
+  `scripts/sync-contracts.py` beside the Android set and decoded strictly by the
+  contract tests, with their own pinned count in the fixture manifest.
+- `district-model`: data types for the inbox (the threads, a thread's history and its
+  paging cursor, the unread count, search, finding a message's thread, sending,
+  marking read, attachments, saved drafts and AI-written drafts), for one call and its
+  transcript, for contacts (the list, one contact, creating, changing and deleting
+  them, research, blocking callers), for the call hang-up, the booking-pages hand-off
+  and push registration (`PushRegistrationResponse`), and the `call_ringing` telemetry
+  event (`TelemetryEventType::CallRinging`, ids only: the members a call is ringing
+  for on their desktops). 27 more of the server's recorded responses decode strictly
+  and round-trip, and the list of those not yet modelled shrinks from 108 to 81.
+- `district-api`: typed methods for the inbox (`conversations`, `timeline`,
+  `unread_count`, `search_messages`, `message_thread`, `send_message`, `mark_read`,
+  `upload_media`, `draft`, `drafts`, `save_draft`, `delete_draft`,
+  `generate_ai_draft`), the call log (`calls`, `call_detail`, `call_transcript`) and
+  contacts (`contacts`, `contact`, `blocked_contacts`, `create_contact`,
+  `update_contact`, `delete_contact`, `enrich_contact`, `clear_contact_intel`,
+  `set_contact_blocked`). Each sends what the Android app sends for the same call;
+  the reads are repeated once after a refused access token and the writes never are.
+  `generate_ai_draft` runs a billed model and nothing calls it on its own.
 
 ### Changed
 
@@ -86,5 +110,12 @@ date, and bump `[workspace.package] version` to match.
 - Logging below debug level is compiled out of the whole build (`log`'s
   `max_level_debug`), because the WebSocket library logs the handshake, with the
   credential in it, and every message at trace level.
+- `scripts/sync-contracts.py` vendors two sets from one server commit, the Android set
+  into `contracts/fixtures/` and the desktop set into `contracts/desktop/`, and refuses
+  while either source directory has uncommitted changes. `contracts/SOURCE.toml` gains
+  a `[sets.<name>]` table per set, and `contracts/SHA256SUMS` covers both. The rule
+  that a substitution's replacement must be new is now held per set, to the entries
+  that substitute something there: the desktop set is recorded with fictional data
+  already, including the stand-ins the table writes into the Android set.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main
