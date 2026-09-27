@@ -1,4 +1,4 @@
-//! One row of the call log.
+//! The call log's rows, and the answer to ending a call.
 
 use serde::{Deserialize, Serialize};
 
@@ -122,6 +122,31 @@ pub struct CallFollowUp {
     pub sent_at: Option<String>,
 }
 
+/// `POST /api/district/calls/{callId}/hangup`: ending a call placed or answered
+/// from this desktop, the phone network's side of it included.
+///
+/// Leaving the call's media room does not end the call: the carrier's leg goes on
+/// ringing or talking to an empty room, and goes on being billed, until the
+/// service is told. This request tells it.
+///
+/// It is safe to send for a call that is already over, and meant to be: a
+/// hang-up can race a dial whose answer has not come back yet. That is a reason
+/// to send it on every ending, not a reason to repeat it after a failure.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "strict-contracts", serde(deny_unknown_fields))]
+#[serde(rename_all = "camelCase")]
+pub struct CallHangUpResponse {
+    /// `true` on a successful answer.
+    #[serde(default)]
+    pub success: bool,
+    /// Whether this request ended the call. `false` is a success too: the call
+    /// was already over (the other party hung up, or an earlier hang-up ran).
+    /// When the service cannot tell, it answers with an error, never with
+    /// `false`.
+    #[serde(default)]
+    pub ended: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -160,6 +185,18 @@ mod tests {
                 email: None,
                 sms: None,
                 sent_at: None
+            }
+        );
+    }
+
+    #[test]
+    fn an_empty_hang_up_answer_is_not_a_success() {
+        let answer: CallHangUpResponse = serde_json::from_str("{}").unwrap();
+        assert_eq!(
+            answer,
+            CallHangUpResponse {
+                success: false,
+                ended: false
             }
         );
     }

@@ -37,16 +37,18 @@ mod devices;
 mod overview;
 mod phone;
 mod pkce;
+mod scheduling;
 mod setup;
 mod telemetry;
 mod workspace;
 
 pub use auth::AuthMeResponse;
-pub use calls::{CallAnalysis, CallFollowUp, CallSummary};
+pub use calls::{CallAnalysis, CallFollowUp, CallHangUpResponse, CallSummary};
 pub use devices::{DeviceListResponse, DeviceRevokeResponse, NativeDevice, NativeRevokeResponse};
 pub use overview::{OverviewMetrics, OverviewResponse};
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;
+pub use scheduling::SchedulingHandOffResponse;
 pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,
 };
