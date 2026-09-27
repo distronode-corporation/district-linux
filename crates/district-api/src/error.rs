@@ -257,6 +257,16 @@ pub enum ApiError {
         /// Where in the body the mismatch was found.
         column: usize,
     },
+    /// A successful response whose body did not confirm success: its `success`
+    /// field was `false` or missing. Every field of these responses has a
+    /// default, so without this check an empty `{}` would read as a confident
+    /// answer (no workspaces, four zeros, no devices) rather than as the drift or
+    /// the stray intermediary it is.
+    #[error("the response from {} did not confirm success", .endpoint.name())]
+    Unconfirmed {
+        /// The endpoint that answered.
+        endpoint: Endpoint,
+    },
     /// The request was not sent because it was built wrongly: a missing path
     /// value, a workspace on an endpoint that takes none, a body on a `GET`. A bug
     /// in the calling code, reported instead of guessed around.

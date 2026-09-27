@@ -28,7 +28,10 @@
 //!
 //! Response and request types live in `district-model`. This crate is generic
 //! over them: [`Request::send`] decodes into any `serde::de::DeserializeOwned`
-//! type, and [`Request::json`] takes any `serde::Serialize` one.
+//! type, and [`Request::json`] takes any `serde::Serialize` one. The endpoints
+//! the first screens use also have typed methods on [`ApiClient`]
+//! ([`ApiClient::workspace_list`], [`ApiClient::overview`] and the rest), which
+//! decode into the model's types and check the response's `success` flag.
 //!
 //! ```no_run
 //! # async fn example(tokens: impl district_api::TokenSource) -> Result<(), Box<dyn std::error::Error>> {
@@ -52,6 +55,7 @@ mod config;
 mod endpoints;
 mod error;
 mod exclusions;
+mod methods;
 mod token;
 
 pub use client::{ApiClient, Request};

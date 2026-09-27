@@ -582,6 +582,13 @@ fn every_error_describes_itself_without_secrets() {
             None,
         ),
         (
+            ApiError::Unconfirmed {
+                endpoint: Endpoint::Overview,
+            },
+            "the response from Overview did not confirm success",
+            None,
+        ),
+        (
             ApiError::InvalidRequest("oops".to_owned()),
             "invalid request: oops",
             None,
