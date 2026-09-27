@@ -47,8 +47,11 @@
 
 mod api;
 mod claims;
+mod coordinator;
 mod login;
 mod pkce;
+mod sign_out;
+mod store;
 mod tokens;
 
 pub use api::{
@@ -56,10 +59,17 @@ pub use api::{
     RefreshApi, RefreshOutcome, RevokeApi, RevokeOutcome, TOKEN_PATH,
 };
 pub use claims::{AccessClaims, ClaimsError};
+pub use coordinator::{
+    Clock, EARLY_REFRESH_MARGIN_MS, Persistence, SystemClock, TokenRefreshCoordinator,
+};
 pub use district_api::{AccessToken, ReauthReason, TokenError, TokenSource};
 pub use login::{
     AUTHORIZE_PATH, AuthorizationCode, AuthorizationGrant, LoginError, LoginFlow, REDIRECT_SCHEME,
     REDIRECT_URI,
 };
 pub use pkce::{Pkce, PkceVerifier, challenge_for, is_valid_challenge, is_valid_verifier};
+pub use sign_out::{
+    DrainReport, NoPresence, PRESENCE_TIMEOUT, PresenceHook, RevokeStatus, SignOut, SignOutReport,
+};
+pub use store::{MemorySessionStore, SessionStore, StoreError, StoreErrorKind};
 pub use tokens::{NativeTokens, PersistedSession, RefreshToken, TokenFingerprint};
