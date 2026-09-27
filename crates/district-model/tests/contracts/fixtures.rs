@@ -9,13 +9,14 @@
 use std::collections::BTreeSet;
 
 use district_model::{
-    DeviceListResponse, DeviceRevokeResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
-    SETUP_STEP_DONE, SETUP_STEP_TODO, SetupResponse, WorkspaceListResponse,
+    CallHangUpResponse, DeviceListResponse, DeviceRevokeResponse, NativeRevokeResponse,
+    OverviewResponse, PkceVector, SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingHandOffResponse,
+    SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, WorkspaceListResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use crate::support::{decode, decode_str, read_fixture};
+use crate::support::{Set, decode, decode_desktop, decode_str, names_in, read_fixture};
 
 // Workspace list.
 
@@ -326,4 +327,119 @@ fn base64url_matches_the_rfc_4648_examples() {
     assert_eq!(base64url(b"foo"), "Zm9v");
     assert_eq!(base64url(b"foob"), "Zm9vYg");
     assert_eq!(base64url(&[0xfb, 0xff]), "-_8");
+}
+
+// The desktop set.
+
+#[test]
+fn the_telemetry_credential_names_a_socket_and_an_expiry() {
+    let token: TelemetryToken = decode_desktop("district-telemetry-token.json");
+    assert!(token.success);
+    assert!(!token.token.is_empty());
+    assert!(token.expires_at > 0, "epoch milliseconds");
+    assert!(
+        token
+            .ws_url
+            .as_deref()
+            .is_some_and(|url| url.starts_with("wss://")),
+        "a TLS socket address"
+    );
+}
+
+/// Every telemetry frame the desktop set records, decoded.
+fn envelopes() -> Vec<(String, TelemetryEnvelope)> {
+    names_in(Set::Desktop)
+        .into_iter()
+        .filter(|name| name.starts_with("telemetry-event-"))
+        .map(|name| {
+            let envelope = decode_desktop(&name);
+            (name, envelope)
+        })
+        .collect()
+}
+
+#[test]
+fn the_telemetry_frames_cover_every_event_type_this_client_names() {
+    let frames = envelopes();
+    let seen: BTreeSet<&str> = frames.iter().map(|(_, e)| e.event_type.as_str()).collect();
+    for known in [
+        TelemetryEventType::CallStarted,
+        TelemetryEventType::CallUpdated,
+        TelemetryEventType::CallEnded,
+        TelemetryEventType::ToolOutcome,
+        TelemetryEventType::MessageReceived,
+        TelemetryEventType::MessageSent,
+    ] {
+        assert!(seen.contains(known.as_str()), "no frame for {known:?}");
+    }
+    // A name this client does not know means the service records an event the
+    // client should decide about: give it a variant, or say why not.
+    let unknown: Vec<&String> = frames
+        .iter()
+        .filter(|(_, e)| matches!(e.event_type, TelemetryEventType::Unknown(_)))
+        .map(|(name, _)| name)
+        .collect();
+    assert!(unknown.is_empty(), "frames of an unknown type: {unknown:?}");
+    assert!(
+        frames
+            .iter()
+            .all(|(_, e)| e.workspace_id == frames[0].1.workspace_id && !e.timestamp.is_empty())
+    );
+}
+
+#[test]
+fn call_frames_carry_the_call_and_both_shapes_of_each_are_recorded() {
+    let frames = envelopes();
+    let key_count = |name: &str| {
+        let (_, envelope) = frames.iter().find(|(n, _)| n == name).expect(name);
+        assert_eq!(envelope.data["id"], envelope.call_id.as_str(), "{name}");
+        envelope
+            .data
+            .as_object()
+            .expect("call data is an object")
+            .len()
+    };
+    let row = key_count("telemetry-event-call-started.json");
+    assert!(key_count("telemetry-event-call-started-sinch.json") < row);
+    assert_eq!(key_count("telemetry-event-call-ended-row.json"), row);
+    assert!(key_count("telemetry-event-call-ended.json") < row);
+    assert_eq!(key_count("telemetry-event-call-updated.json"), row);
+}
+
+#[test]
+fn message_frames_name_the_message_and_tool_frames_name_the_tool() {
+    for (name, envelope) in envelopes() {
+        match envelope.event_type {
+            TelemetryEventType::MessageReceived | TelemetryEventType::MessageSent => {
+                assert_eq!(
+                    envelope.data["messageId"],
+                    envelope.call_id.as_str(),
+                    "{name}"
+                );
+                assert!(envelope.data["counterpart"].is_string(), "{name}");
+            }
+            TelemetryEventType::ToolOutcome => {
+                assert!(envelope.data["tool"].is_string(), "{name}");
+                assert!(envelope.data["result"].is_string(), "{name}");
+            }
+            _ => {}
+        }
+    }
+}
+
+#[test]
+fn the_hang_up_answer_ends_the_call() {
+    let answer: CallHangUpResponse = decode_desktop("district-call-hangup.json");
+    assert!(answer.success && answer.ended);
+}
+
+#[test]
+fn the_scheduling_hand_off_is_a_short_lived_https_link() {
+    let answer: SchedulingHandOffResponse = decode_desktop("district-scheduling-handoff.json");
+    assert!(answer.url.starts_with("https://"), "an https link");
+    assert!(
+        answer.url.contains("code="),
+        "the single-use code rides the query"
+    );
+    assert!(answer.expires_in > 0);
 }

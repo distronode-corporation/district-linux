@@ -6,24 +6,34 @@ public repository.
     python3 scripts/sync-contracts.py --monorepo PATH --allow-dirty
 
 The fixtures are JSON bodies recorded from the District AI server's own route
-handlers by a test in the server repository, which is private. PATH is a checkout
-of it. This script:
+handlers (and, for the live telemetry socket, from its real publisher) by tests in
+the server repository, which is private. PATH is a checkout of it. They come in
+two sets, each from its own directory there and each vendored into its own
+directory here (SETS below):
 
-  1. refuses to run if the fixture directory there has uncommitted, untracked or
+  fixtures  the Android app's set, which this client reads too; into
+            contracts/fixtures/
+  desktop   the shapes only this client reads, which no Android fixture records;
+            into contracts/desktop/
+
+This script:
+
+  1. refuses to run if either source directory has uncommitted, untracked or
      ignored changes (unless --allow-dirty), because the commit recorded below
      would then not describe what was copied;
-  2. reads every fixture and applies SUBSTITUTIONS, a declared table that swaps
-     data which must not appear in a public repository for fictional stand-ins:
-     phone numbers outside +1 NPA 555-0100..0199, host names under the service's
-     domain, email addresses, and the em dash;
+  2. reads every fixture of both sets and applies SUBSTITUTIONS, one declared
+     table for both, which swaps data that must not appear in a public repository
+     for fictional stand-ins: phone numbers outside +1 NPA 555-0100..0199, host
+     names under the service's domain, email addresses, and the em dash;
   3. proves the result: each file still parses to the same structure with only
      string values changed, still has the byte layout the server writes
      (`JSON.stringify(body, null, 2)` plus a newline), passes
      scripts/check-public-hygiene.py's rules, and holds no real-looking North
      American number in any of the formats the fixtures use;
-  4. writes contracts/fixtures/, contracts/SHA256SUMS (`sha256sum -c` from
-     contracts/) and contracts/SOURCE.toml (where the files came from, and every
-     substitution with its per-file counts).
+  4. writes contracts/fixtures/ and contracts/desktop/, contracts/SHA256SUMS
+     (`sha256sum -c` from contracts/, one list for both sets) and
+     contracts/SOURCE.toml (where each set came from, and every substitution with
+     its per-file counts).
 
 It is idempotent: a second run against the same commit changes nothing, the sync
 date included.
@@ -37,9 +47,9 @@ script finds candidates with the same patterns the hygiene scan uses, hashes eac
 and replaces the ones the table names. A finding with no entry stops the sync and
 prints the entry to add, digest included.
 
-Every entry must match at least once, every replacement must be new to the corpus
-(so values that were distinct stay distinct), and no two entries may share a
-replacement.
+Every entry must match at least once in one set or the other, every replacement
+must be new to the corpus of both sets (so values that were distinct stay
+distinct), and no two entries may share a replacement.
 """
 
 from __future__ import annotations
@@ -58,13 +68,39 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / "contracts"
-FIXTURES = DEST / "fixtures"
 SUMS = DEST / "SHA256SUMS"
 SOURCE = DEST / "SOURCE.toml"
 
-# Paths inside the server repository.
-FIXTURES_DIR = "district-android/contracts"
-GENERATOR = "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts"
+
+@dataclass(frozen=True)
+class FixtureSet:
+    """One directory of fixtures in the server repository, and where it goes here.
+
+    name       the directory under contracts/ it is vendored into, and its
+               `[sets.<name>]` table in SOURCE.toml
+    source     the directory inside the server repository
+    generator  the server test that records it, checked to exist so a moved
+               generator makes the recorded path fail loudly rather than go stale
+    """
+
+    name: str
+    source: str
+    generator: str
+
+
+# In the order SOURCE.toml lists them.
+SETS: tuple[FixtureSet, ...] = (
+    FixtureSet(
+        "fixtures",
+        "district-android/contracts",
+        "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts",
+    ),
+    FixtureSet(
+        "desktop",
+        "distronode-website/contracts/desktop",
+        "distronode-website/src/lib/contracts/__tests__/desktop-contracts.test.ts",
+    ),
+)
 
 EM_DASH = chr(0x2014)
 EN_DASH = chr(0x2013)
@@ -380,32 +416,46 @@ def check_output(name: str, source: str, output: str) -> list[str]:
     return problems
 
 
-def check_replacements_are_new(sources: dict[str, str], table: tuple[Substitution, ...]) -> None:
-    """A replacement already present in the corpus would merge two distinct values.
-    (A text substitution is exempt: it replaces punctuation, not a value.)"""
-    phones: set[str] = set()
-    emails: set[str] = set()
-    corpus = "\n".join(sources.values())
-    for m in NANP.finditer(corpus):
-        _, area, exchange, line = nanp_parts(m)
-        phones.add(f"+1{area}{exchange}{line}")
-    for m in HYGIENE.EMAIL.finditer(corpus):
-        emails.add(m.group(0).lower())
-    lowered = corpus.lower()
+def check_replacements_are_new(
+    sources: dict[str, str], table: tuple[Substitution, ...], per_file: dict[int, Counter],
+) -> None:
+    """A replacement already present in the fixtures it is written into would merge
+    two distinct values. (A text substitution is exempt: it replaces punctuation,
+    not a value.)
+
+    Held per set, and to the entries that substitute something in that set. Each
+    set is its own corpus: no test reads a value in one and looks for it in the
+    other. The desktop set is recorded with fictional data already, and reuses
+    stand-ins this table writes into the Android set (the same fictional caller in
+    both), which is a coincidence across sets, not a merge within one. For the
+    Android set every entry substitutes something, so there the rule is what it
+    has always been: every replacement is new to the whole set."""
     clashes = []
-    for sub in table:
-        if sub.kind == "phone" and sub.replacement in phones:
-            clashes.append(sub.replacement)
-        elif sub.kind == "email" and sub.replacement in emails:
-            clashes.append(sub.replacement)
-        elif sub.kind == "host" and re.search(
-            r"(?<![\w.\-])" + re.escape(sub.replacement) + r"(?![\w\-])", lowered
-        ):
-            clashes.append(sub.replacement)
+    for fixture_set in SETS:
+        names = [name for name in sources if name.startswith(f"{fixture_set.name}/")]
+        applied = [sub for index, sub in enumerate(table) if any(per_file[index][name] for name in names)]
+        phones: set[str] = set()
+        emails: set[str] = set()
+        corpus = "\n".join(sources[name] for name in names)
+        for m in NANP.finditer(corpus):
+            _, area, exchange, line = nanp_parts(m)
+            phones.add(f"+1{area}{exchange}{line}")
+        for m in HYGIENE.EMAIL.finditer(corpus):
+            emails.add(m.group(0).lower())
+        lowered = corpus.lower()
+        for sub in applied:
+            if sub.kind == "phone" and sub.replacement in phones:
+                clashes.append(f"{fixture_set.name}: {sub.replacement}")
+            elif sub.kind == "email" and sub.replacement in emails:
+                clashes.append(f"{fixture_set.name}: {sub.replacement}")
+            elif sub.kind == "host" and re.search(
+                r"(?<![\w.\-])" + re.escape(sub.replacement) + r"(?![\w\-])", lowered
+            ):
+                clashes.append(f"{fixture_set.name}: {sub.replacement}")
     if clashes:
         raise SyncError(
-            "these replacements already occur in the fixtures, so substituting them would merge "
-            "distinct values; choose others:\n  " + "\n  ".join(clashes)
+            "these replacements already occur in the set they are written into, so substituting "
+            "them would merge distinct values; choose others:\n  " + "\n  ".join(clashes)
         )
 
 
@@ -418,34 +468,43 @@ def git(repo: Path, *args: str) -> str:
     ).stdout
 
 
-def read_monorepo(path: Path, allow_dirty: bool) -> tuple[str, bool, dict[str, str]]:
+def read_monorepo(path: Path, allow_dirty: bool) -> tuple[str, dict[str, bool], dict[str, str]]:
+    """The commit, whether each set's source directory is clean (by set name), and
+    every fixture's text keyed by its path under contracts/ (`<set>/<file>`)."""
     try:
         top = Path(git(path, "rev-parse", "--show-toplevel").strip())
     except subprocess.CalledProcessError as exc:
         raise SyncError(f"{path} is not a git checkout: {exc.stderr.strip()}") from exc
-    fixtures = top / FIXTURES_DIR
-    if not fixtures.is_dir():
-        raise SyncError(f"{fixtures} does not exist; is {top} the server repository?")
-    if not (top / GENERATOR).is_file():
-        raise SyncError(f"{top / GENERATOR} does not exist; the recorded generator path is stale")
     commit = git(top, "rev-parse", "HEAD").strip()
-    # Ignored files count too: a fixture on disk that git does not track is not
-    # part of the commit being recorded.
-    dirty = git(top, "status", "--porcelain", "--ignored", "--untracked-files=all", "--", FIXTURES_DIR)
-    clean = not dirty.strip()
-    if not clean and not allow_dirty:
-        raise SyncError(
-            f"{FIXTURES_DIR} has changes that are not committed at {commit[:12]}, so that commit "
-            f"would not describe what is copied. Commit them, or pass --allow-dirty (recorded "
-            f"as fixtures_dir_clean = false):\n{dirty.rstrip()}"
-        )
+    clean: dict[str, bool] = {}
     sources: dict[str, str] = {}
-    for file in sorted(fixtures.glob("*.json")):
-        if file.is_symlink() or not file.is_file():
-            raise SyncError(f"{file} is not a regular file")
-        sources[file.name] = file.read_bytes().decode("utf-8")
-    if not sources:
-        raise SyncError(f"{fixtures} holds no .json files")
+    for fixture_set in SETS:
+        directory = top / fixture_set.source
+        if not directory.is_dir():
+            raise SyncError(f"{directory} does not exist; is {top} the server repository?")
+        if not (top / fixture_set.generator).is_file():
+            raise SyncError(
+                f"{top / fixture_set.generator} does not exist; the recorded generator path is stale"
+            )
+        # Ignored files count too: a fixture on disk that git does not track is not
+        # part of the commit being recorded.
+        dirty = git(
+            top, "status", "--porcelain", "--ignored", "--untracked-files=all", "--", fixture_set.source
+        )
+        clean[fixture_set.name] = not dirty.strip()
+        if not clean[fixture_set.name] and not allow_dirty:
+            raise SyncError(
+                f"{fixture_set.source} has changes that are not committed at {commit[:12]}, so that "
+                f"commit would not describe what is copied. Commit them, or pass --allow-dirty "
+                f"(recorded as source_clean = false for the {fixture_set.name} set):\n{dirty.rstrip()}"
+            )
+        files = sorted(directory.glob("*.json"))
+        for file in files:
+            if file.is_symlink() or not file.is_file():
+                raise SyncError(f"{file} is not a regular file")
+            sources[f"{fixture_set.name}/{file.name}"] = file.read_bytes().decode("utf-8")
+        if not files:
+            raise SyncError(f"{directory} holds no .json files")
     return commit, clean, sources
 
 
@@ -469,38 +528,48 @@ def toml_string(value: str) -> str:
 
 
 SOURCE_HEADER = """\
-# Where contracts/fixtures/ came from. Written by scripts/sync-contracts.py; change
-# the script and re-run it rather than editing this file.
+# Where contracts/fixtures/ and contracts/desktop/ came from. Written by
+# scripts/sync-contracts.py; change the script and re-run it rather than editing
+# this file.
 #
-# Each fixture is a JSON body recorded from the District AI server's own route
-# handlers by a test in the server repository, laid out as that test writes it
-# (JSON.stringify(body, null, 2) plus a newline). The files here are those bytes
-# except for the substitutions below, which replace data that must not appear in a
-# public repository. A phone, email or host substitution names its original by
-# `original_sha256`, the SHA-256 of "<kind>:<original>" (the lowercase address or
-# host name, or the eleven digits of a North American number), so the original
-# never appears here. A phone substitution keeps the format it found: E.164, the
-# spaced international form, the (NPA) NXX-XXXX national form, or bare digits.
+# Each fixture is a JSON body recorded from the District AI server by a test in the
+# server repository, laid out as that test writes it (JSON.stringify(body, null, 2)
+# plus a newline). There are two sets, each with its own [sets.<name>] table below:
+# `fixtures`, the Android app's set, which this client reads too, and `desktop`,
+# the shapes only this client reads. Both come from the one commit in [source].
 #
-# contracts/SHA256SUMS holds a digest of every file under fixtures/; from
-# contracts/, `sha256sum -c SHA256SUMS` checks them.
+# The files here are those bytes except for the substitutions below, which replace
+# data that must not appear in a public repository. A phone, email or host
+# substitution names its original by `original_sha256`, the SHA-256 of
+# "<kind>:<original>" (the lowercase address or host name, or the eleven digits of
+# a North American number), so the original never appears here. A phone
+# substitution keeps the format it found: E.164, the spaced international form, the
+# (NPA) NXX-XXXX national form, or bare digits. Per-file counts name each file by
+# its path under contracts/.
+#
+# contracts/SHA256SUMS holds a digest of every file of both sets; from contracts/,
+# `sha256sum -c SHA256SUMS` checks them.
 """
 
 
 def render_source(
-    commit: str, clean: bool, date: str, file_count: int,
+    commit: str, clean: dict[str, bool], date: str, outputs: dict[str, str],
     table: tuple[Substitution, ...], per_file: dict[int, Counter],
 ) -> str:
     lines = [SOURCE_HEADER]
     lines.append("[source]")
     lines.append(f"commit = {toml_string(commit)}")
-    lines.append(f"fixtures_dir = {toml_string(FIXTURES_DIR)}")
-    lines.append(f"fixtures_dir_clean = {'true' if clean else 'false'}")
-    lines.append(f"generator = {toml_string(GENERATOR)}")
+    for fixture_set in SETS:
+        count = sum(1 for path in outputs if path.startswith(f"{fixture_set.name}/"))
+        lines.append("")
+        lines.append(f"[sets.{fixture_set.name}]")
+        lines.append(f"source_dir = {toml_string(fixture_set.source)}")
+        lines.append(f"source_clean = {'true' if clean[fixture_set.name] else 'false'}")
+        lines.append(f"generator = {toml_string(fixture_set.generator)}")
+        lines.append(f"file_count = {count}")
     lines.append("")
     lines.append("[sync]")
     lines.append(f"date = {toml_string(date)}")
-    lines.append(f"file_count = {file_count}")
     lines.append(f"checksums = {toml_string('SHA256SUMS')}")
     for index, sub in enumerate(table):
         files = per_file[index]
@@ -546,8 +615,6 @@ def sync(monorepo: Path, allow_dirty: bool, today: str) -> int:
     if problems:
         raise SyncError("the source fixtures are not what this script expects:\n  " + "\n  ".join(problems))
 
-    check_replacements_are_new(sources, SUBSTITUTIONS)
-
     outputs: dict[str, str] = {}
     per_file: dict[int, Counter] = {index: Counter() for index in range(len(SUBSTITUTIONS))}
     for name, text in sources.items():
@@ -556,6 +623,9 @@ def sync(monorepo: Path, allow_dirty: bool, today: str) -> int:
             per_file[index][name] += count
         problems += check_output(name, text, output)
         outputs[name] = output
+    # Before anything is written: which entries apply to which set is known only
+    # once the table has been run over it.
+    check_replacements_are_new(sources, SUBSTITUTIONS, per_file)
     stale = [f"{sub.kind} -> {sub.replacement!r}" for i, sub in enumerate(SUBSTITUTIONS) if not per_file[i]]
     if stale:
         problems.append(
@@ -565,7 +635,7 @@ def sync(monorepo: Path, allow_dirty: bool, today: str) -> int:
         raise SyncError("the substituted fixtures fail their checks:\n  " + "\n  ".join(problems))
 
     sums = "".join(
-        f"{hashlib.sha256(outputs[name].encode('utf-8')).hexdigest()}  fixtures/{name}\n"
+        f"{hashlib.sha256(outputs[name].encode('utf-8')).hexdigest()}  {name}\n"
         for name in sorted(outputs)
     )
 
@@ -574,27 +644,35 @@ def sync(monorepo: Path, allow_dirty: bool, today: str) -> int:
     if SOURCE.is_file():
         previous = SOURCE.read_text(encoding="utf-8")
         m = re.search(r'^date = "(\d{4}-\d{2}-\d{2})"$', previous, re.MULTILINE)
-        if m and render_source(commit, clean, m.group(1), len(outputs), SUBSTITUTIONS, per_file) == previous:
+        if m and render_source(commit, clean, m.group(1), outputs, SUBSTITUTIONS, per_file) == previous:
             date = m.group(1)
 
     changed: list[str] = []
     for name in sorted(outputs):
-        if write_if_changed(FIXTURES / name, outputs[name]):
-            changed.append(f"fixtures/{name}")
-    if FIXTURES.is_dir():
-        for path in sorted(FIXTURES.iterdir()):
-            if path.name not in outputs:
+        if write_if_changed(DEST / name, outputs[name]):
+            changed.append(name)
+    for fixture_set in SETS:
+        directory = DEST / fixture_set.name
+        for path in sorted(directory.iterdir()):
+            relative = f"{fixture_set.name}/{path.name}"
+            if relative not in outputs:
                 if path.is_dir() and not path.is_symlink():
-                    raise SyncError(f"{path} is a directory; contracts/fixtures/ holds only fixture files")
+                    raise SyncError(
+                        f"{path} is a directory; contracts/{fixture_set.name}/ holds only fixture files"
+                    )
                 path.unlink()
-                changed.append(f"fixtures/{path.name} (removed)")
+                changed.append(f"{relative} (removed)")
     if write_if_changed(SUMS, sums):
         changed.append("SHA256SUMS")
-    source = render_source(commit, clean, date, len(outputs), SUBSTITUTIONS, per_file)
+    source = render_source(commit, clean, date, outputs, SUBSTITUTIONS, per_file)
     if write_if_changed(SOURCE, source):
         changed.append("SOURCE.toml")
 
-    print(f"server repository at {commit[:12]}, {FIXTURES_DIR} {'clean' if clean else 'DIRTY'}")
+    print(f"server repository at {commit[:12]}")
+    for fixture_set in SETS:
+        count = sum(1 for name in outputs if name.startswith(f"{fixture_set.name}/"))
+        state = "clean" if clean[fixture_set.name] else "DIRTY"
+        print(f"  {fixture_set.name:8} {count:3} fixtures from {fixture_set.source} ({state})")
     print(f"{len(outputs)} fixtures, {len(SUBSTITUTIONS)} substitutions:")
     for index, sub in enumerate(SUBSTITUTIONS):
         files = per_file[index]
@@ -617,7 +695,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--monorepo", required=True, type=Path,
                         help="a checkout of the server repository")
     parser.add_argument("--allow-dirty", action="store_true",
-                        help="copy uncommitted fixture changes, recording fixtures_dir_clean = false")
+                        help="copy uncommitted fixture changes, recording source_clean = false for that set")
     args = parser.parse_args(argv[1:])
     today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     try:

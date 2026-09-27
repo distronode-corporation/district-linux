@@ -22,12 +22,13 @@ use std::fmt;
 
 use serde_json::{Map, Value};
 
-use crate::manifest::IMPLEMENTED;
-use crate::support::read_fixture;
+use crate::manifest::SETS;
+use crate::support::read_in;
 
 /// A difference between a fixture and its re-encoding that is allowed on purpose.
 pub struct RoundTripException {
-    /// The fixture it applies to.
+    /// The fixture it applies to, by its path under `contracts/`, for example
+    /// `fixtures/district-devices.json`.
     pub fixture: &'static str,
     /// The exact JSON path, for example `$.devices[1].deviceName`.
     pub path: &'static str,
@@ -152,25 +153,30 @@ fn walk_objects(
 fn every_implemented_fixture_decodes_strictly_and_round_trips() {
     let mut failures = Vec::new();
     let mut used = BTreeSet::new();
-    for (name, codec) in IMPLEMENTED {
-        let raw = read_fixture(name);
-        let original: Value = serde_json::from_str(&raw).expect("fixtures are JSON");
-        let encoded = match codec(&raw) {
-            Ok(encoded) => encoded,
-            Err(error) => {
-                failures.push(format!("{name}: {error}"));
-                continue;
-            }
-        };
-        for difference in differences(&original, &encoded) {
-            let allowed = ROUND_TRIP_EXCEPTIONS
-                .iter()
-                .position(|e| e.fixture == *name && e.path == difference.path);
-            match allowed {
-                Some(index) => {
-                    used.insert(index);
+    let mut checked = 0;
+    for manifest in SETS {
+        for (name, codec) in manifest.implemented {
+            checked += 1;
+            let path = manifest.set.path_of(name);
+            let raw = read_in(manifest.set, name);
+            let original: Value = serde_json::from_str(&raw).expect("fixtures are JSON");
+            let encoded = match codec(&raw) {
+                Ok(encoded) => encoded,
+                Err(error) => {
+                    failures.push(format!("{path}: {error}"));
+                    continue;
                 }
-                None => failures.push(format!("{name}: {difference}")),
+            };
+            for difference in differences(&original, &encoded) {
+                let allowed = ROUND_TRIP_EXCEPTIONS
+                    .iter()
+                    .position(|e| e.fixture == path && e.path == difference.path);
+                match allowed {
+                    Some(index) => {
+                        used.insert(index);
+                    }
+                    None => failures.push(format!("{path}: {difference}")),
+                }
             }
         }
     }
@@ -182,6 +188,10 @@ fn every_implemented_fixture_decodes_strictly_and_round_trips() {
             ));
         }
     }
+    assert!(
+        checked > SETS[0].implemented.len(),
+        "the desktop set was not checked"
+    );
     assert!(
         failures.is_empty(),
         "{} problem(s). A dropped key is a field the type does not model or does not write \
@@ -231,40 +241,137 @@ fn object_at<'a>(value: &'a mut Value, path: &str) -> &'a mut Map<String, Value>
     current.as_object_mut().expect("the path names an object")
 }
 
+/// An object a type carries as plain JSON, which therefore accepts any key.
+pub struct OpaqueObject {
+    /// The fixture, by its path under `contracts/`.
+    pub fixture: &'static str,
+    /// The object's JSON path. Every object inside it is opaque too.
+    pub path: &'static str,
+    /// Why the type does not model it.
+    pub reason: &'static str,
+}
+
+const TELEMETRY_DATA: &str = "TelemetryEnvelope::data: the event's content differs by event \
+                              type and by which part of the service published it, so a \
+                              reshaped call row must not make the envelope unreadable";
+
+/// The objects the unknown-field probe leaves alone, because the type carries them
+/// as plain JSON on purpose. An entry must still be opaque, or the probe fails it
+/// as stale: a type that starts modelling one of these gets the probe back.
+pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-call-ended-row.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-call-ended.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-call-started-sinch.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-call-started.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-call-updated.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-message-received.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-message-sent.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
+        fixture: "desktop/telemetry-event-tool-outcome.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+];
+
+/// Whether `path` is at or inside `root`.
+fn within(path: &str, root: &str) -> bool {
+    path.strip_prefix(root)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with(['.', '[']))
+}
+
 /// Proves the gate can fail, everywhere it matters: an unknown key planted in any
 /// object of any implemented fixture, at any depth, must fail its decode.
 ///
 /// If this passes while `strict-contracts` is off, or while a nested type lacks the
-/// attribute, it does not pass. An object the fixture carries as opaque JSON (a
-/// `serde_json::Map` field) would accept the key; none of the implemented
-/// fixtures holds one today, and one that does needs a stated exemption here.
+/// attribute, it does not pass. An object a type carries as opaque JSON (a
+/// `serde_json::Map` or `Value` field) accepts the key; each one is named in
+/// [`OPAQUE_OBJECTS`], where it must go on accepting it.
 #[test]
 fn an_unknown_field_is_rejected_in_every_object_of_every_implemented_fixture() {
     const PROBE: &str = "contractProbeUnknownField";
     let mut probes = 0;
+    let mut used = BTreeSet::new();
     let mut accepted = Vec::new();
-    for (name, codec) in IMPLEMENTED {
-        let original: Value = serde_json::from_str(&read_fixture(name)).expect("JSON");
-        let mut paths = Vec::new();
-        object_paths(&original, "$", &mut paths);
-        for path in paths {
-            let mut planted = original.clone();
-            object_at(&mut planted, &path).insert(PROBE.to_owned(), Value::Bool(true));
-            probes += 1;
-            match codec(&planted.to_string()) {
-                Err(error) if error.contains(&format!("unknown field `{PROBE}`")) => {}
-                Err(error) => {
-                    accepted.push(format!("{name} {path}: failed for another reason: {error}"))
+    for manifest in SETS {
+        for (name, codec) in manifest.implemented {
+            let fixture = manifest.set.path_of(name);
+            let original: Value = serde_json::from_str(&read_in(manifest.set, name)).expect("JSON");
+            let mut paths = Vec::new();
+            object_paths(&original, "$", &mut paths);
+            for path in paths {
+                let mut planted = original.clone();
+                object_at(&mut planted, &path).insert(PROBE.to_owned(), Value::Bool(true));
+                probes += 1;
+                let opaque = OPAQUE_OBJECTS
+                    .iter()
+                    .position(|o| o.fixture == fixture && within(&path, o.path));
+                match (codec(&planted.to_string()), opaque) {
+                    (Err(error), None) if error.contains(&format!("unknown field `{PROBE}`")) => {}
+                    (Ok(_), Some(index)) => {
+                        used.insert(index);
+                    }
+                    (Err(error), _) => accepted.push(format!(
+                        "{fixture} {path}: failed for another reason, or is listed as opaque \
+                         and is not: {error}"
+                    )),
+                    (Ok(_), None) => {
+                        accepted.push(format!("{fixture} {path}: the unknown field was accepted"))
+                    }
                 }
-                Ok(_) => accepted.push(format!("{name} {path}: the unknown field was accepted")),
             }
         }
     }
+    for (index, opaque) in OPAQUE_OBJECTS.iter().enumerate() {
+        if !used.contains(&index) {
+            accepted.push(format!(
+                "OPAQUE_OBJECTS names {} in {}, which the probe never reached as opaque; \
+                 remove it ({})",
+                opaque.path, opaque.fixture, opaque.reason
+            ));
+        }
+    }
     assert!(
-        probes > IMPLEMENTED.len(),
+        probes > SETS.iter().map(|m| m.implemented.len()).sum::<usize>(),
         "the probe visited only {probes} objects"
     );
     assert!(accepted.is_empty(), "{}", accepted.join("\n"));
+}
+
+#[test]
+fn within_matches_a_path_and_what_is_inside_it_only() {
+    assert!(within("$.data", "$.data"));
+    assert!(within("$.data.analysis", "$.data"));
+    assert!(within("$.data[0]", "$.data"));
+    assert!(!within("$.dataset", "$.data"));
+    assert!(!within("$.meta", "$.data"));
 }
 
 // The comparison proven able to fail, on inputs small enough to read.

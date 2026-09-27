@@ -1,28 +1,42 @@
-# Where contracts/fixtures/ came from. Written by scripts/sync-contracts.py; change
-# the script and re-run it rather than editing this file.
+# Where contracts/fixtures/ and contracts/desktop/ came from. Written by
+# scripts/sync-contracts.py; change the script and re-run it rather than editing
+# this file.
 #
-# Each fixture is a JSON body recorded from the District AI server's own route
-# handlers by a test in the server repository, laid out as that test writes it
-# (JSON.stringify(body, null, 2) plus a newline). The files here are those bytes
-# except for the substitutions below, which replace data that must not appear in a
-# public repository. A phone, email or host substitution names its original by
-# `original_sha256`, the SHA-256 of "<kind>:<original>" (the lowercase address or
-# host name, or the eleven digits of a North American number), so the original
-# never appears here. A phone substitution keeps the format it found: E.164, the
-# spaced international form, the (NPA) NXX-XXXX national form, or bare digits.
+# Each fixture is a JSON body recorded from the District AI server by a test in the
+# server repository, laid out as that test writes it (JSON.stringify(body, null, 2)
+# plus a newline). There are two sets, each with its own [sets.<name>] table below:
+# `fixtures`, the Android app's set, which this client reads too, and `desktop`,
+# the shapes only this client reads. Both come from the one commit in [source].
 #
-# contracts/SHA256SUMS holds a digest of every file under fixtures/; from
-# contracts/, `sha256sum -c SHA256SUMS` checks them.
+# The files here are those bytes except for the substitutions below, which replace
+# data that must not appear in a public repository. A phone, email or host
+# substitution names its original by `original_sha256`, the SHA-256 of
+# "<kind>:<original>" (the lowercase address or host name, or the eleven digits of
+# a North American number), so the original never appears here. A phone
+# substitution keeps the format it found: E.164, the spaced international form, the
+# (NPA) NXX-XXXX national form, or bare digits. Per-file counts name each file by
+# its path under contracts/.
+#
+# contracts/SHA256SUMS holds a digest of every file of both sets; from contracts/,
+# `sha256sum -c SHA256SUMS` checks them.
 
 [source]
-commit = "9a02975e2e4f6844c2adb686e383ce97320c2498"
-fixtures_dir = "district-android/contracts"
-fixtures_dir_clean = true
+commit = "03b7a15325600efa7499ef3614232978842429a5"
+
+[sets.fixtures]
+source_dir = "district-android/contracts"
+source_clean = true
 generator = "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts"
+file_count = 177
+
+[sets.desktop]
+source_dir = "distronode-website/contracts/desktop"
+source_clean = true
+generator = "distronode-website/src/lib/contracts/__tests__/desktop-contracts.test.ts"
+file_count = 11
 
 [sync]
-date = "2026-09-26"
-file_count = 177
+date = "2026-09-27"
 checksums = "SHA256SUMS"
 
 [[substitution]]
@@ -33,24 +47,24 @@ reason = "the recurring caller across the call, contact, message, desk and booki
 count = 27
 
 [substitution.files]
-"district-admin-messages.json" = 1
-"district-call-detail.json" = 3
-"district-calls.json" = 3
-"district-contact-detail.json" = 3
-"district-contacts.json" = 1
-"district-conversations.json" = 2
-"district-desk-ticket-create.json" = 1
-"district-desk-ticket-reply.json" = 1
-"district-desk-ticket-status.json" = 1
-"district-desk-ticket.json" = 1
-"district-desk-tickets.json" = 1
-"district-message-send-media.json" = 1
-"district-message-send.json" = 1
-"district-message-thread.json" = 1
-"district-overview.json" = 3
-"district-scheduling-booking.json" = 1
-"district-scheduling-bookings.json" = 1
-"district-scheduling-event-types.json" = 1
+"fixtures/district-admin-messages.json" = 1
+"fixtures/district-call-detail.json" = 3
+"fixtures/district-calls.json" = 3
+"fixtures/district-contact-detail.json" = 3
+"fixtures/district-contacts.json" = 1
+"fixtures/district-conversations.json" = 2
+"fixtures/district-desk-ticket-create.json" = 1
+"fixtures/district-desk-ticket-reply.json" = 1
+"fixtures/district-desk-ticket-status.json" = 1
+"fixtures/district-desk-ticket.json" = 1
+"fixtures/district-desk-tickets.json" = 1
+"fixtures/district-message-send-media.json" = 1
+"fixtures/district-message-send.json" = 1
+"fixtures/district-message-thread.json" = 1
+"fixtures/district-overview.json" = 3
+"fixtures/district-scheduling-booking.json" = 1
+"fixtures/district-scheduling-bookings.json" = 1
+"fixtures/district-scheduling-event-types.json" = 1
 
 [[substitution]]
 kind = "phone"
@@ -60,8 +74,8 @@ reason = "a busy caller in the call feed; outside the fictional range"
 count = 8
 
 [substitution.files]
-"district-calls.json" = 4
-"district-overview.json" = 4
+"fixtures/district-calls.json" = 4
+"fixtures/district-overview.json" = 4
 
 [[substitution]]
 kind = "phone"
@@ -71,8 +85,8 @@ reason = "an outbound call's dialled number in the call feed; outside the fictio
 count = 2
 
 [substitution.files]
-"district-calls.json" = 1
-"district-overview.json" = 1
+"fixtures/district-calls.json" = 1
+"fixtures/district-overview.json" = 1
 
 [[substitution]]
 kind = "phone"
@@ -82,10 +96,10 @@ reason = "an unanswered outbound call and an unknown texter; outside the fiction
 count = 7
 
 [substitution.files]
-"district-calls.json" = 1
-"district-conversations.json" = 4
-"district-drafts-list.json" = 1
-"district-overview.json" = 1
+"fixtures/district-calls.json" = 1
+"fixtures/district-conversations.json" = 4
+"fixtures/district-drafts-list.json" = 1
+"fixtures/district-overview.json" = 1
 
 [[substitution]]
 kind = "phone"
@@ -95,8 +109,8 @@ reason = "a missed caller in the call feed; outside the fictional range"
 count = 8
 
 [substitution.files]
-"district-calls.json" = 4
-"district-overview.json" = 4
+"fixtures/district-calls.json" = 4
+"fixtures/district-overview.json" = 4
 
 [[substitution]]
 kind = "email"
@@ -106,12 +120,12 @@ reason = "a contact's address in the contact, conversation and message fixtures"
 count = 10
 
 [substitution.files]
-"district-admin-overview.json" = 2
-"district-admin-user-patch.json" = 1
-"district-contact-detail.json" = 1
-"district-contacts.json" = 1
-"district-conversations.json" = 4
-"district-message-send-email.json" = 1
+"fixtures/district-admin-overview.json" = 2
+"fixtures/district-admin-user-patch.json" = 1
+"fixtures/district-contact-detail.json" = 1
+"fixtures/district-contacts.json" = 1
+"fixtures/district-conversations.json" = 4
+"fixtures/district-message-send-email.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -121,7 +135,7 @@ reason = "the sender of outbound email, at a host under the service's domain"
 count = 1
 
 [substitution.files]
-"district-message-send-email.json" = 1
+"fixtures/district-message-send-email.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -131,7 +145,7 @@ reason = "a workspace member's address in the members list"
 count = 1
 
 [substitution.files]
-"district-members.json" = 1
+"fixtures/district-members.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -141,8 +155,8 @@ reason = "the billing contact in the billing and desk fixtures"
 count = 2
 
 [substitution.files]
-"district-billing.json" = 1
-"district-desk-tickets.json" = 1
+"fixtures/district-billing.json" = 1
+"fixtures/district-desk-tickets.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -152,8 +166,8 @@ reason = "a CalDAV account's user name in the scheduling calendar fixtures"
 count = 2
 
 [substitution.files]
-"district-scheduling-caldav-connect.json" = 1
-"district-scheduling-calendar-status.json" = 1
+"fixtures/district-scheduling-caldav-connect.json" = 1
+"fixtures/district-scheduling-calendar-status.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -163,11 +177,11 @@ reason = "the requester of the help desk ticket fixtures"
 count = 5
 
 [substitution.files]
-"district-desk-ticket-create.json" = 1
-"district-desk-ticket-reply.json" = 1
-"district-desk-ticket-status.json" = 1
-"district-desk-ticket.json" = 1
-"district-desk-tickets.json" = 1
+"fixtures/district-desk-ticket-create.json" = 1
+"fixtures/district-desk-ticket-reply.json" = 1
+"fixtures/district-desk-ticket-status.json" = 1
+"fixtures/district-desk-ticket.json" = 1
+"fixtures/district-desk-tickets.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -177,14 +191,14 @@ reason = "the scheduling account's own user in the scheduling fixtures"
 count = 8
 
 [substitution.files]
-"district-scheduling-calendar-status.json" = 1
-"district-scheduling-calendars.json" = 1
-"district-scheduling-event-types.json" = 1
-"district-scheduling-hosts.json" = 1
-"district-scheduling-me.json" = 1
-"district-scheduling-teams.json" = 1
-"district-scheduling-test-email.json" = 1
-"district-scheduling-users.json" = 1
+"fixtures/district-scheduling-calendar-status.json" = 1
+"fixtures/district-scheduling-calendars.json" = 1
+"fixtures/district-scheduling-event-types.json" = 1
+"fixtures/district-scheduling-hosts.json" = 1
+"fixtures/district-scheduling-me.json" = 1
+"fixtures/district-scheduling-teams.json" = 1
+"fixtures/district-scheduling-test-email.json" = 1
+"fixtures/district-scheduling-users.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -194,9 +208,9 @@ reason = "a booking attendee in the scheduling booking fixtures"
 count = 3
 
 [substitution.files]
-"district-scheduling-booking.json" = 1
-"district-scheduling-bookings.json" = 1
-"district-scheduling-user-upcoming.json" = 1
+"fixtures/district-scheduling-booking.json" = 1
+"fixtures/district-scheduling-bookings.json" = 1
+"fixtures/district-scheduling-user-upcoming.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -206,9 +220,9 @@ reason = "a call's follow-up email in the call and overview fixtures"
 count = 3
 
 [substitution.files]
-"district-call-detail.json" = 1
-"district-calls.json" = 1
-"district-overview.json" = 1
+"fixtures/district-call-detail.json" = 1
+"fixtures/district-calls.json" = 1
+"fixtures/district-overview.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -218,7 +232,7 @@ reason = "a workspace member's address in the members list"
 count = 1
 
 [substitution.files]
-"district-members.json" = 1
+"fixtures/district-members.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -228,7 +242,7 @@ reason = "a removed user in the scheduling user list"
 count = 1
 
 [substitution.files]
-"district-scheduling-users.json" = 1
+"fixtures/district-scheduling-users.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -238,8 +252,8 @@ reason = "a user and message recipient in the admin fixtures"
 count = 3
 
 [substitution.files]
-"district-admin-messages.json" = 1
-"district-admin-overview.json" = 2
+"fixtures/district-admin-messages.json" = 1
+"fixtures/district-admin-overview.json" = 2
 
 [[substitution]]
 kind = "email"
@@ -249,7 +263,7 @@ reason = "a message sender in the admin message feed"
 count = 1
 
 [substitution.files]
-"district-admin-messages.json" = 1
+"fixtures/district-admin-messages.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -259,7 +273,7 @@ reason = "a shared holiday calendar's address-shaped id in the scheduling calend
 count = 1
 
 [substitution.files]
-"district-scheduling-calendars.json" = 1
+"fixtures/district-scheduling-calendars.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -269,9 +283,9 @@ reason = "a workspace member's address in the admin fixtures"
 count = 3
 
 [substitution.files]
-"district-admin-overview.json" = 1
-"district-admin-workspace-patch.json" = 1
-"district-admin-workspace-sync.json" = 1
+"fixtures/district-admin-overview.json" = 1
+"fixtures/district-admin-workspace-patch.json" = 1
+"fixtures/district-admin-workspace-sync.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -281,7 +295,7 @@ reason = "the member added by the member-add fixture"
 count = 1
 
 [substitution.files]
-"district-member-add.json" = 1
+"fixtures/district-member-add.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -291,8 +305,8 @@ reason = "a workspace member's address in the member fixtures"
 count = 2
 
 [substitution.files]
-"district-member-role-patch.json" = 1
-"district-members.json" = 1
+"fixtures/district-member-role-patch.json" = 1
+"fixtures/district-members.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -302,7 +316,7 @@ reason = "an event type owner in the scheduling event type fixture"
 count = 1
 
 [substitution.files]
-"district-scheduling-event-type.json" = 1
+"fixtures/district-scheduling-event-type.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -312,8 +326,8 @@ reason = "a round-robin host in the scheduling host and team fixtures"
 count = 2
 
 [substitution.files]
-"district-scheduling-hosts.json" = 1
-"district-scheduling-teams.json" = 1
+"fixtures/district-scheduling-hosts.json" = 1
+"fixtures/district-scheduling-teams.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -323,7 +337,7 @@ reason = "the sparsely filled contact in the contact list"
 count = 1
 
 [substitution.files]
-"district-contacts.json" = 1
+"fixtures/district-contacts.json" = 1
 
 [[substitution]]
 kind = "host"
@@ -333,17 +347,17 @@ reason = "an internal test host that serves booking pages and scheduling media"
 count = 13
 
 [substitution.files]
-"district-scheduling-branding.json" = 2
-"district-scheduling-enable.json" = 1
-"district-scheduling-hosts.json" = 1
-"district-scheduling-me.json" = 1
-"district-scheduling-slots.json" = 1
-"district-scheduling-status-error.json" = 1
-"district-scheduling-status-provisioning.json" = 1
-"district-scheduling-status-ready.json" = 2
-"district-scheduling-teams.json" = 1
-"district-scheduling-upload.json" = 1
-"district-scheduling-users.json" = 1
+"fixtures/district-scheduling-branding.json" = 2
+"fixtures/district-scheduling-enable.json" = 1
+"fixtures/district-scheduling-hosts.json" = 1
+"fixtures/district-scheduling-me.json" = 1
+"fixtures/district-scheduling-slots.json" = 1
+"fixtures/district-scheduling-status-error.json" = 1
+"fixtures/district-scheduling-status-provisioning.json" = 1
+"fixtures/district-scheduling-status-ready.json" = 2
+"fixtures/district-scheduling-teams.json" = 1
+"fixtures/district-scheduling-upload.json" = 1
+"fixtures/district-scheduling-users.json" = 1
 
 [[substitution]]
 kind = "host"
@@ -353,11 +367,11 @@ reason = "the real-time media server's host, in the call and room token fixtures
 count = 5
 
 [substitution.files]
-"district-call-answer.json" = 1
-"district-dial.json" = 1
-"district-persona-preview-token.json" = 1
-"district-room-token-viewer.json" = 1
-"district-room-token.json" = 1
+"fixtures/district-call-answer.json" = 1
+"fixtures/district-dial.json" = 1
+"fixtures/district-persona-preview-token.json" = 1
+"fixtures/district-room-token-viewer.json" = 1
+"fixtures/district-room-token.json" = 1
 
 [[substitution]]
 kind = "text"
@@ -367,12 +381,12 @@ reason = "the em dash is not allowed in this repository; the fixtures use it as 
 count = 15
 
 [substitution.files]
-"district-ai-draft.json" = 1
-"district-conversations.json" = 1
-"district-draft-put.json" = 1
-"district-draft.json" = 1
-"district-drafts-list.json" = 1
-"district-member-last-agency.json" = 1
-"district-message-send-email.json" = 1
-"district-persona-options.json" = 7
-"district-timeline.json" = 1
+"fixtures/district-ai-draft.json" = 1
+"fixtures/district-conversations.json" = 1
+"fixtures/district-draft-put.json" = 1
+"fixtures/district-draft.json" = 1
+"fixtures/district-drafts-list.json" = 1
+"fixtures/district-member-last-agency.json" = 1
+"fixtures/district-message-send-email.json" = 1
+"fixtures/district-persona-options.json" = 7
+"fixtures/district-timeline.json" = 1

@@ -27,8 +27,9 @@ crates/district-call/     The call engine. The LiveKit implementation is behind 
 crates/district-app/      The GTK 4 and libadwaita binary, `district-ai`. The only
                           crate that links GTK.
 contracts/                What this client is checked against: the server's recorded
-                          responses (vendored and sanitised by sync-contracts.py) and
-                          the Android app's endpoint snapshot (sync-endpoints.py).
+                          responses, the Android set and the desktop-only set
+                          (vendored and sanitised by sync-contracts.py), and the
+                          Android app's endpoint snapshot (sync-endpoints.py).
 scripts/                  check-version.py, check-public-hygiene.py and
                           check-coverage.py, run by CI; sync-contracts.py and
                           sync-endpoints.py, run by hand.
@@ -153,22 +154,33 @@ why.
 
 ## Contract fixtures
 
-`contracts/fixtures/` holds JSON bodies recorded from the District AI server's own
-route handlers. `crates/district-model` decodes them in its tests with unknown
+`contracts/` holds JSON bodies recorded from the District AI server by tests in the
+server repository, in two sets. `contracts/fixtures/` is the Android app's set,
+recorded from the server's own route handlers, which this client reads too.
+`contracts/desktop/` holds the shapes only this client reads and no Android fixture
+records: the live telemetry credential, one frame of the telemetry socket per event
+type, the call hang-up and the booking-pages hand-off.
+
+`crates/district-model` decodes every file in both sets in its tests with unknown
 fields refused (the `strict-contracts` feature, which its tests always enable), so
 a field the server renames or adds fails here rather than in the app. The files
-are a snapshot: `contracts/SOURCE.toml` says which server commit they came from
-and lists every substitution made to keep real-looking data out of this public
-repository, and `contracts/SHA256SUMS` pins their bytes. Do not edit them by hand;
-maintainers with access to the server repository re-run
+are a snapshot: `contracts/SOURCE.toml` says which server commit they came from,
+with a `[sets.<name>]` table for each set, and lists every substitution made to
+keep real-looking data out of this public repository; `contracts/SHA256SUMS` pins
+the bytes of both sets. Do not edit them by hand; maintainers with access to the
+server repository re-run
 
 ```
 python3 scripts/sync-contracts.py --monorepo <path to the server repository>
 ```
 
+which vendors both sets from the one commit, and refuses while either source
+directory there has changes that commit does not hold.
+
 The fixture manifest in `crates/district-model/tests/contracts/manifest.rs`
-accounts for every file: each is decoded by a data type, recorded as not yet
-modelled (a list that may only shrink), or excluded by a stated decision.
+accounts for every file, each set against its own pinned count: each is decoded
+by a data type, recorded as not yet modelled (a list that may only shrink), or
+excluded by a stated decision.
 
 ## The endpoint table
 

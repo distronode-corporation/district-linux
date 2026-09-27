@@ -12,8 +12,9 @@
 //! contract tests, where an unknown field is a finding: it adds
 //! `#[serde(deny_unknown_fields)]` to every type here that derives `Deserialize`.
 //! This crate's tests always build with it, and they decode the server's recorded
-//! responses in `contracts/fixtures/` with it, so a field the server adds or
-//! renames fails a test here instead of being silently dropped by the app. A test
+//! responses in `contracts/fixtures/` and `contracts/desktop/` with it, so a field
+//! the server adds or renames fails a test here instead of being silently dropped
+//! by the app. A test
 //! also fails if a `Deserialize` type in this crate lacks the attribute.
 //!
 //! # Wire conventions

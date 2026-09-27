@@ -1,27 +1,68 @@
-//! The fixture manifest: every file in `contracts/fixtures/` accounted for.
+//! The fixture manifest: every vendored file accounted for, in each of the two
+//! sets (`contracts/fixtures/`, the Android app's set, and `contracts/desktop/`,
+//! the shapes only this client reads).
 //!
-//! Each fixture is in exactly one of three sets:
+//! In each set, each fixture is in exactly one of three lists:
 //!
-//! - [`IMPLEMENTED`]: decoded by a type in this crate, and held to it by the
-//!   round trip in `round_trip.rs`.
-//! - [`NOT_YET_MODELLED`]: no type yet. The list may only shrink: when a type
-//!   lands, move its fixtures to [`IMPLEMENTED`] and lower
-//!   [`NOT_YET_MODELLED_BASELINE`] in the same change.
-//! - [`EXCLUDED_BY_DECISION`]: fixtures of endpoints this client will not use,
-//!   each group with the reason.
+//! - implemented ([`IMPLEMENTED`], [`DESKTOP_IMPLEMENTED`]): decoded by a type in
+//!   this crate, and held to it by the round trip in `round_trip.rs`.
+//! - not yet modelled ([`NOT_YET_MODELLED`], [`DESKTOP_NOT_YET_MODELLED`]): no
+//!   type yet. Each list may only shrink: when a type lands, move its fixtures to
+//!   the implemented list and lower the list's baseline in the same change.
+//! - excluded by decision ([`EXCLUDED_BY_DECISION`],
+//!   [`DESKTOP_EXCLUDED_BY_DECISION`]): fixtures of endpoints this client will
+//!   not use, each group with the reason.
 //!
 //! Every list is an explicit list of names, never a pattern, so a fixture that
 //! appears or disappears is a named failure here rather than something a rule
-//! quietly absorbed.
+//! quietly absorbed. Each set has its own pinned count, so a sync that changes
+//! one set cannot be absorbed by the other.
 
 use std::collections::BTreeMap;
 
 use district_model::{
-    DeviceListResponse, DeviceRevokeResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
-    SetupResponse, WorkspaceListResponse,
+    CallHangUpResponse, DeviceListResponse, DeviceRevokeResponse, NativeRevokeResponse,
+    OverviewResponse, PkceVector, SchedulingHandOffResponse, SetupResponse, TelemetryEnvelope,
+    TelemetryToken, WorkspaceListResponse,
 };
 
-use crate::support::{Codec, codec, fixture_names};
+use crate::support::{Codec, Set, codec, names_in};
+
+/// One set's accounting, as the tests below read it.
+pub struct Manifest {
+    /// Which directory.
+    pub set: Set,
+    /// How many files the directory holds.
+    pub expected: usize,
+    /// Fixtures decoded by a type.
+    pub implemented: &'static [(&'static str, Codec)],
+    /// Fixtures with no type yet.
+    pub not_yet_modelled: &'static [&'static str],
+    /// The length [`not_yet_modelled`](Self::not_yet_modelled) may not exceed.
+    pub not_yet_modelled_baseline: usize,
+    /// Fixtures never decoded, by decision.
+    pub excluded: &'static [Exclusion],
+}
+
+/// Both sets.
+pub const SETS: &[Manifest] = &[
+    Manifest {
+        set: Set::Android,
+        expected: EXPECTED_FIXTURE_COUNT,
+        implemented: IMPLEMENTED,
+        not_yet_modelled: NOT_YET_MODELLED,
+        not_yet_modelled_baseline: NOT_YET_MODELLED_BASELINE,
+        excluded: EXCLUDED_BY_DECISION,
+    },
+    Manifest {
+        set: Set::Desktop,
+        expected: DESKTOP_EXPECTED_FIXTURE_COUNT,
+        implemented: DESKTOP_IMPLEMENTED,
+        not_yet_modelled: DESKTOP_NOT_YET_MODELLED,
+        not_yet_modelled_baseline: DESKTOP_NOT_YET_MODELLED_BASELINE,
+        excluded: DESKTOP_EXCLUDED_BY_DECISION,
+    },
+];
 
 /// Every file in `contracts/fixtures/`.
 ///
@@ -272,83 +313,160 @@ pub const EXCLUDED_BY_DECISION: &[Exclusion] = &[
     },
 ];
 
-/// Which set each fixture name appears in, counting repeats: the name, and every
-/// set label it was found under.
-fn memberships() -> BTreeMap<&'static str, Vec<&'static str>> {
+/// Every file in `contracts/desktop/`. Asserted exactly, for the same reason as
+/// [`EXPECTED_FIXTURE_COUNT`].
+pub const DESKTOP_EXPECTED_FIXTURE_COUNT: usize = 11;
+
+/// Desktop fixtures decoded by a type in this crate. Sorted by name.
+pub const DESKTOP_IMPLEMENTED: &[(&str, Codec)] = &[
+    // POST /api/district/calls/{callId}/hangup.
+    ("district-call-hangup.json", codec::<CallHangUpResponse>),
+    // POST /api/district/scheduling/handoff.
+    (
+        "district-scheduling-handoff.json",
+        codec::<SchedulingHandOffResponse>,
+    ),
+    // POST /api/district/telemetry/token.
+    ("district-telemetry-token.json", codec::<TelemetryToken>),
+    // One /ws/telemetry frame per event type, and both shapes of the two call
+    // events that have two producers. The call data stays opaque JSON.
+    (
+        "telemetry-event-call-ended-row.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-call-ended.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-call-started-sinch.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-call-started.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-call-updated.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-message-received.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-message-sent.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-tool-outcome.json",
+        codec::<TelemetryEnvelope>,
+    ),
+];
+
+/// The length [`DESKTOP_NOT_YET_MODELLED`] may not exceed, kept equal to it.
+pub const DESKTOP_NOT_YET_MODELLED_BASELINE: usize = 0;
+
+/// Desktop fixtures with no type yet. Empty, and it may only stay empty: the
+/// desktop set exists because this client reads those shapes.
+pub const DESKTOP_NOT_YET_MODELLED: &[&str] = &[];
+
+/// Desktop fixtures this client never decodes. None.
+pub const DESKTOP_EXCLUDED_BY_DECISION: &[Exclusion] = &[];
+
+/// Which list each fixture name appears in, counting repeats: the name, and every
+/// list label it was found under.
+fn memberships(manifest: &Manifest) -> BTreeMap<&'static str, Vec<&'static str>> {
     let mut sets: BTreeMap<&'static str, Vec<&'static str>> = BTreeMap::new();
-    for (name, _) in IMPLEMENTED {
-        sets.entry(name).or_default().push("IMPLEMENTED");
+    for (name, _) in manifest.implemented {
+        sets.entry(name).or_default().push("implemented");
     }
-    for name in NOT_YET_MODELLED {
-        sets.entry(name).or_default().push("NOT_YET_MODELLED");
+    for name in manifest.not_yet_modelled {
+        sets.entry(name).or_default().push("not yet modelled");
     }
-    for group in EXCLUDED_BY_DECISION {
+    for group in manifest.excluded {
         for name in group.fixtures {
-            sets.entry(name).or_default().push("EXCLUDED_BY_DECISION");
+            sets.entry(name).or_default().push("excluded by decision");
         }
     }
     sets
 }
 
 #[test]
-fn the_corpus_is_exactly_the_size_the_manifest_records() {
-    let on_disk = fixture_names();
-    assert_eq!(
-        on_disk.len(),
-        EXPECTED_FIXTURE_COUNT,
-        "contracts/fixtures/ holds {} files, the manifest expects {EXPECTED_FIXTURE_COUNT}. A \
-         sync that adds or removes fixtures has to be acknowledged here: update the count and \
-         place each new file in a set.",
-        on_disk.len(),
-    );
+fn each_corpus_is_exactly_the_size_the_manifest_records() {
+    for manifest in SETS {
+        let on_disk = names_in(manifest.set);
+        assert_eq!(
+            on_disk.len(),
+            manifest.expected,
+            "contracts/{}/ holds {} files, the manifest expects {}. A sync that adds or removes \
+             fixtures has to be acknowledged here: update the count and place each new file in \
+             a list.",
+            manifest.set.dir_name(),
+            on_disk.len(),
+            manifest.expected,
+        );
+    }
 }
 
 #[test]
-fn every_fixture_is_in_exactly_one_set() {
-    let on_disk = fixture_names();
-    let sets = memberships();
-    let unaccounted: Vec<&String> = on_disk
-        .iter()
-        .filter(|name| !sets.contains_key(name.as_str()))
-        .collect();
-    assert!(
-        unaccounted.is_empty(),
-        "these fixtures are in no set. Write the type and add them to IMPLEMENTED, or record \
-         a decision in EXCLUDED_BY_DECISION. NOT_YET_MODELLED may not grow: {unaccounted:#?}",
-    );
-    let repeated: Vec<(&&str, &Vec<&str>)> =
-        sets.iter().filter(|(_, labels)| labels.len() > 1).collect();
-    assert!(
-        repeated.is_empty(),
-        "these fixtures are listed more than once, in one set or across two: {repeated:#?}",
-    );
+fn every_fixture_is_in_exactly_one_list() {
+    for manifest in SETS {
+        let dir = manifest.set.dir_name();
+        let on_disk = names_in(manifest.set);
+        let sets = memberships(manifest);
+        let unaccounted: Vec<&String> = on_disk
+            .iter()
+            .filter(|name| !sets.contains_key(name.as_str()))
+            .collect();
+        assert!(
+            unaccounted.is_empty(),
+            "these fixtures in contracts/{dir}/ are in no list. Write the type and add them to \
+             the implemented list, or record a decision in the excluded list. The not yet \
+             modelled list may not grow: {unaccounted:#?}",
+        );
+        let repeated: Vec<(&&str, &Vec<&str>)> =
+            sets.iter().filter(|(_, labels)| labels.len() > 1).collect();
+        assert!(
+            repeated.is_empty(),
+            "these fixtures in contracts/{dir}/ are listed more than once, in one list or \
+             across two: {repeated:#?}",
+        );
+    }
 }
 
 #[test]
-fn no_set_names_a_fixture_that_is_not_on_disk() {
-    let on_disk = fixture_names();
-    let stale: Vec<(&str, Vec<&str>)> = memberships()
-        .into_iter()
-        .filter(|(name, _)| !on_disk.iter().any(|file| file == name))
-        .collect();
-    assert!(
-        stale.is_empty(),
-        "the manifest names fixtures that are not in contracts/fixtures/. The corpus moved \
-         under it: remove them (and lower NOT_YET_MODELLED_BASELINE if they were listed \
-         there): {stale:#?}",
-    );
+fn no_list_names_a_fixture_that_is_not_on_disk() {
+    for manifest in SETS {
+        let on_disk = names_in(manifest.set);
+        let stale: Vec<(&str, Vec<&str>)> = memberships(manifest)
+            .into_iter()
+            .filter(|(name, _)| !on_disk.iter().any(|file| file == name))
+            .collect();
+        assert!(
+            stale.is_empty(),
+            "the manifest names fixtures that are not in contracts/{}/. The corpus moved under \
+             it: remove them (and lower the not yet modelled baseline if they were listed \
+             there): {stale:#?}",
+            manifest.set.dir_name(),
+        );
+    }
 }
 
 #[test]
-fn the_not_yet_modelled_list_is_shrink_only() {
-    assert_eq!(
-        NOT_YET_MODELLED.len(),
-        NOT_YET_MODELLED_BASELINE,
-        "NOT_YET_MODELLED holds {} names against a baseline of {NOT_YET_MODELLED_BASELINE}. \
-         If an entry was removed, lower the baseline to match in the same change. The list \
-         may never grow: a new fixture needs a type or a recorded decision.",
-        NOT_YET_MODELLED.len(),
-    );
+fn the_not_yet_modelled_lists_are_shrink_only() {
+    for manifest in SETS {
+        assert_eq!(
+            manifest.not_yet_modelled.len(),
+            manifest.not_yet_modelled_baseline,
+            "the not yet modelled list for contracts/{}/ holds {} names against a baseline of \
+             {}. If an entry was removed, lower the baseline to match in the same change. The \
+             list may never grow: a new fixture needs a type or a recorded decision.",
+            manifest.set.dir_name(),
+            manifest.not_yet_modelled.len(),
+            manifest.not_yet_modelled_baseline,
+        );
+    }
 }
 
 #[test]
@@ -358,41 +476,65 @@ fn every_list_is_sorted_and_every_exclusion_says_why() {
         sorted.sort_unstable();
         assert_eq!(names, sorted.as_slice(), "{label} is not sorted");
     }
-    let implemented: Vec<&str> = IMPLEMENTED.iter().map(|(name, _)| *name).collect();
-    assert_sorted("IMPLEMENTED", &implemented);
-    assert_sorted("NOT_YET_MODELLED", NOT_YET_MODELLED);
-    for group in EXCLUDED_BY_DECISION {
-        assert!(
-            !group.fixtures.is_empty(),
-            "an exclusion group is empty: {}",
-            group.reason
+    for manifest in SETS {
+        let dir = manifest.set.dir_name();
+        let implemented: Vec<&str> = manifest.implemented.iter().map(|(name, _)| *name).collect();
+        assert_sorted(&format!("{dir}: implemented"), &implemented);
+        assert_sorted(
+            &format!("{dir}: not yet modelled"),
+            manifest.not_yet_modelled,
         );
-        assert!(
-            group.reason.trim().len() > 20,
-            "an exclusion needs a real reason"
-        );
-        assert_sorted(group.reason, group.fixtures);
+        for group in manifest.excluded {
+            assert!(
+                !group.fixtures.is_empty(),
+                "an exclusion group is empty: {}",
+                group.reason
+            );
+            assert!(
+                group.reason.trim().len() > 20,
+                "an exclusion needs a real reason"
+            );
+            assert_sorted(group.reason, group.fixtures);
+        }
     }
 }
 
 #[test]
-fn the_three_sets_add_up_to_the_corpus() {
-    let excluded: usize = EXCLUDED_BY_DECISION
-        .iter()
-        .map(|group| group.fixtures.len())
-        .sum();
-    println!(
-        "{} implemented, {} not yet modelled, {excluded} excluded by decision ({})",
-        IMPLEMENTED.len(),
-        NOT_YET_MODELLED.len(),
-        EXCLUDED_BY_DECISION
+fn the_three_lists_add_up_to_each_corpus() {
+    for manifest in SETS {
+        let excluded: usize = manifest
+            .excluded
             .iter()
-            .map(|group| group.fixtures.len().to_string())
-            .collect::<Vec<_>>()
-            .join(" + "),
-    );
-    assert_eq!(
-        IMPLEMENTED.len() + NOT_YET_MODELLED.len() + excluded,
-        EXPECTED_FIXTURE_COUNT
-    );
+            .map(|group| group.fixtures.len())
+            .sum();
+        println!(
+            "contracts/{}/: {} implemented, {} not yet modelled, {excluded} excluded by decision \
+             ({})",
+            manifest.set.dir_name(),
+            manifest.implemented.len(),
+            manifest.not_yet_modelled.len(),
+            manifest
+                .excluded
+                .iter()
+                .map(|group| group.fixtures.len().to_string())
+                .collect::<Vec<_>>()
+                .join(" + "),
+        );
+        assert_eq!(
+            manifest.implemented.len() + manifest.not_yet_modelled.len() + excluded,
+            manifest.expected
+        );
+    }
+}
+
+#[test]
+fn the_two_sets_share_no_file_name() {
+    // The desktop set records only what no Android fixture records, so a name in
+    // both is a fixture that was copied rather than recorded for this client.
+    let android = names_in(Set::Android);
+    let shared: Vec<String> = names_in(Set::Desktop)
+        .into_iter()
+        .filter(|name| android.contains(name))
+        .collect();
+    assert!(shared.is_empty(), "in both sets: {shared:#?}");
 }
