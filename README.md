@@ -12,8 +12,10 @@ receptionist from Distronode.
 > each meeting's record, the workspace settings (the receptionist's persona, its
 > capabilities, the transfer directory, the routing rules, call handling and your
 > availability, the knowledge base, the carrier accounts, and the members and the
-> workspace's name), your account and the devices signed in to it. This build
-> cannot take or place calls, join a meeting room or play a persona's audition.
+> workspace's name), your account and the devices signed in to it. A default
+> build cannot take or place calls, join a meeting room or play a persona's
+> audition; a build with the `voice` feature has the call engine that does,
+> tested against a local media server and not yet against District AI's own.
 > There are no releases or packages yet. Screenshots will follow with the first
 > release.
 
@@ -67,6 +69,10 @@ cd district-linux
 cargo build --release --locked
 ./target/release/district-ai
 ```
+
+That build has no calls. Building with them (the `voice` feature) links
+libwebrtc and needs clang 21 or newer; [CONTRIBUTING.md](CONTRIBUTING.md#building-with-calls)
+has the steps.
 
 Signing in opens your browser, which hands the result back through a
 `districtai://` link. For the browser to find the app, the desktop entry has to

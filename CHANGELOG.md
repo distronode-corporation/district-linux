@@ -546,8 +546,78 @@ date, and bump `[workspace.package] version` to match.
   - The smoke test drives every section through these states, the audition to its
     failure and the carrier form to its emptied keys, as a viewer and a client
     where they differ, and draws each, light and dark.
+- `district-call`: `LiveKitCallEngine`, the call engine, behind the `livekit`
+  feature, which the app's new `voice` feature turns on (a default build is
+  unchanged and has no calls). It joins the room a credential names, over TLS or
+  on this machine only, with the credential and the server exactly as the service
+  sent them; an encrypted room with its passphrase as the shared key, verbatim,
+  derived as the web and Android clients derive it and with the web client's key
+  settings; and a phone call unencrypted, with no key left from the session
+  before. It reports connecting at once, then joined or failed (a join never
+  waits more than 30 seconds), everyone in the room including those there first
+  and the services among them (the media library's agent kind, and the
+  Companion's old `ai-companion-` identity), whose audio and video are available,
+  the microphone's state after every change, a connection lost and resumed (and,
+  after a full reconnection, asks again for audio it wanted), a failure to
+  decrypt, and the end of the room in the app's words. It holds one session at a
+  time: a second one leaves the first and says so first; leaving is idempotent,
+  lets go of the devices, and reports nothing more, even while the join is still
+  under way. Only audio is received; video is noted. Its sound is the desktop's
+  default devices through PulseAudio with WebRTC's echo cancellation, noise
+  suppression and gain control (`Audio::Devices`), or frames the caller makes and
+  hears (`Audio::Frames`, for tests). `district_call::engine()` builds this
+  build's engine, and `CALLS_AVAILABLE` is true exactly with the feature, so the
+  app can never pair a core that expects calls with an engine that has none.
+- The engine's tests (`crates/district-call/tests/engine/`), against a real
+  `livekit-server` on this machine with each test's own server: the tone one
+  engine sends is what the other hears (RMS 0.1412 received for 0.1414 sent,
+  entirely the tone, the first frame 154 ms after starting); the same passphrase
+  carries it, a different one is reported within two seconds and plays nothing,
+  and encrypted audio in a session with no key is refused and reported; the
+  people in a room and the services among them; video noted and not received;
+  the microphone off and on, asked for while joining, and refused to a viewer;
+  leaving twice, leaving while joining, a second session, credentials refused and
+  servers absent, a `wss` address that speaks no TLS, and a plain one elsewhere,
+  refused before anything is sent; a server that is killed (reconnecting at once,
+  disconnected about 28 seconds later) and one back within seconds (the call
+  resumes and is heard again); the desktop's own audio path against a private
+  PulseAudio server with a null sink and a sine source (heard, played, let go of
+  when off and when left, and a sound server that goes away mid-call); and what a
+  whole encrypted call writes to stderr and to a logger taking every record.
+- `scripts/fetch-libwebrtc.sh`: downloads the prebuilt libwebrtc a build with
+  calls links, checks it against a pinned SHA-256, and unpacks it for
+  `LK_CUSTOM_WEBRTC`, refusing when Cargo.lock names another `webrtc-sys-build`.
+  Without it the LiveKit SDK's build downloads the same archive and checks
+  nothing.
+- `.github/workflows/voice.yml`: builds the app with `voice` (clang 21 from the
+  LLVM project's signed apt repository, the pinned libwebrtc, a pinned and
+  checksummed `livekit-server`), lints it and the engine, runs the engine's
+  tests, and holds district-call's coverage with the feature to its own floor. On
+  changes to what the engine is made of, weekly, and by hand; the default jobs
+  never download libwebrtc.
+- `scripts/check-coverage.py`: a `[features."<crate>/<feature>"]` floor for code
+  only an optional feature builds, checked with `--feature`; district-call's
+  engine is held at 97 (measured between 97.5 and 98.6 over separate runs,
+  because a few lines run only when a race goes one way).
+- NOTICE: libwebrtc's components and their licences, for a build with calls.
+  Its FFmpeg entry is unresolved: the archive gives the texts of the GPL 2 and 3
+  and the LGPL 2.1 and 3 without saying which applies, and the H.264 and H.265
+  decoders are linked in although the app has no video. No build with calls has
+  been distributed.
+- Dependabot opens the LiveKit SDK's crates as one pull request.
 
 ### Changed
+
+- Logging below warn level is compiled out of the whole build (`log`'s
+  `max_level_warn`, from `max_level_debug`). With calls, the LiveKit SDK forwards
+  every libwebrtc line at debug level, and libwebrtc logs an encrypted room's key
+  (the passphrase's bytes and the derived key) as it derives it; the SDK logs
+  participants' identities at debug and info. Measured: with the limit lifted, a
+  logger given every record received both passphrases' bytes, both keys and every
+  identity from one short call; with it, none. The engine also creates the WebRTC
+  runtime first, which is what routes libwebrtc's own logging away from stderr.
+- `district-app` builds its engine with `district_call::engine()`.
+- `district-call`: `CALLS_AVAILABLE` follows the `livekit` feature.
 
 - `district-core`: `CoreConfig` gains `calls_available`. A build without a call
   engine reads no ring setting, never registers this desktop's presence, rings

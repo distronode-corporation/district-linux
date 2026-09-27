@@ -24,10 +24,11 @@ crates/district-core/     App state with no GTK and no IO of its own: the sessio
 crates/district-desktop/  Linux adapters with no GTK in them: secret storage (oo7),
                           device id, the settings file; autostart through the
                           portals to come.
-crates/district-call/     The call engine. The LiveKit implementation will sit
-                          behind the optional `livekit` feature, off by default;
-                          until it is written, a build has `UnavailableCallEngine`,
-                          which joins nothing and says so.
+crates/district-call/     The call engine: `LiveKitCallEngine`, behind the
+                          optional `livekit` feature (the app's `voice`), off by
+                          default because it links libwebrtc; without it a build
+                          has `UnavailableCallEngine`, which joins nothing and says
+                          so. See "Building with calls" below.
 crates/district-app/      The GTK 4 and libadwaita app, `district-ai`, and the only
                           crate that links GTK: a library the binary and the smoke
                           test share. data/ holds the .ui templates, the
@@ -40,9 +41,10 @@ contracts/                What this client is checked against: the server's reco
                           the brand colours from the design tokens
                           (sync-palette.py).
 scripts/                  check-version.py, check-public-hygiene.py and
-                          check-coverage.py, run by CI; sync-contracts.py,
-                          sync-endpoints.py, sync-palette.py and make-ringtone.py,
-                          run by hand.
+                          check-coverage.py, run by CI; fetch-libwebrtc.sh, run by
+                          voice.yml and by hand for a build with calls;
+                          sync-contracts.py, sync-endpoints.py, sync-palette.py and
+                          make-ringtone.py, run by hand.
 coverage-floors.toml      Each crate's line coverage floor (see Coverage below).
 ```
 
@@ -104,6 +106,59 @@ website's repository: a maintainer with access refreshes
 `python3 scripts/sync-palette.py --monorepo <checkout>`, and a test in
 `district-core` then holds `district_core::palette` to it.
 
+## Building with calls
+
+Calls, meeting rooms and auditions need the LiveKit call engine, which a default
+build leaves out: the app's `voice` feature (district-call's `livekit`) turns it
+on. It statically links libwebrtc, a prebuilt C++ library of about 85 MB, so it
+needs a little more than the default build:
+
+- clang and clang++ 21.1 or newer. The prebuilt library is built against
+  Chromium's own libc++, which needs it, and the build refuses GCC, which would
+  compile but miscall it. Ubuntu 26.04's `clang` is 21; on Ubuntu 24.04 install
+  `clang-21` from the LLVM project's apt repository (voice.yml has the lines) and
+  set `CXX=clang++-21`.
+- The headers it compiles against: `libglib2.0-dev libx11-dev libxext-dev
+  libxfixes-dev libxdamage-dev libxrandr-dev libxcomposite-dev libgl1-mesa-dev
+  libdrm-dev libgbm-dev libva-dev libpulse-dev`. It links none of them; the
+  X11, DRM, VA and PulseAudio libraries are loaded when used.
+- The library itself, checked against a pinned SHA-256:
+
+  ```
+  export LK_CUSTOM_WEBRTC="$(scripts/fetch-libwebrtc.sh ~/.cache/district-libwebrtc)"
+  cargo build -p district-app --features voice --locked
+  ```
+
+  Without `LK_CUSTOM_WEBRTC` the LiveKit SDK's build downloads the same archive
+  itself and checks nothing, so always set it. The script refuses to run when
+  Cargo.lock names a different `webrtc-sys-build`, whose libwebrtc would not link;
+  its header says how to move the pin with the SDK. A cold build with the feature
+  took about 4 minutes in debug and 9 in release on a 4-core laptop, and the
+  release binary is 45 MB instead of 17.
+
+At run time the engine needs a PulseAudio server (PipeWire's `pipewire-pulse` on
+most desktops) for the microphone and the speakers; without one the call joins,
+nobody hears you, and the app says the microphone could not be used.
+
+The engine's tests (`crates/district-call/tests/engine/`) run it against a real
+media server on this machine, so they also need `livekit-server` (voice.yml
+downloads a pinned release; `LIVEKIT_SERVER` names the binary) and, for the test
+of the desktop's own audio path, `pulseaudio` and its tools (`pactl`, `parec`),
+which the test starts privately with a null sink and a sine source, so nothing is
+heard and no real device is touched:
+
+```
+LIVEKIT_SERVER=/path/to/livekit-server \
+  cargo test -p district-call --features livekit --locked -- --test-threads=1
+```
+
+One at a time, because each test measures audio in real time. They print what
+they measure with `--nocapture`. libwebrtc never gathers network candidates on
+loopback, so the machine needs a network interface other than `lo`, even though
+every test stays on it: an ordinary desktop or CI runner has one, and a container
+started with `--network none` needs a dummy interface added
+(`ip link add lan0 type dummy`, an address, `up`).
+
 ## The smoke test
 
 The app's own tests include a smoke test, `crates/district-app/tests/smoke.rs`,
@@ -159,6 +214,10 @@ python3 scripts/check-coverage.py --self-test
 desktop-file-validate crates/district-app/data/com.distronode.DistrictAI.desktop
 appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
 ```
+
+The call engine is built and tested by its own workflow,
+`.github/workflows/voice.yml`, when what it is made of changes, weekly, and by
+hand (see "Building with calls"); the default jobs never download libwebrtc.
 
 CI runs those tests with line coverage measured and checks it against the floors;
 [Coverage](#coverage) below has the commands to do the same. CI also runs
@@ -218,6 +277,15 @@ What the floors mean:
   runner's thread, which only the real app runs.
 - There is no exclusion list. Code CI cannot run stays in the measurement and
   holds its crate's floor down, where everyone can see it.
+- A crate whose optional feature builds code the default build does not has a
+  second floor for that build: `[features."district-call/livekit"]` is the
+  LiveKit engine's, measured by voice.yml and checked with
+  `python3 scripts/check-coverage.py --feature district-call/livekit <report>`.
+  The two measure different code and are not combined: `[crates.district-call]`
+  holds the default build (the crate root and `UnavailableCallEngine`), the
+  feature's entry the build with the engine. What the engine's tests cannot reach
+  is races (a room left in the instant its join ends, a report racing a hang-up)
+  and states libwebrtc never reports with the web client's key settings.
 - A crate missing from the report fails whatever its floor, and a floor above 0
   with no measurable lines fails too, so a run that skipped a crate can never
   read as covered. A new crate needs its entry in the change that adds it.

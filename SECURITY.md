@@ -105,9 +105,10 @@ The project is pre-release, and parts of this are not implemented yet.
   API calls. Plain `ws` is refused unless the address is this machine.
 - Events are customer data. Nothing in the app logs them, no error or status
   carries one, and one that cannot be read, or that names another workspace, is
-  dropped unread. Logging below debug level is compiled out of the build, because
+  dropped unread. Logging below warn level is compiled out of the build, because
   the WebSocket library logs the handshake (credential included) and every
-  message at trace level.
+  message at trace level; see "Calls on the desktop" for what the media library
+  logs at debug and info.
 - Only the open workspace is watched, and an event is only a hint: the app reads
   what it changed again with its own session rather than show what the event
   carried.
@@ -177,12 +178,14 @@ The project is pre-release, and parts of this are not implemented yet.
 
 ### Calls on the desktop
 
-The LiveKit call engine is not written yet, and a build without it has no calls
-at all (`CoreConfig::calls_available` is false): it registers no presence, so the
+Calls are in a build with the `voice` feature, which links the LiveKit call
+engine (and libwebrtc; see NOTICE). The default build has no calls at all
+(`CoreConfig::calls_available` is false): it registers no presence, so the
 service never holds a caller for it; it never rings, answers or dials, and starts
 no billed audition; and a meeting room it is asked to join fails, saying calls
-are not available in this build. What follows is the design those builds will
-follow.
+are not available in this build. The engine has been tested against a local
+media server (`.github/workflows/voice.yml`); what it does with the service's own
+servers, the web client and the Android app in a real room is not yet proven.
 
 - A desktop has no push service. While "ring on this computer" is on and the
   machine is awake, it registers its presence with the service: the pair
@@ -229,6 +232,59 @@ follow.
 - One call, meeting or audition holds the microphone at a time. A ring that
   arrives during one is shown without a sound and cannot be answered until it
   ends.
+
+What the call engine itself does (district-call, with its `livekit` feature):
+
+- The media server is the one the service names, used exactly as named, and the
+  credential goes to it only over TLS (`wss`), with rustls and the operating
+  system's certificates (aws-lc-rs is made the process's rustls provider, because
+  the media library's socket asks for the default). Plain `ws` is refused unless
+  the address is this machine, before anything is sent.
+- An encrypted room's passphrase is handed to the media library as the text it
+  is, as bytes, and never decoded. The key is derived from it the way the web and
+  Android clients derive it (PBKDF2 with SHA-256, the salt `LKFrameEncryptionKey`
+  and 100,000 rounds, for AES-128-GCM), with the web client's settings: no
+  ratchet window, and no limit on failures, so no stray frame retires the key.
+  With a passphrase, data sent in the room is encrypted too. Each session gets a
+  key of its own and nothing outlives it, so a session without a passphrase
+  (a phone call) is joined unencrypted, with no key from the one before.
+- With those settings libwebrtc reports a frame that decrypts and nothing for
+  one that does not, so a wrong key would be silence and no warning. The engine
+  watches for it: encrypted audio from someone that keeps arriving (a second of
+  it) without a single frame decrypting is reported as a failure to decrypt, and
+  the call says so. Encrypted audio in a session with no key is not received at
+  all, because decoded without its key it plays as loud noise, and is reported
+  the same way.
+- Only audio is received. Video in a room is noted (who has a camera on) and
+  never subscribed to.
+- Nothing the engine does is logged, and what the media library logs is kept
+  from every log and from stderr. libwebrtc logs an encrypted room's key when it
+  derives it (the passphrase's bytes and the key, as lists of numbers) and the
+  identity of anyone it has no key for, and the LiveKit SDK forwards every
+  libwebrtc line to Rust's `log` at debug level and logs participants'
+  identities (which can be a caller's number) at debug and info. The workspace
+  compiles every log line below warn out of the binary, so no logger can be given
+  them; measured, with that limit lifted a logger receives both passphrases'
+  bytes and keys and every identity in a short call, and with it, nothing. The
+  engine also creates the WebRTC runtime before anything can reach libwebrtc,
+  because that is what routes libwebrtc's own logging away from stderr. The
+  engine's tests run a whole encrypted call with a logger taking every record
+  and read everything the process writes, looking for the passphrases in every
+  form libwebrtc prints them, the derived keys, the credentials and the
+  identities.
+- The media library tells the media server which SDK it is, the operating
+  system's name and version, and the machine's model as its firmware reports it
+  (a laptop's product name, from `/sys/class/dmi/id/product_name`). It reads the
+  host name and does not send it. There is no setting to leave the model out.
+- The microphone and the speakers are the desktop's defaults, through PulseAudio
+  (PipeWire's PulseAudio server on most desktops), with WebRTC's echo
+  cancellation, noise suppression and gain control. They are opened when a call
+  starts and closed when it ends. The microphone is capturing only while it is
+  on: turning it off mutes what is sent and stops the capture at once, rather
+  than waiting for a renegotiation that can stall, and a microphone the room
+  refuses (a viewer's) is closed again. When they cannot be opened the call goes
+  on, the others hear nothing, and the app says the microphone could not be
+  used.
 
 ### The help desk and support requests
 
