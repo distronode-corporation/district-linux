@@ -169,3 +169,19 @@ fn the_desk_and_support_are_closed_to_a_viewer_and_the_rest_are_open() {
         }
     }
 }
+
+/// The dial and answer routes refuse a viewer, so the dialler opens for a
+/// member and for nobody else.
+#[test]
+fn the_dialler_opens_for_a_member_only() {
+    for (role, open) in [
+        (Some("agency"), true),
+        (Some("client"), true),
+        (Some("viewer"), false),
+        (None, false),
+    ] {
+        let capabilities = Capabilities::for_role(role);
+        assert_eq!(capabilities.allows(&Route::Dialer), open, "{role:?}");
+        assert_eq!(capabilities.can_dial, open, "{role:?}");
+    }
+}

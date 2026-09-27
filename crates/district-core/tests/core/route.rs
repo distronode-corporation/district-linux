@@ -197,3 +197,13 @@ fn a_workspace_switch_leaves_the_desk_and_support_and_keeps_the_rest() {
         assert_eq!(route.after_workspace_switch(), route, "{route:?}");
     }
 }
+
+/// The dialler sits under the call log, and gives way to the overview on a
+/// workspace switch, because the new workspace's role decides whether it opens.
+#[test]
+fn the_dialler_is_below_the_call_log_and_waits_out_a_workspace_switch() {
+    assert_eq!(Route::Dialer.tab(), Tab::Calls);
+    assert_eq!(Route::Dialer.parent(), Some(Route::Calls));
+    assert!(Route::Dialer.is_workspace_scoped());
+    assert_eq!(Route::Dialer.after_workspace_switch(), Route::Overview);
+}

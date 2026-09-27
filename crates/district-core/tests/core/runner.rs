@@ -13,7 +13,10 @@ use district_core::{
     SEARCH_DEBOUNCE, Settings, SignInError, SignedInSession, Ticket, TokioClock, Urgency,
     UrlOpener,
 };
-use district_core::{MemberWrite, MessagingWrite};
+use district_core::{
+    CallEnd, CallEvent, CallPhase, DialerEvent, MediaEvent, MediaUpdate, MemberWrite,
+    MessagingWrite, MicrophoneState,
+};
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse, BlockTarget,
     BlockedContactsResponse, CallDetailResponse, CallSummary, CallTranscriptResponse,
@@ -2649,6 +2652,306 @@ async fn each_settings_effect_calls_its_endpoint_and_reports_back() {
             "member role ws-contract-active operator@example.com client",
             "remove member ws-contract-active auditor@example.com",
             "rename ws-contract-active Harbour Dental",
+        ]
+    );
+}
+
+/// A placed call's `ConnectMedia`, as the model asks for it.
+fn call_connect() -> (Model, Effect) {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    model.update(Event::Navigate(Route::Dialer));
+    model.update(Event::Dialer(DialerEvent::Edit(
+        "+1 212 555 0142".to_owned(),
+    )));
+    let effects = model.update(Event::Dialer(DialerEvent::Dial));
+    let effects = model.update(Event::Dialled {
+        ticket: crate::support::ticket(&effects[0]),
+        result: Ok(fixture("district-dial.json")),
+    });
+    let connect = effects.into_iter().next().unwrap();
+    (model, connect)
+}
+
+#[tokio::test]
+async fn each_voice_effect_calls_its_dependency_and_reports_back() {
+    let (runner, log) = fakes(None, true);
+    let ticket = a_ticket();
+    assert_eq!(
+        runner.run(Effect::ReadRingSetting { ticket }).await,
+        Some(Event::RingSettingRead {
+            ticket,
+            ring_here: false
+        })
+    );
+    assert_eq!(
+        runner
+            .run(Effect::SaveRingSetting { ring_here: true })
+            .await,
+        None
+    );
+    assert_eq!(
+        runner.run(Effect::ReadRingSetting { ticket }).await,
+        Some(Event::RingSettingRead {
+            ticket,
+            ring_here: true
+        })
+    );
+    assert_eq!(
+        runner
+            .run(Effect::SetPresence {
+                ticket,
+                registered: true
+            })
+            .await,
+        Some(Event::PresenceSet {
+            ticket,
+            result: Ok(())
+        })
+    );
+    assert_eq!(
+        runner
+            .run(Effect::SetPresence {
+                ticket,
+                registered: false
+            })
+            .await,
+        Some(Event::PresenceSet {
+            ticket,
+            result: Err(server_error())
+        })
+    );
+    assert_eq!(
+        runner
+            .run(Effect::Dial {
+                ticket,
+                workspace_id: AGENCY.to_owned(),
+                to: "+1 212 555 0142".to_owned(),
+            })
+            .await,
+        Some(Event::Dialled {
+            ticket,
+            result: Ok(fixture("district-dial.json")),
+        })
+    );
+    assert_eq!(
+        runner
+            .run(Effect::AnswerCall {
+                ticket,
+                workspace_id: AGENCY.to_owned(),
+                call_id: "call_1".to_owned(),
+            })
+            .await,
+        Some(Event::CallAnswered {
+            ticket,
+            result: Ok(fixture("district-call-answer.json")),
+        })
+    );
+    // A failed hang-up is not reported: the call is over here.
+    assert_eq!(
+        runner
+            .run(Effect::HangUpCall {
+                workspace_id: AGENCY.to_owned(),
+                call_id: "CA01".to_owned(),
+            })
+            .await,
+        None
+    );
+    let (_, connect) = call_connect();
+    let Effect::ConnectMedia { session, .. } = connect else {
+        panic!("{connect:?}");
+    };
+    for effect in [
+        connect,
+        Effect::SetMicrophone {
+            session,
+            enabled: false,
+        },
+        Effect::DisconnectMedia { session },
+        Effect::StartRingtone,
+        Effect::StopRingtone,
+        Effect::PresentWindow,
+        Effect::WithdrawNotification {
+            id: "call:call_1".to_owned(),
+        },
+    ] {
+        assert_eq!(runner.run(effect).await, None);
+    }
+    assert_eq!(
+        log.take(),
+        [
+            "ring here true",
+            "presence true",
+            "presence false",
+            "dial ws-contract-active +1 212 555 0142",
+            "answer ws-contract-active call_1",
+            "hang up ws-contract-active CA01",
+            "connect wss://media.example.com passphrase false microphone true",
+            "microphone false",
+            "disconnect",
+            "ringtone on",
+            "ringtone off",
+            "present window",
+            "withdraw call:call_1",
+        ]
+    );
+}
+
+/// Plays the far end: on joining, reports the room joined, the callee picking
+/// up and the microphone on, as a media library would.
+struct ScriptedEngine {
+    log: Log,
+    reports: tokio::sync::mpsc::UnboundedSender<MediaUpdate>,
+}
+
+impl ScriptedEngine {
+    fn report(&self, session: Ticket, event: MediaEvent) {
+        self.reports
+            .send(MediaUpdate { session, event })
+            .expect("the test reads the reports");
+    }
+}
+
+impl CallEngine for ScriptedEngine {
+    async fn connect(&self, session: Ticket, credential: MediaCredential, microphone: bool) {
+        self.log.push(format!(
+            "connect {} microphone {microphone}",
+            credential.url()
+        ));
+        self.report(session, MediaEvent::Connecting);
+        self.report(session, MediaEvent::Connected);
+        self.report(
+            session,
+            MediaEvent::ParticipantJoined(district_core::Participant::new(
+                "sip_callee",
+                None,
+                false,
+            )),
+        );
+        self.report(session, MediaEvent::Microphone(MicrophoneState::On));
+    }
+
+    async fn set_microphone(&self, session: Ticket, enabled: bool) {
+        self.log.push(format!("microphone {enabled}"));
+        let state = if enabled {
+            MicrophoneState::On
+        } else {
+            MicrophoneState::Off
+        };
+        self.report(session, MediaEvent::Microphone(state));
+    }
+
+    async fn disconnect(&self, _session: Ticket) {
+        self.log.push("disconnect");
+    }
+}
+
+type ScriptedRunner = EffectRunner<
+    FakeApi,
+    FakeAuth,
+    FakeSettings,
+    FakeOpener,
+    TokioClock,
+    FakeLive,
+    FakeNotifier,
+    FakePresence,
+    ScriptedEngine,
+    FakeRing,
+>;
+
+/// Runs `effects` and everything they lead to, feeding the engine's reports to
+/// the model, except the waits, which are handed back for the test to end.
+async fn drive(
+    model: &mut Model,
+    runner: &ScriptedRunner,
+    reports: &mut tokio::sync::mpsc::UnboundedReceiver<MediaUpdate>,
+    mut pending: Vec<Effect>,
+) -> Vec<Effect> {
+    let mut waits = Vec::new();
+    loop {
+        while let Some(effect) = pending.pop() {
+            if matches!(effect, Effect::Wait { .. }) {
+                waits.push(effect);
+            } else if let Some(event) = runner.run(effect).await {
+                pending.extend(model.update(event));
+            }
+        }
+        match reports.try_recv() {
+            Ok(update) => pending.extend(model.update(Event::Media(update))),
+            Err(_) => return waits,
+        }
+    }
+}
+
+/// The model, the runner and a scripted engine together, the way the app runs
+/// them: a call placed, picked up by the far end, muted, and hung up, which
+/// ends it at the carrier and leaves its room.
+#[tokio::test]
+async fn a_placed_call_runs_through_the_engine_from_dial_to_hang_up() {
+    let log = Log::default();
+    let (sender, mut reports) = tokio::sync::mpsc::unbounded_channel();
+    let runner: ScriptedRunner = EffectRunner::new(
+        FakeApi(log.clone()),
+        FakeAuth(log.clone()),
+        FakeSettings(Mutex::new(None), log.clone(), Mutex::new(false)),
+        FakeOpener(true, log.clone()),
+        TokioClock,
+        FakeLive(log.clone()),
+        FakeNotifier(log.clone()),
+        FakePresence(log.clone()),
+        ScriptedEngine {
+            log: log.clone(),
+            reports: sender,
+        },
+        FakeRing(log.clone()),
+    );
+    let (mut model, _) = loaded(AGENCY, "agency");
+    model.update(Event::Navigate(Route::Dialer));
+    model.update(Event::Dialer(DialerEvent::Edit(
+        "+1 212 555 0142".to_owned(),
+    )));
+    let dial = model.update(Event::Dialer(DialerEvent::Dial));
+    let waits = drive(&mut model, &runner, &mut reports, dial).await;
+    assert!(
+        matches!(waits.as_slice(), [Effect::Wait { .. }]),
+        "the timer"
+    );
+    let signed_in = crate::support::signed_in(&model);
+    let call = signed_in.active_call.as_ref().unwrap();
+    assert_eq!(call.phase, CallPhase::InCall);
+    assert_eq!(
+        signed_in.media.as_ref().unwrap().microphone,
+        MicrophoneState::On
+    );
+
+    let muted = model.update(Event::Microphone(false));
+    drive(&mut model, &runner, &mut reports, muted).await;
+    assert_eq!(
+        crate::support::signed_in(&model)
+            .media
+            .as_ref()
+            .unwrap()
+            .microphone,
+        MicrophoneState::Off
+    );
+
+    let hung_up = model.update(Event::Call(CallEvent::HangUp));
+    drive(&mut model, &runner, &mut reports, hung_up).await;
+    assert_eq!(
+        crate::support::signed_in(&model)
+            .active_call
+            .as_ref()
+            .unwrap()
+            .phase,
+        CallPhase::Ended(CallEnd::HungUp)
+    );
+    assert_eq!(
+        log.take(),
+        [
+            "dial ws-contract-active +1 212 555 0142",
+            "connect wss://media.example.com microphone true",
+            "microphone false",
+            "disconnect",
+            "hang up ws-contract-active CAabababababababababababababababab",
         ]
     );
 }

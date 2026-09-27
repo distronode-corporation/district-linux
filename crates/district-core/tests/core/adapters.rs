@@ -13,8 +13,8 @@ use district_auth::{
     RevokeStatus, TokenRefreshCoordinator,
 };
 use district_core::{
-    Auth, CodeExchange, DistrictApi, Effect, ExchangeFailure, LiveHub, LiveUpdates, NativeAuth,
-    Presence, RestoreError, SignInError, Ticket,
+    Auth, CodeExchange, DesktopPresence, DistrictApi, Effect, ExchangeFailure, LiveHub,
+    LiveUpdates, NativeAuth, Presence, PresenceApi, RestoreError, SignInError, Ticket,
 };
 use district_live::{
     LiveConfig, LiveError, LiveUpdate, OpenFuture, SystemClock, TokenMinter, Transport,
@@ -1063,6 +1063,10 @@ impl Timeline {
     fn push(&self, entry: String) {
         self.0.lock().unwrap().push(entry);
     }
+
+    fn entries(&self) -> Vec<String> {
+        self.0.lock().unwrap().clone()
+    }
 }
 
 /// A presence that records each change it is asked for.
@@ -1658,4 +1662,242 @@ async fn the_api_client_serves_the_workspace_settings() {
             .name,
         "Renamed Workspace"
     );
+}
+
+/// The call endpoints through the API client, and presence through the client
+/// as `DesktopPresence` sends it: the desktop's pair, and no device id.
+#[tokio::test]
+async fn the_api_client_places_answers_and_ends_calls_and_sets_presence() {
+    let server = MockServer::start().await;
+    serve(
+        &server,
+        "POST",
+        "/api/district/calls/dial",
+        fixture("district-dial.json"),
+    )
+    .await;
+    serve(
+        &server,
+        "POST",
+        "/api/district/calls/call_contract_ringing/answer",
+        fixture("district-call-answer.json"),
+    )
+    .await;
+    serve(
+        &server,
+        "POST",
+        "/api/district/calls/CAabababababababababababababababab/hangup",
+        desktop_fixture("district-call-hangup.json"),
+    )
+    .await;
+    serve(
+        &server,
+        "POST",
+        "/api/district/devices/register",
+        desktop_fixture("district-device-register-desktop.json"),
+    )
+    .await;
+    serve(
+        &server,
+        "POST",
+        "/api/district/devices/unregister",
+        fixture("district-device-unregister.json"),
+    )
+    .await;
+    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let client = Arc::new(ApiClient::new(config, OneToken).unwrap());
+    let ws = "ws-contract-test";
+
+    let dialled = DistrictApi::dial(&*client, ws, "+1 212 555 0142")
+        .await
+        .unwrap();
+    assert!(dialled.is_joinable());
+    let answered = DistrictApi::answer_call(&*client, ws, "call_contract_ringing")
+        .await
+        .unwrap();
+    assert!(answered.is_joinable());
+    assert!(
+        DistrictApi::hang_up_call(&*client, ws, &dialled.call_id)
+            .await
+            .unwrap()
+            .ended
+    );
+
+    let presence = DesktopPresence::new(Arc::clone(&client));
+    let [first, second, _] = revisions();
+    presence.set(first, true).await.unwrap();
+    presence.set(second, false).await.unwrap();
+    let requests = server.received_requests().await.unwrap();
+    let register = &requests[3];
+    let body: serde_json::Value = serde_json::from_slice(&register.body).unwrap();
+    assert_eq!(body["platform"], "linux");
+    assert_eq!(body["kind"], "desktop");
+    assert_eq!(body.as_object().unwrap().len(), 3, "no device id: {body}");
+    let token = body["token"].as_str().unwrap();
+    assert_eq!(token.len(), 36, "a random install value");
+    assert!(!format!("{presence:?}").contains(token));
+    assert_eq!(requests[4].url.path(), "/api/district/devices/unregister");
+    assert!(requests[4].body.is_empty());
+
+    // Each presence makes its own value.
+    let other = DesktopPresence::new(Arc::clone(&client));
+    other.set(first, true).await.unwrap();
+    let requests = server.received_requests().await.unwrap();
+    let again: serde_json::Value = serde_json::from_slice(&requests[5].body).unwrap();
+    assert_ne!(again["token"], body["token"]);
+
+    // The client is the presence's API as it is.
+    PresenceApi::unregister_presence(&*client).await.unwrap();
+}
+
+/// The two calls `DesktopPresence` makes, recorded, with a register that can
+/// be held on its way and an answer that can fail.
+struct ScriptedPresenceApi {
+    calls: Timeline,
+    hold: tokio::sync::Semaphore,
+    fail: bool,
+}
+
+impl ScriptedPresenceApi {
+    fn new(held: bool, fail: bool) -> Arc<Self> {
+        Arc::new(Self {
+            calls: Timeline::default(),
+            hold: tokio::sync::Semaphore::new(if held { 0 } else { 1_000 }),
+            fail,
+        })
+    }
+
+    fn answer(&self) -> Result<district_model::PushRegistrationResponse, ApiError> {
+        if self.fail {
+            Err(ApiError::Forbidden(ErrorDetail::default()))
+        } else {
+            Ok(district_model::PushRegistrationResponse { success: true })
+        }
+    }
+}
+
+impl PresenceApi for ScriptedPresenceApi {
+    async fn register_presence(
+        &self,
+        _registration: &district_model::PresenceRegistration,
+    ) -> Result<district_model::PushRegistrationResponse, ApiError> {
+        self.calls.push("register started".to_owned());
+        let _pass = self.hold.acquire().await.unwrap();
+        self.calls.push("register done".to_owned());
+        self.answer()
+    }
+
+    async fn unregister_presence(
+        &self,
+    ) -> Result<district_model::PushRegistrationResponse, ApiError> {
+        self.calls.push("unregister".to_owned());
+        self.answer()
+    }
+}
+
+/// A change arriving after a later one was sent is dropped: a renewal already
+/// on its way when the lid closed cannot register a desktop that just
+/// unregistered.
+#[tokio::test]
+async fn presence_changes_go_one_at_a_time_and_a_late_older_one_is_dropped() {
+    let [older, newer, newest] = revisions();
+    let api = ScriptedPresenceApi::new(false, false);
+    let presence = DesktopPresence::new(Arc::clone(&api));
+    presence.set(newer, false).await.unwrap();
+    presence.set(older, true).await.unwrap();
+    presence.set(newer, true).await.unwrap();
+    assert_eq!(api.calls.entries(), ["unregister"]);
+
+    // A register held on its way: the unregistration asked for meanwhile
+    // waits for it, and goes after it.
+    let api = ScriptedPresenceApi::new(true, false);
+    let presence = DesktopPresence::new(Arc::clone(&api));
+    let registering = {
+        let presence = presence.clone();
+        tokio::spawn(async move { presence.set(older, true).await })
+    };
+    while api.calls.entries().is_empty() {
+        tokio::task::yield_now().await;
+    }
+    let unregistering = {
+        let presence = presence.clone();
+        tokio::spawn(async move { presence.set(newest, false).await })
+    };
+    tokio::task::yield_now().await;
+    assert_eq!(api.calls.entries(), ["register started"]);
+    api.hold.add_permits(1);
+    registering.await.unwrap().unwrap();
+    unregistering.await.unwrap().unwrap();
+    assert_eq!(
+        api.calls.entries(),
+        ["register started", "register done", "unregister"]
+    );
+
+    // A refusal comes back as the error it is.
+    let api = ScriptedPresenceApi::new(false, true);
+    let presence = DesktopPresence::new(Arc::clone(&api));
+    assert!(matches!(
+        presence.set(older, true).await,
+        Err(ApiError::Forbidden(_))
+    ));
+    assert!(matches!(
+        presence.set(newer, false).await,
+        Err(ApiError::Forbidden(_))
+    ));
+}
+
+struct LoggedRevokes(Timeline);
+
+impl RevokeApi for LoggedRevokes {
+    async fn revoke(&self, _token: &RefreshToken) -> RevokeOutcome {
+        self.0.push("revoke".to_owned());
+        RevokeOutcome::Done
+    }
+}
+
+/// Unregisters, and says it could not.
+struct FailingPresence;
+
+impl Presence for FailingPresence {
+    async fn set(&self, _revision: Ticket, _registered: bool) -> Result<(), ApiError> {
+        Err(ApiError::Forbidden(ErrorDetail::default()))
+    }
+}
+
+/// Sign-out's first step is the presence, as the sign-out's own change, while
+/// the access token still works; the revoke comes after it.
+#[tokio::test]
+async fn signing_out_unregisters_the_presence_first_as_its_own_change() {
+    let timeline = Timeline::default();
+    let coordinator = TokenRefreshCoordinator::new(MemorySessionStore::new(), NoRefresh);
+    let auth = NativeAuth::new(
+        &ApiConfig::default(),
+        FakeExchange::answering(ExchangeOutcome::Success(tokens(jwt(USER, THIS_DEVICE)))),
+        coordinator,
+        LoggedRevokes(timeline.clone()),
+        RecordedPresence(timeline.clone()),
+        THIS_DEVICE,
+        None,
+    );
+    let authorize = auth.begin_sign_in();
+    auth.complete_sign_in(&answer_to(&authorize)).await.unwrap();
+    let [.., revision] = revisions();
+
+    let report = auth.sign_out(revision).await;
+    assert!(report.presence_unregistered);
+    assert_eq!(
+        timeline.entries(),
+        [format!("presence {revision:?} false"), "revoke".to_owned()]
+    );
+
+    // A presence that could not be unregistered is reported, and the sign-out
+    // goes on.
+    let (auth, _) = native_auth_with(
+        &ApiConfig::default(),
+        FakeExchange::answering(ExchangeOutcome::Rejected),
+        FailingPresence,
+    );
+    let report = auth.sign_out(revision).await;
+    assert!(!report.presence_unregistered);
+    assert_eq!(report.cleared, Ok(()));
 }

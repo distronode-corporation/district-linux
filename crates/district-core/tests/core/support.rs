@@ -7,11 +7,15 @@ use std::path::PathBuf;
 use district_api::{ApiError, ErrorDetail, ReauthReason, UnauthorizedReason};
 use district_auth::AccessClaims;
 use district_core::{
-    CoreConfig, Effect, Event, Model, OverviewContent, OverviewScreen, SessionState, SignedIn,
-    Ticket, Workspaces, WorkspacesState,
+    CoreConfig, Effect, Event, MediaCredential, MediaEvent, MediaUpdate, Model, OverviewContent,
+    OverviewScreen, Participant, SessionState, SignedIn, Ticket, Workspaces, WorkspacesState,
 };
-use district_model::{OverviewResponse, WorkspaceListResponse};
+use district_live::{LiveUpdate, WorkspaceUpdate};
+use district_model::{
+    OverviewResponse, TelemetryEnvelope, TelemetryEventType, WorkspaceListResponse,
+};
 use serde::de::DeserializeOwned;
+use serde_json::json;
 
 /// The signed-in user.
 pub const USER: &str = "user-contract-1";
@@ -274,4 +278,80 @@ pub fn loaded(workspace_id: &str, role: &str) -> (Model, Ticket) {
     });
     let ticket = last_ticket(&effects);
     (model, ticket)
+}
+
+/// Turns "ring on this computer" on, as the member would, and returns what
+/// that asked for.
+pub fn ring_here(model: &mut Model) -> Vec<Effect> {
+    model.update(Event::SetRingOnThisComputer(true))
+}
+
+/// The live update the socket delivers for `envelope`.
+pub fn live_event(envelope: TelemetryEnvelope) -> Event {
+    Event::Live(WorkspaceUpdate {
+        workspace_id: envelope.workspace_id.clone(),
+        update: LiveUpdate::Event(envelope),
+    })
+}
+
+/// A `call_ringing` event for `call_id` in `workspace_id`, naming `users`.
+pub fn ringing(workspace_id: &str, call_id: &str, users: &[&str]) -> Event {
+    live_event(TelemetryEnvelope {
+        workspace_id: workspace_id.to_owned(),
+        call_id: call_id.to_owned(),
+        event_type: TelemetryEventType::CallRinging,
+        data: json!({"callId": call_id, "userIds": users}),
+        timestamp: "2026-09-26T14:30:00.000Z".to_owned(),
+    })
+}
+
+/// A call event of `event_type` for `call_id`, with `data`.
+pub fn call_event(
+    workspace_id: &str,
+    call_id: &str,
+    event_type: TelemetryEventType,
+    data: serde_json::Value,
+) -> Event {
+    live_event(TelemetryEnvelope {
+        workspace_id: workspace_id.to_owned(),
+        call_id: call_id.to_owned(),
+        event_type,
+        data,
+        timestamp: "2026-09-26T14:30:00.000Z".to_owned(),
+    })
+}
+
+/// The engine's report on `session`.
+pub fn media(session: Ticket, event: MediaEvent) -> Event {
+    Event::Media(MediaUpdate { session, event })
+}
+
+/// The session the one [`Effect::ConnectMedia`] in `effects` names, and its
+/// credential and microphone.
+pub fn connect(effects: &[Effect]) -> (Ticket, MediaCredential, bool) {
+    let found: Vec<(Ticket, MediaCredential, bool)> = effects
+        .iter()
+        .filter_map(|effect| match effect {
+            Effect::ConnectMedia {
+                session,
+                credential,
+                microphone,
+            } => Some((*session, credential.clone(), *microphone)),
+            _ => None,
+        })
+        .collect();
+    match found.as_slice() {
+        [one] => one.clone(),
+        _ => panic!("not exactly one connect in {effects:?}"),
+    }
+}
+
+/// A person on the other side of a call or in a room.
+pub fn person(identity: &str) -> Participant {
+    Participant::new(identity, Some("Grace".to_owned()), false)
+}
+
+/// The receptionist or the Companion.
+pub fn service(identity: &str) -> Participant {
+    Participant::new(identity, None, true)
 }

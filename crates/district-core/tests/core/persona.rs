@@ -5,9 +5,10 @@
 
 use district_api::ApiError;
 use district_core::{
-    ConfigLoad, Effect, Event, FailureText, Model, PERSONA_GEMINI_LIVE_ENGINE, PREVIEW_COOLDOWN,
-    PersonaEngineEdit, PersonaEvent, PersonaOptionsLoad, PersonaPreview, PersonaSection,
-    PersonaText, Route, SaveState, Ticket, WorkspaceSection,
+    ConfigLoad, DisconnectReason, Effect, Event, FailureText, MediaEvent, Model,
+    PERSONA_GEMINI_LIVE_ENGINE, PREVIEW_COOLDOWN, PersonaEngineEdit, PersonaEvent,
+    PersonaOptionsLoad, PersonaPreview, PersonaSection, PersonaText, RingEvent, Route, SaveState,
+    Ticket, WorkspaceSection,
 };
 use district_model::{
     PersonaEngineChoice, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
@@ -16,7 +17,10 @@ use district_model::{
 use serde_json::json;
 
 use crate::settings::{open, settings_row, unchanged};
-use crate::support::{fixture, server_error, signed_in, ticket};
+use crate::support::{
+    AGENCY, USER, connect, fixture, media, ring_here, ringing, server_error, service, signed_in,
+    ticket,
+};
 
 const DEEPGRAM: &str = "deepgram-pipeline";
 const AWS: &str = "aws-pipeline";
@@ -639,4 +643,106 @@ fn nothing_is_offered_before_both_reads() {
     });
     assert!(persona(&model).options().is_some());
     assert!(persona(&model).engine().is_none());
+}
+
+/// An audition joined: the dialog open, Start pressed, the credential issued.
+/// The session's name.
+fn auditioning() -> (Model, Ticket) {
+    let mut model = ready();
+    event(&mut model, PersonaEvent::OpenPreview);
+    let effects = event(&mut model, PersonaEvent::StartPreview);
+    let joined = model.update(Event::PersonaPreviewIssued {
+        ticket: ticket(&effects[0]),
+        result: Ok(credential()),
+    });
+    let (session, _, _) = connect(&joined);
+    (model, session)
+}
+
+#[test]
+fn an_audition_that_cannot_be_joined_fails_and_one_that_ends_is_ended() {
+    let (mut model, session) = auditioning();
+    let effects = model.update(media(
+        session,
+        MediaEvent::Disconnected(DisconnectReason::ConnectFailed),
+    ));
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::Wait { delay, .. }] if *delay == PREVIEW_COOLDOWN
+    ));
+    let Some(PersonaPreview::Failed(failure)) = &persona(&model).preview else {
+        panic!("{:?}", persona(&model).preview);
+    };
+    assert!(
+        failure.message.contains("could not be joined"),
+        "{failure:?}"
+    );
+    assert!(persona(&model).preview_credential().is_none());
+    assert_eq!(signed_in(&model).media, None);
+
+    let (mut model, session) = auditioning();
+    model.update(media(session, MediaEvent::Connected));
+    model.update(media(
+        session,
+        MediaEvent::ParticipantJoined(service("agent-audition")),
+    ));
+    assert!(model.update(Event::Microphone(false)).len() == 1);
+    let effects = model.update(media(
+        session,
+        MediaEvent::Disconnected(DisconnectReason::RoomEnded),
+    ));
+    assert!(matches!(effects.as_slice(), [Effect::Wait { .. }]));
+    assert_eq!(persona(&model).preview, Some(PersonaPreview::Ended));
+    assert!(persona(&model).preview_cooling);
+}
+
+#[test]
+fn closing_the_dialog_or_the_section_leaves_the_audition_room() {
+    let (mut model, session) = auditioning();
+    let effects = event(&mut model, PersonaEvent::ClosePreview);
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::Wait { .. }, Effect::DisconnectMedia { session: left }] if *left == session
+    ));
+    assert_eq!(persona(&model).preview, None);
+
+    let (mut model, session) = auditioning();
+    let effects = model.update(Event::Back);
+    assert!(effects.contains(&Effect::DisconnectMedia { session }));
+    assert_eq!(signed_in(&model).persona, None);
+    assert_eq!(signed_in(&model).media, None);
+
+    // Before sleep, the audition stops and its room is left.
+    let (mut model, session) = auditioning();
+    let effects = model.update(Event::Suspending);
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::Wait { .. }, Effect::DisconnectMedia { session: left }] if *left == session
+    ));
+    assert_eq!(persona(&model).preview, Some(PersonaPreview::Ended));
+}
+
+#[test]
+fn an_audition_does_not_start_while_a_call_holds_the_engine() {
+    let mut model = ready();
+    event(&mut model, PersonaEvent::OpenPreview);
+    // A call rung here and being answered holds the engine.
+    ring_here(&mut model);
+    model.update(ringing(AGENCY, "call_1", &[USER]));
+    model.update(Event::Ring(RingEvent::Answer {
+        call_id: "call_1".to_owned(),
+    }));
+    assert!(signed_in(&model).media_busy());
+    assert!(persona(&model).can_start_preview());
+    assert!(event(&mut model, PersonaEvent::StartPreview).is_empty());
+    assert_eq!(persona(&model).preview, Some(PersonaPreview::Idle));
+}
+
+#[test]
+fn editing_during_an_audition_keeps_its_room() {
+    let (mut model, _) = auditioning();
+    let effects = text(&mut model, PersonaText::Name, "Grace");
+    assert!(effects.is_empty(), "{effects:?}");
+    assert!(signed_in(&model).media.is_some());
+    assert!(persona(&model).preview_credential().is_some());
 }

@@ -3,14 +3,15 @@
 //! lobby is left.
 
 use district_core::{
-    Effect, Event, MeetingList, MeetingRecord, Model, RoomJoin, RoomsEvent, RoomsScreen, Route,
-    SessionState, Ticket, is_in_progress,
+    DialerEvent, DisconnectReason, Effect, Event, MediaConnection, MediaEvent, MediaOwner,
+    MediaSession, MeetingList, MeetingRecord, Model, Participant, RoomJoin, RoomsEvent,
+    RoomsScreen, Route, SessionState, Ticket, TrackKind, is_in_progress,
 };
 use district_model::{MeetRoomName, MeetingDetail, MeetingSummary, RoomTokenResponse};
 
 use crate::support::{
-    AGENCY, CLIENT, VIEWER, config, fixture, last_ticket, loaded, server_error, signed_in,
-    signed_out_error,
+    AGENCY, CLIENT, VIEWER, config, connect, fixture, last_ticket, loaded, media, person,
+    server_error, service, signed_in, signed_out_error,
 };
 
 /// The recorded credential's secrets.
@@ -337,4 +338,222 @@ fn a_join_refused_for_an_ended_session_ends_it() {
         result: Err(signed_out_error()),
     });
     assert!(matches!(model.session(), SessionState::SignedOut(_)));
+}
+
+/// Joined in the lobby of `workspace` as `role`: the session's name, and the
+/// microphone the engine was asked to publish.
+fn joined(workspace: &str, role: &str) -> (Model, Ticket, bool) {
+    let mut model = in_lobby(workspace, role);
+    event(&mut model, RoomsEvent::EditRoomName("standup".to_owned()));
+    let (ticket, _) = requested(&event(&mut model, RoomsEvent::Start));
+    let effects = model.update(Event::RoomTokenIssued {
+        ticket,
+        result: Ok(credential()),
+    });
+    let (session, media, microphone) = connect(&effects);
+    assert_eq!(effects.len(), 1, "{effects:?}");
+    assert_eq!(media.url(), credential().url);
+    assert_eq!(media.token(), SECRETS[0]);
+    assert_eq!(
+        media.passphrase(),
+        Some(SECRETS[1]),
+        "as sent, never decoded"
+    );
+    let shown = format!("{effects:?}");
+    for secret in &SECRETS[..2] {
+        assert!(!shown.contains(secret), "{shown}");
+    }
+    (model, session, microphone)
+}
+
+#[test]
+fn a_room_is_joined_through_the_engine_and_lists_its_people_not_its_services() {
+    let (mut model, session, microphone) = joined(AGENCY, "agency");
+    assert!(microphone, "a member who may speak is heard");
+    let held = signed_in(&model).room_session().unwrap();
+    assert_eq!(held.owner, MediaOwner::Room);
+    assert_eq!(held.connection, MediaConnection::Connecting);
+
+    for arrival in [
+        person("user-grace"),
+        service("agent-companion"),
+        Participant::new("ai-companion-retired", None, false),
+        person("user-ada"),
+    ] {
+        model.update(media(session, MediaEvent::ParticipantJoined(arrival)));
+    }
+    // The same person again replaces themselves.
+    model.update(media(
+        session,
+        MediaEvent::ParticipantJoined(person("user-grace")),
+    ));
+    for (identity, kind) in [
+        ("user-ada", TrackKind::Audio),
+        ("user-ada", TrackKind::Video),
+        ("someone-gone", TrackKind::Audio),
+    ] {
+        model.update(media(
+            session,
+            MediaEvent::RemoteTrack {
+                identity: identity.to_owned(),
+                kind,
+                available: true,
+            },
+        ));
+    }
+    let held = signed_in(&model).room_session().unwrap();
+    let people: Vec<&str> = held
+        .people()
+        .iter()
+        .map(|participant| participant.identity.as_str())
+        .collect();
+    assert_eq!(people, ["user-ada", "user-grace"]);
+    assert!(held.service_present());
+    assert_eq!(held.participants().len(), 4);
+    let ada = held.people()[0];
+    assert!(ada.audio && ada.video);
+    assert!(
+        !format!("{ada:?}").contains("user-ada"),
+        "no identity printed"
+    );
+
+    model.update(media(
+        session,
+        MediaEvent::ParticipantLeft {
+            identity: "user-ada".to_owned(),
+        },
+    ));
+    assert_eq!(signed_in(&model).room_session().unwrap().people().len(), 1);
+
+    // Media that cannot be decrypted is said, and the room goes on.
+    model.update(media(session, MediaEvent::EncryptionFailed));
+    assert_eq!(
+        signed_in(&model).room_session().unwrap().notice(),
+        Some(MediaSession::ENCRYPTION_FAILED)
+    );
+
+    assert_eq!(
+        event(&mut model, RoomsEvent::LeaveRoom),
+        [Effect::DisconnectMedia { session }]
+    );
+    assert_eq!(rooms(&model).room, None);
+    assert_eq!(signed_in(&model).media, None);
+    assert!(
+        model
+            .update(media(
+                session,
+                MediaEvent::ParticipantJoined(person("late"))
+            ))
+            .is_empty()
+    );
+    assert!(event(&mut model, RoomsEvent::LeaveRoom).is_empty());
+}
+
+#[test]
+fn a_viewer_joins_to_listen_and_cannot_turn_the_microphone_on() {
+    let (mut model, _, microphone) = joined(VIEWER, "viewer");
+    assert!(!microphone);
+    assert!(model.update(Event::Microphone(true)).is_empty());
+    assert!(RoomsScreen::LISTENER_NOTE.contains("listen"));
+
+    let (mut model, _, _) = joined(AGENCY, "agency");
+    let effects = model.update(Event::Microphone(false));
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::SetMicrophone { enabled: false, .. }]
+    ));
+}
+
+#[test]
+fn a_room_that_ends_under_the_member_drops_its_credential_and_says_why() {
+    for (reason, said) in [
+        (DisconnectReason::Removed, true),
+        (DisconnectReason::RoomEnded, false),
+        (DisconnectReason::ConnectFailed, true),
+    ] {
+        let (mut model, session, _) = joined(AGENCY, "agency");
+        assert!(
+            model
+                .update(media(session, MediaEvent::Disconnected(reason)))
+                .is_empty()
+        );
+        assert_eq!(rooms(&model).room, None);
+        assert_eq!(signed_in(&model).media, None);
+        assert_eq!(rooms(&model).ended, Some(reason));
+        assert_eq!(reason.message().is_some(), said, "{reason:?}");
+        event(&mut model, RoomsEvent::DismissJoinFailure);
+        assert_eq!(rooms(&model).ended, None);
+    }
+}
+
+#[test]
+fn leaving_the_lobby_or_the_workspace_leaves_the_room() {
+    let (mut model, session, _) = joined(AGENCY, "agency");
+    let effects = model.update(Event::Navigate(Route::Inbox));
+    assert!(effects.contains(&Effect::DisconnectMedia { session }));
+
+    let (mut model, session, _) = joined(AGENCY, "agency");
+    let effects = model.update(Event::SelectWorkspace(CLIENT.to_owned()));
+    assert!(effects.contains(&Effect::DisconnectMedia { session }));
+    assert_eq!(signed_in(&model).media, None);
+
+    let (mut model, session, _) = joined(AGENCY, "agency");
+    let effects = model.update(Event::Suspending);
+    assert_eq!(effects, [Effect::DisconnectMedia { session }]);
+    assert_eq!(rooms(&model).room, None);
+}
+
+#[test]
+fn a_room_is_not_started_or_rejoined_while_a_call_holds_the_engine() {
+    let mut model = in_lobby(AGENCY, "agency");
+    model.update(Event::Navigate(Route::Dialer));
+    model.update(Event::Dialer(DialerEvent::Edit(
+        "+1 212 555 0142".to_owned(),
+    )));
+    assert_eq!(model.update(Event::Dialer(DialerEvent::Dial)).len(), 1);
+    model.update(Event::Navigate(Route::Rooms));
+    event(&mut model, RoomsEvent::EditRoomName("standup".to_owned()));
+    assert!(rooms(&model).can_start());
+    assert!(signed_in(&model).media_busy());
+    assert!(event(&mut model, RoomsEvent::Start).is_empty());
+    assert!(
+        event(
+            &mut model,
+            RoomsEvent::Rejoin {
+                meeting_id: "meeting_contract_live".to_owned()
+            }
+        )
+        .is_empty()
+    );
+    assert!(RoomsScreen::BUSY_NOTE.contains("call"));
+}
+
+#[test]
+fn every_way_a_room_ends_has_its_words_or_none() {
+    for (reason, words) in [
+        (DisconnectReason::Left, None),
+        (DisconnectReason::RoomEnded, None),
+        (
+            DisconnectReason::ConnectFailed,
+            Some("The room could not be joined. Try again."),
+        ),
+        (
+            DisconnectReason::Removed,
+            Some("You were removed from the room."),
+        ),
+        (
+            DisconnectReason::JoinedElsewhere,
+            Some("You joined this room from somewhere else."),
+        ),
+        (
+            DisconnectReason::ConnectionLost,
+            Some("The connection was lost and could not be resumed."),
+        ),
+        (
+            DisconnectReason::Other,
+            Some("The connection was lost and could not be resumed."),
+        ),
+    ] {
+        assert_eq!(reason.message(), words, "{reason:?}");
+    }
 }
