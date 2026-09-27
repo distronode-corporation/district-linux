@@ -31,7 +31,8 @@ impl<S: TokenSource> ApiClient<S> {
     /// when the list is merely short. Neither is an empty account.
     pub async fn workspace_list(&self) -> Result<WorkspaceListResponse, ApiError> {
         let list: WorkspaceListResponse = self.request(Endpoint::WorkspaceList).send().await?;
-        confirmed(Endpoint::WorkspaceList, list.success, list)
+        confirm(Endpoint::WorkspaceList, list.success)?;
+        Ok(list)
     }
 
     /// The overview of `workspace_id`: four headline numbers and the most recent
@@ -47,7 +48,8 @@ impl<S: TokenSource> ApiClient<S> {
             .workspace(workspace_id)
             .send()
             .await?;
-        confirmed(Endpoint::Overview, overview.success, overview)
+        confirm(Endpoint::Overview, overview.success)?;
+        Ok(overview)
     }
 
     /// Where the owner of `workspace_id` is in the web setup wizard.
@@ -66,7 +68,8 @@ impl<S: TokenSource> ApiClient<S> {
     /// a normal answer, not a signed-out account: see [`DeviceListResponse`].
     pub async fn native_devices(&self) -> Result<DeviceListResponse, ApiError> {
         let devices: DeviceListResponse = self.request(Endpoint::NativeDevices).send().await?;
-        confirmed(Endpoint::NativeDevices, devices.success, devices)
+        confirm(Endpoint::NativeDevices, devices.success)?;
+        Ok(devices)
     }
 
     /// Signs the installation `device_id` out of the account.
@@ -80,7 +83,8 @@ impl<S: TokenSource> ApiClient<S> {
             .field("deviceId", device_id)
             .send()
             .await?;
-        confirmed(Endpoint::NativeDeviceRevoke, answer.success, answer)
+        confirm(Endpoint::NativeDeviceRevoke, answer.success)?;
+        Ok(answer)
     }
 
     /// Signs every installation out of the account, this one included: the
@@ -88,14 +92,19 @@ impl<S: TokenSource> ApiClient<S> {
     /// sign-out too. Sent once, never repeated automatically.
     pub async fn revoke_all_devices(&self) -> Result<DeviceRevokeResponse, ApiError> {
         let answer: DeviceRevokeResponse = self.request(Endpoint::NativeRevokeAll).send().await?;
-        confirmed(Endpoint::NativeRevokeAll, answer.success, answer)
+        confirm(Endpoint::NativeRevokeAll, answer.success)?;
+        Ok(answer)
     }
 }
 
-/// `value` if the body said `success: true`, else [`ApiError::Unconfirmed`].
-fn confirmed<T>(endpoint: Endpoint, success: bool, value: T) -> Result<T, ApiError> {
+/// Refuses a body that did not say `success: true`, as [`ApiError::Unconfirmed`].
+///
+/// Not generic, and each typed method calls it on a line of its own: a branch
+/// inside a function compiled once per response type would be measured once per
+/// type, and no single type takes both arms.
+pub(crate) fn confirm(endpoint: Endpoint, success: bool) -> Result<(), ApiError> {
     if success {
-        Ok(value)
+        Ok(())
     } else {
         Err(ApiError::Unconfirmed { endpoint })
     }
