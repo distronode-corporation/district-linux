@@ -9,13 +9,13 @@
 use std::collections::BTreeSet;
 
 use district_model::{
-    AiDraftResponse, CHANNEL_EMAIL, CHANNEL_SMS, CallHangUpResponse, ConversationsResponse,
-    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, MarkReadResponse, MediaUploadResponse, MessageThreadResponse,
-    NativeRevokeResponse, OverviewResponse, PkceVector, SETUP_STEP_DONE, SETUP_STEP_TODO,
-    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
-    TelemetryEventType, TelemetryToken, ThreadRef, TimelineResponse, UnreadCountResponse,
-    WorkspaceListResponse,
+    AiDraftResponse, CHANNEL_EMAIL, CHANNEL_SMS, CallDetailResponse, CallHangUpResponse,
+    CallSummary, CallTranscriptResponse, ConversationsResponse, DeviceListResponse,
+    DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, MarkReadResponse,
+    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
+    SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingHandOffResponse, SendMessageResponse,
+    SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken, ThreadRef,
+    TimelineResponse, UnreadCountResponse, WorkspaceListResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -260,6 +260,45 @@ fn signing_out_confirms_nothing_beyond_success() {
         error.to_string().contains("unknown field `revoked`"),
         "{error}"
     );
+}
+
+// The call log.
+
+#[test]
+fn the_call_log_is_a_bare_array_covering_every_kind_of_row() {
+    let calls: Vec<CallSummary> = decode("district-calls.json");
+    assert!(calls.len() > 1);
+    let covers = |what: &str, found: bool| assert!(found, "the call log must cover {what}");
+    covers("a follow-up", calls.iter().any(|c| c.follow_up.is_some()));
+    covers("no follow-up", calls.iter().any(|c| c.follow_up.is_none()));
+    covers("an analysis", calls.iter().any(|c| c.analysis.is_some()));
+    covers(
+        "a missed call",
+        calls.iter().any(|c| c.call_type == "missed"),
+    );
+    covers(
+        "an outbound call",
+        calls.iter().any(|c| c.call_type == "outbound"),
+    );
+    covers("a transcript", calls.iter().any(|c| c.has_transcript));
+    covers("no transcript", calls.iter().any(|c| !c.has_transcript));
+    assert!(
+        calls.iter().all(|c| c.transcript.is_empty()),
+        "the transcript text never rides on the log"
+    );
+}
+
+#[test]
+fn one_call_is_its_row_of_the_log_and_its_transcript_comes_apart() {
+    let detail: CallDetailResponse = decode("district-call-detail.json");
+    assert!(detail.success);
+    let call = detail.call.expect("the call");
+    let calls: Vec<CallSummary> = decode("district-calls.json");
+    let row = calls.iter().find(|c| c.id == call.id).expect("in the log");
+    assert_eq!(&call, row, "one shape for the log and the single read");
+    assert!(call.has_transcript && call.transcript.is_empty());
+    let transcript: CallTranscriptResponse = decode("district-call-transcript.json");
+    assert!(transcript.success && transcript.has_transcript());
 }
 
 // The inbox.

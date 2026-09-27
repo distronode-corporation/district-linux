@@ -1,4 +1,4 @@
-//! The call log's rows, and the answer to ending a call.
+//! The call log: its rows, one call, its transcript, and ending a call.
 
 use serde::{Deserialize, Serialize};
 
@@ -122,6 +122,48 @@ pub struct CallFollowUp {
     pub sent_at: Option<String>,
 }
 
+/// `GET /api/district/calls/{callId}`: one call, in the same shape as a row of
+/// the call log.
+///
+/// A call the service cannot find is a 404, not a success with no call. The
+/// service answers 404 alike for an id that does not exist and one in another
+/// workspace, so a 404 does not mean the id was malformed.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "strict-contracts", serde(deny_unknown_fields))]
+#[serde(rename_all = "camelCase")]
+pub struct CallDetailResponse {
+    /// `true` on a successful answer.
+    #[serde(default)]
+    pub success: bool,
+    /// The call. No transcript text rides on it, only
+    /// [`has_transcript`](CallSummary::has_transcript); the text is
+    /// [`CallTranscriptResponse`].
+    pub call: Option<CallSummary>,
+}
+
+/// `GET /api/district/calls/{callId}/transcript`: one call's transcript,
+/// fetched when the call is opened, because transcripts are the largest thing a
+/// call has and nothing else carries them.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "strict-contracts", serde(deny_unknown_fields))]
+#[serde(rename_all = "camelCase")]
+pub struct CallTranscriptResponse {
+    /// `true` on a successful answer.
+    #[serde(default)]
+    pub success: bool,
+    /// The transcript, or the empty string when the call has none (never
+    /// `null`).
+    #[serde(default)]
+    pub transcript: String,
+}
+
+impl CallTranscriptResponse {
+    /// Whether there is a transcript worth showing.
+    pub fn has_transcript(&self) -> bool {
+        !self.transcript.trim().is_empty()
+    }
+}
+
 /// `POST /api/district/calls/{callId}/hangup`: ending a call placed or answered
 /// from this desktop, the phone network's side of it included.
 ///
@@ -187,6 +229,19 @@ mod tests {
                 sent_at: None
             }
         );
+    }
+
+    #[test]
+    fn an_absent_transcript_is_empty_and_so_is_white_space() {
+        let empty: CallTranscriptResponse = serde_json::from_str("{}").unwrap();
+        assert_eq!(empty.transcript, "");
+        assert!(!empty.has_transcript());
+        let blank: CallTranscriptResponse =
+            serde_json::from_str(r#"{"success":true,"transcript":" \n"}"#).unwrap();
+        assert!(!blank.has_transcript());
+        let text: CallTranscriptResponse =
+            serde_json::from_str(r#"{"success":true,"transcript":"Agent: Hello."}"#).unwrap();
+        assert!(text.has_transcript());
     }
 
     #[test]

@@ -21,11 +21,12 @@
 use std::collections::BTreeMap;
 
 use district_model::{
-    AiDraftResponse, CallHangUpResponse, ConversationsResponse, DeviceListResponse,
-    DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, MarkReadResponse,
-    MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
-    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
-    TelemetryToken, TimelineResponse, UnreadCountResponse, WorkspaceListResponse,
+    AiDraftResponse, CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
+    ConversationsResponse, DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse,
+    DraftListResponse, DraftResponse, MarkReadResponse, MediaUploadResponse, MessageThreadResponse,
+    NativeRevokeResponse, OverviewResponse, PkceVector, SchedulingHandOffResponse,
+    SendMessageResponse, SetupResponse, TelemetryEnvelope, TelemetryToken, TimelineResponse,
+    UnreadCountResponse, WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -78,6 +79,15 @@ pub const EXPECTED_FIXTURE_COUNT: usize = 177;
 pub const IMPLEMENTED: &[(&str, Codec)] = &[
     // POST /api/district/messages/draft: a reply written by a model.
     ("district-ai-draft.json", codec::<AiDraftResponse>),
+    // GET /api/district/calls/{callId}: the call log's row for one call.
+    ("district-call-detail.json", codec::<CallDetailResponse>),
+    // GET /api/district/calls/{callId}/transcript.
+    (
+        "district-call-transcript.json",
+        codec::<CallTranscriptResponse>,
+    ),
+    // GET /api/district/calls: the call log, a bare array.
+    ("district-calls.json", codec::<Vec<CallSummary>>),
     // GET /api/district/conversations: a mixed-channel contact thread and a bare
     // address thread.
     (
@@ -154,7 +164,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 92;
+pub const NOT_YET_MODELLED_BASELINE: usize = 89;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -167,9 +177,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-billing-unavailable.json",
     "district-billing.json",
     "district-call-answer.json",
-    "district-call-detail.json",
-    "district-call-transcript.json",
-    "district-calls.json",
     "district-campaign-pause.json",
     "district-campaign-status-empty.json",
     "district-campaign-status.json",

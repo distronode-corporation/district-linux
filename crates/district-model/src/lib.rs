@@ -46,7 +46,10 @@ mod telemetry;
 mod workspace;
 
 pub use auth::AuthMeResponse;
-pub use calls::{CallAnalysis, CallFollowUp, CallHangUpResponse, CallSummary};
+pub use calls::{
+    CallAnalysis, CallDetailResponse, CallFollowUp, CallHangUpResponse, CallSummary,
+    CallTranscriptResponse,
+};
 pub use compose::{
     AiDraftResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest,
     MarkReadResponse, MediaUploadResponse, MessageDraft, SendMessageRequest, SendMessageResponse,
