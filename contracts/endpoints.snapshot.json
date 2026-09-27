@@ -1,0 +1,687 @@
+{
+  "generated_by": "scripts/sync-endpoints.py",
+  "source": {
+    "commit": "9a02975e2e4f6844c2adb686e383ce97320c2498",
+    "uncommitted_changes": false
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/admin/diagnostics",
+      "auth": "elevated",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/messages",
+      "auth": "elevated",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/messages/send-sms",
+      "auth": "elevated",
+      "workspace": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/overview",
+      "auth": "elevated",
+      "workspace": "none"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/phone-numbers",
+      "auth": "elevated",
+      "workspace": "body"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users",
+      "auth": "elevated",
+      "workspace": "none"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users",
+      "auth": "elevated",
+      "workspace": "none"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/workspaces",
+      "auth": "elevated",
+      "workspace": "none"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/workspaces",
+      "auth": "elevated",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/workspaces",
+      "auth": "elevated",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/native/devices",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/native/devices/revoke",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/native/elevate",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/native/elevate",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/native/elevate/sso",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/native/refresh",
+      "auth": "none",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/native/revoke",
+      "auth": "none",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/native/revoke-all",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/native/token",
+      "auth": "none",
+      "workspace": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/analytics",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/calls",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/calls/dial",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/calls/token",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/calls/{callId}",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/calls/{callId}/answer",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/calls/{callId}/hangup",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/calls/{callId}/recording",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/calls/{callId}/transcript",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/contacts",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/contacts/block",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/contacts/blocked",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/contacts/clear-intel",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/contacts/create",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/district/contacts/delete",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/contacts/enrich",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/contacts/get",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/contacts/update",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/conversations",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/district/desk/logo",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/desk/logo",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/desk/settings",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/desk/settings",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/desk/tickets",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/desk/tickets",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/desk/tickets/{ticketId}",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/desk/tickets/{ticketId}/reply",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/desk/tickets/{ticketId}/status",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/devices/register",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/devices/unregister",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/hq",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/meetings",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/meetings/{meetingId}",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/messages/draft",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/district/messages/drafts",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/messages/drafts",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/district/messages/drafts",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/messages/mark-read",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/messages/media",
+      "auth": "bearer",
+      "workspace": "form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/messages/search",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/messages/send",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/messages/unread-count",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/messages/{messageId}",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/overview",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/scheduling/admin",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/scheduling/admin/download/{recordingId}",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/scheduling/admin/upload",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/scheduling/enable",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/scheduling/handoff",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/scheduling/sso",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/scheduling/status",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/setup",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/support/requests",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/support/requests",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/support/requests/{key}",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/support/requests/{key}/close",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/support/requests/{key}/reply",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/timeline",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workflows",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workflows",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workflows/runs",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/availability",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/availability",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/billing",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/call-handling",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/call-handling",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/campaign-status",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/campaign-status",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/config",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/directory",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/district/workspace/knowledge",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/knowledge",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/workspace/knowledge",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/knowledge-mode",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/knowledge-mode",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/list",
+      "auth": "bearer",
+      "workspace": "none"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/district/workspace/members",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/members",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/members",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/workspace/members",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/messaging",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/messaging",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/workspace/messaging/test",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/numbers/search",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/persona",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/persona/options",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/workspace/persona/preview-token",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/provider/numbers",
+      "auth": "bearer",
+      "workspace": "query"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/rename",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "POST",
+      "path": "/api/district/workspace/routing-rules",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/district/workspace/tools",
+      "auth": "bearer",
+      "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/usage",
+      "auth": "bearer",
+      "workspace": "query"
+    }
+  ]
+}
