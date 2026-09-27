@@ -11,15 +11,20 @@
 //!
 //! TLS is rustls; OpenSSL is not linked.
 //!
-//! Status: a placeholder in the workspace layout. The client lands in a later
-//! change.
+//! [`ALL_ENDPOINTS`] is the table: for each [`Endpoint`], its method, path, where
+//! it names its workspace, what body it takes and whether it may be repeated
+//! after a refused token ([`RetryPolicy`]). It mirrors the District AI Android
+//! app, minus the endpoints in [`EXCLUDED`] and plus those in [`LINUX_ONLY`], and
+//! a test holds it to that.
+//!
+//! Status: the table. The client that sends requests from it lands next.
 
 #![forbid(unsafe_code)]
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn crate_name_matches_the_manifest() {
-        assert_eq!(env!("CARGO_PKG_NAME"), "district-api");
-    }
-}
+mod endpoints;
+mod exclusions;
+
+pub use endpoints::{
+    ALL_ENDPOINTS, Auth, BodyKind, Endpoint, EndpointSpec, HttpMethod, RetryPolicy, WorkspaceIn,
+};
+pub use exclusions::{Addition, EXCLUDED, Exclusion, LINUX_ONLY, PathMatch, normalize_template};

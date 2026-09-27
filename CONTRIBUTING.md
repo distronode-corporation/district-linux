@@ -24,10 +24,11 @@ crates/district-call/     The call engine. The LiveKit implementation is behind 
                           optional `livekit` feature, off by default.
 crates/district-app/      The GTK 4 and libadwaita binary, `district-ai`. The only
                           crate that links GTK.
-contracts/                The server's recorded responses, vendored and sanitised
-                          by scripts/sync-contracts.py. See "Contract fixtures".
-scripts/                  check-version.py and check-public-hygiene.py, run by CI,
-                          and sync-contracts.py, run by hand.
+contracts/                What this client is checked against: the server's recorded
+                          responses (vendored and sanitised by sync-contracts.py) and
+                          the Android app's endpoint snapshot (sync-endpoints.py).
+scripts/                  check-version.py and check-public-hygiene.py, run by CI;
+                          sync-contracts.py and sync-endpoints.py, run by hand.
 ```
 
 Dependencies point one way: `district-app` sits on top, `district-model` at the
@@ -108,6 +109,19 @@ python3 scripts/sync-contracts.py --monorepo <path to the server repository>
 The fixture manifest in `crates/district-model/tests/contracts/manifest.rs`
 accounts for every file: each is decoded by a data type, recorded as not yet
 modelled (a list that may only shrink), or excluded by a stated decision.
+
+## The endpoint table
+
+`crates/district-api` calls the same endpoints as the District AI Android app, which
+is the reference client, apart from a named list of exclusions and Linux-only
+additions, each with its reason. `contracts/endpoints.snapshot.json` is the Android
+app's endpoint list, and `crates/district-api/tests/endpoint_parity.rs` fails on any
+difference that is not on one of those two lists.
+
+The Android app's sources are not public, so the snapshot is committed and CI never
+regenerates it. A maintainer with access refreshes it with
+`python3 scripts/sync-endpoints.py --monorepo <checkout>` and commits the result
+together with whatever change to the table it calls for.
 
 ## Commits and pull requests
 
