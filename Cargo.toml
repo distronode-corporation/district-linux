@@ -57,8 +57,18 @@ sha2 = "0.10.9"
 syn = { version = "3.0.6", features = ["full", "visit"] }
 # rustls, not native-tls: no OpenSSL at build time or at run time. No `cookies`
 # feature, so the client has no cookie store at all; the session is the bearer
-# token and nothing else.
-reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
+# token and nothing else. `multipart` is for the two uploads (a message
+# attachment and the help desk logo).
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "multipart"] }
+url = "2.5.8"
+thiserror = "2.0.21"
+# Reads the date form of a `Retry-After` header (RFC 9110 allows seconds or a date).
+httpdate = "1.0.3"
+# No default features: each crate turns on the parts of the runtime it uses, so a
+# library crate does not quietly pull in the multi-threaded scheduler.
+tokio = { version = "1.53.1", default-features = false }
+# Test only: an HTTP server the tests point the API client at.
+wiremock = "0.6.5"
 # The Secret Service client, which inside a Flatpak sandbox goes through the
 # secret portal instead. Features are spelled out rather than inherited from
 # `default`, so a change of upstream defaults cannot swap in another async runtime
