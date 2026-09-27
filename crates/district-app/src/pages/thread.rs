@@ -847,7 +847,7 @@ mod tests {
             to: "14165550142".to_owned(),
             channel: CHANNEL_SMS,
         };
-        assert_eq!(reply_line(Some(&text)), "Text message to 1 416 555 0142");
+        assert_eq!(reply_line(Some(&text)), "Text message to +1 416 555 0142");
         let email = ReplyTarget {
             to: "ada@example.com".to_owned(),
             channel: CHANNEL_EMAIL,

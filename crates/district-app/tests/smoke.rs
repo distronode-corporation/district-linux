@@ -1113,7 +1113,7 @@ fn inbox_and_thread(smoke: &Smoke) {
         "its image came back too"
     );
     assert!(smoke.shown("older_button"));
-    assert!(smoke.shows_text("Text message to 1 416 555 0142"));
+    assert!(smoke.shows_text("Text message to +1 416 555 0142"));
     assert!(!smoke.shown("back_button"), "the list is beside it");
     smoke.shot("19-thread");
 
@@ -1515,7 +1515,7 @@ fn contacts_screens(smoke: &Smoke) {
         }),
     });
     assert!(smoke.shown("contact_view"));
-    assert!(smoke.shows_text("1 416 555 0142 \u{b7} ada@example.com"));
+    assert!(smoke.shows_text("+1 416 555 0142 \u{b7} ada@example.com"));
     smoke.shot("30-contact");
 
     // Editing, from the whole record.

@@ -522,13 +522,13 @@ mod tests {
     #[test]
     fn a_contact_reads_with_its_number_grouped() {
         let (contact, intel) = contact();
-        assert_eq!(reach(&contact), "1 416 555 0142 \u{b7} ada@example.com");
+        assert_eq!(reach(&contact), "+1 416 555 0142 \u{b7} ada@example.com");
         assert_eq!(research_status(&contact).as_deref(), Some("Complete"));
         let now =
             glib::DateTime::from_iso8601("2026-09-27T10:00:00Z", Some(&glib::TimeZone::utc()))
                 .unwrap();
         let rows = contact_facts(&contact, Some(&now));
-        assert_eq!(rows[0], ("Phone number", "1 416 555 0142".to_owned()));
+        assert_eq!(rows[0], ("Phone number", "+1 416 555 0142".to_owned()));
         assert!(rows.contains(&("Company", "Analytical Engines".to_owned())));
         assert!(rows.contains(&("Added", "15 August 2026, 14:30".to_owned())));
         let without_clock = contact_facts(&contact, None);

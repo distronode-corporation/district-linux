@@ -256,7 +256,7 @@ mod tests {
         };
         assert_eq!(
             blocked_line(&caller, Some(&now)),
-            "1 416 555 0181 \u{b7} Blocked 1 September 2026, 09:00"
+            "+1 416 555 0181 \u{b7} Blocked 1 September 2026, 09:00"
         );
         caller.name = "Unknown".to_owned();
         assert_eq!(

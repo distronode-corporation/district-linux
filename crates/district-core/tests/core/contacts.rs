@@ -1202,7 +1202,8 @@ fn a_contact_is_called_by_the_best_thing_it_holds() {
     assert_eq!(blocked_label(&caller("Grace", None)), "Grace");
     assert_eq!(
         blocked_label(&caller("Unknown", Some("14165550181"))),
-        "1 416 555 0181"
+        "+1 416 555 0181",
+        "a number stored without its plus reads with it"
     );
     assert_eq!(blocked_label(&caller("", None)), UNNAMED_CONTACT);
 }

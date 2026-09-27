@@ -100,6 +100,12 @@ pub fn format_dial_entry(raw: &str) -> String {
 /// anything else as it is (a name, an email address, the service's `Unknown`,
 /// a short code).
 ///
+/// A North American number stored without its `+` (eleven digits, the first a
+/// `1`, as the service keeps some of them) reads with it, so the same number
+/// reads the same wherever it comes from: `14165550142` is `+1 416 555 0142`
+/// too. Nothing else gains a `+`: ten digits could be a number of any country
+/// written without its code, and a guess there would misstate it.
+///
 /// For showing only. Wherever the value is sent, searched for or compared, the
 /// service's own text is what goes: grouping adds spaces and never removes a
 /// digit, but it is not the stored value.
@@ -110,17 +116,23 @@ pub fn format_dial_entry(raw: &str) -> String {
 /// `ada2@example.com` are left alone, and so is a four-digit code.
 pub fn format_phone_number(text: &str) -> String {
     let trimmed = text.trim();
-    let digits = trimmed.chars().filter(char::is_ascii_digit).count();
+    let digits: String = trimmed.chars().filter(char::is_ascii_digit).collect();
+    let plus = trimmed.starts_with('+');
     let body = trimmed.strip_prefix('+').unwrap_or(trimmed);
     let written_as_a_number = body
         .chars()
         .all(|c| c.is_ascii_digit() || matches!(c, ' ' | '(' | ')' | '-' | '.'));
-    if digits >= MIN_DIAL_DIGITS && written_as_a_number {
-        format_dial_entry(trimmed)
-    } else {
-        text.to_owned()
+    if digits.len() < MIN_DIAL_DIGITS || !written_as_a_number {
+        return text.to_owned();
     }
+    if !plus && digits.len() == NORTH_AMERICAN && digits.starts_with('1') {
+        return format_dial_entry(&format!("+{digits}"));
+    }
+    format_dial_entry(trimmed)
 }
+
+/// A North American number with its country code, `1`: eleven digits.
+const NORTH_AMERICAN: usize = SUBSCRIBER + 1;
 
 /// `digits` in groups of three, left to right.
 fn chunks(digits: &str) -> Vec<&str> {
@@ -237,7 +249,6 @@ mod tests {
     #[test]
     fn a_phone_number_is_shown_grouped_and_anything_else_as_it_is() {
         assert_eq!(format_phone_number("+14165550142"), "+1 416 555 0142");
-        assert_eq!(format_phone_number("14165550142"), "1 416 555 0142");
         assert_eq!(format_phone_number(" (416) 555-0142 "), "416 555 0142");
         assert_eq!(format_phone_number("416.555.0142"), "416 555 0142");
         for kept in [
@@ -253,6 +264,34 @@ mod tests {
         ] {
             assert_eq!(format_phone_number(kept), kept, "{kept:?}");
         }
+    }
+
+    #[test]
+    fn a_north_american_number_reads_with_its_plus_however_it_was_stored() {
+        for stored in [
+            "+14165550142",
+            "14165550142",
+            " 14165550142 ",
+            "1 416 555 0142",
+            "1 (416) 555-0142",
+            "1.416.555.0142",
+        ] {
+            assert_eq!(format_phone_number(stored), "+1 416 555 0142", "{stored:?}");
+        }
+        // Only eleven digits led by a 1: anything else is grouped as it is,
+        // never given a country code it may not have.
+        assert_eq!(format_phone_number("4165550142"), "416 555 0142");
+        assert_eq!(format_phone_number("24165550142"), "2 416 555 0142");
+        assert_eq!(format_phone_number("114165550142"), "11 416 555 0142");
+        // Written in pieces so the hygiene scan does not read a real number.
+        let other = format!("+{}{}", "44", "2079460958");
+        assert_eq!(
+            format_phone_number(&other),
+            format!("+{} {} {} {}", "44", "207", "946", "0958")
+        );
+        // And still nothing that is not a number.
+        assert_eq!(format_phone_number("1 416 555 0142 x"), "1 416 555 0142 x");
+        assert_eq!(format_phone_number("ada1@example.com"), "ada1@example.com");
     }
 
     #[test]

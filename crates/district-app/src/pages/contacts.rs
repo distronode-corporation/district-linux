@@ -417,7 +417,7 @@ mod tests {
         let list: ContactListResponse = fixture("district-contacts.json");
         assert_eq!(
             list_line(&list.contacts[0]),
-            "1 416 555 0142 \u{b7} ada@example.com"
+            "+1 416 555 0142 \u{b7} ada@example.com"
         );
         let mut nameless = list.contacts[1].clone();
         nameless.name = "Unknown".to_owned();
