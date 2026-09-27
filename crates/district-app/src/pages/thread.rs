@@ -478,8 +478,7 @@ impl ThreadView {
                 }
             }
             let time = when
-                .and_then(|when| when.format("%H:%M").ok())
-                .map(String::from)
+                .map(|when| crate::pages::shared::time_of_day(&when))
                 .unwrap_or_default();
             let widget = if event.is_message() {
                 message_bubble(event, &time)

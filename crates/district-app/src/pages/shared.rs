@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::adw;
 use crate::adw::prelude::*;
-use crate::gtk::{self, glib};
+use crate::gtk::{self, gio, glib};
 
 /// Text a person types into a field the model also writes to (the composer,
 /// the search box): which of the model's values to put into the field.
@@ -74,14 +74,89 @@ fn same_day(a: &glib::DateTime, b: &glib::DateTime) -> bool {
     a.ymd() == b.ymd()
 }
 
+thread_local! {
+    /// Whether times read on a 24-hour clock, once worked out.
+    static CLOCK_24H: Cell<Option<bool>> = const { Cell::new(None) };
+}
+
+/// Whether this desktop reads times on a 24-hour clock: the desktop's own
+/// clock setting where it has one, else the way the locale writes a time.
+/// Worked out once.
+pub(crate) fn clock_24h() -> bool {
+    CLOCK_24H.with(|cached| {
+        let h24 = cached
+            .get()
+            .unwrap_or_else(|| clock_setting().unwrap_or_else(locale_clock_24h));
+        cached.set(Some(h24));
+        h24
+    })
+}
+
+/// The desktop's clock setting. The unit tests read a 24-hour clock, whatever
+/// the machine running them uses.
+#[cfg(not(test))]
+fn clock_setting() -> Option<bool> {
+    desktop_clock()
+}
+
+#[cfg(test)]
+fn clock_setting() -> Option<bool> {
+    Some(true)
+}
+
+/// GNOME's clock setting (12 or 24 hours), when this desktop has it.
+#[cfg_attr(test, allow(dead_code))]
+fn desktop_clock() -> Option<bool> {
+    const SCHEMA: &str = "org.gnome.desktop.interface";
+    gio::SettingsSchemaSource::default()?
+        .lookup(SCHEMA, true)
+        .filter(|schema| schema.has_key("clock-format"))?;
+    Some(gio::Settings::new(SCHEMA).string("clock-format") != "12h")
+}
+
+/// Whether the locale writes an afternoon on a 24-hour clock, as its own
+/// preferred form of a time (`%X`) shows.
+fn locale_clock_24h() -> bool {
+    glib::DateTime::from_utc(2000, 1, 1, 15, 0, 0.0)
+        .and_then(|afternoon| afternoon.format("%X"))
+        .ok()
+        .is_none_or(|written| written.contains("15"))
+}
+
+/// The time of day of `when` on a 24-hour clock (`14:30`) or a 12-hour one
+/// (`2:30 PM`, in the locale's words for the half of the day).
+pub(crate) fn clock_time(when: &glib::DateTime, h24: bool) -> String {
+    let format = if h24 { "%H:%M" } else { "%-I:%M %p" };
+    when.format(format).map(String::from).unwrap_or_default()
+}
+
+/// The time of day of `when`, as this desktop reads times.
+pub(crate) fn time_of_day(when: &glib::DateTime) -> String {
+    clock_time(when, clock_24h())
+}
+
+/// The date of `when` in full, with the locale's name for the month:
+/// `15 August 2026`.
+pub(crate) fn long_date(when: &glib::DateTime) -> String {
+    when.format("%-d %B %Y")
+        .map(String::from)
+        .unwrap_or_default()
+}
+
+/// `when` in full: `15 August 2026, 14:30`.
+pub(crate) fn long_local(when: &glib::DateTime) -> String {
+    format!("{}, {}", long_date(when), time_of_day(when))
+}
+
 /// `iso` as a list row reads it: the time for today, the day and month for
 /// this year, and the year too before that. `None` for a time this build
 /// cannot read.
 pub(crate) fn short_time(iso: &str, now: &glib::DateTime) -> Option<String> {
     let when = instant_in(iso, now)?;
-    let format = if same_day(&when, now) {
-        "%H:%M"
-    } else if when.year() == now.year() {
+    if same_day(&when, now) {
+        return Some(time_of_day(&when));
+    }
+    let format = if when.year() == now.year() {
         "%-d %b"
     } else {
         "%-d %b %Y"
@@ -91,8 +166,7 @@ pub(crate) fn short_time(iso: &str, now: &glib::DateTime) -> Option<String> {
 
 /// `iso` in full: `15 August 2026, 14:30`.
 pub(crate) fn long_time(iso: &str, now: &glib::DateTime) -> Option<String> {
-    let when = instant_in(iso, now)?;
-    when.format("%-d %B %Y, %H:%M").ok().map(String::from)
+    instant_in(iso, now).map(|when| long_local(&when))
 }
 
 /// The heading over a day's messages: "Today", "Yesterday", or the date.
@@ -412,6 +486,19 @@ mod tests {
             short_time("2026-08-16T01:00:00.000Z", &toronto).as_deref(),
             Some("21:00")
         );
+    }
+
+    #[test]
+    fn a_time_reads_on_the_desktops_clock() {
+        let afternoon = utc("2026-08-15T14:30:00Z");
+        assert_eq!(clock_time(&afternoon, true), "14:30");
+        assert_eq!(clock_time(&afternoon, false), "2:30 PM");
+        assert!(clock_24h(), "the tests read a 24-hour clock");
+        assert_eq!(time_of_day(&afternoon), "14:30");
+        assert_eq!(long_date(&afternoon), "15 August 2026");
+        assert_eq!(long_local(&afternoon), "15 August 2026, 14:30");
+        // The locale's own form, which the tests' C locale writes on 24 hours.
+        let _ = locale_clock_24h();
     }
 
     #[test]

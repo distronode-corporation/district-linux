@@ -25,7 +25,7 @@ pub(crate) fn last_active(row: &DeviceRow) -> String {
         .as_deref()
         .and_then(|when| glib::DateTime::from_iso8601(when, None).ok())
         .and_then(|when| when.to_local().ok())
-        .and_then(|when| when.format("%-d %B %Y, %H:%M").ok());
+        .map(|when| crate::pages::shared::long_local(&when));
     match local {
         Some(when) => format!("Last active {when}"),
         // Not yet renewed, or a time this build cannot read: the core's words.
