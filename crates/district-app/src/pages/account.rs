@@ -1,9 +1,12 @@
-//! The account: this build and this computer, the devices signed in, signing
-//! out, and where deleting the account starts.
+//! The account: this build and this computer, whether calls ring here, the
+//! devices signed in, signing out, and where deleting the account starts.
+//!
+//! "Ring on this computer" is shown once the core has read it, which a build
+//! without calls never does: there is nothing to ring there.
 
 use std::cell::OnceCell;
 
-use district_core::{AccountView, Event, Route};
+use district_core::{AccountView, Event, PresenceState, Route};
 
 use crate::adw;
 use crate::adw::prelude::*;
@@ -28,6 +31,12 @@ mod imp {
         pub sign_out_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub delete_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        pub calls_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        pub ring_here_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        pub presence_note: TemplateChild<gtk::Label>,
         pub sink: OnceCell<EventSink>,
     }
 
@@ -60,6 +69,14 @@ mod imp {
             });
             on_activate(&self.sign_out_row, &*page, || Event::SignOut);
             on_activate(&self.delete_row, &*page, || Event::DeleteAccount);
+            self.ring_here_row.set_title(PresenceState::SETTING_LABEL);
+            self.ring_here_row.set_subtitle(PresenceState::SETTING_BODY);
+            let weak = page.downgrade();
+            self.ring_here_row.connect_active_notify(move |row| {
+                if let Some(page) = weak.upgrade() {
+                    page.send(Event::SetRingOnThisComputer(row.is_active()));
+                }
+            });
         }
     }
 
@@ -86,14 +103,25 @@ impl AccountPage {
         self.imp().sink.set(sink).ok();
     }
 
-    /// Draws the page: `account` from the core, and `device_name`, the name
-    /// this computer gave itself at sign-in.
-    pub(crate) fn update(&self, account: Option<&AccountView>, device_name: &str) {
+    /// Draws the page: `account` from the core, `device_name`, the name this
+    /// computer gave itself at sign-in, and `presence`, whether calls ring
+    /// here.
+    pub(crate) fn update(
+        &self,
+        account: Option<&AccountView>,
+        device_name: &str,
+        presence: &PresenceState,
+    ) {
         let imp = self.imp();
         imp.device_row.set_subtitle(device_name);
         if let Some(account) = account {
             imp.version_row
                 .set_subtitle(&format!("Version {}", account.app_version));
         }
+        imp.calls_group.set_visible(presence.ring_here.is_some());
+        imp.ring_here_row
+            .set_active(presence.ring_here.unwrap_or_default());
+        let message = presence.message();
+        crate::pages::settings_kit::draw_line(&imp.presence_note, message.as_deref());
     }
 }

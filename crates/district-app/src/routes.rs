@@ -129,15 +129,6 @@ pub(crate) fn is_sidebar_row(route: &Route) -> bool {
     highlighted(route) == *route
 }
 
-/// The icon of the row `route` is under.
-pub(crate) fn icon(route: &Route) -> &'static str {
-    let row = highlighted(route);
-    sidebar()
-        .into_iter()
-        .find(|entry| entry.route == row)
-        .map_or("go-home-symbolic", |entry| entry.icon)
-}
-
 /// The screen's title, for the header bar and the sidebar.
 pub(crate) fn title(route: &Route) -> &'static str {
     match route {
@@ -178,10 +169,6 @@ pub(crate) fn title(route: &Route) -> &'static str {
         },
     }
 }
-
-/// What a screen this build does not have yet says instead.
-pub(crate) const LATER_BODY: &str = "This screen arrives in a later build of District AI for \
-    Linux. Until then, it is in the web dashboard and the District AI mobile apps.";
 
 #[cfg(test)]
 mod tests {
@@ -243,7 +230,6 @@ mod tests {
                 sidebar().iter().any(|entry| entry.route == row),
                 "{route:?}"
             );
-            assert!(icon(&route).ends_with("-symbolic"), "{route:?}");
         }
         assert_eq!(highlighted(&Route::Devices), Route::Account);
         assert_eq!(
@@ -253,7 +239,6 @@ mod tests {
         assert_eq!(highlighted(&Route::Dialer), Route::Calls);
         assert!(is_sidebar_row(&Route::Account));
         assert!(!is_sidebar_row(&Route::Devices));
-        assert_eq!(icon(&Route::Devices), "avatar-default-symbolic");
     }
 
     #[test]

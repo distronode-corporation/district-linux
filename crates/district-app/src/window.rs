@@ -1,23 +1,37 @@
 //! The main window: the session's own page, or the sidebar and the page the
-//! route names, drawn from the core's state.
+//! route names, drawn from the core's state, over the strip a call rings and
+//! runs in.
+//!
+//! The window's two call shortcuts are its actions: `win.toggle-microphone`
+//! (Ctrl+D) turns the microphone of whatever call, room or audition is under
+//! way on or off, and `win.hang-up` (Ctrl+Shift+H) hangs up the call. Each
+//! works only while there is something for it to do.
 
-use std::cell::{OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    CallLog, Capabilities, ContactList, ConversationList, Event, LiveStatus, Model, Route,
-    SessionState, SignedIn, ThreadHistory, WorkspaceSection, Workspaces, WorkspacesState,
+    CallEvent, CallLog, Capabilities, ContactList, ConversationList, Event, LiveStatus,
+    MicrophoneState, Model, Route, SessionState, SignedIn, ThreadHistory, WorkspaceSection,
+    Workspaces, WorkspacesState,
 };
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
-use crate::gtk::{self, CompositeTemplate, glib};
+use crate::gtk::{self, CompositeTemplate, gio, glib};
 use crate::pages::{
-    AccountPage, AnalyticsPage, BillingPage, CallsPage, ContactsPage, DeskPage, DevicesPage,
-    HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage, SchedulingPage, Sends,
-    SessionPage, SettingsPage, SupportPage, WorkflowsPage, in_contacts, in_desk, in_settings,
-    in_support,
+    AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
+    DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
+    SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage, WorkflowsPage, in_contacts,
+    in_desk, in_settings, in_support,
 };
+
+/// The window action that turns the microphone on or off, and its shortcut.
+pub(crate) const MICROPHONE_ACTION: &str = "toggle-microphone";
+pub(crate) const MICROPHONE_SHORTCUT: &str = "<Control>d";
+/// The window action that hangs up the call, and its shortcut.
+pub(crate) const HANG_UP_ACTION: &str = "hang-up";
+pub(crate) const HANG_UP_SHORTCUT: &str = "<Control><Shift>h";
 use crate::routes::{self, Entry, Section};
 use crate::sink::EventSink;
 
@@ -53,6 +67,10 @@ mod imp {
         pub session_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub session_page: TemplateChild<SessionPage>,
+        #[template_child]
+        pub signed_in_view: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        pub call_bar: TemplateChild<CallBar>,
         #[template_child]
         pub split_view: TemplateChild<adw::NavigationSplitView>,
         #[template_child]
@@ -114,7 +132,7 @@ mod imp {
         #[template_child]
         pub settings_page: TemplateChild<SettingsPage>,
         #[template_child]
-        pub later_page: TemplateChild<adw::StatusPage>,
+        pub dialer_page: TemplateChild<DialerPage>,
         pub sink: OnceCell<EventSink>,
         pub rows: RefCell<Vec<SidebarRow>>,
         pub inbox_badge: OnceCell<gtk::Label>,
@@ -122,6 +140,8 @@ mod imp {
         pub workspaces: RefCell<Vec<(String, String)>>,
         /// The route last drawn.
         pub route: RefCell<Option<Route>>,
+        /// What the microphone shortcut asks for, as last drawn.
+        pub microphone_wanted: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -149,6 +169,8 @@ mod imp {
             SupportPage::static_type();
             RoomsPage::static_type();
             SettingsPage::static_type();
+            CallBar::static_type();
+            DialerPage::static_type();
             klass.bind_template();
         }
 
@@ -162,6 +184,7 @@ mod imp {
             self.parent_constructed();
             let window = self.obj();
             window.build_sidebar();
+            window.install_call_actions();
             self.keyring_banner.set_use_markup(false);
             self.notice_banner.set_use_markup(false);
             self.live_banner.set_use_markup(false);
@@ -263,6 +286,8 @@ impl DistrictWindow {
         imp.support_page.set_sink(sink.clone());
         imp.rooms_page.set_sink(sink.clone());
         imp.settings_page.set_sink(sink.clone());
+        imp.call_bar.set_sink(sink.clone());
+        imp.dialer_page.set_sink(sink.clone());
         imp.sink.set(sink).ok();
         window
     }
@@ -274,6 +299,42 @@ impl DistrictWindow {
         toast.set_use_markup(false);
         toast.set_priority(adw::ToastPriority::High);
         self.imp().toasts.add_toast(toast);
+    }
+
+    /// The call shortcuts' actions, off until there is something to do.
+    fn install_call_actions(&self) {
+        let microphone = gio::ActionEntry::builder(MICROPHONE_ACTION)
+            .activate(|window: &Self, _, _| {
+                window.send(Event::Microphone(window.imp().microphone_wanted.get()));
+            })
+            .build();
+        let hang_up = gio::ActionEntry::builder(HANG_UP_ACTION)
+            .activate(|window: &Self, _, _| window.send(Event::Call(CallEvent::HangUp)))
+            .build();
+        self.add_action_entries([microphone, hang_up]);
+        self.enable_call_actions(None);
+    }
+
+    /// Turns the call shortcuts on for what `signed_in` has under way.
+    fn enable_call_actions(&self, signed_in: Option<&SignedIn>) {
+        let media = signed_in.and_then(|signed_in| signed_in.media.as_ref());
+        self.imp()
+            .microphone_wanted
+            .set(media.is_some_and(|media| media.microphone != MicrophoneState::On));
+        let calling = signed_in
+            .and_then(|signed_in| signed_in.active_call.as_ref())
+            .is_some_and(|call| !call.is_over());
+        for (name, enabled) in [
+            (MICROPHONE_ACTION, media.is_some()),
+            (HANG_UP_ACTION, calling),
+        ] {
+            if let Some(action) = self
+                .lookup_action(name)
+                .and_then(|action| action.downcast::<gio::SimpleAction>().ok())
+            {
+                action.set_enabled(enabled);
+            }
+        }
     }
 
     fn build_sidebar(&self) {
@@ -327,8 +388,13 @@ impl DistrictWindow {
                 self.draw_workspaces(&signed_in.workspaces);
                 self.draw_sidebar(signed_in, &capabilities);
                 self.draw_content(model, signed_in, view);
+                let calling = imp.call_bar.update(signed_in);
+                imp.signed_in_view.set_reveal_bottom_bars(calling);
+                self.enable_call_actions(Some(signed_in));
             }
             other => {
+                imp.signed_in_view.set_reveal_bottom_bars(false);
+                self.enable_call_actions(None);
                 imp.session_stack.set_visible_child_name("session");
                 imp.session_page.update(other);
                 imp.devices_page.ask(None);
@@ -447,7 +513,7 @@ impl DistrictWindow {
     fn draw_content(&self, model: &Model, signed_in: &SignedIn, view: View<'_>) {
         let imp = self.imp();
         let route = &signed_in.route;
-        imp.route.replace(Some(route.clone()));
+        let arrived = imp.route.replace(Some(route.clone())).as_ref() != Some(route);
         let (refreshable, refreshing) = refresh_state(signed_in);
         imp.refresh_button.set_visible(refreshable && !refreshing);
         imp.refresh_spinner.set_visible(refreshing);
@@ -475,8 +541,11 @@ impl DistrictWindow {
             }
             Route::Account => {
                 imp.page_stack.set_visible_child_name("account");
-                imp.account_page
-                    .update(model.account().as_ref(), view.device_name);
+                imp.account_page.update(
+                    model.account().as_ref(),
+                    view.device_name,
+                    &signed_in.presence,
+                );
             }
             Route::Devices => {
                 imp.page_stack.set_visible_child_name("devices");
@@ -490,7 +559,7 @@ impl DistrictWindow {
                 imp.page_stack.set_visible_child_name("calls");
                 imp.calls_page.update(signed_in);
             }
-            route if in_contacts(route) => {
+            Route::Contacts | Route::ContactDetail { .. } | Route::BlockedContacts => {
                 imp.page_stack.set_visible_child_name("contacts");
                 if let Some(outcome) = imp.contacts_page.update(signed_in) {
                     self.toast(outcome);
@@ -521,13 +590,13 @@ impl DistrictWindow {
                 imp.page_stack.set_visible_child_name("scheduling");
                 imp.scheduling_page.update(&signed_in.scheduling);
             }
-            route if in_desk(route) => {
+            Route::Desk | Route::DeskTicket { .. } | Route::DeskSettings => {
                 imp.page_stack.set_visible_child_name("desk");
                 if let Some(outcome) = imp.desk_page.update(signed_in) {
                     self.toast(outcome);
                 }
             }
-            route if in_support(route) => {
+            Route::Support | Route::SupportRequest { .. } => {
                 imp.page_stack.set_visible_child_name("support");
                 if let Some(outcome) = imp.support_page.update(signed_in) {
                     self.toast(outcome);
@@ -541,11 +610,12 @@ impl DistrictWindow {
                 imp.page_stack.set_visible_child_name("settings");
                 imp.settings_page.update(signed_in, *section);
             }
-            other => {
-                imp.page_stack.set_visible_child_name("later");
-                imp.later_page.set_title(routes::title(other));
-                imp.later_page.set_description(Some(routes::LATER_BODY));
-                imp.later_page.set_icon_name(Some(routes::icon(other)));
+            Route::Dialer => {
+                imp.page_stack.set_visible_child_name("dialer");
+                imp.dialer_page.update(signed_in);
+                if arrived {
+                    imp.dialer_page.focus();
+                }
             }
         }
         self.draw_chrome();

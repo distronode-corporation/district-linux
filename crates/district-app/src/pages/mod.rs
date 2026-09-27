@@ -8,6 +8,7 @@ mod audition;
 mod billing;
 mod blocked;
 mod call;
+mod call_bar;
 mod call_handling;
 mod calls;
 mod contact;
@@ -17,6 +18,7 @@ mod desk;
 mod desk_settings;
 mod desk_ticket;
 mod devices;
+mod dialer;
 mod directory;
 mod hq;
 mod inbox;
@@ -47,10 +49,12 @@ mod workflows;
 pub(crate) use account::AccountPage;
 pub(crate) use analytics::AnalyticsPage;
 pub(crate) use billing::BillingPage;
+pub(crate) use call_bar::CallBar;
 pub(crate) use calls::CallsPage;
 pub(crate) use contacts::{ContactsPage, in_section as in_contacts};
 pub(crate) use desk::{DeskPage, in_section as in_desk};
 pub(crate) use devices::DevicesPage;
+pub(crate) use dialer::DialerPage;
 pub(crate) use hq::HqPage;
 pub(crate) use inbox::InboxPage;
 pub(crate) use marketplace::MarketplacePage;
@@ -121,7 +125,7 @@ mod tests {
     use super::*;
 
     /// Every template the window is built from.
-    const TEMPLATES: [(&str, &str); 40] = [
+    const TEMPLATES: [(&str, &str); 42] = [
         ("window.ui", include_str!("../../data/ui/window.ui")),
         (
             "session-page.ui",
@@ -254,6 +258,11 @@ mod tests {
         (
             "members-view.ui",
             include_str!("../../data/ui/members-view.ui"),
+        ),
+        ("call-bar.ui", include_str!("../../data/ui/call-bar.ui")),
+        (
+            "dialer-page.ui",
+            include_str!("../../data/ui/dialer-page.ui"),
         ),
     ];
 

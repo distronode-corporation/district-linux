@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The account: this build and this computer, the devices signed in, signing
-     out, and where deleting the account starts. -->
+<!-- The account: this build and this computer, whether calls ring here, the
+     devices signed in, signing out, and where deleting the account starts. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
@@ -22,6 +22,30 @@
                 <property name="title">District AI for Linux</property>
                 <property name="use-markup">False</property>
                 <property name="subtitle-selectable">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="calls_group">
+            <property name="title">Calls</property>
+            <property name="visible">False</property>
+            <child>
+              <object class="AdwSwitchRow" id="ring_here_row">
+                <property name="use-markup">False</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="presence_note">
+                <property name="xalign">0</property>
+                <property name="wrap">True</property>
+                <property name="use-markup">False</property>
+                <property name="margin-top">8</property>
+                <property name="visible">False</property>
+                <style>
+                  <class name="caption"/>
+                  <class name="error"/>
+                </style>
               </object>
             </child>
           </object>

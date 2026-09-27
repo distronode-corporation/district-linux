@@ -120,3 +120,44 @@ row.unread .conversation-title {
 .saved-card {
   background-color: alpha(@success_bg_color, 0.12);
 }
+
+/* The strip a call rings and runs in, under every signed-in screen. */
+.call-strip {
+  padding: 8px 12px;
+}
+
+.call-strip.ringing {
+  background-color: alpha(@accent_bg_color, 0.14);
+}
+
+.call-action {
+  background-color: @success_bg_color;
+  color: @success_fg_color;
+}
+
+.call-decline {
+  background-color: @destructive_bg_color;
+  color: @destructive_fg_color;
+}
+
+.call-button {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.call-button.muted {
+  background-color: alpha(@warning_bg_color, 0.22);
+  color: @warning_color;
+}
+
+/* The dialler. */
+.dial-display {
+  min-height: 42px;
+}
+
+.keypad-key {
+  min-width: 60px;
+  min-height: 60px;
+  font-size: 16pt;
+  font-weight: 600;
+}

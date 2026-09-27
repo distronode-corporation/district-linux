@@ -53,5 +53,5 @@ floor = 97
 reason = "Measured, not a target: voice.yml's tests against a real media server reach all but races (a room left as its join ends, a report racing a hang-up) and states libwebrtc never reports with the web client's key settings; races won in one run and not the next move it between 97.5 and 98.6."
 
 [crates.district-app]
-floor = 97
-reason = "Measured, not a target: the smoke test drives the real window under Xvfb, but the start-up wiring (the keyring, the network, the runtime) and the runner's thread run only in the real app."
+floor = 98
+reason = "Measured, not a target: the smoke test drives the real window under Xvfb, but the start-up wiring (the keyring, the network, the runtime, logind's sleep signal) and the runner's thread run only in the real app."

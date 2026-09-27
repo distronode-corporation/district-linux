@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The strip under every signed-in screen while a call is ringing or under
+     way: the ring with Answer and Decline, the call with its duration, mute
+     and hang up, and the call's connection notice. It outlives navigation.
+     src/pages/call_bar.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictCallBar" parent="AdwBin">
+    <property name="child">
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="AdwBanner" id="media_banner"/>
+        </child>
+        <child>
+          <object class="GtkBox" id="ring_strip">
+            <property name="accessible-role">group</property>
+            <property name="spacing">12</property>
+            <property name="visible">False</property>
+            <style>
+              <class name="call-strip"/>
+            </style>
+            <accessibility>
+              <property name="label">Incoming call</property>
+            </accessibility>
+            <child>
+              <object class="GtkImage" id="ring_icon">
+                <property name="icon-name">call-incoming-symbolic</property>
+                <property name="pixel-size">24</property>
+                <property name="valign">center</property>
+                <property name="accessible-role">presentation</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">2</property>
+                <property name="hexpand">True</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkLabel" id="ring_title">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="heading"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ring_message">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ring_note">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="caption"/>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="spacing">8</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkSpinner" id="ring_spinner">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="decline_button">
+                    <property name="label">Decline</property>
+                    <style>
+                      <class name="pill"/>
+                      <class name="call-decline"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="answer_button">
+                    <property name="child">
+                      <object class="AdwButtonContent">
+                        <property name="icon-name">call-start-symbolic</property>
+                        <property name="label">Answer</property>
+                      </object>
+                    </property>
+                    <style>
+                      <class name="pill"/>
+                      <class name="call-action"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="ring_dismiss">
+                    <property name="icon-name">window-close-symbolic</property>
+                    <property name="tooltip-text">Dismiss</property>
+                    <accessibility>
+                      <property name="label">Dismiss</property>
+                    </accessibility>
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSeparator" id="strip_separator">
+            <property name="visible">False</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="call_strip">
+            <property name="accessible-role">group</property>
+            <property name="spacing">12</property>
+            <property name="visible">False</property>
+            <style>
+              <class name="call-strip"/>
+            </style>
+            <accessibility>
+              <property name="label">Call</property>
+            </accessibility>
+            <child>
+              <object class="GtkImage" id="call_icon">
+                <property name="icon-name">call-start-symbolic</property>
+                <property name="pixel-size">24</property>
+                <property name="valign">center</property>
+                <property name="accessible-role">presentation</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">2</property>
+                <property name="hexpand">True</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkLabel" id="call_title">
+                    <property name="xalign">0</property>
+                    <property name="ellipsize">end</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="heading"/>
+                      <class name="numeric"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="call_status">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="numeric"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="call_note">
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="caption"/>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="spacing">8</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkButton" id="call_mute_button">
+                    <property name="icon-name">audio-input-microphone-symbolic</property>
+                    <property name="tooltip-text">Mute (Ctrl+D)</property>
+                    <accessibility>
+                      <property name="label">Mute</property>
+                      <property name="key-shortcuts">Control+D</property>
+                    </accessibility>
+                    <style>
+                      <class name="circular"/>
+                      <class name="call-button"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="hang_up_button">
+                    <property name="icon-name">call-stop-symbolic</property>
+                    <property name="tooltip-text">Hang up (Ctrl+Shift+H)</property>
+                    <accessibility>
+                      <property name="label">Hang up</property>
+                      <property name="key-shortcuts">Control+Shift+H</property>
+                    </accessibility>
+                    <style>
+                      <class name="circular"/>
+                      <class name="call-button"/>
+                      <class name="call-decline"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="call_dismiss">
+                    <property name="icon-name">window-close-symbolic</property>
+                    <property name="tooltip-text">Dismiss</property>
+                    <accessibility>
+                      <property name="label">Dismiss</property>
+                    </accessibility>
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

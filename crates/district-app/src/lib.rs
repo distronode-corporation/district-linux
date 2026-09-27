@@ -122,9 +122,22 @@ pub(crate) mod testing {
             .unwrap_or_else(|| panic!("not in {effects:?}"))
     }
 
+    /// A build with calls: the configuration of one with the `voice` feature.
+    pub(crate) fn with_calls() -> CoreConfig {
+        CoreConfig {
+            calls_available: true,
+            ..config()
+        }
+    }
+
     /// A model signed in, and the effects the sign-in asked for.
     pub(crate) fn restored() -> (Model, Vec<Effect>) {
-        let (mut model, effects) = Model::new(config());
+        restored_in(config())
+    }
+
+    /// A model of `config` signed in, and the effects the sign-in asked for.
+    pub(crate) fn restored_in(config: CoreConfig) -> (Model, Vec<Effect>) {
+        let (mut model, effects) = Model::new(config);
         let Effect::RestoreSession { ticket } =
             find(&effects, |e| matches!(e, Effect::RestoreSession { .. }))
         else {
@@ -140,7 +153,16 @@ pub(crate) mod testing {
     /// A model signed in with the workspace list answered `list`, and what
     /// that asked for.
     pub(crate) fn listed(list: Result<WorkspaceListResponse, ApiError>) -> (Model, Vec<Effect>) {
-        let (mut model, effects) = restored();
+        listed_in(config(), list)
+    }
+
+    /// A model of `config` signed in with the workspace list answered `list`,
+    /// and what that asked for.
+    pub(crate) fn listed_in(
+        config: CoreConfig,
+        list: Result<WorkspaceListResponse, ApiError>,
+    ) -> (Model, Vec<Effect>) {
+        let (mut model, effects) = restored_in(config);
         let Effect::LoadWorkspaces { ticket } =
             find(&effects, |e| matches!(e, Effect::LoadWorkspaces { .. }))
         else {

@@ -1,5 +1,6 @@
 //! The call log beside the open call. The next page is read as the list nears
-//! its end; in a narrow window one pane shows at a time.
+//! its end; in a narrow window one pane shows at a time. "Place a call" opens
+//! the dialler, for a role the core lets dial, in a build that can.
 
 use std::cell::{Cell, OnceCell, RefCell};
 
@@ -121,6 +122,8 @@ mod imp {
         #[template_child]
         pub split_view: TemplateChild<adw::NavigationSplitView>,
         #[template_child]
+        pub dial_button: TemplateChild<gtk::Button>,
+        #[template_child]
         pub list_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub list_spinner: TemplateChild<gtk::Spinner>,
@@ -174,6 +177,7 @@ mod imp {
             self.parent_constructed();
             let page = self.obj();
             on_click(&self.list_retry, &*page, || Event::Refresh);
+            on_click(&self.dial_button, &*page, || Event::Navigate(Route::Dialer));
             on_click(&self.more_button, &*page, || {
                 Event::Calls(CallsEvent::LoadMore)
             });
@@ -243,6 +247,8 @@ impl CallsPage {
     /// Draws the log, and the open call beside it.
     pub(crate) fn update(&self, signed_in: &SignedIn) {
         let imp = self.imp();
+        imp.dial_button
+            .set_visible(signed_in.capabilities().allows(&Route::Dialer));
         let shown = log_shown(&signed_in.calls);
         imp.list_spinner.set_spinning(shown == LogShown::Loading);
         let mut more = false;

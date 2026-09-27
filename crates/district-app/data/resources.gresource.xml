@@ -44,6 +44,8 @@
     <file>ui/messaging-view.ui</file>
     <file>ui/messaging-form.ui</file>
     <file>ui/members-view.ui</file>
+    <file>ui/call-bar.ui</file>
+    <file>ui/dialer-page.ui</file>
     <file>style.css</file>
     <file>sounds/ringtone.wav</file>
     <file alias="icons/scalable/apps/com.distronode.DistrictAI.svg">icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg</file>

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- The main window: the session's own pages (restoring, signed out, signing
      in, signing out) and, once signed in, the sidebar and the page the route
-     names. src/window.rs fills it from the core's state. -->
+     names, over the strip a call rings and runs in. src/window.rs fills it
+     from the core's state. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
@@ -74,74 +75,266 @@
                   <object class="GtkStackPage">
                     <property name="name">signed-in</property>
                     <property name="child">
-                      <object class="AdwNavigationSplitView" id="split_view">
-                        <property name="sidebar">
-                          <object class="AdwNavigationPage">
-                            <property name="title">District AI</property>
-                            <property name="tag">sidebar</property>
-                            <property name="child">
-                              <object class="AdwToolbarView">
-                                <child type="top">
-                                  <object class="AdwHeaderBar">
-                                    <child type="end">
-                                      <object class="GtkMenuButton">
-                                        <property name="icon-name">open-menu-symbolic</property>
-                                        <property name="menu-model">primary_menu</property>
-                                        <property name="primary">True</property>
-                                        <property name="tooltip-text">Main Menu</property>
-                                        <accessibility>
-                                          <property name="label">Main Menu</property>
-                                        </accessibility>
+                      <object class="AdwToolbarView" id="signed_in_view">
+                        <property name="bottom-bar-style">raised-border</property>
+                        <property name="reveal-bottom-bars">False</property>
+                        <property name="content">
+                          <object class="AdwNavigationSplitView" id="split_view">
+                            <property name="sidebar">
+                              <object class="AdwNavigationPage">
+                                <property name="title">District AI</property>
+                                <property name="tag">sidebar</property>
+                                <property name="child">
+                                  <object class="AdwToolbarView">
+                                    <child type="top">
+                                      <object class="AdwHeaderBar">
+                                        <child type="end">
+                                          <object class="GtkMenuButton">
+                                            <property name="icon-name">open-menu-symbolic</property>
+                                            <property name="menu-model">primary_menu</property>
+                                            <property name="primary">True</property>
+                                            <property name="tooltip-text">Main Menu</property>
+                                            <accessibility>
+                                              <property name="label">Main Menu</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
                                       </object>
                                     </child>
-                                  </object>
-                                </child>
-                                <property name="content">
-                                  <object class="GtkScrolledWindow">
-                                    <property name="hscrollbar-policy">never</property>
-                                    <property name="child">
-                                      <object class="GtkBox">
-                                        <property name="orientation">vertical</property>
-                                        <child>
-                                          <object class="GtkBox" id="workspace_box">
+                                    <property name="content">
+                                      <object class="GtkScrolledWindow">
+                                        <property name="hscrollbar-policy">never</property>
+                                        <property name="child">
+                                          <object class="GtkBox">
                                             <property name="orientation">vertical</property>
-                                            <property name="spacing">6</property>
-                                            <property name="margin-start">12</property>
-                                            <property name="margin-end">12</property>
-                                            <property name="margin-top">6</property>
-                                            <property name="margin-bottom">6</property>
                                             <child>
-                                              <object class="GtkLabel" id="workspace_name">
-                                                <property name="xalign">0</property>
-                                                <property name="ellipsize">end</property>
-                                                <style>
-                                                  <class name="heading"/>
-                                                </style>
+                                              <object class="GtkBox" id="workspace_box">
+                                                <property name="orientation">vertical</property>
+                                                <property name="spacing">6</property>
+                                                <property name="margin-start">12</property>
+                                                <property name="margin-end">12</property>
+                                                <property name="margin-top">6</property>
+                                                <property name="margin-bottom">6</property>
+                                                <child>
+                                                  <object class="GtkLabel" id="workspace_name">
+                                                    <property name="xalign">0</property>
+                                                    <property name="ellipsize">end</property>
+                                                    <style>
+                                                      <class name="heading"/>
+                                                    </style>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkDropDown" id="workspace_dropdown">
+                                                    <property name="tooltip-text">Workspace</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkLabel" id="workspace_warning">
+                                                    <property name="xalign">0</property>
+                                                    <property name="wrap">True</property>
+                                                    <style>
+                                                      <class name="caption"/>
+                                                      <class name="warning"/>
+                                                    </style>
+                                                  </object>
+                                                </child>
                                               </object>
                                             </child>
                                             <child>
-                                              <object class="GtkDropDown" id="workspace_dropdown">
-                                                <property name="tooltip-text">Workspace</property>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkLabel" id="workspace_warning">
-                                                <property name="xalign">0</property>
-                                                <property name="wrap">True</property>
+                                              <object class="GtkListBox" id="sidebar">
+                                                <property name="selection-mode">single</property>
                                                 <style>
-                                                  <class name="caption"/>
-                                                  <class name="warning"/>
+                                                  <class name="navigation-sidebar"/>
                                                 </style>
                                               </object>
                                             </child>
                                           </object>
+                                        </property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </property>
+                              </object>
+                            </property>
+                            <property name="content">
+                              <object class="AdwNavigationPage" id="content_page">
+                                <property name="title">Overview</property>
+                                <property name="tag">content</property>
+                                <property name="child">
+                                  <object class="AdwToolbarView">
+                                    <child type="top">
+                                      <object class="AdwHeaderBar" id="content_header">
+                                        <child type="start">
+                                          <object class="GtkButton" id="back_button">
+                                            <property name="icon-name">go-previous-symbolic</property>
+                                            <property name="tooltip-text">Back</property>
+                                            <property name="visible">False</property>
+                                            <accessibility>
+                                              <property name="label">Back</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                        <child type="end">
+                                          <object class="GtkButton" id="refresh_button">
+                                            <property name="icon-name">view-refresh-symbolic</property>
+                                            <property name="tooltip-text">Refresh</property>
+                                            <accessibility>
+                                              <property name="label">Refresh</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                        <child type="end">
+                                          <object class="GtkSpinner" id="refresh_spinner">
+                                            <property name="visible">False</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child type="top">
+                                      <object class="AdwBanner" id="notice_banner">
+                                        <property name="button-label">Dismiss</property>
+                                      </object>
+                                    </child>
+                                    <child type="top">
+                                      <object class="AdwBanner" id="live_banner"/>
+                                    </child>
+                                    <property name="content">
+                                      <object class="GtkStack" id="page_stack">
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">overview</property>
+                                            <property name="child">
+                                              <object class="DistrictOverviewPage" id="overview_page"/>
+                                            </property>
+                                          </object>
                                         </child>
                                         <child>
-                                          <object class="GtkListBox" id="sidebar">
-                                            <property name="selection-mode">single</property>
-                                            <style>
-                                              <class name="navigation-sidebar"/>
-                                            </style>
+                                          <object class="GtkStackPage">
+                                            <property name="name">account</property>
+                                            <property name="child">
+                                              <object class="DistrictAccountPage" id="account_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">devices</property>
+                                            <property name="child">
+                                              <object class="DistrictDevicesPage" id="devices_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">inbox</property>
+                                            <property name="child">
+                                              <object class="DistrictInboxPage" id="inbox_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">calls</property>
+                                            <property name="child">
+                                              <object class="DistrictCallsPage" id="calls_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">contacts</property>
+                                            <property name="child">
+                                              <object class="DistrictContactsPage" id="contacts_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">hq</property>
+                                            <property name="child">
+                                              <object class="DistrictHqPage" id="hq_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">analytics</property>
+                                            <property name="child">
+                                              <object class="DistrictAnalyticsPage" id="analytics_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">marketplace</property>
+                                            <property name="child">
+                                              <object class="DistrictMarketplacePage" id="marketplace_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">billing</property>
+                                            <property name="child">
+                                              <object class="DistrictBillingPage" id="billing_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">workflows</property>
+                                            <property name="child">
+                                              <object class="DistrictWorkflowsPage" id="workflows_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">scheduling</property>
+                                            <property name="child">
+                                              <object class="DistrictSchedulingPage" id="scheduling_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">desk</property>
+                                            <property name="child">
+                                              <object class="DistrictDeskPage" id="desk_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">support</property>
+                                            <property name="child">
+                                              <object class="DistrictSupportPage" id="support_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">rooms</property>
+                                            <property name="child">
+                                              <object class="DistrictRoomsPage" id="rooms_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">settings</property>
+                                            <property name="child">
+                                              <object class="DistrictSettingsPage" id="settings_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">dialer</property>
+                                            <property name="child">
+                                              <object class="DistrictDialerPage" id="dialer_page"/>
+                                            </property>
                                           </object>
                                         </child>
                                       </object>
@@ -152,192 +345,9 @@
                             </property>
                           </object>
                         </property>
-                        <property name="content">
-                          <object class="AdwNavigationPage" id="content_page">
-                            <property name="title">Overview</property>
-                            <property name="tag">content</property>
-                            <property name="child">
-                              <object class="AdwToolbarView">
-                                <child type="top">
-                                  <object class="AdwHeaderBar" id="content_header">
-                                    <child type="start">
-                                      <object class="GtkButton" id="back_button">
-                                        <property name="icon-name">go-previous-symbolic</property>
-                                        <property name="tooltip-text">Back</property>
-                                        <property name="visible">False</property>
-                                        <accessibility>
-                                          <property name="label">Back</property>
-                                        </accessibility>
-                                      </object>
-                                    </child>
-                                    <child type="end">
-                                      <object class="GtkButton" id="refresh_button">
-                                        <property name="icon-name">view-refresh-symbolic</property>
-                                        <property name="tooltip-text">Refresh</property>
-                                        <accessibility>
-                                          <property name="label">Refresh</property>
-                                        </accessibility>
-                                      </object>
-                                    </child>
-                                    <child type="end">
-                                      <object class="GtkSpinner" id="refresh_spinner">
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                                <child type="top">
-                                  <object class="AdwBanner" id="notice_banner">
-                                    <property name="button-label">Dismiss</property>
-                                  </object>
-                                </child>
-                                <child type="top">
-                                  <object class="AdwBanner" id="live_banner"/>
-                                </child>
-                                <property name="content">
-                                  <object class="GtkStack" id="page_stack">
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">overview</property>
-                                        <property name="child">
-                                          <object class="DistrictOverviewPage" id="overview_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">account</property>
-                                        <property name="child">
-                                          <object class="DistrictAccountPage" id="account_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">devices</property>
-                                        <property name="child">
-                                          <object class="DistrictDevicesPage" id="devices_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">inbox</property>
-                                        <property name="child">
-                                          <object class="DistrictInboxPage" id="inbox_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">calls</property>
-                                        <property name="child">
-                                          <object class="DistrictCallsPage" id="calls_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">contacts</property>
-                                        <property name="child">
-                                          <object class="DistrictContactsPage" id="contacts_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">hq</property>
-                                        <property name="child">
-                                          <object class="DistrictHqPage" id="hq_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">analytics</property>
-                                        <property name="child">
-                                          <object class="DistrictAnalyticsPage" id="analytics_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">marketplace</property>
-                                        <property name="child">
-                                          <object class="DistrictMarketplacePage" id="marketplace_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">billing</property>
-                                        <property name="child">
-                                          <object class="DistrictBillingPage" id="billing_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">workflows</property>
-                                        <property name="child">
-                                          <object class="DistrictWorkflowsPage" id="workflows_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">scheduling</property>
-                                        <property name="child">
-                                          <object class="DistrictSchedulingPage" id="scheduling_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">desk</property>
-                                        <property name="child">
-                                          <object class="DistrictDeskPage" id="desk_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">support</property>
-                                        <property name="child">
-                                          <object class="DistrictSupportPage" id="support_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">rooms</property>
-                                        <property name="child">
-                                          <object class="DistrictRoomsPage" id="rooms_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">settings</property>
-                                        <property name="child">
-                                          <object class="DistrictSettingsPage" id="settings_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkStackPage">
-                                        <property name="name">later</property>
-                                        <property name="child">
-                                          <object class="AdwStatusPage" id="later_page"/>
-                                        </property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </property>
-                              </object>
-                            </property>
-                          </object>
-                        </property>
+                        <child type="bottom">
+                          <object class="DistrictCallBar" id="call_bar"/>
+                        </child>
                       </object>
                     </property>
                   </object>

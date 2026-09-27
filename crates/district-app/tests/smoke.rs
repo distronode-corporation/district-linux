@@ -38,9 +38,11 @@ use district_auth::{
     AccessClaims, Persistence, RevokeStatus, SignOutReport, StoreError, StoreErrorKind,
 };
 use district_core::{
-    ContactWritten, CoreConfig, DisconnectReason, Effect, Event, MediaEvent, MediaUpdate,
-    MicrophoneState, Notification, NotificationAction, NotificationTarget, Notifier, Participant,
-    RestoreError, RingSurface, SignedInSession, Ticket, Urgency, UrlOpener,
+    ActiveCall, CALL_TICK, ContactWritten, CoreConfig, DialerScreen, DisconnectReason, Effect,
+    Event, IncomingRing, MediaEvent, MediaSession, MediaUpdate, MicrophoneState, Notification,
+    NotificationAction, NotificationTarget, Notifier, PRESENCE_RETRY, PREVIEW_COOLDOWN,
+    Participant, PresenceState, RING_DEADLINE, RestoreError, RingSurface, Route, SignedInSession,
+    Ticket, Urgency, UrlOpener,
 };
 use district_desktop::SleepHandler;
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
@@ -203,7 +205,12 @@ fn ticket(effect: &Effect) -> Ticket {
         | Effect::SetAvailability { ticket, .. }
         | Effect::LoadMembers { ticket, .. }
         | Effect::WriteMember { ticket, .. }
-        | Effect::RenameWorkspace { ticket, .. } => *ticket,
+        | Effect::RenameWorkspace { ticket, .. }
+        | Effect::ReadRingSetting { ticket }
+        | Effect::SetPresence { ticket, .. }
+        | Effect::Dial { ticket, .. }
+        | Effect::AnswerCall { ticket, .. }
+        | Effect::RequestPersonaPreview { ticket, .. } => *ticket,
         other => panic!("no ticket the script answers in {other:?}"),
     }
 }
@@ -534,6 +541,44 @@ impl Smoke {
         self.pump();
     }
 
+    /// The ticket of the pending wait of `delay`, taken off the list.
+    fn take_wait(&self, delay: Duration) -> Ticket {
+        let mut pending = self.script.pending.borrow_mut();
+        let index = pending
+            .iter()
+            .position(|effect| matches!(effect, Effect::Wait { delay: d, .. } if *d == delay))
+            .unwrap_or_else(|| panic!("no wait of {delay:?} among {pending:?}"));
+        ticket(&pending.remove(index).expect("the index is in range"))
+    }
+
+    /// Ends the wait of `delay` the app asked for.
+    fn wait_over(&self, delay: Duration) {
+        let ticket = self.take_wait(delay);
+        self.answer(Event::WaitOver { ticket });
+    }
+
+    /// The session the pending `ConnectMedia` names, taken off the list.
+    fn session(&self) -> Ticket {
+        let Effect::ConnectMedia { session, .. } = self.take("ConnectMedia") else {
+            unreachable!()
+        };
+        session
+    }
+
+    /// Reports `event` on `session`, as the call engine would.
+    fn media(&self, session: Ticket, event: MediaEvent) {
+        self.answer(Event::Media(MediaUpdate { session, event }));
+    }
+
+    /// The text in the entry named `name` that is on screen.
+    fn entry_text(&self, name: &str) -> String {
+        self.mapped(name)
+            .downcast::<gtk::Entry>()
+            .expect("an entry")
+            .text()
+            .to_string()
+    }
+
     /// Clears what the app asked for so far: the script answers none of it.
     fn forget(&self) {
         self.script.pending.borrow_mut().clear();
@@ -641,7 +686,9 @@ fn start() -> Smoke {
         config: CoreConfig {
             web_base_url: "https://www.distronode.com".to_owned(),
             app_version: "0.1.0".to_owned(),
-            calls_available: false,
+            // As a build with the `voice` feature: the script plays the call
+            // engine, answering each `ConnectMedia` with the engine's reports.
+            calls_available: true,
         },
         device_name: DEVICE_NAME.to_owned(),
         effects: Rc::clone(&script) as Rc<dyn Effects>,
@@ -768,7 +815,15 @@ fn signing_in(smoke: &Smoke) {
             )),
         }),
     });
-    assert!(!smoke.pending("ReadRingSetting"), "this build has no calls");
+    // "Ring on this computer" is read at sign-in, and is off here.
+    smoke.reply("ReadRingSetting", |ticket| Event::RingSettingRead {
+        ticket,
+        ring_here: false,
+    });
+    assert!(
+        !smoke.pending("SetPresence"),
+        "nothing to register while off"
+    );
 }
 
 /// Signed in: the workspaces, the overview with its finish-setup card, and the
@@ -887,6 +942,10 @@ fn account_and_devices(smoke: &Smoke) {
     assert_eq!(smoke.subtitle("version_row"), "Version 0.1.0");
     assert_eq!(smoke.subtitle("device_row"), DEVICE_NAME);
     assert!(!smoke.shown("back_button"), "the account is a sidebar row");
+    assert!(
+        smoke.shown("ring_here_row"),
+        "a build with calls can ring here"
+    );
     smoke.shot("06-account");
 
     smoke.activate("devices_row");
@@ -3349,6 +3408,549 @@ fn live_updates(smoke: &Smoke) {
     smoke.script.pending.borrow_mut().clear();
 }
 
+/// "Ring on this computer", in the account: off as read at sign-in, turned
+/// on, its registration failing and saying so, tried again a minute later
+/// and registered, turned off (unregistered) and on again for the calls
+/// that follow.
+fn presence_setting(smoke: &Smoke) {
+    smoke.activate("sidebar-account");
+    smoke.forget();
+    let switch = smoke
+        .mapped("ring_here_row")
+        .downcast::<adw::SwitchRow>()
+        .expect("a switch row");
+    assert!(!switch.is_active(), "off, as read");
+    assert_eq!(switch.title(), PresenceState::SETTING_LABEL);
+    assert_eq!(
+        switch.subtitle().as_deref(),
+        Some(PresenceState::SETTING_BODY)
+    );
+    assert!(!smoke.shown("presence_note"));
+    switch.set_active(true);
+    smoke.pump();
+    let Effect::SaveRingSetting { ring_here } = smoke.take("SaveRingSetting") else {
+        unreachable!()
+    };
+    assert!(ring_here, "kept for the next start");
+    let Effect::SetPresence { registered, .. } = smoke.script.pending.borrow()[0].clone() else {
+        panic!("the registration goes first")
+    };
+    assert!(registered);
+    smoke.reply("SetPresence", |ticket| Event::PresenceSet {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(switch.is_active(), "still wanted");
+    assert!(smoke.shown("presence_note"));
+    assert!(
+        smoke
+            .label("presence_note")
+            .starts_with("Calls cannot ring here right now.")
+    );
+    smoke.shot("140-presence-failed");
+    smoke.wait_over(PRESENCE_RETRY);
+    smoke.reply("SetPresence", |ticket| Event::PresenceSet {
+        ticket,
+        result: Ok(()),
+    });
+    assert!(!smoke.shown("presence_note"));
+    smoke.shot("141-presence-on");
+    smoke.forget();
+
+    switch.set_active(false);
+    smoke.pump();
+    let Effect::SetPresence { registered, .. } = smoke.take("SetPresence") else {
+        unreachable!()
+    };
+    assert!(!registered, "turned off, unregistered at once");
+    smoke.forget();
+    switch.set_active(true);
+    smoke.pump();
+    smoke.reply("SetPresence", |ticket| Event::PresenceSet {
+        ticket,
+        result: Ok(()),
+    });
+    smoke.forget();
+}
+
+/// The dialler below the call log: empty, typed on the keypad and deleted,
+/// pasted, and a call placed from it: dialling, joining its room, the far end
+/// ringing and picking up, the duration running, mute from the strip and from
+/// Ctrl+D, a connection resumed, the strip staying as the member moves about
+/// and the dialler busy meanwhile, hung up with Ctrl+Shift+H and its ending
+/// put away; then a dial the service refuses.
+fn dialing(smoke: &Smoke) {
+    smoke.activate("sidebar-calls");
+    if smoke.pending("LoadCalls") {
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(call_page()),
+        });
+    }
+    smoke.forget();
+    assert!(smoke.shown("dial_button"));
+    smoke.click("dial_button");
+    assert!(smoke.shown("number_entry"));
+    assert!(
+        smoke.shown("back_button"),
+        "the dialler is below the call log"
+    );
+    let entry = smoke
+        .mapped("number_entry")
+        .downcast::<gtk::Entry>()
+        .unwrap();
+    assert!(
+        entry.state_flags().contains(gtk::StateFlags::FOCUS_WITHIN),
+        "typing goes straight into the box"
+    );
+    assert_eq!(smoke.label("number_label"), "\u{a0}", "a line kept for it");
+    assert!(!smoke.sensitive("call_button"), "nothing to call yet");
+    assert!(smoke.shows_text(DialerScreen::HINT));
+    assert!(smoke.shows_text(DialerScreen::MICROPHONE_NOTE));
+    assert!(!smoke.shown("dial_busy_note"));
+    assert!(!smoke.shown("call_strip"), "no call, no strip");
+    smoke.shot("142-dialer");
+
+    // The keypad types at the cursor, and its last key deletes.
+    for key in ["+", "1", "2", "1", "2", "5"] {
+        smoke.click(&format!("keypad-{key}"));
+    }
+    assert_eq!(smoke.entry_text("number_entry"), "+12125");
+    assert_eq!(smoke.label("number_label"), "+121 25");
+    smoke.click("backspace_button");
+    assert_eq!(smoke.entry_text("number_entry"), "+1212");
+    assert!(!smoke.sensitive("call_button"), "too few digits");
+
+    // A selection is deleted whole.
+    entry.select_region(0, -1);
+    smoke.click("backspace_button");
+    assert_eq!(smoke.entry_text("number_entry"), "");
+
+    // A paste lands in the box as it was copied, and reads grouped above it.
+    let typed = "+1 (212) 555-0142";
+    entry.clipboard().set_text(typed);
+    let text = descendants(entry.upcast_ref())
+        .into_iter()
+        .find_map(|widget| widget.downcast::<gtk::Text>().ok())
+        .expect("the entry's text");
+    text.grab_focus();
+    text.emit_by_name::<()>("paste-clipboard", &[]);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while smoke.entry_text("number_entry") != typed {
+        assert!(
+            Instant::now() < deadline,
+            "the paste never landed: {:?}",
+            smoke.entry_text("number_entry")
+        );
+        smoke.pump();
+    }
+    assert_eq!(smoke.label("number_label"), "+1 212 555 0142");
+    assert!(smoke.sensitive("call_button"));
+    smoke.shot("143-dialer-typed");
+
+    // Placing it with Enter: the number as typed, and the strip at once.
+    entry.emit_activate();
+    smoke.pump();
+    let Effect::Dial {
+        ticket: dial,
+        workspace_id,
+        to,
+    } = smoke.take("Dial")
+    else {
+        unreachable!()
+    };
+    assert_eq!((workspace_id.as_str(), to.as_str()), (AGENCY, typed));
+    assert!(smoke.shown("call_strip"));
+    assert_eq!(smoke.label("call_title"), "+1 212 555 0142");
+    assert_eq!(smoke.label("call_status"), ActiveCall::DIALING);
+    assert!(!smoke.sensitive("call_button"), "one call at a time");
+    assert!(smoke.shown("dial_busy_note"));
+    smoke.shot("144-call-dialling");
+    smoke.answer(Event::Dialled {
+        ticket: dial,
+        result: Ok(fixture("district-dial.json")),
+    });
+    let session = smoke.session();
+    assert_eq!(smoke.label("call_status"), ActiveCall::CONNECTING);
+    smoke.media(session, MediaEvent::Connecting);
+    smoke.media(session, MediaEvent::Connected);
+    assert_eq!(smoke.label("call_status"), ActiveCall::RINGING);
+    smoke.media(
+        session,
+        MediaEvent::ParticipantJoined(Participant::new("sip_callee", None, false)),
+    );
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    assert_eq!(smoke.label("call_status"), "00:00", "answered");
+    for _ in 0..3 {
+        smoke.wait_over(CALL_TICK);
+    }
+    assert_eq!(smoke.label("call_status"), "00:03");
+    let mute = smoke
+        .mapped("call_mute_button")
+        .downcast::<gtk::Button>()
+        .unwrap();
+    assert_eq!(mute.tooltip_text().as_deref(), Some("Mute (Ctrl+D)"));
+    smoke.shot("145-call-in-progress");
+
+    // Mute from the strip, and back from the keyboard.
+    smoke.click("call_mute_button");
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(!enabled);
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::Off));
+    assert_eq!(mute.tooltip_text().as_deref(), Some("Unmute (Ctrl+D)"));
+    assert!(mute.has_css_class("muted"));
+    smoke.shot("146-call-muted");
+    assert_eq!(shortcut(smoke, "win.toggle-microphone"), "<Control>d");
+    WidgetExt::activate_action(&smoke.window(), "win.toggle-microphone", None)
+        .expect("the shortcut's action");
+    smoke.pump();
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(enabled);
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+
+    // A connection lost and resumed is a banner, never an end.
+    let banner = smoke
+        .find("media_banner")
+        .downcast::<adw::Banner>()
+        .unwrap();
+    smoke.media(session, MediaEvent::Reconnecting);
+    assert!(banner.is_revealed());
+    assert_eq!(banner.title(), MediaSession::RECONNECTING);
+    smoke.shot("147-call-reconnecting");
+    smoke.media(session, MediaEvent::Connected);
+    assert!(!banner.is_revealed());
+
+    // The strip stays as the member moves about, and the dialler waits.
+    smoke.activate("sidebar-inbox");
+    if smoke.pending("LoadConversations") {
+        smoke.reply("LoadConversations", |ticket| Event::ConversationsLoaded {
+            ticket,
+            result: Ok(conversations()),
+        });
+    }
+    assert!(smoke.shown("call_strip"));
+    smoke.shot("148-call-over-the-inbox");
+    smoke.forget();
+    // A room waits for the call too.
+    smoke.activate("sidebar-rooms");
+    smoke.forget();
+    smoke.type_into("room_row", "standup");
+    assert!(smoke.shown("busy_note"));
+    assert!(smoke.shows_text(district_core::RoomsScreen::BUSY_NOTE));
+    assert!(!smoke.sensitive("join_button"), "one session at a time");
+    smoke.shot("148a-rooms-busy");
+    smoke.type_into("room_row", "");
+    smoke.activate("sidebar-calls");
+    smoke.forget();
+    smoke.click("dial_button");
+    assert!(smoke.shown("dial_busy_note"));
+    assert!(smoke.shows_text(DialerScreen::BUSY_NOTE));
+    assert!(!smoke.sensitive("call_button"));
+    smoke.shot("149-dialer-busy");
+
+    // Hung up from the keyboard: the carrier is told, the room left.
+    assert_eq!(shortcut(smoke, "win.hang-up"), "<Shift><Control>h");
+    WidgetExt::activate_action(&smoke.window(), "win.hang-up", None)
+        .expect("the shortcut's action");
+    smoke.pump();
+    assert!(smoke.pending("HangUpCall"), "the carrier's leg is ended");
+    assert!(smoke.pending("DisconnectMedia"));
+    assert_eq!(
+        smoke.label("call_status"),
+        format!("{} It lasted 00:03.", ActiveCall::ENDED)
+    );
+    assert!(smoke.shows_text(ActiveCall::ENDED_NOTE));
+    assert!(!smoke.shown("hang_up_button") && !smoke.shown("call_mute_button"));
+    assert!(smoke.sensitive("call_button"), "free to call again");
+    smoke.shot("150-call-ended");
+    smoke.forget();
+    smoke.click("call_dismiss");
+    assert!(!smoke.shown("call_strip"));
+    let bottom = smoke
+        .find("signed_in_view")
+        .downcast::<adw::ToolbarView>()
+        .unwrap();
+    assert!(!bottom.reveals_bottom_bars(), "the strip goes with it");
+
+    // Hung up while still dialling: the dial's answer, when it comes, is
+    // ended at the carrier at once, and nothing is joined.
+    smoke.click("call_button");
+    let dial = smoke.ticket("Dial");
+    smoke.click("hang_up_button");
+    assert_eq!(smoke.label("call_status"), ActiveCall::ENDED);
+    assert!(!smoke.pending("HangUpCall"), "no call to end yet");
+    smoke.answer(Event::Dialled {
+        ticket: dial,
+        result: Ok(fixture("district-dial.json")),
+    });
+    assert!(smoke.pending("HangUpCall"), "ended the moment it is named");
+    assert!(!smoke.pending("ConnectMedia"));
+    smoke.click("call_dismiss");
+    smoke.forget();
+
+    // A dial the service refuses was never a call, and says why in its words.
+    let refusal = ApiError::Forbidden(ErrorDetail {
+        message: Some("This number has opted out of calls from this workspace (DNC).".to_owned()),
+        code: Some("do_not_call".to_owned()),
+        ..ErrorDetail::default()
+    });
+    let why = district_core::FailureText::from_api_error(&refusal).message;
+    smoke.click("call_button");
+    smoke.reply("Dial", |ticket| Event::Dialled {
+        ticket,
+        result: Err(refusal),
+    });
+    assert_eq!(smoke.label("call_status"), why);
+    assert!(!smoke.shows_text(ActiveCall::ENDED_NOTE), "no call to time");
+    smoke.shot("151-call-not-placed");
+    smoke.click("call_dismiss");
+    smoke.forget();
+}
+
+/// The one shortcut of `action`, as GTK writes it.
+fn shortcut(smoke: &Smoke, action: &str) -> String {
+    let accels = smoke.app.accels_for_action(action);
+    assert_eq!(accels.len(), 1, "{accels:?}");
+    let (key, modifiers) = gtk::accelerator_parse(&accels[0]).expect("a shortcut");
+    gtk::accelerator_name(key, modifiers).to_string()
+}
+
+/// A `call_ringing` event for `call_id` in the open workspace, naming this
+/// member.
+fn ring(smoke: &Smoke, call_id: &str) {
+    let mut envelope: TelemetryEnvelope = desktop_fixture("telemetry-event-call-ringing.json");
+    envelope.workspace_id = AGENCY.to_owned();
+    envelope.call_id = call_id.to_owned();
+    envelope.data = serde_json::json!({ "callId": call_id, "userIds": [USER] });
+    smoke.answer(Event::Live(WorkspaceUpdate {
+        workspace_id: AGENCY.to_owned(),
+        update: LiveUpdate::Event(envelope),
+    }));
+}
+
+/// The notification a ring for `call_id` puts up: urgent, with Answer and
+/// Decline, and nothing about the caller.
+fn assert_ring_notification(notification: &Notification, call_id: &str) {
+    assert_eq!(notification.title, IncomingRing::TITLE);
+    assert_eq!(notification.body, IncomingRing::BODY);
+    assert_eq!(notification.urgency, Urgency::Urgent);
+    assert_eq!(
+        notification.actions,
+        [
+            NotificationAction::Answer {
+                call_id: call_id.to_owned(),
+            },
+            NotificationAction::Decline {
+                call_id: call_id.to_owned(),
+            },
+        ]
+    );
+    let events: Vec<Event> = notification
+        .actions
+        .iter()
+        .map(NotificationAction::event)
+        .collect();
+    assert!(format!("{events:?}").contains("Answer"));
+}
+
+/// Calls rung here: one ringing in the window and declined there; one
+/// missed; one rung while the window is hidden, which rings through its
+/// notification and is answered from the notification's button; a second
+/// ringing behind that call without a sound, ringing once the caller hangs
+/// up, and answered elsewhere first.
+fn ringing(smoke: &Smoke) {
+    smoke.activate("sidebar-overview");
+    smoke.forget();
+
+    ring(smoke, "call_ring_1");
+    assert!(smoke.pending("StartRingtone"));
+    let Effect::Notify(notification) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    assert_ring_notification(&notification, "call_ring_1");
+    assert!(smoke.shown("ring_strip"));
+    assert_eq!(smoke.label("ring_title"), IncomingRing::TITLE);
+    assert_eq!(smoke.label("ring_message"), IncomingRing::BODY);
+    assert!(smoke.shows_text(IncomingRing::MICROPHONE_NOTE));
+    assert!(smoke.sensitive("answer_button") && smoke.sensitive("decline_button"));
+    // The desktop's side: the notification and the ringtone.
+    smoke.bridge.notify(&notification);
+    smoke.bridge.start_ringtone();
+    smoke.pump();
+    smoke.shot("152-ringing");
+    smoke.forget();
+    smoke.click("decline_button");
+    assert!(smoke.pending("StopRingtone"));
+    assert!(smoke.pending("WithdrawNotification"));
+    assert!(
+        !smoke.pending("AnswerCall"),
+        "declining tells the service nothing"
+    );
+    assert!(!smoke.shown("ring_strip"));
+    smoke.bridge.stop_ringtone();
+    smoke.bridge.withdraw(&notification.id);
+    smoke.forget();
+
+    // Nobody answers before the service would stop holding the caller.
+    ring(smoke, "call_ring_2");
+    smoke.take("Notify");
+    smoke.wait_over(RING_DEADLINE);
+    assert_eq!(smoke.label("ring_title"), Notification::MISSED_TITLE);
+    assert_eq!(smoke.label("ring_message"), IncomingRing::MISSED);
+    assert!(smoke.shown("ring_dismiss") && !smoke.shown("answer_button"));
+    let Effect::Notify(missed) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    assert_eq!(missed.title, Notification::MISSED_TITLE);
+    smoke.shot("153-ring-missed");
+    smoke.click("ring_dismiss");
+    assert!(!smoke.shown("ring_strip"));
+    smoke.forget();
+
+    // The window hidden: the ring is its urgent notification and the
+    // ringtone, and the notification's Answer takes the call.
+    smoke.window().set_visible(false);
+    smoke.pump();
+    ring(smoke, "call_ring_3");
+    assert!(smoke.pending("StartRingtone"));
+    let Effect::Notify(notification) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    assert_ring_notification(&notification, "call_ring_3");
+    smoke.bridge.notify(&notification);
+    smoke.pump();
+    smoke.forget();
+    smoke.app.activate_action(
+        "notification-button",
+        Some(&("answer", "call_ring_3").to_variant()),
+    );
+    smoke.pump();
+    assert!(smoke.pending("PresentWindow"), "the window comes forward");
+    smoke.bridge.present_window();
+    smoke.pump();
+    assert!(smoke.window().is_visible());
+    let Effect::AnswerCall {
+        ticket, call_id, ..
+    } = smoke.take("AnswerCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(call_id, "call_ring_3");
+    assert!(smoke.shown("ring_spinner"), "answering");
+    assert!(!smoke.sensitive("answer_button"), "answered once");
+    smoke.answer(Event::CallAnswered {
+        ticket,
+        result: Ok(fixture("district-call-answer.json")),
+    });
+    let session = smoke.session();
+    assert!(!smoke.shown("ring_strip"));
+    assert_eq!(smoke.label("call_title"), ActiveCall::CALLER);
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    assert_eq!(smoke.label("call_status"), "00:00");
+    smoke.shot("154-call-answered");
+    smoke.forget();
+
+    // A second call rings behind this one, without a sound.
+    ring(smoke, "call_ring_4");
+    assert!(!smoke.pending("StartRingtone"), "no sound over a call");
+    assert_eq!(smoke.label("ring_title"), Notification::WAITING_TITLE);
+    assert_eq!(smoke.label("ring_message"), IncomingRing::WAITING_BODY);
+    assert!(!smoke.shown("answer_button") && smoke.shown("decline_button"));
+    smoke.shot("155-ring-waiting");
+    // In a narrow window the strip still fits, under whatever shows.
+    smoke.resize(400, 760);
+    assert!(smoke.shown("ring_strip") && smoke.shown("call_strip"));
+    smoke.shot("157-call-strip-narrow");
+    smoke.resize(1024, 720);
+    smoke.forget();
+
+    // The caller hangs up: the call ends here, and the second rings.
+    let mut ended: TelemetryEnvelope = desktop_fixture("telemetry-event-call-ended.json");
+    ended.workspace_id = AGENCY.to_owned();
+    ended.call_id = "call_ring_3".to_owned();
+    smoke.answer(Event::Live(WorkspaceUpdate {
+        workspace_id: AGENCY.to_owned(),
+        update: LiveUpdate::Event(ended),
+    }));
+    assert!(smoke.shows_part(ActiveCall::ENDED));
+    assert!(smoke.pending("StartRingtone"), "now it rings");
+    assert_eq!(smoke.label("ring_title"), IncomingRing::TITLE);
+    assert!(smoke.sensitive("answer_button"));
+    smoke.forget();
+
+    // Someone else took it first: the answer is refused.
+    smoke.click("answer_button");
+    smoke.reply("AnswerCall", |ticket| Event::CallAnswered {
+        ticket,
+        result: Err(ApiError::Conflict(ErrorDetail::default())),
+    });
+    assert_eq!(smoke.label("ring_message"), IncomingRing::CALL_ENDED);
+    smoke.shot("156-ring-answered-elsewhere");
+    smoke.click("ring_dismiss");
+    smoke.click("call_dismiss");
+    assert!(!smoke.shown("ring_strip") && !smoke.shown("call_strip"));
+    smoke.forget();
+}
+
+/// The machine going to sleep with a call under way: the presence
+/// unregistered and the call ended (at the carrier too) before the sleep is
+/// let go; and waking, which registers again.
+fn sleeping(smoke: &Smoke) {
+    smoke.activate("sidebar-calls");
+    smoke.forget();
+    smoke.click("dial_button");
+    smoke.type_into("number_entry", "+12125550142");
+    smoke.click("call_button");
+    smoke.reply("Dial", |ticket| Event::Dialled {
+        ticket,
+        result: Ok(fixture("district-dial.json")),
+    });
+    let session = smoke.session();
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(
+        session,
+        MediaEvent::ParticipantJoined(Participant::new("sip_callee", None, false)),
+    );
+    smoke.forget();
+
+    let bridge = smoke.bridge.clone();
+    let sleeper = std::thread::spawn(move || {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("a runtime")
+            .block_on(bridge.suspending());
+    });
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !sleeper.is_finished() {
+        assert!(Instant::now() < deadline, "the sleep was never let go");
+        smoke.pump();
+    }
+    sleeper.join().expect("the sleeping thread");
+    assert_eq!(smoke.script.settled.get(), 1, "held until they had run");
+    let Effect::SetPresence { registered, .. } = smoke.take("SetPresence") else {
+        unreachable!()
+    };
+    assert!(!registered, "a sleeping desktop does not ring");
+    assert!(smoke.pending("HangUpCall"), "the call ends at the carrier");
+    assert!(smoke.pending("DisconnectMedia"));
+    assert!(smoke.shows_part(ActiveCall::ENDED));
+    smoke.forget();
+
+    smoke.bridge.resumed();
+    smoke.pump();
+    let Effect::SetPresence { registered, .. } = smoke.take("SetPresence") else {
+        unreachable!()
+    };
+    assert!(registered, "awake, it rings again");
+    smoke.click("call_dismiss");
+    smoke.forget();
+}
+
 /// Another workspace, where the member is a viewer: read only, and the help
 /// desk and support are not offered.
 fn viewer_workspace(smoke: &Smoke) {
@@ -3421,6 +4023,13 @@ fn viewer_workspace(smoke: &Smoke) {
     assert!(smoke.shown("read_only_label"));
     assert!(!smoke.shown("send_button"));
     smoke.shot("36-thread-viewer");
+
+    // No dialler: it is not offered, and cannot be opened.
+    smoke.activate("sidebar-calls");
+    assert!(!smoke.shown("dial_button"), "a viewer places no calls");
+    smoke.answer(Event::Navigate(Route::Dialer));
+    assert!(!smoke.shown("number_entry"), "the core refuses the route");
+    smoke.script.pending.borrow_mut().clear();
 
     // And a contact, with nothing to change.
     smoke.activate("sidebar-contacts");
@@ -3712,28 +4321,6 @@ fn desktop_calls(smoke: &Smoke) {
     smoke.pump();
     assert!(smoke.pending("LoadCall {"), "the call opens");
     assert!(smoke.shown("call_view"));
-    smoke.script.pending.borrow_mut().clear();
-
-    // The machine going to sleep: the sleep is let go once what the core asks
-    // for has been run (a build without calls asks for nothing), and waking
-    // is told too.
-    let bridge = smoke.bridge.clone();
-    let sleeper = std::thread::spawn(move || {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .expect("a runtime")
-            .block_on(bridge.suspending());
-    });
-    let deadline = Instant::now() + Duration::from_secs(10);
-    while !sleeper.is_finished() {
-        assert!(Instant::now() < deadline, "the sleep was never let go");
-        smoke.pump();
-    }
-    sleeper.join().expect("the sleeping thread");
-    assert_eq!(smoke.script.settled.get(), 1);
-    smoke.bridge.resumed();
-    smoke.pump();
-    assert!(!smoke.pending("SetPresence"), "nothing rings in this build");
     smoke.script.pending.borrow_mut().clear();
 
     smoke.app.activate_action("about", None);
@@ -4121,21 +4708,60 @@ fn persona_section(smoke: &Smoke) {
     smoke.shot("100-persona-saved");
     smoke.forget();
 
-    // The audition: what it is, before anything starts, and a Start that
-    // this build, which has no call engine, answers honestly.
+    // The audition: what it is, before anything starts; a Start the service
+    // refuses, and the wait before another; then one that connects, and Stop.
     smoke.click("preview_button");
     let dialog = smoke.first::<adw::Dialog>().expect("the audition dialog");
     assert!(smoke.shows_text(district_core::PersonaSection::PREVIEW_TITLE));
     assert!(smoke.shows_part("It is billed like any call."));
     assert!(smoke.shown("start_button") && !smoke.shown("stop_button"));
-    smoke.shot("101-audition");
-    smoke.click("start_button");
     assert!(
         !smoke.pending("RequestPersonaPreview"),
-        "nothing billed is asked for without a call engine"
+        "nothing until Start"
     );
-    assert!(smoke.shows_text(district_core::DisconnectReason::UNAVAILABLE));
-    smoke.shot("102-audition-unavailable");
+    smoke.shot("101-audition");
+    smoke.click("start_button");
+    assert!(smoke.shows_text("Starting the call."));
+    smoke.reply("RequestPersonaPreview", |ticket| {
+        Event::PersonaPreviewIssued {
+            ticket,
+            result: Err(server_error()),
+        }
+    });
+    assert!(smoke.shown("failure_label"));
+    assert!(smoke.shown("cooling_label"), "another waits a few seconds");
+    assert!(!smoke.sensitive("start_button"));
+    assert!(
+        !smoke.pending("RequestPersonaPreview"),
+        "never asked again by itself"
+    );
+    smoke.shot("102-audition-failed");
+    smoke.wait_over(PREVIEW_COOLDOWN);
+    assert!(smoke.sensitive("start_button"));
+    smoke.click("start_button");
+    smoke.reply("RequestPersonaPreview", |ticket| {
+        Event::PersonaPreviewIssued {
+            ticket,
+            result: Ok(fixture("district-persona-preview-token.json")),
+        }
+    });
+    let session = smoke.session();
+    assert!(smoke.shows_text("Connecting to your receptionist."));
+    smoke.media(session, MediaEvent::Connecting);
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    assert!(smoke.shows_text("On the call with your receptionist."));
+    assert!(smoke.shown("stop_button") && !smoke.shown("start_button"));
+    assert!(
+        !smoke.shown("call_strip"),
+        "an audition is not a call: it stays in its dialog"
+    );
+    smoke.shot("102a-audition-connected");
+    smoke.click("stop_button");
+    assert!(smoke.pending("DisconnectMedia"), "the room is left");
+    assert!(smoke.shows_text("The audition ended."));
+    smoke.shot("102b-audition-stopped");
+    smoke.forget();
     dialog.close();
     smoke.pump();
     assert!(smoke.first::<adw::Dialog>().is_none(), "closed");
@@ -5108,6 +5734,13 @@ fn client_members(smoke: &Smoke) {
     assert!(smoke.shown("rename_group"));
     assert_eq!(smoke.subtitle("current_name_row"), "Bravo Client");
     smoke.shot("133-members-client");
+    // A client member dials too, and the number typed in the other workspace
+    // is not carried over.
+    smoke.activate("sidebar-calls");
+    smoke.forget();
+    smoke.click("dial_button");
+    assert_eq!(smoke.entry_text("number_entry"), "");
+    assert!(!smoke.sensitive("call_button"));
     smoke.activate("sidebar-overview");
     smoke.forget();
 }
@@ -5132,6 +5765,10 @@ fn main() {
     rooms_screen(&smoke);
     settings_screens(&smoke);
     live_updates(&smoke);
+    presence_setting(&smoke);
+    dialing(&smoke);
+    ringing(&smoke);
+    sleeping(&smoke);
     viewer_workspace(&smoke);
     narrow(&smoke);
     reopening(&smoke);

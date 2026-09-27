@@ -17,7 +17,9 @@ use crate::guard::{self, DISCARD_ACTION, DISCARD_BODY, DISCARD_TITLE, KEEP_EDITI
 use crate::notifications::{self, BUTTON_ACTION, OPEN_ACTION};
 use crate::sink::EventSink;
 use crate::style::Brand;
-use crate::window::{DistrictWindow, View};
+use crate::window::{
+    DistrictWindow, HANG_UP_ACTION, HANG_UP_SHORTCUT, MICROPHONE_ACTION, MICROPHONE_SHORTCUT, View,
+};
 
 /// The ringtone, in the resources built into the binary.
 const RINGTONE: &str = "/com/distronode/DistrictAI/sounds/ringtone.wav";
@@ -352,6 +354,8 @@ impl Controller {
             .build();
         app.add_action_entries([about, quit, open, button]);
         app.set_accels_for_action("app.quit", &["<Control>q"]);
+        app.set_accels_for_action(&format!("win.{MICROPHONE_ACTION}"), &[MICROPHONE_SHORTCUT]);
+        app.set_accels_for_action(&format!("win.{HANG_UP_ACTION}"), &[HANG_UP_SHORTCUT]);
     }
 }
 
