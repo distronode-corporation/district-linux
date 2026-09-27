@@ -1,6 +1,9 @@
 # Rust
 /target
 **/*.rs.bk
+# Raw coverage profiles. A test run under the coverage environment writes these
+# into whatever directory the test starts in when the profile path is not set.
+*.profraw
 
 # Python bytecode from the scripts under scripts/
 __pycache__/
