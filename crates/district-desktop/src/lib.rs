@@ -25,9 +25,14 @@ mod device;
 mod dirs;
 mod files;
 mod marker;
+mod secret_store;
 
 pub use device::{
     DEVICE_ID_FILE, DeviceIdentity, FALLBACK_DEVICE_NAME, device_name, device_name_in,
 };
 pub use dirs::{APP_ID, NoHomeDirectory, XdgDirs};
 pub use marker::{MARKER_FILE, RefreshMarkerFile};
+pub use secret_store::{
+    ATTRIBUTE_APPLICATION, ATTRIBUTE_FINGERPRINT, ATTRIBUTE_KIND, KIND_REVOKE_OUTBOX, KIND_SESSION,
+    Oo7SessionStore, kind_of,
+};
