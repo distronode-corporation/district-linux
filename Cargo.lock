@@ -794,6 +794,7 @@ version = "0.1.0"
 dependencies = [
  "district-auth",
  "district-core",
+ "futures-util",
  "oo7",
  "serde",
  "serde_json",
@@ -802,6 +803,7 @@ dependencies = [
  "tokio",
  "toml",
  "uuid",
+ "zbus",
 ]
 
 [[package]]

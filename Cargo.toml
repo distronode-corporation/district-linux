@@ -118,6 +118,10 @@ log = { version = "0.4.34", features = ["max_level_warn"] }
 # `default`, so a change of upstream defaults cannot swap in another async runtime
 # or OpenSSL.
 oo7 = { version = "0.6.0", default-features = false, features = ["tokio", "native_crypto"] }
+# The system bus, for logind's sleep signal and its delay inhibitor. Already in
+# the tree through oo7, with the same features: named directly because the app
+# talks to logind itself.
+zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
 # GTK 4.14 and libadwaita 1.5 are the floor because they are what Ubuntu 24.04
 # ships, and Debian 13 ships newer. Raising either feature raises the oldest
 # distribution the .deb can install on.

@@ -13,21 +13,27 @@ publish.workspace = true
 district-auth = { workspace = true }
 # For the `Settings` trait `SettingsFile` implements.
 district-core = { workspace = true }
+# logind's sleep signal: its stream.
+futures-util = { workspace = true }
 oo7 = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-# `rt` for moving blocking file writes (with their fsyncs) off the async threads.
-tokio = { workspace = true, features = ["rt"] }
+# `rt` for moving blocking file writes (with their fsyncs) off the async threads;
+# `time` for the longest the app holds the machine's sleep.
+tokio = { workspace = true, features = ["rt", "time"] }
 uuid = { workspace = true }
 # The settings file.
 toml = { workspace = true }
+# logind, on the system bus.
+zbus = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
 # `sync` for the lock oo7's keyring type holds, to build a file-backed one;
-# `time` to wait for a test keyring daemon to start.
-tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
+# `time` to wait for a test keyring daemon to start; `test-util` to stop the
+# clock while a test waits out the longest a sleep is held.
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time", "test-util"] }
 
 [lints]
 workspace = true

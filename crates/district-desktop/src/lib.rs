@@ -14,6 +14,9 @@
 //! - [`SettingsFile`]: the app's preferences ("ring on this computer", the
 //!   last workspace) in a small TOML file under `$XDG_CONFIG_HOME`, the
 //!   `district_core::Settings` the effect runner reads and writes.
+//! - [`watch_sleep`] and [`Logind`]: the machine about to sleep and waking
+//!   again, from logind on the system bus, with a delay inhibitor held while
+//!   the machine is awake so the app can get ready before it sleeps.
 //!
 //! Every type takes its directory, or its keyring, as a constructor argument,
 //! so the tests never touch the real user's directories or keyring.
@@ -29,6 +32,7 @@ mod files;
 mod marker;
 mod secret_store;
 mod settings;
+mod sleep;
 
 pub use device::{
     DEVICE_ID_FILE, DeviceIdentity, FALLBACK_DEVICE_NAME, device_name, device_name_in,
@@ -40,3 +44,7 @@ pub use secret_store::{
     Oo7SessionStore, kind_of,
 };
 pub use settings::{Preferences, SETTINGS_FILE, SettingsFile};
+pub use sleep::{
+    INHIBIT_MODE, INHIBIT_WHAT, INHIBIT_WHO, INHIBIT_WHY, LOGIN1_MANAGER, LOGIN1_PATH,
+    LOGIN1_SERVICE, Logind, SLEEP_HOLD, SleepError, SleepHandler, SleepSource, watch_sleep,
+};
