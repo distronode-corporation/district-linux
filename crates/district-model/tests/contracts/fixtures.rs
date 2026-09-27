@@ -10,20 +10,21 @@ use std::collections::BTreeSet;
 
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CHANNEL_EMAIL, CHANNEL_SMS,
-    CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
-    CampaignStatusResponse, ClearIntelResponse, ContactDetailResponse, ContactListResponse,
-    ContactMutationResponse, ConversationsResponse, DIRECTION_FLAT, DIRECTION_UP,
-    DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsResponse, DeskTicketCreateResponse,
-    DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse,
-    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, KnowledgeCreateResponse,
-    KnowledgeDeleteResponse, KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse,
-    MarkReadResponse, MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary,
-    MemberListResponse, MemberRemovalResponse, MemberResponse, MemberRole, MessageThreadResponse,
-    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingDefaultResponse,
-    MessagingMetaResponse, MessagingResponse, MessagingTestResponse, NativeRevokeResponse,
-    NumberSearchResponse, OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, OverviewResponse,
-    OwnedNumbersResponse, PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX, PersonaLabelledValue,
+    CallAnswerResponse, CallDetailResponse, CallHangUpResponse, CallSummary,
+    CallTranscriptResponse, CampaignStatusResponse, ClearIntelResponse, ContactDetailResponse,
+    ContactListResponse, ContactMutationResponse, ConversationsResponse, DIRECT_ROOM_PREFIX,
+    DIRECTION_FLAT, DIRECTION_UP, DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsResponse,
+    DeskTicketCreateResponse, DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse,
+    DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse, DialResponse,
+    DraftDeleteResponse, DraftListResponse, DraftResponse, EnrichResponse, HqConfirmResponse,
+    HqPromptResponse, KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeListResponse,
+    KnowledgeMode, KnowledgeModeResponse, MarkReadResponse, MediaUploadResponse, MeetRoomName,
+    MeetingDetail, MeetingSummary, MemberListResponse, MemberRemovalResponse, MemberResponse,
+    MemberRole, MessageThreadResponse, MessagingAccountSaveResponse,
+    MessagingChannelDefaultResponse, MessagingDefaultResponse, MessagingMetaResponse,
+    MessagingResponse, MessagingTestResponse, NativeRevokeResponse, NumberSearchResponse,
+    OVERAGE_POLICY_AUTO_BILL, OVERAGE_POLICY_HARD_CAP, OverviewResponse, OwnedNumbersResponse,
+    PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX, PersonaLabelledValue,
     PersonaOptionsResponse, PersonaPreviewTokenResponse, PkceVector, PushRegistrationResponse,
     RenameResponse, RoomTokenResponse, RoutingRuleField, SETUP_STEP_DONE, SETUP_STEP_TODO,
     SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
@@ -1411,6 +1412,43 @@ fn a_registration_answers_success_and_nothing_else() {
     ] {
         let answer: PushRegistrationResponse = decode(name);
         assert!(answer.success, "{name}");
+    }
+}
+
+#[test]
+fn a_dial_is_a_direct_room_whose_call_id_is_the_carriers() {
+    let dial: DialResponse = decode("district-dial.json");
+    assert!(dial.success && dial.is_joinable());
+    assert!(dial.room_name.starts_with(DIRECT_ROOM_PREFIX));
+    assert!(dial.url.starts_with("wss://"));
+    // The room names the call the hang-up takes, which is the carrier's id.
+    assert!(dial.call_id.starts_with("CA") && dial.room_name.ends_with(&dial.call_id));
+}
+
+#[test]
+fn an_answer_is_the_ringing_calls_own_room_and_no_passphrase() {
+    let answer: CallAnswerResponse = decode("district-call-answer.json");
+    assert!(answer.success && answer.is_joinable());
+    assert!(answer.url.starts_with("wss://"));
+    // A phone call's room: the receptionist is already in it, and it is not
+    // a direct call's.
+    assert!(answer.room_name.starts_with("call_"));
+    assert!(!answer.room_name.starts_with(DIRECT_ROOM_PREFIX));
+}
+
+#[test]
+fn the_dial_refusals_are_error_envelopes_with_the_services_words() {
+    for name in [
+        "district-dial-dnc.json",
+        "district-dial-dormant.json",
+        "district-dial-subscription.json",
+    ] {
+        let body: Value = decode(name);
+        assert_eq!(body["success"], false, "{name}");
+        assert!(
+            body["error"].as_str().is_some_and(|text| !text.is_empty()),
+            "{name}: a sentence to show"
+        );
     }
 }
 

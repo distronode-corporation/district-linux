@@ -57,6 +57,7 @@ mod push;
 mod rooms;
 mod scheduling;
 mod setup;
+mod softphone;
 mod support;
 mod telemetry;
 mod usage;
@@ -135,7 +136,7 @@ pub use persona::{
 };
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;
-pub use push::PushRegistrationResponse;
+pub use push::{PRESENCE_KIND, PRESENCE_PLATFORM, PresenceRegistration, PushRegistrationResponse};
 pub use rooms::{
     GuestInvite, MeetRoomName, MeetingDetail, MeetingSummary, RoomE2ee, RoomTokenResponse,
 };
@@ -145,6 +146,7 @@ pub use scheduling::{
 pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,
 };
+pub use softphone::{CallAnswerResponse, DIRECT_ROOM_PREFIX, DialResponse};
 pub use support::{
     SUPPORT_STATUS_DONE, SupportCloseResponse, SupportMessage, SupportReplyResponse,
     SupportRequestCreateResponse, SupportRequestDetail, SupportRequestDraft, SupportRequestFiling,

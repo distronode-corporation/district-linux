@@ -21,27 +21,27 @@
 use std::collections::BTreeMap;
 
 use district_model::{
-    AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CallDetailResponse,
-    CallHangUpResponse, CallSummary, CallTranscriptResponse, CampaignStatusResponse,
-    ClearIntelResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
-    ConversationsResponse, DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsResponse,
-    DeskTicketCreateResponse, DeskTicketResponse, DeskTicketStatusResponse, DeskTicketsResponse,
-    DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse,
-    DraftResponse, EnrichResponse, HqConfirmResponse, HqPromptResponse, KnowledgeCreateResponse,
-    KnowledgeDeleteResponse, KnowledgeListResponse, KnowledgeModeResponse, MarkReadResponse,
-    MediaUploadResponse, MeetingDetail, MeetingSummary, MemberListResponse, MemberRemovalResponse,
-    MemberResponse, MessageThreadResponse, MessagingAccountSaveResponse,
-    MessagingChannelDefaultResponse, MessagingDefaultResponse, MessagingMetaResponse,
-    MessagingResponse, MessagingTestResponse, NativeRevokeResponse, NumberSearchResponse,
-    OverviewResponse, OwnedNumbersResponse, PersonaOptionsResponse, PersonaPreviewTokenResponse,
-    PkceVector, PushRegistrationResponse, RenameResponse, RoomTokenResponse,
-    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
-    SendMessageResponse, SetupResponse, SupportCloseResponse, SupportReplyResponse,
-    SupportRequestCreateResponse, SupportRequestResponse, SupportRequestsResponse,
-    TelemetryEnvelope, TelemetryToken, TimelineResponse, UnreadCountResponse, UsageHistoryResponse,
-    UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
-    WorkspaceBillingResponse, WorkspaceConfigResponse, WorkspaceListResponse,
-    WorkspaceSaveResponse,
+    AccountBillingResponse, AiDraftResponse, AnalyticsResponse, CallAnswerResponse,
+    CallDetailResponse, CallHangUpResponse, CallSummary, CallTranscriptResponse,
+    CampaignStatusResponse, ClearIntelResponse, ContactDetailResponse, ContactListResponse,
+    ContactMutationResponse, ConversationsResponse, DeskLogoRemovalResponse, DeskReplyResponse,
+    DeskSettingsResponse, DeskTicketCreateResponse, DeskTicketResponse, DeskTicketStatusResponse,
+    DeskTicketsResponse, DeviceListResponse, DeviceRevokeResponse, DialResponse,
+    DraftDeleteResponse, DraftListResponse, DraftResponse, EnrichResponse, HqConfirmResponse,
+    HqPromptResponse, KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeListResponse,
+    KnowledgeModeResponse, MarkReadResponse, MediaUploadResponse, MeetingDetail, MeetingSummary,
+    MemberListResponse, MemberRemovalResponse, MemberResponse, MessageThreadResponse,
+    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingDefaultResponse,
+    MessagingMetaResponse, MessagingResponse, MessagingTestResponse, NativeRevokeResponse,
+    NumberSearchResponse, OverviewResponse, OwnedNumbersResponse, PersonaOptionsResponse,
+    PersonaPreviewTokenResponse, PkceVector, PushRegistrationResponse, RenameResponse,
+    RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SendMessageResponse, SetupResponse, SupportCloseResponse,
+    SupportReplyResponse, SupportRequestCreateResponse, SupportRequestResponse,
+    SupportRequestsResponse, TelemetryEnvelope, TelemetryToken, TimelineResponse,
+    UnreadCountResponse, UsageHistoryResponse, UsageResponse, WorkflowListResponse,
+    WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceConfigResponse, WorkspaceListResponse, WorkspaceSaveResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -114,6 +114,9 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // GET /api/billing: subscriptions, invoices and the account's opaque details.
     ("district-billing.json", codec::<AccountBillingResponse>),
+    // POST /api/district/calls/{callId}/answer: the credential to join a call
+    // that rang here.
+    ("district-call-answer.json", codec::<CallAnswerResponse>),
     // GET /api/district/calls/{callId}: the call log's row for one call.
     ("district-call-detail.json", codec::<CallDetailResponse>),
     // GET /api/district/calls/{callId}/transcript.
@@ -210,6 +213,10 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     // GET /api/auth/native/devices: a device of each nullability.
     ("district-devices.json", codec::<DeviceListResponse>),
+    // POST /api/district/calls/dial: a call placed, and the credential to join
+    // its room. The route's refusals are error envelopes, read by district-api's
+    // ErrorDetail, and stay in NOT_YET_MODELLED.
+    ("district-dial.json", codec::<DialResponse>),
     // PATCH /api/district/workspace/directory: the whole list replaced.
     (
         "district-directory-patch.json",
@@ -495,18 +502,16 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 9;
+pub const NOT_YET_MODELLED_BASELINE: usize = 7;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
 /// Shrink-only. Nothing may be added here: a new fixture needs a type, or a
 /// decision recorded in [`EXCLUDED_BY_DECISION`].
 pub const NOT_YET_MODELLED: &[&str] = &[
-    "district-call-answer.json",
     "district-dial-dnc.json",
     "district-dial-dormant.json",
     "district-dial-subscription.json",
-    "district-dial.json",
     "district-enrich-disabled.json",
     "district-member-duplicate.json",
     "district-member-last-agency.json",
