@@ -388,7 +388,19 @@ dependencies = [
 name = "district-auth"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "district-api",
+ "district-model",
+ "getrandom 0.4.3",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle",
+ "thiserror",
+ "tokio",
+ "url",
+ "wiremock",
 ]
 
 [[package]]

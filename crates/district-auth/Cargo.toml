@@ -10,7 +10,25 @@ authors.workspace = true
 publish.workspace = true
 
 [dependencies]
+base64 = { workspace = true }
 district-api = { workspace = true }
+district-model = { workspace = true }
+getrandom = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+thiserror = { workspace = true }
+# `rt` for the task a token rotation runs in, `sync` for the lock that makes it
+# single-flight, `time` for the bound on the presence hook at sign-out.
+tokio = { workspace = true, features = ["rt", "sync", "time"] }
+url = { workspace = true }
+
+[dev-dependencies]
+# `test-util` lets a test stop and step the clock instead of sleeping for real.
+tokio = { workspace = true, features = ["macros", "net", "rt", "rt-multi-thread", "test-util"] }
+wiremock = { workspace = true }
 
 [lints]
 workspace = true
