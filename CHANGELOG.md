@@ -281,8 +281,67 @@ date, and bump `[workspace.package] version` to match.
 - `district-core`: `DistrictApi` gains the 28 methods behind those sections, which
   `ApiClient` implements, and the runner the effects that call them. A write whose
   answer holds nothing to keep reports `Event::SettingsWritten`.
+- `district-model`: data types for calls on the desktop. A placed call's answer
+  (`DialResponse`) and an answered call's (`CallAnswerResponse`) are media
+  credentials whose tokens no `Debug` prints; neither carries an encryption
+  passphrase, because a phone call's room has a telephone leg the carrier delivers
+  unencrypted. A dial is joined only as a `direct_` room (`DIRECT_ROOM_PREFIX`),
+  which the receptionist never joins. The desktop's presence registration
+  (`PresenceRegistration`) is the `linux` and `desktop` pair and a random value,
+  and names no device: the service takes the installation from the access token.
+  The dial's three recorded refusals stay with the error reader, being error
+  answers, and the list of fixtures not yet modelled shrinks from 9 to 7.
+- `district-api`: `dial`, `answer_call` and `hang_up_call`, and
+  `register_presence` and `unregister_presence`, none of them repeated after a
+  refused access token. The dial sends the number as typed; unregistering sends no
+  body.
+- `district-core`: calls on the desktop, still with no GTK, no IO and no media
+  library.
+  - `CallEngine`, the seam the media library is joined through: connect with a
+    `MediaCredential` (whose passphrase is handed over as the text it is, never
+    decoded), the microphone, disconnect. Everything the engine learns comes back
+    as `Event::Media`, naming the session: connecting, connected, reconnecting,
+    disconnected with a reason, participants (services such as the receptionist
+    and the Companion flagged, and left out of every list of people), remote
+    tracks, the microphone's state, and a failure to decrypt. One media session is
+    held at a time (`SignedIn::media`), and nothing asks for a second.
+  - The dialler (`Route::Dialer`, `DialerScreen`), closed to a viewer: the number
+    sent as typed and read grouped (`format_dial_entry`), one dial at a time, and
+    a refusal shown in the service's words as a call not placed.
+  - The call (`SignedIn::active_call`, `ActiveCall`), placed or answered, which
+    goes on through a change of workspace: answered when a person joins a placed
+    call's room or when an answered call's media is up, timed from then by the
+    clock (`format_call_duration`), muted and unmuted (`Event::Microphone`),
+    reconnecting shown as a banner, and hung up. Every ending of a placed call
+    also asks the service to end the telephone leg, once, a dial hung up before it
+    answered included.
+  - Rings (`RingController`): a `call_ringing` event rings only for this member,
+    with "ring on this computer" on and a role that may answer, for thirty seconds
+    (`RING_DEADLINE`, the longest the service holds a caller), with an urgent
+    notification carrying Answer and Decline, the ringtone (`RingSurface`) and the
+    window brought forward on answering. Answering is sent once and joins through
+    the engine; declining and a missed ring tell the service nothing; a ring ends
+    when its call does; a ring during a call, a meeting or an audition waits
+    without a sound until that ends.
+  - Meeting rooms and the persona audition join through the engine too, and are
+    left, their credentials dropped, when the member leaves, the room ends, or
+    the lobby or the section is left.
+  - Presence (`PresenceState`, `DesktopPresence`): registered and renewed every
+    five minutes while the setting is on and the desktop awake, tried again a
+    minute after a failure, and unregistered when the setting goes off, before
+    sleep (`Event::Suspending`, `Event::Resumed`), on quit (`Event::Quitting`)
+    and as sign-out's first step, one change at a time and the latest winning.
+  - The runner takes three more traits (`Presence`, `CallEngine`, `RingSurface`),
+    `Settings` keeps the setting, and `Notifier` can take a notification away.
 
 ### Changed
+
+- `district-core`: `Auth::sign_out` takes the sign-out's ticket, which orders its
+  unregistration of the presence after every change the session asked for, and
+  `NativeAuth` takes the presence it unregisters. `Notification` has an urgency
+  and actions, and `NotificationTarget` a ringing call and a call in the log.
+  `LiveState::ringing` and `RingingCall` are gone: a ring is `RingController`'s.
+  A room is no longer started over one already joined: it is left first.
 
 - `district-core`: `Effect` derives `PartialEq` without `Eq`, because a persona's
   variation is fractional.

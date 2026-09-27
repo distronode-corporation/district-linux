@@ -122,10 +122,60 @@ The project is pre-release, and parts of this are not implemented yet.
   session that is billed, and the client has no way to name one.
 - Joining a room returns a short-lived media credential, the room's end-to-end
   encryption passphrase and, for a member who may speak, a signed guest link. All
-  three are kept in memory only and redacted from `Debug`, and only while the rooms
-  lobby is showing: leaving it drops them. The passphrase is handed to the media
-  library as the text it is, never decoded, so every participant derives the same
-  key.
+  three are kept in memory only and redacted from `Debug`, and only while the room
+  is joined and the rooms lobby is showing: leaving the room, the room ending, or
+  leaving the lobby drops them and leaves the room. The passphrase is handed to
+  the media library as the text it is, never decoded, so every participant
+  derives the same key; a blank one is never used. A viewer joins with the
+  microphone off, and the app never asks to turn it on.
+
+### Calls on the desktop
+
+- A desktop has no push service. While "ring on this computer" is on and the
+  machine is awake, it registers its presence with the service: the pair
+  `platform: "linux"`, `kind: "desktop"` and a random value made by each run of
+  the app, which identifies nothing else. It sends no device id; the service
+  takes the installation from the access token. The registration is renewed
+  every five minutes, because the service rings a desktop only while its
+  registration is under ten minutes old, and it is removed when the setting is
+  turned off, before the machine sleeps, when the app quits, and as the first
+  step of signing out, before the session is revoked. Changes go out one at a
+  time, and one that arrives after a later one was sent is dropped, so a renewal
+  already on its way cannot register a desktop that just unregistered or signed
+  out. An app that is killed leaves a registration that lapses within ten
+  minutes, during which the service may hold a caller for it.
+- A call is rung on the desktop by a `call_ringing` event on the workspace's live
+  socket. It carries ids only: the call, and the user ids of the members it
+  rings through a desktop. It reaches every socket open on the workspace, so
+  anyone signed in to it can learn which members a call is ringing, but nothing
+  about the caller: no number, no name, no reason. The desktop rings only when
+  its own user id is named, the setting is on here, and the member's role may
+  answer.
+- The ring's notification says "Incoming call" and where it came from, and
+  nothing about the caller, as the notification for a new message says nothing
+  about it. Its Answer and Decline actions carry the call's id only.
+- Answering asks the service for the call's media credential, which is also what
+  tells the receptionist a person took the call, so it is asked for only when the
+  member answers, once. Declining, or letting the ring run out, sends nothing:
+  the service learns only that nobody answered, so a refusal cannot be told
+  apart from a desktop nobody was at.
+- Placing a call rings a telephone and is billed, so it is sent only when the
+  member presses Call, once, and never again by itself. A viewer is not offered
+  the dialler. The number is sent as typed, so the service's do-not-call check
+  sees exactly the number it dials. Every ending of a placed call also asks the
+  service to end the telephone leg, because leaving the call's room alone would
+  leave a stranger's phone ringing, and billed, until the carrier gave up; a dial
+  hung up before it answered is ended the moment its answer names the call.
+- A phone call's media credential (good for seventy minutes) is handed to the
+  call engine when the call is joined and not kept anywhere else. A phone call
+  has no encryption passphrase: its room has a telephone leg the carrier
+  delivers unencrypted. Every type holding a media credential or a passphrase
+  leaves it out of `Debug`, the events and effects that carry them included, and
+  so does everything the call engine reports about the people in a room, whose
+  identity can be a caller's number.
+- One call, meeting or audition holds the microphone at a time. A ring that
+  arrives during one is shown without a sound and cannot be answered until it
+  ends.
 
 ### The help desk and support requests
 
@@ -172,10 +222,11 @@ The project is pre-release, and parts of this are not implemented yet.
 - Auditioning an unsaved persona starts a billed call. It is asked for only when
   the member presses Start in a dialog that says so, one at a time, never again
   by itself after a failure, and not again for a few seconds after one ends. Its
-  credential and the room's encryption passphrase are kept in memory for the call
-  engine, redacted from `Debug`, and dropped when the audition is stopped, the
-  dialog closed or the section left. An answer without a passphrase, or for a
-  room that is not an audition room, is not joined. Adding a knowledge base
+  credential and the room's encryption passphrase are joined through the call
+  engine, kept in memory only, redacted from `Debug`, and dropped, the room left
+  with them, when the audition is stopped, the dialog closed, the section left or
+  the room ends. An answer without a passphrase, or for a room that is not an
+  audition room, is not joined. Adding a knowledge base
   document, which is billed by its length, is likewise sent once, only when the
   member adds it.
 
