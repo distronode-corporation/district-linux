@@ -54,6 +54,14 @@
 //!   [`DeskTicketScreen`], [`DeskSettingsView`]), support requests
 //!   ([`SupportScreen`], [`SupportRequestScreen`]) and the rooms lobby with its
 //!   meeting records ([`RoomsScreen`]).
+//! - The screens of the fourth: the workspace settings hub ([`settings_rows`])
+//!   and its sections, each read when it opens and saved only from what it read:
+//!   the persona with its audition ([`PersonaSection`]), the capabilities
+//!   ([`ToolsSection`]), the transfer directory ([`DirectorySection`]), the
+//!   routing rules ([`RoutingRulesSection`]), call handling and availability
+//!   ([`CallHandlingSection`]), the knowledge base ([`KnowledgeSection`]), the
+//!   carrier accounts ([`MessagingSection`]) and the members and the
+//!   workspace's name ([`MembersSection`]).
 //! - [`FailureText`]: the words for every failure, in one place.
 //! - [`NativeAuth`], [`LiveHub`] and the [`DistrictApi`] implementation for
 //!   [`ApiClient`](district_api::ApiClient): the real sign-in, live updates and
@@ -88,6 +96,7 @@ mod route;
 mod runner;
 mod scheduling;
 mod session;
+mod settings;
 mod signed_in;
 mod support;
 mod thread;
@@ -152,6 +161,22 @@ pub use session::{
     ExchangeFailure, Identity, Notice, RestoreError, Restoring, ServiceSignOut, SessionEnd,
     SessionState, SignInError, SignInPhase, SignOutOutcome, SignOutScope, SignedInSession,
     SignedOut, SignedOutWhy, SigningIn, SigningOut,
+};
+pub use settings::{
+    AvailabilityView, CAPABILITY_CATALOG, CallHandlingEvent, CallHandlingSection, CallHandlingView,
+    CapabilityRow, ConfigLoad, CredentialField, CredentialTest, DirectoryConfirm, DirectoryEvent,
+    DirectoryField, DirectorySection, KnowledgeConfirm, KnowledgeDocuments, KnowledgeEvent,
+    KnowledgeModeView, KnowledgeSection, KnowledgeWrite, MESSAGING_CHANNELS, MemberList,
+    MemberWrite, MembersAction, MembersEvent, MembersSection, MessagingAccounts, MessagingAction,
+    MessagingDeleteConfirm, MessagingEvent, MessagingForm, MessagingFormEdit, MessagingSection,
+    MessagingWrite, PERSONA_GEMINI_LIVE_ENGINE, PREVIEW_COOLDOWN, PersonaEngineEdit,
+    PersonaEngineValues, PersonaEvent, PersonaOptionsLoad, PersonaPreview, PersonaSection,
+    PersonaText, RoutingRulesConfirm, RoutingRulesEvent, RoutingRulesSection, SCHEDULING_TOOLS,
+    SETTINGS_MORE_ON_WEB, SETTINGS_VIEWER_NOTE, SaveState, SecretText, SettingsRow, ToolsEvent,
+    ToolsSection, availability_reason_text, call_handling_mode, call_handling_mode_body,
+    call_handling_mode_label, capability_label, channel_label, credential_source_label,
+    default_allowed_tools, is_member_email, knowledge_mode_body, knowledge_mode_label,
+    member_role_label, provider_label, settings_note, settings_rows,
 };
 pub use signed_in::SignedIn;
 pub use support::{

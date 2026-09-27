@@ -12,6 +12,7 @@ use district_api::{
     UnauthorizedReason,
 };
 use district_live::LiveError;
+use district_model::{CODE_LAST_AGENCY_MEMBER, CODE_MEMBER_EXISTS};
 
 use crate::session::SessionEnd;
 
@@ -67,6 +68,15 @@ pub(crate) const HAND_OFF_TOO_MANY: &str =
 /// sign-in, so it is not opened.
 pub(crate) const HAND_OFF_ELSEWHERE: &str = "District AI sent a sign-in link for another \
     address, so it was not opened. Updating the app may fix it.";
+/// An audition credential with no encryption passphrase, or for a room that is
+/// not an audition room. It is not joined.
+pub(crate) const PREVIEW_UNENCRYPTED: &str = "District AI sent an audition that could not be \
+    joined securely, so it was not started. Updating the app may fix it.";
+/// Adding an address that is already a member, when the service gave no words.
+const MEMBER_EXISTS: &str = "That address is already a member of this workspace.";
+/// A change that would leave no agency member, when the service gave no words.
+const LAST_AGENCY_MEMBER: &str = "Every workspace needs at least one agency member, so this \
+    change was not made.";
 
 /// What to tell the user about one failure.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -128,6 +138,25 @@ impl FailureText {
                 Self::final_(UNEXPECTED_RESPONSE)
             }
             ApiError::InvalidRequest(_) => Self::final_(APP_BUG),
+        }
+    }
+
+    /// The text for a failed change of a member. The two refusals the service
+    /// names (an address that is already a member, and a change that would
+    /// leave the workspace with no agency member) are shown in its words and
+    /// offer no retry: pressing again gets the same answer. Anything else reads
+    /// as it does everywhere.
+    pub fn from_member_error(error: &ApiError) -> Self {
+        match error {
+            ApiError::Conflict(detail) if detail.code.as_deref() == Some(CODE_MEMBER_EXISTS) => {
+                Self::final_(or_ours(&detail.message, MEMBER_EXISTS))
+            }
+            ApiError::Conflict(detail)
+                if detail.code.as_deref() == Some(CODE_LAST_AGENCY_MEMBER) =>
+            {
+                Self::final_(or_ours(&detail.message, LAST_AGENCY_MEMBER))
+            }
+            other => Self::from_api_error(other),
         }
     }
 

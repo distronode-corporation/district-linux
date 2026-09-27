@@ -9,8 +9,8 @@
 //! The steps for each screen live beside its state (`inbox.rs`, `thread.rs`,
 //! `calls.rs`, `contacts.rs`, `live.rs`, `hq.rs`, `analytics.rs`,
 //! `marketplace.rs`, `billing.rs`, `workflows.rs`, `scheduling.rs`, `desk.rs`,
-//! `support.rs`, `rooms.rs`); this file holds what they share: navigation, the
-//! workspace switch and the overview.
+//! `support.rs`, `rooms.rs`, and the workspace settings under `settings/`); this
+//! file holds what they share: navigation, the workspace switch and the overview.
 
 use district_api::ApiError;
 use district_model::{
@@ -33,9 +33,13 @@ use crate::model::{CoreConfig, Effect, Slot, Ticket, Tickets, WORKSPACE_SLOTS};
 use crate::overview::{OverviewContent, OverviewScreen, SETUP_WEB_PATH, workspace_mismatch};
 use crate::role::Capabilities;
 use crate::rooms::RoomsScreen;
-use crate::route::Route;
+use crate::route::{Route, WorkspaceSection};
 use crate::scheduling::SchedulingScreen;
 use crate::session::{Identity, Notice, SignOutScope};
+use crate::settings::{
+    CallHandlingSection, DirectorySection, KnowledgeSection, MembersSection, MessagingSection,
+    PersonaSection, RoutingRulesSection, ToolsSection,
+};
 use crate::support::{SupportRequestScreen, SupportScreen};
 use crate::thread::ThreadScreen;
 use crate::workflows::WorkflowsScreen;
@@ -100,6 +104,22 @@ pub struct SignedIn {
     pub support_request: Option<SupportRequestScreen>,
     /// The rooms lobby.
     pub rooms: RoomsScreen,
+    /// The persona section, while it shows.
+    pub persona: Option<PersonaSection>,
+    /// The capabilities section, while it shows.
+    pub tools: Option<ToolsSection>,
+    /// The transfer directory section, while it shows.
+    pub directory: Option<DirectorySection>,
+    /// The routing rules section, while it shows.
+    pub routing_rules: Option<RoutingRulesSection>,
+    /// The knowledge base section, while it shows.
+    pub knowledge: Option<KnowledgeSection>,
+    /// The messaging accounts section, while it shows.
+    pub messaging: Option<MessagingSection>,
+    /// The call handling section, while it shows.
+    pub call_handling: Option<CallHandlingSection>,
+    /// The members section, while it shows.
+    pub members: Option<MembersSection>,
     /// The open workspace's live updates.
     pub live: LiveState,
     /// Whether the main window is showing, as the app last reported it.
@@ -148,6 +168,14 @@ impl SignedIn {
             support: SupportScreen::default(),
             support_request: None,
             rooms: RoomsScreen::default(),
+            persona: None,
+            tools: None,
+            directory: None,
+            routing_rules: None,
+            knowledge: None,
+            messaging: None,
+            call_handling: None,
+            members: None,
             live: LiveState::default(),
             window_visible,
         }
@@ -190,6 +218,12 @@ impl SignedIn {
             self.route = route;
             return Next::Stay(effects);
         }
+        // The phone numbers row of the settings hub is the phone numbers
+        // screen, not a second copy of it.
+        let route = match route {
+            Route::Workspace(WorkspaceSection::Numbers) => Route::Marketplace,
+            route => route,
+        };
         Next::Stay(self.show(route, tickets))
     }
 
@@ -202,11 +236,13 @@ impl SignedIn {
     }
 
     /// Closes the detail screen showing, unless `next` is the same screen. The
-    /// rooms lobby drops the credential it held.
+    /// rooms lobby drops the credential it held, and a settings section its
+    /// edits, typed credentials and audition.
     fn leave(&mut self, next: &Route, tickets: &mut Tickets) -> Vec<Effect> {
         if self.route == *next {
             return Vec::new();
         }
+        self.close_settings(tickets);
         self.close_call(tickets);
         self.close_contact(tickets);
         self.close_desk_ticket(tickets);
@@ -246,13 +282,10 @@ impl SignedIn {
             Route::Support => self.enter_support(tickets),
             Route::SupportRequest { key } => self.open_support_request(key, tickets),
             Route::Rooms => self.enter_rooms(tickets),
+            Route::Workspace(section) => self.enter_settings(section, tickets),
             // A thread is opened by `navigate`, which reads its key first. The HQ
             // conversation is held, not read.
-            Route::Overview
-            | Route::Account
-            | Route::Workspace(_)
-            | Route::Thread { .. }
-            | Route::Hq => Vec::new(),
+            Route::Overview | Route::Account | Route::Thread { .. } | Route::Hq => Vec::new(),
         }
     }
 
@@ -374,6 +407,7 @@ impl SignedIn {
         self.support = SupportScreen::default();
         self.support_request = None;
         self.rooms = RoomsScreen::default();
+        self.close_settings(tickets);
         effects
     }
 

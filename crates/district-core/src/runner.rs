@@ -34,12 +34,24 @@ use district_model::{
     WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
     WorkspaceListResponse,
 };
+use district_model::{
+    AvailabilityResponse, CallHandlingPatch, CallHandlingResponse, DirectoryEntry,
+    KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeDocumentDraft,
+    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MemberListResponse,
+    MemberRemovalResponse, MemberResponse, MemberRole, MessagingAccountSave,
+    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingCreatorCell,
+    MessagingCredentials, MessagingDefaultResponse, MessagingDelete, MessagingMetaResponse,
+    MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault, MessagingTestResponse,
+    PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
+    RenameResponse, RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+};
 
 use crate::contacts::{ContactWrite, ContactWritten};
 use crate::live::Notification;
 use crate::model::{Effect, Event, Ticket};
 use crate::scheduling::SCHEDULING_WEB_PATH;
 use crate::session::{RestoreError, SignInError, SignedInSession};
+use crate::settings::{MemberWrite, MessagingWrite};
 
 /// The District AI API, as far as the app's screens use it.
 pub trait DistrictApi: Send + Sync {
@@ -424,6 +436,168 @@ pub trait DistrictApi: Send + Sync {
         &self,
         room: &MeetRoomName,
     ) -> impl Future<Output = Result<RoomTokenResponse, ApiError>> + Send;
+    /// The workspace settings row.
+    fn workspace_config(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<WorkspaceConfigResponse, ApiError>> + Send;
+    /// Replaces the tools the receptionist may use. Sent once.
+    fn save_tools(
+        &self,
+        workspace_id: &str,
+        allowed_tools: &[String],
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send;
+    /// Replaces the call directory. Sent once.
+    fn save_directory(
+        &self,
+        workspace_id: &str,
+        entries: &[DirectoryEntry],
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send;
+    /// Replaces the routing rules. Sent once.
+    fn save_routing_rules(
+        &self,
+        workspace_id: &str,
+        rules: &[RoutingRule],
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send;
+    /// The choices a persona may be given.
+    fn persona_options(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<PersonaOptionsResponse, ApiError>> + Send;
+    /// Changes what `patch` names of the persona. Sent once.
+    fn save_persona(
+        &self,
+        workspace_id: &str,
+        patch: &PersonaPatch,
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send;
+    /// The credential of an audition of `form`. Billed; sent once.
+    fn persona_preview_token(
+        &self,
+        workspace_id: &str,
+        form: &PersonaPreviewForm,
+    ) -> impl Future<Output = Result<PersonaPreviewTokenResponse, ApiError>> + Send;
+    /// The knowledge base's documents.
+    fn knowledge_documents(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<KnowledgeListResponse, ApiError>> + Send;
+    /// Adds a document. Billed by its length; sent once.
+    fn add_knowledge_document(
+        &self,
+        workspace_id: &str,
+        draft: &KnowledgeDocumentDraft,
+    ) -> impl Future<Output = Result<KnowledgeCreateResponse, ApiError>> + Send;
+    /// Deletes a document. Sent once.
+    fn delete_knowledge_document(
+        &self,
+        workspace_id: &str,
+        document_id: &str,
+    ) -> impl Future<Output = Result<KnowledgeDeleteResponse, ApiError>> + Send;
+    /// Where answers come from.
+    fn knowledge_mode(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<KnowledgeModeResponse, ApiError>> + Send;
+    /// Changes where answers come from. Sent once.
+    fn set_knowledge_mode(
+        &self,
+        workspace_id: &str,
+        mode: KnowledgeMode,
+    ) -> impl Future<Output = Result<KnowledgeModeResponse, ApiError>> + Send;
+    /// The carrier accounts.
+    fn messaging(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<MessagingResponse, ApiError>> + Send;
+    /// Creates or edits a carrier account. Sent once.
+    fn save_messaging_account(
+        &self,
+        workspace_id: &str,
+        save: &MessagingAccountSave,
+    ) -> impl Future<Output = Result<MessagingAccountSaveResponse, ApiError>> + Send;
+    /// Makes an account the default sender. Sent once.
+    fn set_default_messaging_account(
+        &self,
+        workspace_id: &str,
+        change: &MessagingSetDefault,
+    ) -> impl Future<Output = Result<MessagingDefaultResponse, ApiError>> + Send;
+    /// Sends one channel from one account. Sent once.
+    fn set_messaging_channel_default(
+        &self,
+        workspace_id: &str,
+        change: &MessagingSetChannelDefault,
+    ) -> impl Future<Output = Result<MessagingChannelDefaultResponse, ApiError>> + Send;
+    /// Removes a carrier account. Sent once.
+    fn delete_messaging_account(
+        &self,
+        workspace_id: &str,
+        delete: &MessagingDelete,
+    ) -> impl Future<Output = Result<MessagingDefaultResponse, ApiError>> + Send;
+    /// Saves the owner's mobile number. Sent once.
+    fn save_creator_cell_number(
+        &self,
+        workspace_id: &str,
+        change: &MessagingCreatorCell,
+    ) -> impl Future<Output = Result<MessagingMetaResponse, ApiError>> + Send;
+    /// Asks the carrier whether `credentials` authenticate. Sent once.
+    fn test_messaging_credentials(
+        &self,
+        workspace_id: &str,
+        credentials: &MessagingCredentials,
+    ) -> impl Future<Output = Result<MessagingTestResponse, ApiError>> + Send;
+    /// Who answers a call.
+    fn call_handling(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<CallHandlingResponse, ApiError>> + Send;
+    /// Changes what `patch` names of who answers a call. Sent once.
+    fn save_call_handling(
+        &self,
+        workspace_id: &str,
+        patch: &CallHandlingPatch,
+    ) -> impl Future<Output = Result<CallHandlingResponse, ApiError>> + Send;
+    /// Whether the signed-in member is rung.
+    fn availability(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<AvailabilityResponse, ApiError>> + Send;
+    /// Makes the signed-in member available for calls, or not. Sent once.
+    fn set_availability(
+        &self,
+        workspace_id: &str,
+        available_for_calls: bool,
+    ) -> impl Future<Output = Result<AvailabilityResponse, ApiError>> + Send;
+    /// The members.
+    fn members(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<MemberListResponse, ApiError>> + Send;
+    /// Makes a sign-in a member. Sent once.
+    fn add_member(
+        &self,
+        workspace_id: &str,
+        email: &str,
+        role: MemberRole,
+    ) -> impl Future<Output = Result<MemberResponse, ApiError>> + Send;
+    /// Gives a member another role. Sent once.
+    fn change_member_role(
+        &self,
+        workspace_id: &str,
+        email: &str,
+        role: MemberRole,
+    ) -> impl Future<Output = Result<MemberResponse, ApiError>> + Send;
+    /// Removes a member. Sent once.
+    fn remove_member(
+        &self,
+        workspace_id: &str,
+        email: &str,
+    ) -> impl Future<Output = Result<MemberRemovalResponse, ApiError>> + Send;
+    /// Renames the workspace. Sent once.
+    fn rename_workspace(
+        &self,
+        workspace_id: &str,
+        name: &str,
+    ) -> impl Future<Output = Result<RenameResponse, ApiError>> + Send;
 }
 
 /// Signing in and out.
@@ -1123,8 +1297,251 @@ where
                 }
                 Event::UrlOpenFailed
             }
+            Effect::LoadWorkspaceConfig {
+                ticket,
+                workspace_id,
+            } => Event::WorkspaceConfigLoaded {
+                ticket,
+                result: self.api.workspace_config(&workspace_id).await,
+            },
+            Effect::SaveTools {
+                ticket,
+                workspace_id,
+                allowed_tools,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self
+                    .api
+                    .save_tools(&workspace_id, &allowed_tools)
+                    .await
+                    .map(drop),
+            },
+            Effect::SaveDirectory {
+                ticket,
+                workspace_id,
+                entries,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self
+                    .api
+                    .save_directory(&workspace_id, &entries)
+                    .await
+                    .map(drop),
+            },
+            Effect::SaveRoutingRules {
+                ticket,
+                workspace_id,
+                rules,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self
+                    .api
+                    .save_routing_rules(&workspace_id, &rules)
+                    .await
+                    .map(drop),
+            },
+            Effect::SavePersona {
+                ticket,
+                workspace_id,
+                patch,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self.api.save_persona(&workspace_id, &patch).await.map(drop),
+            },
+            Effect::LoadPersonaOptions {
+                ticket,
+                workspace_id,
+            } => Event::PersonaOptionsLoaded {
+                ticket,
+                result: self.api.persona_options(&workspace_id).await,
+            },
+            Effect::RequestPersonaPreview {
+                ticket,
+                workspace_id,
+                form,
+            } => Event::PersonaPreviewIssued {
+                ticket,
+                result: self.api.persona_preview_token(&workspace_id, &form).await,
+            },
+            Effect::LoadKnowledge {
+                ticket,
+                workspace_id,
+            } => Event::KnowledgeLoaded {
+                ticket,
+                result: self.api.knowledge_documents(&workspace_id).await,
+            },
+            Effect::AddKnowledgeDocument {
+                ticket,
+                workspace_id,
+                draft,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self
+                    .api
+                    .add_knowledge_document(&workspace_id, &draft)
+                    .await
+                    .map(drop),
+            },
+            Effect::DeleteKnowledgeDocument {
+                ticket,
+                workspace_id,
+                document_id,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self
+                    .api
+                    .delete_knowledge_document(&workspace_id, &document_id)
+                    .await
+                    .map(drop),
+            },
+            Effect::LoadKnowledgeMode {
+                ticket,
+                workspace_id,
+            } => Event::KnowledgeModeLoaded {
+                ticket,
+                result: self.api.knowledge_mode(&workspace_id).await,
+            },
+            Effect::SetKnowledgeMode {
+                ticket,
+                workspace_id,
+                mode,
+            } => Event::KnowledgeModeLoaded {
+                ticket,
+                result: self.api.set_knowledge_mode(&workspace_id, mode).await,
+            },
+            Effect::LoadMessaging {
+                ticket,
+                workspace_id,
+            } => Event::MessagingLoaded {
+                ticket,
+                result: self.api.messaging(&workspace_id).await,
+            },
+            Effect::WriteMessaging {
+                ticket,
+                workspace_id,
+                write,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self.write_messaging(&workspace_id, write).await,
+            },
+            Effect::TestMessagingCredentials {
+                ticket,
+                workspace_id,
+                credentials,
+            } => Event::MessagingCredentialsTested {
+                ticket,
+                result: self
+                    .api
+                    .test_messaging_credentials(&workspace_id, &credentials)
+                    .await,
+            },
+            Effect::LoadCallHandling {
+                ticket,
+                workspace_id,
+            } => Event::CallHandlingLoaded {
+                ticket,
+                result: self.api.call_handling(&workspace_id).await,
+            },
+            Effect::SaveCallHandling {
+                ticket,
+                workspace_id,
+                patch,
+            } => Event::CallHandlingLoaded {
+                ticket,
+                result: self.api.save_call_handling(&workspace_id, &patch).await,
+            },
+            Effect::LoadAvailability {
+                ticket,
+                workspace_id,
+            } => Event::AvailabilityLoaded {
+                ticket,
+                result: self.api.availability(&workspace_id).await,
+            },
+            Effect::SetAvailability {
+                ticket,
+                workspace_id,
+                available,
+            } => Event::AvailabilityLoaded {
+                ticket,
+                result: self.api.set_availability(&workspace_id, available).await,
+            },
+            Effect::LoadMembers {
+                ticket,
+                workspace_id,
+            } => Event::MembersLoaded {
+                ticket,
+                result: self.api.members(&workspace_id).await,
+            },
+            Effect::WriteMember {
+                ticket,
+                workspace_id,
+                write,
+            } => Event::SettingsWritten {
+                ticket,
+                result: self.write_member(&workspace_id, write).await,
+            },
+            Effect::RenameWorkspace {
+                ticket,
+                workspace_id,
+                name,
+            } => Event::WorkspaceRenamed {
+                ticket,
+                result: self.api.rename_workspace(&workspace_id, &name).await,
+            },
         };
         Some(event)
+    }
+
+    async fn write_messaging(
+        &self,
+        workspace_id: &str,
+        write: MessagingWrite,
+    ) -> Result<(), ApiError> {
+        match write {
+            MessagingWrite::SaveAccount(save) => self
+                .api
+                .save_messaging_account(workspace_id, &save)
+                .await
+                .map(drop),
+            MessagingWrite::SetDefault(change) => self
+                .api
+                .set_default_messaging_account(workspace_id, &change)
+                .await
+                .map(drop),
+            MessagingWrite::SetChannelDefault(change) => self
+                .api
+                .set_messaging_channel_default(workspace_id, &change)
+                .await
+                .map(drop),
+            MessagingWrite::Delete(delete) => self
+                .api
+                .delete_messaging_account(workspace_id, &delete)
+                .await
+                .map(drop),
+            MessagingWrite::CreatorCell(change) => self
+                .api
+                .save_creator_cell_number(workspace_id, &change)
+                .await
+                .map(drop),
+        }
+    }
+
+    async fn write_member(&self, workspace_id: &str, write: MemberWrite) -> Result<(), ApiError> {
+        match write {
+            MemberWrite::Add { email, role } => self
+                .api
+                .add_member(workspace_id, &email, role)
+                .await
+                .map(drop),
+            MemberWrite::ChangeRole { email, role } => self
+                .api
+                .change_member_role(workspace_id, &email, role)
+                .await
+                .map(drop),
+            MemberWrite::Remove { email } => {
+                self.api.remove_member(workspace_id, &email).await.map(drop)
+            }
+        }
     }
 
     async fn write_contact(

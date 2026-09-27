@@ -31,6 +31,17 @@ use district_model::{
     WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
     WorkspaceListResponse,
 };
+use district_model::{
+    AvailabilityResponse, CallHandlingPatch, CallHandlingResponse, DirectoryEntry,
+    KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeDocumentDraft,
+    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MemberListResponse,
+    MemberRemovalResponse, MemberResponse, MemberRole, MessagingAccountSave,
+    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingCreatorCell,
+    MessagingCredentials, MessagingDefaultResponse, MessagingDelete, MessagingMetaResponse,
+    MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault, MessagingTestResponse,
+    PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
+    RenameResponse, RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+};
 use tokio::sync::mpsc::UnboundedReceiver;
 use url::Url;
 
@@ -546,6 +557,224 @@ impl<S: TokenSource> DistrictApi for ApiClient<S> {
         room: &MeetRoomName,
     ) -> impl Future<Output = Result<RoomTokenResponse, ApiError>> + Send {
         ApiClient::room_token(self, room)
+    }
+
+    fn workspace_config(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<WorkspaceConfigResponse, ApiError>> + Send {
+        ApiClient::workspace_config(self, workspace_id)
+    }
+
+    fn save_tools(
+        &self,
+        workspace_id: &str,
+        allowed_tools: &[String],
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send {
+        ApiClient::save_tools(self, workspace_id, allowed_tools)
+    }
+
+    fn save_directory(
+        &self,
+        workspace_id: &str,
+        entries: &[DirectoryEntry],
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send {
+        ApiClient::save_directory(self, workspace_id, entries)
+    }
+
+    fn save_routing_rules(
+        &self,
+        workspace_id: &str,
+        rules: &[RoutingRule],
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send {
+        ApiClient::save_routing_rules(self, workspace_id, rules)
+    }
+
+    fn persona_options(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<PersonaOptionsResponse, ApiError>> + Send {
+        ApiClient::persona_options(self, workspace_id)
+    }
+
+    fn save_persona(
+        &self,
+        workspace_id: &str,
+        patch: &PersonaPatch,
+    ) -> impl Future<Output = Result<WorkspaceSaveResponse, ApiError>> + Send {
+        ApiClient::save_persona(self, workspace_id, patch)
+    }
+
+    fn persona_preview_token(
+        &self,
+        workspace_id: &str,
+        form: &PersonaPreviewForm,
+    ) -> impl Future<Output = Result<PersonaPreviewTokenResponse, ApiError>> + Send {
+        ApiClient::persona_preview_token(self, workspace_id, form)
+    }
+
+    fn knowledge_documents(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<KnowledgeListResponse, ApiError>> + Send {
+        ApiClient::knowledge_documents(self, workspace_id)
+    }
+
+    fn add_knowledge_document(
+        &self,
+        workspace_id: &str,
+        draft: &KnowledgeDocumentDraft,
+    ) -> impl Future<Output = Result<KnowledgeCreateResponse, ApiError>> + Send {
+        ApiClient::add_knowledge_document(self, workspace_id, draft)
+    }
+
+    fn delete_knowledge_document(
+        &self,
+        workspace_id: &str,
+        document_id: &str,
+    ) -> impl Future<Output = Result<KnowledgeDeleteResponse, ApiError>> + Send {
+        ApiClient::delete_knowledge_document(self, workspace_id, document_id)
+    }
+
+    fn knowledge_mode(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<KnowledgeModeResponse, ApiError>> + Send {
+        ApiClient::knowledge_mode(self, workspace_id)
+    }
+
+    fn set_knowledge_mode(
+        &self,
+        workspace_id: &str,
+        mode: KnowledgeMode,
+    ) -> impl Future<Output = Result<KnowledgeModeResponse, ApiError>> + Send {
+        ApiClient::set_knowledge_mode(self, workspace_id, mode)
+    }
+
+    fn messaging(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<MessagingResponse, ApiError>> + Send {
+        ApiClient::messaging(self, workspace_id)
+    }
+
+    fn save_messaging_account(
+        &self,
+        workspace_id: &str,
+        save: &MessagingAccountSave,
+    ) -> impl Future<Output = Result<MessagingAccountSaveResponse, ApiError>> + Send {
+        ApiClient::save_messaging_account(self, workspace_id, save)
+    }
+
+    fn set_default_messaging_account(
+        &self,
+        workspace_id: &str,
+        change: &MessagingSetDefault,
+    ) -> impl Future<Output = Result<MessagingDefaultResponse, ApiError>> + Send {
+        ApiClient::set_default_messaging_account(self, workspace_id, change)
+    }
+
+    fn set_messaging_channel_default(
+        &self,
+        workspace_id: &str,
+        change: &MessagingSetChannelDefault,
+    ) -> impl Future<Output = Result<MessagingChannelDefaultResponse, ApiError>> + Send {
+        ApiClient::set_messaging_channel_default(self, workspace_id, change)
+    }
+
+    fn delete_messaging_account(
+        &self,
+        workspace_id: &str,
+        delete: &MessagingDelete,
+    ) -> impl Future<Output = Result<MessagingDefaultResponse, ApiError>> + Send {
+        ApiClient::delete_messaging_account(self, workspace_id, delete)
+    }
+
+    fn save_creator_cell_number(
+        &self,
+        workspace_id: &str,
+        change: &MessagingCreatorCell,
+    ) -> impl Future<Output = Result<MessagingMetaResponse, ApiError>> + Send {
+        ApiClient::save_creator_cell_number(self, workspace_id, change)
+    }
+
+    fn test_messaging_credentials(
+        &self,
+        workspace_id: &str,
+        credentials: &MessagingCredentials,
+    ) -> impl Future<Output = Result<MessagingTestResponse, ApiError>> + Send {
+        ApiClient::test_messaging_credentials(self, workspace_id, credentials)
+    }
+
+    fn call_handling(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<CallHandlingResponse, ApiError>> + Send {
+        ApiClient::call_handling(self, workspace_id)
+    }
+
+    fn save_call_handling(
+        &self,
+        workspace_id: &str,
+        patch: &CallHandlingPatch,
+    ) -> impl Future<Output = Result<CallHandlingResponse, ApiError>> + Send {
+        ApiClient::save_call_handling(self, workspace_id, patch)
+    }
+
+    fn availability(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<AvailabilityResponse, ApiError>> + Send {
+        ApiClient::availability(self, workspace_id)
+    }
+
+    fn set_availability(
+        &self,
+        workspace_id: &str,
+        available_for_calls: bool,
+    ) -> impl Future<Output = Result<AvailabilityResponse, ApiError>> + Send {
+        ApiClient::set_availability(self, workspace_id, available_for_calls)
+    }
+
+    fn members(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<MemberListResponse, ApiError>> + Send {
+        ApiClient::members(self, workspace_id)
+    }
+
+    fn add_member(
+        &self,
+        workspace_id: &str,
+        email: &str,
+        role: MemberRole,
+    ) -> impl Future<Output = Result<MemberResponse, ApiError>> + Send {
+        ApiClient::add_member(self, workspace_id, email, role)
+    }
+
+    fn change_member_role(
+        &self,
+        workspace_id: &str,
+        email: &str,
+        role: MemberRole,
+    ) -> impl Future<Output = Result<MemberResponse, ApiError>> + Send {
+        ApiClient::change_member_role(self, workspace_id, email, role)
+    }
+
+    fn remove_member(
+        &self,
+        workspace_id: &str,
+        email: &str,
+    ) -> impl Future<Output = Result<MemberRemovalResponse, ApiError>> + Send {
+        ApiClient::remove_member(self, workspace_id, email)
+    }
+
+    fn rename_workspace(
+        &self,
+        workspace_id: &str,
+        name: &str,
+    ) -> impl Future<Output = Result<RenameResponse, ApiError>> + Send {
+        ApiClient::rename_workspace(self, workspace_id, name)
     }
 }
 

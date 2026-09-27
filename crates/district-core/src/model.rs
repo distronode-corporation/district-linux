@@ -34,21 +34,27 @@ use district_auth::{AccessClaims, LoginError, SignOutReport};
 use district_live::WorkspaceUpdate;
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse,
-    BlockedContactsResponse, CallDetailResponse, CallSummary, CallTranscriptResponse,
-    CampaignStatusResponse, ContactDetailResponse, ContactListResponse, ContactMutationResponse,
-    ConversationsResponse, CreateContactRequest, DeskLogoRemovalResponse, DeskReplyResponse,
-    DeskSettingsPatch, DeskSettingsResponse, DeskTicketCreateResponse, DeskTicketDraft,
-    DeskTicketResponse, DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse,
-    DeviceListResponse, DeviceRevokeResponse, DraftListResponse, DraftResponse, DraftSaveRequest,
-    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, MarkReadResponse,
-    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MessageSearchResponse,
-    MessageThreadResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
-    OwnedNumbersResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
-    SchedulingStatusResponse, SendMessageRequest, SendMessageResponse, SupportCloseResponse,
-    SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDraft,
-    SupportRequestResponse, SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse,
-    UnreadCountResponse, UsageHistoryResponse, UsageResponse, WorkflowListResponse,
-    WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse, WorkspaceListResponse,
+    AvailabilityResponse, BlockedContactsResponse, CallDetailResponse, CallHandlingPatch,
+    CallHandlingResponse, CallSummary, CallTranscriptResponse, CampaignStatusResponse,
+    ContactDetailResponse, ContactListResponse, ContactMutationResponse, ConversationsResponse,
+    CreateContactRequest, DeskLogoRemovalResponse, DeskReplyResponse, DeskSettingsPatch,
+    DeskSettingsResponse, DeskTicketCreateResponse, DeskTicketDraft, DeskTicketResponse,
+    DeskTicketStatus, DeskTicketStatusResponse, DeskTicketsResponse, DeviceListResponse,
+    DeviceRevokeResponse, DirectoryEntry, DraftListResponse, DraftResponse, DraftSaveRequest,
+    HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqTurn, KnowledgeDocumentDraft,
+    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MarkReadResponse,
+    MediaUploadResponse, MeetRoomName, MeetingDetail, MeetingSummary, MemberListResponse,
+    MessageSearchResponse, MessageThreadResponse, MessagingCredentials, MessagingResponse,
+    MessagingTestResponse, NumberSearch, NumberSearchResponse, OverviewResponse,
+    OwnedNumbersResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
+    PersonaPreviewTokenResponse, RenameResponse, RoomTokenResponse, RoutingRule,
+    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse,
+    SendMessageRequest, SendMessageResponse, SupportCloseResponse, SupportReplyResponse,
+    SupportRequestCreateResponse, SupportRequestDraft, SupportRequestResponse,
+    SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse, UnreadCountResponse,
+    UsageHistoryResponse, UsageResponse, WorkflowListResponse, WorkflowRunsResponse,
+    WorkflowToggleResponse, WorkspaceBillingResponse, WorkspaceConfigResponse,
+    WorkspaceListResponse,
 };
 
 use crate::account::AccountView;
@@ -69,6 +75,10 @@ use crate::scheduling::{OneTimeUrl, SchedulingEvent};
 use crate::session::{
     Identity, Notice, RestoreError, Restoring, SessionEnd, SessionState, SignInError, SignInPhase,
     SignOutOutcome, SignOutScope, SignedInSession, SignedOut, SignedOutWhy, SigningIn, SigningOut,
+};
+use crate::settings::{
+    CallHandlingEvent, DirectoryEvent, KnowledgeEvent, MemberWrite, MembersEvent, MessagingEvent,
+    MessagingWrite, PersonaEvent, RoutingRulesEvent, ToolsEvent,
 };
 use crate::signed_in::{Next, SignedIn};
 use crate::support::SupportEvent;
@@ -168,6 +178,23 @@ pub enum Event {
     Support(SupportEvent),
     /// Something in the rooms lobby.
     Rooms(RoomsEvent),
+    /// Something on the persona section.
+    Persona(PersonaEvent),
+    /// Something on the capabilities section.
+    Tools(ToolsEvent),
+    /// Something on the transfer directory section.
+    Directory(DirectoryEvent),
+    /// Something on the routing rules section.
+    RoutingRules(RoutingRulesEvent),
+    /// Something on the knowledge base section.
+    Knowledge(KnowledgeEvent),
+    /// Something on the messaging accounts section. Its `Debug` output leaves
+    /// typed credentials out.
+    Messaging(MessagingEvent),
+    /// Something on the call handling section.
+    CallHandling(CallHandlingEvent),
+    /// Something on the members section.
+    Members(MembersEvent),
     /// Dismiss the notice over the signed-in screens.
     DismissNotice,
     /// The main window was shown (`true`) or hidden (`false`). The app starts
@@ -643,6 +670,99 @@ pub enum Event {
         /// The service's answer.
         result: Result<RoomTokenResponse, ApiError>,
     },
+    /// The workspace settings row was read.
+    WorkspaceConfigLoaded {
+        /// The ticket of [`Effect::LoadWorkspaceConfig`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<WorkspaceConfigResponse, ApiError>,
+    },
+    /// The choices a persona may be given were read.
+    PersonaOptionsLoaded {
+        /// The ticket of [`Effect::LoadPersonaOptions`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<PersonaOptionsResponse, ApiError>,
+    },
+    /// An audition's credential arrived, or was refused. Its `Debug` output
+    /// leaves its secrets out.
+    PersonaPreviewIssued {
+        /// The ticket of [`Effect::RequestPersonaPreview`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<PersonaPreviewTokenResponse, ApiError>,
+    },
+    /// A settings write whose answer holds nothing worth keeping landed, or
+    /// failed: a settings row save, adding or deleting a knowledge document, a
+    /// change of a carrier account, or a change of a member.
+    SettingsWritten {
+        /// The ticket of [`Effect::SaveTools`], [`Effect::SaveDirectory`],
+        /// [`Effect::SaveRoutingRules`], [`Effect::SavePersona`],
+        /// [`Effect::AddKnowledgeDocument`], [`Effect::DeleteKnowledgeDocument`],
+        /// [`Effect::WriteMessaging`] or [`Effect::WriteMember`].
+        ticket: Ticket,
+        /// Whether it landed.
+        result: Result<(), ApiError>,
+    },
+    /// The knowledge base's documents were read.
+    KnowledgeLoaded {
+        /// The ticket of [`Effect::LoadKnowledge`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<KnowledgeListResponse, ApiError>,
+    },
+    /// Where answers come from was read, or changed.
+    KnowledgeModeLoaded {
+        /// The ticket of [`Effect::LoadKnowledgeMode`] or
+        /// [`Effect::SetKnowledgeMode`].
+        ticket: Ticket,
+        /// The service's answer: the mode stored.
+        result: Result<KnowledgeModeResponse, ApiError>,
+    },
+    /// The carrier accounts were read.
+    MessagingLoaded {
+        /// The ticket of [`Effect::LoadMessaging`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<MessagingResponse, ApiError>,
+    },
+    /// The carrier answered a credential check, or could not be asked.
+    MessagingCredentialsTested {
+        /// The ticket of [`Effect::TestMessagingCredentials`].
+        ticket: Ticket,
+        /// The service's answer. A refusal by the carrier is an `Ok`.
+        result: Result<MessagingTestResponse, ApiError>,
+    },
+    /// Call handling was read, or saved.
+    CallHandlingLoaded {
+        /// The ticket of [`Effect::LoadCallHandling`] or
+        /// [`Effect::SaveCallHandling`].
+        ticket: Ticket,
+        /// The service's answer: the setting stored.
+        result: Result<CallHandlingResponse, ApiError>,
+    },
+    /// The member's availability was read, or changed.
+    AvailabilityLoaded {
+        /// The ticket of [`Effect::LoadAvailability`] or
+        /// [`Effect::SetAvailability`].
+        ticket: Ticket,
+        /// The service's answer: the availability stored.
+        result: Result<AvailabilityResponse, ApiError>,
+    },
+    /// The members were read.
+    MembersLoaded {
+        /// The ticket of [`Effect::LoadMembers`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<MemberListResponse, ApiError>,
+    },
+    /// The workspace was renamed, or not.
+    WorkspaceRenamed {
+        /// The ticket of [`Effect::RenameWorkspace`].
+        ticket: Ticket,
+        /// The service's answer: the name stored.
+        result: Result<RenameResponse, ApiError>,
+    },
     /// No browser would open a page from [`Effect::OpenUrl`] or
     /// [`Effect::OpenOneTimeUrl`].
     UrlOpenFailed,
@@ -892,6 +1012,54 @@ impl Event {
             | Event::RoomTokenIssued {
                 ticket,
                 result: Err(error),
+            }
+            | Event::WorkspaceConfigLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::PersonaOptionsLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::PersonaPreviewIssued {
+                ticket,
+                result: Err(error),
+            }
+            | Event::SettingsWritten {
+                ticket,
+                result: Err(error),
+            }
+            | Event::KnowledgeLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::KnowledgeModeLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MessagingLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MessagingCredentialsTested {
+                ticket,
+                result: Err(error),
+            }
+            | Event::CallHandlingLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::AvailabilityLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::MembersLoaded {
+                ticket,
+                result: Err(error),
+            }
+            | Event::WorkspaceRenamed {
+                ticket,
+                result: Err(error),
             } => Some((*ticket, error)),
             _ => None,
         }
@@ -900,7 +1068,9 @@ impl Event {
 
 /// Something for the runner to do. Plain data: the model decides, the runner
 /// acts.
-#[derive(Clone, Debug, PartialEq, Eq)]
+///
+/// `PartialEq` and not `Eq`: a persona's variation is fractional.
+#[derive(Clone, Debug, PartialEq)]
 pub enum Effect {
     /// Present the refresh tokens a past sign-out could not get revoked. Once
     /// per start, signed in or not. Reports nothing back.
@@ -1500,6 +1670,193 @@ pub enum Effect {
         /// The link.
         url: OneTimeUrl,
     },
+    /// Read the workspace settings row.
+    LoadWorkspaceConfig {
+        /// Returned in [`Event::WorkspaceConfigLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Replace the tools the receptionist may use with `allowed_tools`. Sent
+    /// once.
+    SaveTools {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The whole list, built from the list read.
+        allowed_tools: Vec<String>,
+    },
+    /// Replace the call directory with `entries`. Sent once.
+    SaveDirectory {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The whole directory, built from the one read.
+        entries: Vec<DirectoryEntry>,
+    },
+    /// Replace the routing rules with `rules`. Sent once.
+    SaveRoutingRules {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// Every rule, built from the rules read.
+        rules: Vec<RoutingRule>,
+    },
+    /// Change what `patch` names of the persona. Sent once.
+    SavePersona {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// Only what changed.
+        patch: Box<PersonaPatch>,
+    },
+    /// Read the choices a persona may be given.
+    LoadPersonaOptions {
+        /// Returned in [`Event::PersonaOptionsLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Ask for the credential of an audition of `form`. Billed, and sent once:
+    /// only ever asked for by the member.
+    RequestPersonaPreview {
+        /// Returned in [`Event::PersonaPreviewIssued`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The persona as it is on screen.
+        form: Box<PersonaPreviewForm>,
+    },
+    /// Read the knowledge base's documents.
+    LoadKnowledge {
+        /// Returned in [`Event::KnowledgeLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Add a document to the knowledge base. Billed by its length, and sent
+    /// once.
+    AddKnowledgeDocument {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The document.
+        draft: KnowledgeDocumentDraft,
+    },
+    /// Delete a document. Sent once.
+    DeleteKnowledgeDocument {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The document.
+        document_id: String,
+    },
+    /// Read where answers come from.
+    LoadKnowledgeMode {
+        /// Returned in [`Event::KnowledgeModeLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Change where answers come from. Sent once.
+    SetKnowledgeMode {
+        /// Returned in [`Event::KnowledgeModeLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The mode.
+        mode: KnowledgeMode,
+    },
+    /// Read the carrier accounts.
+    LoadMessaging {
+        /// Returned in [`Event::MessagingLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Change the carrier accounts. Sent once. The `Debug` output of a save
+    /// leaves its credentials out.
+    WriteMessaging {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// What to change.
+        write: MessagingWrite,
+    },
+    /// Ask the carrier whether `credentials` authenticate. Sent once. Its
+    /// `Debug` output leaves the credentials out.
+    TestMessagingCredentials {
+        /// Returned in [`Event::MessagingCredentialsTested`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The credentials as typed.
+        credentials: MessagingCredentials,
+    },
+    /// Read who answers a call.
+    LoadCallHandling {
+        /// Returned in [`Event::CallHandlingLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Change what `patch` names of who answers a call. Sent once.
+    SaveCallHandling {
+        /// Returned in [`Event::CallHandlingLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// Only what changed.
+        patch: CallHandlingPatch,
+    },
+    /// Read whether the member is rung.
+    LoadAvailability {
+        /// Returned in [`Event::AvailabilityLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Make the member available for calls, or not. Sent once.
+    SetAvailability {
+        /// Returned in [`Event::AvailabilityLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// Available or not.
+        available: bool,
+    },
+    /// Read the members.
+    LoadMembers {
+        /// Returned in [`Event::MembersLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
+    /// Add, change or remove a member. Sent once.
+    WriteMember {
+        /// Returned in [`Event::SettingsWritten`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// What to change.
+        write: MemberWrite,
+    },
+    /// Rename the workspace. Sent once.
+    RenameWorkspace {
+        /// Returned in [`Event::WorkspaceRenamed`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+        /// The name, trimmed.
+        name: String,
+    },
 }
 
 /// The slots a result can be waited for in. One ticket per slot at a time,
@@ -1583,12 +1940,37 @@ pub(crate) enum Slot {
     Meetings,
     Meeting,
     RoomToken,
+    PersonaConfig,
+    PersonaOptions,
+    PersonaSave,
+    PersonaPreview,
+    PersonaCooldown,
+    ToolsConfig,
+    ToolsSave,
+    DirectoryConfig,
+    DirectorySave,
+    RoutingConfig,
+    RoutingSave,
+    KnowledgeDocuments,
+    KnowledgeMode,
+    KnowledgeWrite,
+    MessagingAccounts,
+    MessagingWrite,
+    MessagingTest,
+    CallHandling,
+    CallHandlingSave,
+    Availability,
+    AvailabilitySave,
+    Members,
+    MemberWrite,
+    WorkspaceRename,
 }
 
-const SLOTS: usize = Slot::RoomToken as usize + 1;
+const SLOTS: usize = Slot::WorkspaceRename as usize + 1;
 
 /// The slots that belong to the open workspace's screens, forgotten when it
-/// closes.
+/// closes. The settings sections' are [`SETTINGS_SLOTS`](crate::settings),
+/// forgotten with the sections.
 pub(crate) const WORKSPACE_SLOTS: [Slot; 64] = [
     Slot::Unread,
     Slot::Conversations,
@@ -1898,6 +2280,28 @@ impl Model {
                 self.signed_in(|s, tickets, _| s.support_event(event, tickets))
             }
             Event::Rooms(event) => self.signed_in(|s, tickets, _| s.rooms_event(event, tickets)),
+            Event::Persona(event) => {
+                self.signed_in(|s, tickets, _| s.persona_event(event, tickets))
+            }
+            Event::Tools(event) => self.signed_in(|s, tickets, _| s.tools_event(event, tickets)),
+            Event::Directory(event) => {
+                self.signed_in(|s, tickets, _| s.directory_event(event, tickets))
+            }
+            Event::RoutingRules(event) => {
+                self.signed_in(|s, tickets, _| s.routing_rules_event(event, tickets))
+            }
+            Event::Knowledge(event) => {
+                self.signed_in(|s, tickets, _| s.knowledge_event(event, tickets))
+            }
+            Event::Messaging(event) => {
+                self.signed_in(|s, tickets, _| s.messaging_event(event, tickets))
+            }
+            Event::CallHandling(event) => {
+                self.signed_in(|s, tickets, _| s.call_handling_event(event, tickets))
+            }
+            Event::Members(event) => {
+                self.signed_in(|s, tickets, _| s.members_event(event, tickets))
+            }
             Event::DismissNotice => self.signed_in(|s, _, _| s.dismiss_notice()),
             Event::UrlOpenFailed => self.signed_in(|s, _, _| s.url_open_failed()),
             Event::OpenNotification(target) => {
@@ -2092,6 +2496,42 @@ impl Model {
             }
             Event::RoomTokenIssued { ticket, result } => {
                 self.signed_in(|s, tickets, _| s.room_token_issued(ticket, result, tickets))
+            }
+            Event::WorkspaceConfigLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.workspace_config_loaded(ticket, result, tickets))
+            }
+            Event::PersonaOptionsLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.persona_options_loaded(ticket, result, tickets))
+            }
+            Event::PersonaPreviewIssued { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.persona_preview_issued(ticket, result, tickets))
+            }
+            Event::SettingsWritten { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.settings_written(ticket, result, tickets))
+            }
+            Event::KnowledgeLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.knowledge_loaded(ticket, result, tickets))
+            }
+            Event::KnowledgeModeLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.knowledge_mode_loaded(ticket, result, tickets))
+            }
+            Event::MessagingLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.messaging_loaded(ticket, result, tickets))
+            }
+            Event::MessagingCredentialsTested { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.messaging_tested(ticket, result, tickets))
+            }
+            Event::CallHandlingLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.call_handling_loaded(ticket, result, tickets))
+            }
+            Event::AvailabilityLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.availability_loaded(ticket, result, tickets))
+            }
+            Event::MembersLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.members_loaded(ticket, result, tickets))
+            }
+            Event::WorkspaceRenamed { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.workspace_renamed(ticket, result, tickets))
             }
         }
     }

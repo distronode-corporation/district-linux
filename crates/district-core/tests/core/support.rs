@@ -133,7 +133,29 @@ pub fn ticket(effect: &Effect) -> Ticket {
         | Effect::CloseSupportRequest { ticket, .. }
         | Effect::LoadMeetings { ticket, .. }
         | Effect::LoadMeeting { ticket, .. }
-        | Effect::RequestRoomToken { ticket, .. } => *ticket,
+        | Effect::RequestRoomToken { ticket, .. }
+        | Effect::LoadWorkspaceConfig { ticket, .. }
+        | Effect::SaveTools { ticket, .. }
+        | Effect::SaveDirectory { ticket, .. }
+        | Effect::SaveRoutingRules { ticket, .. }
+        | Effect::SavePersona { ticket, .. }
+        | Effect::LoadPersonaOptions { ticket, .. }
+        | Effect::RequestPersonaPreview { ticket, .. }
+        | Effect::LoadKnowledge { ticket, .. }
+        | Effect::AddKnowledgeDocument { ticket, .. }
+        | Effect::DeleteKnowledgeDocument { ticket, .. }
+        | Effect::LoadKnowledgeMode { ticket, .. }
+        | Effect::SetKnowledgeMode { ticket, .. }
+        | Effect::LoadMessaging { ticket, .. }
+        | Effect::WriteMessaging { ticket, .. }
+        | Effect::TestMessagingCredentials { ticket, .. }
+        | Effect::LoadCallHandling { ticket, .. }
+        | Effect::SaveCallHandling { ticket, .. }
+        | Effect::LoadAvailability { ticket, .. }
+        | Effect::SetAvailability { ticket, .. }
+        | Effect::LoadMembers { ticket, .. }
+        | Effect::WriteMember { ticket, .. }
+        | Effect::RenameWorkspace { ticket, .. } => *ticket,
         other => panic!("{other:?} carries no ticket"),
     }
 }

@@ -621,11 +621,9 @@ fn refreshing_with_no_workspace_open_reads_the_list_again_from_any_screen() {
 }
 
 #[test]
-fn refreshing_a_screen_this_milestone_does_not_have_does_nothing() {
+fn refreshing_a_screen_that_reads_nothing_does_nothing() {
     let (mut model, _) = loaded(AGENCY, "agency");
-    model.update(Event::Navigate(Route::Workspace(
-        WorkspaceSection::Messaging,
-    )));
+    model.update(Event::Navigate(Route::Workspace(WorkspaceSection::Hub)));
     assert!(model.update(Event::Refresh).is_empty());
     model.update(Event::Navigate(Route::Account));
     assert!(model.update(Event::Refresh).is_empty());
@@ -698,13 +696,23 @@ fn a_narrowed_role_leaves_a_section_it_can_no_longer_open() {
     });
     assert_eq!(signed_in(&model).route, Route::Overview);
 
-    // A section the role still allows stays open.
+    // A section the role still allows stays open, and a refresh reads it again
+    // rather than the overview.
     let (mut model, _) = loaded(AGENCY, "agency");
     model.update(Event::Navigate(Route::Workspace(
         WorkspaceSection::Knowledge,
     )));
     let effects = model.update(Event::Refresh);
-    assert!(effects.is_empty(), "only the overview refreshes this way");
+    assert!(
+        matches!(
+            effects.as_slice(),
+            [
+                Effect::LoadKnowledge { .. },
+                Effect::LoadKnowledgeMode { .. }
+            ]
+        ),
+        "{effects:?}"
+    );
 }
 
 // Navigation and the account screen.

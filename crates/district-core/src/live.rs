@@ -390,6 +390,9 @@ impl SignedIn {
             self.poll_contact(tickets)
         } else if tickets.accept(Slot::NumberSearchTimer, ticket) {
             self.number_search_due(tickets)
+        } else if tickets.accept(Slot::PersonaCooldown, ticket) {
+            self.persona_cooled();
+            Vec::new()
         } else {
             Vec::new()
         };

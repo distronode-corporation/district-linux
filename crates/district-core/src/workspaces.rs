@@ -100,6 +100,12 @@ impl Workspaces {
         })
     }
 
+    /// Shows the open workspace under `name`, the name the service stored when
+    /// it was renamed.
+    pub(crate) fn rename_active(&mut self, name: &str) {
+        name.clone_into(&mut self.list[self.active].name);
+    }
+
     /// Opens the workspace `id`, if it is listed and not already open. Answers
     /// whether anything changed.
     pub(crate) fn select(&mut self, id: &str) -> bool {

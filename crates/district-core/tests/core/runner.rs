@@ -32,6 +32,17 @@ use district_model::{
     UsageResponse, WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse,
     WorkspaceBillingResponse, WorkspaceListResponse,
 };
+use district_model::{
+    AvailabilityResponse, CallHandlingPatch, CallHandlingResponse, DirectoryEntry,
+    KnowledgeCreateResponse, KnowledgeDeleteResponse, KnowledgeDocumentDraft,
+    KnowledgeListResponse, KnowledgeMode, KnowledgeModeResponse, MemberListResponse,
+    MemberRemovalResponse, MemberResponse, MemberRole, MessagingAccountSave,
+    MessagingAccountSaveResponse, MessagingChannelDefaultResponse, MessagingCreatorCell,
+    MessagingCredentials, MessagingDefaultResponse, MessagingDelete, MessagingMetaResponse,
+    MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault, MessagingTestResponse,
+    PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
+    RenameResponse, RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+};
 
 use crate::support::{
     AGENCY, CLIENT, claims, config, content, desktop_fixture, fixture, loaded, overview,
@@ -649,6 +660,295 @@ impl DistrictApi for FakeApi {
     async fn room_token(&self, room: &MeetRoomName) -> Result<RoomTokenResponse, ApiError> {
         self.0.push(format!("room token {room}"));
         Ok(fixture("district-room-token.json"))
+    }
+
+    async fn workspace_config(
+        &self,
+        workspace_id: &str,
+    ) -> Result<WorkspaceConfigResponse, ApiError> {
+        self.0.push(format!("config {workspace_id}"));
+        Ok(fixture("district-workspace-config.json"))
+    }
+
+    async fn save_tools(
+        &self,
+        workspace_id: &str,
+        allowed_tools: &[String],
+    ) -> Result<WorkspaceSaveResponse, ApiError> {
+        self.0
+            .push(format!("save tools {workspace_id} {allowed_tools:?}"));
+        Ok(fixture("district-tools-patch.json"))
+    }
+
+    async fn save_directory(
+        &self,
+        workspace_id: &str,
+        entries: &[DirectoryEntry],
+    ) -> Result<WorkspaceSaveResponse, ApiError> {
+        let names: Vec<&str> = entries.iter().map(DirectoryEntry::name).collect();
+        self.0
+            .push(format!("save directory {workspace_id} {names:?}"));
+        Ok(fixture("district-directory-patch.json"))
+    }
+
+    async fn save_routing_rules(
+        &self,
+        workspace_id: &str,
+        rules: &[RoutingRule],
+    ) -> Result<WorkspaceSaveResponse, ApiError> {
+        self.0
+            .push(format!("save rules {workspace_id} {}", rules.len()));
+        Ok(fixture("district-routing-patch.json"))
+    }
+
+    async fn persona_options(
+        &self,
+        workspace_id: &str,
+    ) -> Result<PersonaOptionsResponse, ApiError> {
+        self.0.push(format!("persona options {workspace_id}"));
+        Ok(fixture("district-persona-options.json"))
+    }
+
+    async fn save_persona(
+        &self,
+        workspace_id: &str,
+        patch: &PersonaPatch,
+    ) -> Result<WorkspaceSaveResponse, ApiError> {
+        self.0.push(format!(
+            "save persona {workspace_id} {}",
+            serde_json::to_string(patch).unwrap()
+        ));
+        Ok(fixture("district-persona-patch.json"))
+    }
+
+    async fn persona_preview_token(
+        &self,
+        workspace_id: &str,
+        form: &PersonaPreviewForm,
+    ) -> Result<PersonaPreviewTokenResponse, ApiError> {
+        self.0
+            .push(format!("preview {workspace_id} {:?}", form.greeting));
+        Ok(fixture("district-persona-preview-token.json"))
+    }
+
+    async fn knowledge_documents(
+        &self,
+        workspace_id: &str,
+    ) -> Result<KnowledgeListResponse, ApiError> {
+        self.0.push(format!("knowledge {workspace_id}"));
+        Ok(fixture("district-knowledge.json"))
+    }
+
+    async fn add_knowledge_document(
+        &self,
+        workspace_id: &str,
+        draft: &KnowledgeDocumentDraft,
+    ) -> Result<KnowledgeCreateResponse, ApiError> {
+        self.0
+            .push(format!("add document {workspace_id} {}", draft.title));
+        Ok(fixture("district-knowledge-create.json"))
+    }
+
+    async fn delete_knowledge_document(
+        &self,
+        workspace_id: &str,
+        document_id: &str,
+    ) -> Result<KnowledgeDeleteResponse, ApiError> {
+        self.0
+            .push(format!("delete document {workspace_id} {document_id}"));
+        Err(server_error())
+    }
+
+    async fn knowledge_mode(&self, workspace_id: &str) -> Result<KnowledgeModeResponse, ApiError> {
+        self.0.push(format!("knowledge mode {workspace_id}"));
+        Ok(fixture("district-knowledge-mode.json"))
+    }
+
+    async fn set_knowledge_mode(
+        &self,
+        workspace_id: &str,
+        mode: KnowledgeMode,
+    ) -> Result<KnowledgeModeResponse, ApiError> {
+        self.0.push(format!(
+            "set knowledge mode {workspace_id} {}",
+            mode.as_str()
+        ));
+        Ok(fixture("district-knowledge-mode-patch.json"))
+    }
+
+    async fn messaging(&self, workspace_id: &str) -> Result<MessagingResponse, ApiError> {
+        self.0.push(format!("messaging {workspace_id}"));
+        Ok(fixture("district-messaging.json"))
+    }
+
+    async fn save_messaging_account(
+        &self,
+        workspace_id: &str,
+        save: &MessagingAccountSave,
+    ) -> Result<MessagingAccountSaveResponse, ApiError> {
+        self.0.push(format!(
+            "save account {workspace_id} {}",
+            serde_json::to_string(save).unwrap()
+        ));
+        Ok(fixture("district-messaging-upsert.json"))
+    }
+
+    async fn set_default_messaging_account(
+        &self,
+        workspace_id: &str,
+        change: &MessagingSetDefault,
+    ) -> Result<MessagingDefaultResponse, ApiError> {
+        self.0.push(format!(
+            "default account {workspace_id} {}",
+            change.account_id
+        ));
+        Ok(fixture("district-messaging-set-default.json"))
+    }
+
+    async fn set_messaging_channel_default(
+        &self,
+        workspace_id: &str,
+        change: &MessagingSetChannelDefault,
+    ) -> Result<MessagingChannelDefaultResponse, ApiError> {
+        self.0.push(format!(
+            "channel default {workspace_id} {:?} {}",
+            change.channel, change.account_id
+        ));
+        Ok(fixture("district-messaging-channel-default.json"))
+    }
+
+    async fn delete_messaging_account(
+        &self,
+        workspace_id: &str,
+        delete: &MessagingDelete,
+    ) -> Result<MessagingDefaultResponse, ApiError> {
+        self.0.push(format!(
+            "delete account {workspace_id} {}",
+            delete.account_id
+        ));
+        Ok(fixture("district-messaging-delete.json"))
+    }
+
+    async fn save_creator_cell_number(
+        &self,
+        workspace_id: &str,
+        change: &MessagingCreatorCell,
+    ) -> Result<MessagingMetaResponse, ApiError> {
+        self.0.push(format!(
+            "creator cell {workspace_id} {}",
+            change.creator_cell_number
+        ));
+        Ok(fixture("district-messaging-meta.json"))
+    }
+
+    async fn test_messaging_credentials(
+        &self,
+        workspace_id: &str,
+        credentials: &MessagingCredentials,
+    ) -> Result<MessagingTestResponse, ApiError> {
+        self.0.push(format!(
+            "test credentials {workspace_id} {}",
+            serde_json::to_string(credentials).unwrap()
+        ));
+        Ok(fixture("district-messaging-test-rejected.json"))
+    }
+
+    async fn call_handling(&self, workspace_id: &str) -> Result<CallHandlingResponse, ApiError> {
+        self.0.push(format!("call handling {workspace_id}"));
+        Ok(handling_answer("ai_first", 20))
+    }
+
+    async fn save_call_handling(
+        &self,
+        workspace_id: &str,
+        patch: &CallHandlingPatch,
+    ) -> Result<CallHandlingResponse, ApiError> {
+        self.0.push(format!(
+            "save call handling {workspace_id} {}",
+            serde_json::to_string(patch).unwrap()
+        ));
+        Ok(handling_answer("app_first", 12))
+    }
+
+    async fn availability(&self, workspace_id: &str) -> Result<AvailabilityResponse, ApiError> {
+        self.0.push(format!("availability {workspace_id}"));
+        Ok(available(true))
+    }
+
+    async fn set_availability(
+        &self,
+        workspace_id: &str,
+        available_for_calls: bool,
+    ) -> Result<AvailabilityResponse, ApiError> {
+        self.0.push(format!(
+            "set availability {workspace_id} {available_for_calls}"
+        ));
+        Ok(available(available_for_calls))
+    }
+
+    async fn members(&self, workspace_id: &str) -> Result<MemberListResponse, ApiError> {
+        self.0.push(format!("members {workspace_id}"));
+        Ok(fixture("district-members.json"))
+    }
+
+    async fn add_member(
+        &self,
+        workspace_id: &str,
+        email: &str,
+        role: MemberRole,
+    ) -> Result<MemberResponse, ApiError> {
+        self.0.push(format!(
+            "add member {workspace_id} {email} {}",
+            role.as_str()
+        ));
+        Ok(fixture("district-member-add.json"))
+    }
+
+    async fn change_member_role(
+        &self,
+        workspace_id: &str,
+        email: &str,
+        role: MemberRole,
+    ) -> Result<MemberResponse, ApiError> {
+        self.0.push(format!(
+            "member role {workspace_id} {email} {}",
+            role.as_str()
+        ));
+        Ok(fixture("district-member-role-patch.json"))
+    }
+
+    async fn remove_member(
+        &self,
+        workspace_id: &str,
+        email: &str,
+    ) -> Result<MemberRemovalResponse, ApiError> {
+        self.0.push(format!("remove member {workspace_id} {email}"));
+        Ok(fixture("district-member-remove.json"))
+    }
+
+    async fn rename_workspace(
+        &self,
+        workspace_id: &str,
+        name: &str,
+    ) -> Result<RenameResponse, ApiError> {
+        self.0.push(format!("rename {workspace_id} {name}"));
+        Ok(fixture("district-rename.json"))
+    }
+}
+
+fn handling_answer(mode: &str, seconds: i64) -> CallHandlingResponse {
+    CallHandlingResponse {
+        success: true,
+        call_handling: mode.to_owned(),
+        app_ring_seconds: seconds,
+    }
+}
+
+fn available(available_for_calls: bool) -> AvailabilityResponse {
+    AvailabilityResponse {
+        success: true,
+        available_for_calls,
+        reason: None,
     }
 }
 
