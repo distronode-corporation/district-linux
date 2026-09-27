@@ -56,6 +56,7 @@ mod endpoints;
 mod error;
 mod exclusions;
 mod methods;
+mod telemetry;
 mod token;
 
 pub use client::{ApiClient, Request};
