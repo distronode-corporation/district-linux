@@ -262,9 +262,13 @@ without it.
 
 `.github/workflows/flatpak.yml` builds the bundle in Flathub's GNOME 51 build
 image, installs it, and runs `district-ai --version` inside the sandbox. It also
-prints what Flathub's linter says, without failing on it: Flathub asks for more
-than a bundle does (screenshots, and a build from a published tag rather than a
-checkout), which the submission to Flathub will have to add.
+prints what Flathub's linter says, without failing on it, because Flathub asks
+for more than a bundle does. Today it reports screenshots missing from the
+AppStream metadata, and `finish-args-login1-system-talk-name`: Flathub refuses
+the logind permission unless it grants an exception, so the submission has to
+ask for one, with the reason above. Flathub also
+builds from a published tag, not from a checkout, so its manifest will name the
+sources by URL and commit rather than by directory.
 
 Both workflows run on pull requests that change what they build from, and by
 hand; each keeps its package as the run's artifact for a week.

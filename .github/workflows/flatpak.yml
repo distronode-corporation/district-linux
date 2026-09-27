@@ -142,9 +142,10 @@ jobs:
           # Already compressed.
           compression-level: 0
 
-      # Flathub's own checks, which are stricter than a bundle needs (a
-      # screenshot, a build from a published tag, no local directory as a
-      # source). Reported here for the Flathub submission and never fatal.
+      # Flathub's own checks, which ask for more than a bundle needs (on the
+      # first run: screenshots in the metainfo, and an exception for the
+      # logind permission). Reported here for the Flathub submission and never
+      # fatal.
       - name: Flathub's linter (report only)
         run: |
           docker exec flatpak flatpak-builder-lint manifest packaging/flatpak/com.distronode.DistrictAI.yml || true
