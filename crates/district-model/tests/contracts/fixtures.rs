@@ -14,9 +14,10 @@ use district_model::{
     ContactListResponse, ContactMutationResponse, ConversationsResponse, DeviceListResponse,
     DeviceRevokeResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, EnrichResponse,
     MarkReadResponse, MediaUploadResponse, MessageThreadResponse, NativeRevokeResponse,
-    OverviewResponse, PkceVector, SETUP_STEP_DONE, SETUP_STEP_TODO, SchedulingHandOffResponse,
-    SendMessageResponse, SetupResponse, TelemetryEnvelope, TelemetryEventType, TelemetryToken,
-    ThreadRef, TimelineResponse, UnreadCountResponse, UpdateContactRequest, WorkspaceListResponse,
+    OverviewResponse, PkceVector, PushRegistrationResponse, SETUP_STEP_DONE, SETUP_STEP_TODO,
+    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
+    TelemetryEventType, TelemetryToken, ThreadRef, TimelineResponse, UnreadCountResponse,
+    UpdateContactRequest, WorkspaceListResponse,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -649,6 +650,7 @@ fn the_telemetry_frames_cover_every_event_type_this_client_names() {
         TelemetryEventType::CallStarted,
         TelemetryEventType::CallUpdated,
         TelemetryEventType::CallEnded,
+        TelemetryEventType::CallRinging,
         TelemetryEventType::ToolOutcome,
         TelemetryEventType::MessageReceived,
         TelemetryEventType::MessageSent,
@@ -690,7 +692,7 @@ fn call_frames_carry_the_call_and_both_shapes_of_each_are_recorded() {
 }
 
 #[test]
-fn message_frames_name_the_message_and_tool_frames_name_the_tool() {
+fn message_ringing_and_tool_frames_carry_what_they_name() {
     for (name, envelope) in envelopes() {
         match envelope.event_type {
             TelemetryEventType::MessageReceived | TelemetryEventType::MessageSent => {
@@ -705,8 +707,32 @@ fn message_frames_name_the_message_and_tool_frames_name_the_tool() {
                 assert!(envelope.data["tool"].is_string(), "{name}");
                 assert!(envelope.data["result"].is_string(), "{name}");
             }
+            TelemetryEventType::CallRinging => {
+                // Ids only: the call, and the members it rings for.
+                assert_eq!(envelope.data["callId"], envelope.call_id.as_str(), "{name}");
+                let users = envelope.data["userIds"].as_array().expect("a list");
+                assert!(!users.is_empty() && users.iter().all(Value::is_string));
+                assert_eq!(
+                    envelope.data.as_object().map(|d| d.len()),
+                    Some(2),
+                    "{name}"
+                );
+            }
             _ => {}
         }
+    }
+}
+
+#[test]
+fn a_registration_answers_success_and_nothing_else() {
+    let desktop: PushRegistrationResponse = decode_desktop("district-device-register-desktop.json");
+    assert!(desktop.success);
+    for name in [
+        "district-device-register.json",
+        "district-device-unregister.json",
+    ] {
+        let answer: PushRegistrationResponse = decode(name);
+        assert!(answer.success, "{name}");
     }
 }
 

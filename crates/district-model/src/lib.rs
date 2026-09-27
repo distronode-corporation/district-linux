@@ -41,6 +41,7 @@ mod inbox;
 mod overview;
 mod phone;
 mod pkce;
+mod push;
 mod scheduling;
 mod setup;
 mod telemetry;
@@ -72,6 +73,7 @@ pub use inbox::{
 pub use overview::{OverviewMetrics, OverviewResponse};
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;
+pub use push::PushRegistrationResponse;
 pub use scheduling::SchedulingHandOffResponse;
 pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,

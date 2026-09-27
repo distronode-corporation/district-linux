@@ -296,6 +296,11 @@ pub const OPAQUE_OBJECTS: &[OpaqueObject] = &[
         reason: TELEMETRY_DATA,
     },
     OpaqueObject {
+        fixture: "desktop/telemetry-event-call-ringing.json",
+        path: "$.data",
+        reason: TELEMETRY_DATA,
+    },
+    OpaqueObject {
         fixture: "desktop/telemetry-event-call-started-sinch.json",
         path: "$.data",
         reason: TELEMETRY_DATA,

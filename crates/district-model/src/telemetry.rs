@@ -68,6 +68,9 @@ pub struct TelemetryEnvelope {
     /// - The three call events carry the call as the service stores it, which
     ///   is customer data (the caller's number and name, a summary, a
     ///   transcript). `call_ended` can carry only the fields that changed.
+    /// - `call_ringing` carries `{callId, userIds}`, ids only: the members the
+    ///   call is ringing for on a desktop. Every socket in the workspace gets the
+    ///   event, so a desktop rings only when its own user id is in `userIds`.
     /// - `tool_outcome` carries `{tool, result, provider?, reason?}` and nothing
     ///   about the caller.
     /// - The message events carry `{messageId, counterpart, type}`, where
@@ -109,6 +112,11 @@ pub enum TelemetryEventType {
     CallUpdated,
     /// `call_ended`: a call finished.
     CallEnded,
+    /// `call_ringing`: a call is ringing for members of the workspace on their
+    /// desktops. The data names them by user id; ring only when this
+    /// installation's user is among them. The service sends it only while the
+    /// desktop keeps its presence registered.
+    CallRinging,
     /// `tool_outcome`: an action the assistant took during a call (a transfer,
     /// for example) succeeded or failed.
     ToolOutcome,
@@ -127,6 +135,7 @@ impl TelemetryEventType {
             Self::CallStarted => "call_started",
             Self::CallUpdated => "call_updated",
             Self::CallEnded => "call_ended",
+            Self::CallRinging => "call_ringing",
             Self::ToolOutcome => "tool_outcome",
             Self::MessageReceived => "message_received",
             Self::MessageSent => "message_sent",
@@ -141,6 +150,7 @@ impl From<String> for TelemetryEventType {
             "call_started" => Self::CallStarted,
             "call_updated" => Self::CallUpdated,
             "call_ended" => Self::CallEnded,
+            "call_ringing" => Self::CallRinging,
             "tool_outcome" => Self::ToolOutcome,
             "message_received" => Self::MessageReceived,
             "message_sent" => Self::MessageSent,
@@ -162,10 +172,11 @@ impl From<TelemetryEventType> for String {
 mod tests {
     use super::*;
 
-    const KNOWN: [(&str, TelemetryEventType); 6] = [
+    const KNOWN: [(&str, TelemetryEventType); 7] = [
         ("call_started", TelemetryEventType::CallStarted),
         ("call_updated", TelemetryEventType::CallUpdated),
         ("call_ended", TelemetryEventType::CallEnded),
+        ("call_ringing", TelemetryEventType::CallRinging),
         ("tool_outcome", TelemetryEventType::ToolOutcome),
         ("message_received", TelemetryEventType::MessageReceived),
         ("message_sent", TelemetryEventType::MessageSent),
@@ -183,16 +194,13 @@ mod tests {
 
     #[test]
     fn an_unknown_event_type_keeps_its_name() {
-        let decoded: TelemetryEventType = serde_json::from_str(r#""call_ringing""#).unwrap();
+        let decoded: TelemetryEventType = serde_json::from_str(r#""call_parked""#).unwrap();
         assert_eq!(
             decoded,
-            TelemetryEventType::Unknown("call_ringing".to_owned())
+            TelemetryEventType::Unknown("call_parked".to_owned())
         );
-        assert_eq!(decoded.as_str(), "call_ringing");
-        assert_eq!(
-            serde_json::to_string(&decoded).unwrap(),
-            r#""call_ringing""#
-        );
+        assert_eq!(decoded.as_str(), "call_parked");
+        assert_eq!(serde_json::to_string(&decoded).unwrap(), r#""call_parked""#);
     }
 
     #[test]

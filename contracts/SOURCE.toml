@@ -21,7 +21,7 @@
 # `sha256sum -c SHA256SUMS` checks them.
 
 [source]
-commit = "03b7a15325600efa7499ef3614232978842429a5"
+commit = "b5918ef9517246eba57ab4b8011bd927c6fb5071"
 
 [sets.fixtures]
 source_dir = "district-android/contracts"
@@ -33,7 +33,7 @@ file_count = 177
 source_dir = "distronode-website/contracts/desktop"
 source_clean = true
 generator = "distronode-website/src/lib/contracts/__tests__/desktop-contracts.test.ts"
-file_count = 11
+file_count = 13
 
 [sync]
 date = "2026-09-27"

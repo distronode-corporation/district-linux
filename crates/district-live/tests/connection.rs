@@ -154,7 +154,7 @@ async fn events_are_delivered_and_an_unknown_type_is_kept() {
     assert_eq!(next(&mut updates).await, LiveUpdate::Connected);
 
     conn.send_event(WORKSPACE, "call_started", "call_1");
-    conn.send_event(WORKSPACE, "call_ringing", "call_2");
+    conn.send_event(WORKSPACE, "call_parked", "call_2");
     // Binary frames are read the same way, though the server sends text.
     conn.send(Message::binary(
         envelope(WORKSPACE, "message_received", "msg_1").to_string(),
@@ -164,7 +164,7 @@ async fn events_are_delivered_and_an_unknown_type_is_kept() {
         ("call_1", TelemetryEventType::CallStarted),
         (
             "call_2",
-            TelemetryEventType::Unknown("call_ringing".to_owned()),
+            TelemetryEventType::Unknown("call_parked".to_owned()),
         ),
         ("msg_1", TelemetryEventType::MessageReceived),
     ];

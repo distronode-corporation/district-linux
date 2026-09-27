@@ -159,7 +159,8 @@ server repository, in two sets. `contracts/fixtures/` is the Android app's set,
 recorded from the server's own route handlers, which this client reads too.
 `contracts/desktop/` holds the shapes only this client reads and no Android fixture
 records: the live telemetry credential, one frame of the telemetry socket per event
-type, the call hang-up and the booking-pages hand-off.
+type, the call hang-up, the booking-pages hand-off and the desktop's presence
+registration.
 
 `crates/district-model` decodes every file in both sets in its tests with unknown
 fields refused (the `strict-contracts` feature, which its tests always enable), so

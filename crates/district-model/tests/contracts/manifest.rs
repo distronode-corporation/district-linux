@@ -26,8 +26,9 @@ use district_model::{
     ConversationsResponse, DeviceListResponse, DeviceRevokeResponse, DraftDeleteResponse,
     DraftListResponse, DraftResponse, EnrichResponse, MarkReadResponse, MediaUploadResponse,
     MessageThreadResponse, NativeRevokeResponse, OverviewResponse, PkceVector,
-    SchedulingHandOffResponse, SendMessageResponse, SetupResponse, TelemetryEnvelope,
-    TelemetryToken, TimelineResponse, UnreadCountResponse, WorkspaceListResponse,
+    PushRegistrationResponse, SchedulingHandOffResponse, SendMessageResponse, SetupResponse,
+    TelemetryEnvelope, TelemetryToken, TimelineResponse, UnreadCountResponse,
+    WorkspaceListResponse,
 };
 
 use crate::support::{Codec, Set, codec, names_in};
@@ -114,8 +115,18 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
         "district-conversations.json",
         codec::<ConversationsResponse>,
     ),
+    // POST /api/district/devices/register: a phone's push registration.
+    (
+        "district-device-register.json",
+        codec::<PushRegistrationResponse>,
+    ),
     // POST /api/auth/native/devices/revoke: one device signed out.
     ("district-device-revoke.json", codec::<DeviceRevokeResponse>),
+    // POST /api/district/devices/unregister.
+    (
+        "district-device-unregister.json",
+        codec::<PushRegistrationResponse>,
+    ),
     // GET /api/auth/native/devices: a device of each nullability.
     ("district-devices.json", codec::<DeviceListResponse>),
     // DELETE /api/district/messages/drafts.
@@ -186,7 +197,7 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
 ///
 /// Equal, not merely at least: a baseline with room to spare is a budget for new
 /// debt, not a ratchet.
-pub const NOT_YET_MODELLED_BASELINE: usize = 83;
+pub const NOT_YET_MODELLED_BASELINE: usize = 81;
 
 /// Fixtures of endpoints this client will use but has no type for yet. Sorted.
 ///
@@ -211,8 +222,6 @@ pub const NOT_YET_MODELLED: &[&str] = &[
     "district-desk-ticket-status.json",
     "district-desk-ticket.json",
     "district-desk-tickets.json",
-    "district-device-register.json",
-    "district-device-unregister.json",
     "district-dial-dnc.json",
     "district-dial-dormant.json",
     "district-dial-subscription.json",
@@ -372,12 +381,17 @@ pub const EXCLUDED_BY_DECISION: &[Exclusion] = &[
 
 /// Every file in `contracts/desktop/`. Asserted exactly, for the same reason as
 /// [`EXPECTED_FIXTURE_COUNT`].
-pub const DESKTOP_EXPECTED_FIXTURE_COUNT: usize = 11;
+pub const DESKTOP_EXPECTED_FIXTURE_COUNT: usize = 13;
 
 /// Desktop fixtures decoded by a type in this crate. Sorted by name.
 pub const DESKTOP_IMPLEMENTED: &[(&str, Codec)] = &[
     // POST /api/district/calls/{callId}/hangup.
     ("district-call-hangup.json", codec::<CallHangUpResponse>),
+    // POST /api/district/devices/register for a desktop's presence.
+    (
+        "district-device-register-desktop.json",
+        codec::<PushRegistrationResponse>,
+    ),
     // POST /api/district/scheduling/handoff.
     (
         "district-scheduling-handoff.json",
@@ -393,6 +407,10 @@ pub const DESKTOP_IMPLEMENTED: &[(&str, Codec)] = &[
     ),
     (
         "telemetry-event-call-ended.json",
+        codec::<TelemetryEnvelope>,
+    ),
+    (
+        "telemetry-event-call-ringing.json",
         codec::<TelemetryEnvelope>,
     ),
     (
