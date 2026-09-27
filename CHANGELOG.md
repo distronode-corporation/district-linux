@@ -185,6 +185,40 @@ date, and bump `[workspace.package] version` to match.
   call engine to come and dropping it, passphrase included, when the lobby is left.
 - `district-core`: `DistrictApi` gains the 34 methods behind those screens, which
   `ApiClient` implements, and the runner the effects that call them.
+- `district-model`: data types for the workspace settings. The settings row
+  (`WorkspaceConfigResponse`), which every save of a whole list is built from, with
+  the call directory and the routing rules read as the stored objects
+  (`DirectoryEntry`, `RoutingRule`) and edited one key at a time, so a save gives
+  back every key a row carries, and with no editor offered for a stored value that
+  is not a list of objects; the persona, saved by sending only what changed
+  (`PersonaPatch`, whose answer length can only travel with its engine), the
+  choices the workspace's region offers (`PersonaOptionsResponse`) and the
+  credential for a billed audition (`PersonaPreviewTokenResponse`, which prints
+  neither its media credential nor its passphrase); the knowledge base and where
+  it answers from (`KnowledgeMode`); call handling and the member's own
+  availability; members (`MemberRole`, and the codes of the two conflicts the
+  service answers); and carrier accounts, with one request type for each change
+  the route tells apart by its `action`, and one credentials type per carrier
+  (`MessagingCredentials`), so a secret cannot be sent under another carrier's
+  name, and none is printed in `Debug`. 27 more of the server's recorded
+  responses decode strictly and round-trip, and the list of those not yet
+  modelled shrinks from 36 to 9.
+- `district-api`: typed methods for the nine workspace settings sections: the
+  settings row (`workspace_config`) and the saves that replace a whole list
+  (`save_tools`, `save_directory`, `save_routing_rules`); the persona
+  (`persona_options`, `save_persona`, and `persona_preview_token`, a billed
+  audition); the knowledge base (`knowledge_documents`, `add_knowledge_document`,
+  which is billed, `delete_knowledge_document`, `knowledge_mode`,
+  `set_knowledge_mode`); carrier accounts (`messaging`, `save_messaging_account`,
+  `set_default_messaging_account`, `set_messaging_channel_default`,
+  `delete_messaging_account`, `save_creator_cell_number`, and
+  `test_messaging_credentials`, whose refusal by the carrier is an answer rather
+  than an error); call handling and availability (`call_handling`,
+  `save_call_handling`, `availability`, `set_availability`); and members and the
+  workspace's name (`members`, `add_member`, `change_member_role`,
+  `remove_member`, `rename_workspace`). Each sends what the Android app sends for
+  the same call; the reads are repeated once after a refused access token and the
+  writes never are.
 
 ### Changed
 
@@ -227,5 +261,10 @@ date, and bump `[workspace.package] version` to match.
   because usage, billing and number prices are fractional. When a fresh overview
   narrows the member's role, the screen the role may no longer read is left, and its
   state dropped, rather than hidden behind the overview.
+- The contract gate's unknown-field probe plants a string rather than `true`, so a
+  map keyed by data (answer lengths per engine, starting voices, each channel's
+  sender) takes the planted key as data and has to be named, with its reason,
+  among the objects that accept any key. A struct still refuses the key whatever
+  it holds.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main

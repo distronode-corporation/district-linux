@@ -138,6 +138,30 @@ The project is pre-release, and parts of this are not implemented yet.
   request is open, the app leaves it and drops what it had read, rather than
   keeping it behind another screen.
 
+### Workspace settings
+
+- The settings row carries the staff phone numbers the receptionist transfers
+  callers to and the operator's own persona. The service refuses a viewer the row
+  and every save behind it; knowledge, carrier accounts, call handling and the
+  member list may be read by a viewer, and changed only by the roles the service
+  names.
+- Three saves replace a stored list with exactly what they are sent (the allowed
+  tools, the call directory and the routing rules), so an empty or half-loaded
+  form would be a deletion the service reports as a success. A list is saved only
+  as the list just read with the member's edits applied, each stored entry sent
+  back whole, keys the app does not know included.
+- Carrier credentials are typed by the member and sent only in the body of a save
+  or of a credential check. The service never sends them back, the app keeps
+  none, no error carries one, and every type that holds one prints only whether
+  it is set. Each carrier's credentials are their own type, so a secret cannot go
+  out under another carrier's field names, which the service would keep
+  unencrypted.
+- Auditioning an unsaved persona starts a billed call. Its credential and the
+  room's encryption passphrase are kept in memory, redacted from `Debug`, and
+  asked for only when the member asks to listen, never again by themselves after
+  a failure. The same holds for adding a knowledge base document, which is billed
+  by its length.
+
 ### Privileges
 
 The app runs as your user and never asks for or needs administrator rights. It
