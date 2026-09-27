@@ -6,8 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 `scripts/check-version.py` holds the newest released section's heading to the version in
-`Cargo.toml`, so a release is one edit to each: rename `[Unreleased]` to the version and
-date, and bump `[workspace.package] version` to match.
+`Cargo.toml` and to the AppStream metadata's newest release, so a release is one edit to
+each: rename `[Unreleased]` to the version and date, bump `[workspace.package] version`
+to match, and make the metadata's `<release>` for it stable, with the same date. See
+"Releases" in CONTRIBUTING.md.
 
 ## [Unreleased]
 
@@ -658,8 +660,42 @@ date, and bump `[workspace.package] version` to match.
   `PrepareForSleep` signal, anything else on it ignored), tested against a
   private bus with a stand-in logind, the inhibitor's release included; the
   protocol is tested with a scripted source and handler. Inside a Flatpak it
-  needs `--system-talk-name=org.freedesktop.login1` (see "Packaging notes" in
+  needs `--system-talk-name=org.freedesktop.login1` (see "Packaging" in
   CONTRIBUTING.md).
+- Packages, both x86_64 and built with calls. A Flatpak
+  (`packaging/flatpak/com.distronode.DistrictAI.yml`, on GNOME 51 with the
+  rust-stable SDK extension), built offline from the crates Cargo.lock names
+  (`packaging/flatpak/cargo-sources.json`, written by
+  `scripts/flatpak-cargo-sources.sh` with a pinned, checksummed
+  flatpak-cargo-generator) and the pinned libwebrtc, with the network, IPC,
+  Wayland, X11 as a fallback, the GPU, PulseAudio and logind as its only
+  permissions. A .deb for Ubuntu 24.04, Debian 13 and newer
+  (`[package.metadata.deb]` in the app's manifest, built by
+  `scripts/build-deb.sh`), which depends on what the binary links and on what it
+  loads while running: the PulseAudio client library for a call's audio, and
+  GTK's media backend with the GStreamer plugins the ringtone needs (without
+  `playbin` GTK aborts the app at the first ring; without the WAV decoder the
+  ring is silent), and recommends a Secret Service, the desktop portals and a
+  PulseAudio server. Both ship NOTICE and libwebrtc's licence texts.
+- `.github/workflows/flatpak.yml` builds the Flatpak bundle and runs the app
+  inside its sandbox; `.github/workflows/deb.yml` builds the .deb on Ubuntu
+  24.04, asserts its Depends and Recommends exactly, and installs and runs it on
+  Ubuntu 24.04, Debian 13 and Ubuntu 26.04. Both run on pull requests that
+  change what they build from. CI's `repo` job checks that `cargo-sources.json`
+  is current with Cargo.lock.
+- `.github/workflows/release.yml`, on a `vX.Y.Z` tag: a guard (the tag on main,
+  the versions agreeing with it, a dated CHANGELOG.md section for the notes, the
+  contract snapshot present), the two packages built and tested by the workflows
+  above with read-only permissions and no caches, and a publish that refuses
+  unless the repository variable `LIBWEBRTC_LICENCE_CLEARED` is `true` (NOTICE:
+  no build with calls may be distributed until libwebrtc's licensing has been
+  reviewed), then attests the packages' provenance, verifies the attestations,
+  and publishes a draft release only once it holds exactly the two packages.
+- `district-ai --version` prints the version and whether the build has calls,
+  and exits before GTK, the keyring or the network are touched.
+- The AppStream metadata has a `<releases>` entry for the version in
+  Cargo.toml, `type="development"` until CHANGELOG.md releases it, and
+  `scripts/check-version.py` holds it to Cargo.toml and CHANGELOG.md.
 
 ### Changed
 
@@ -754,5 +790,10 @@ date, and bump `[workspace.package] version` to match.
   sender) takes the planted key as data and has to be named, with its reason,
   among the objects that accept any key. A struct still refuses the key whatever
   it holds.
+- The D-Bus service file is a template,
+  `crates/district-app/data/com.distronode.DistrictAI.service.in`, whose
+  `@bindir@` each package fills in with its own binary's directory (`/usr/bin`
+  in the .deb, `/app/bin` in the Flatpak), instead of a file that named
+  `/usr/bin` for every install.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main

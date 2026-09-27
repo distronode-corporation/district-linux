@@ -8,7 +8,10 @@ version: 2
 #
 # `cargo` opens pull requests against Cargo.lock, which CI enforces with `--locked`,
 # so a bump that does not build fails in its pull request rather than in someone's
-# checkout.
+# checkout. Each one also needs packaging/flatpak/cargo-sources.json written again
+# from the new lock file (scripts/flatpak-cargo-sources.sh, pushed to the pull
+# request's branch): CI's `repo` job fails until it is, and the Flatpak build then
+# runs on the result.
 #
 # `cooldown` holds a version update back until the release is a week old, so a
 # compromised publish that is yanked within days never reaches a pull request here.

@@ -19,7 +19,8 @@ receptionist from Distronode.
 > with the call's duration, mute and hang up under every screen; its call
 > engine is tested against a local media server and not yet against District
 > AI's own. A default build does none of that, and says so. There are no
-> releases or packages yet. Screenshots will follow with the first release.
+> releases yet (see [Install](#install)). Screenshots will follow with the
+> first release.
 
 ## What it will do
 
@@ -40,13 +41,57 @@ You need a District AI account to use it. See <https://www.distronode.com>.
 
 | Platform | Status |
 | --- | --- |
-| Linux x86_64 with GTK 4.14 and libadwaita 1.5 or newer (Ubuntu 24.04, Debian 13, and newer) | The target. Flathub and a `.deb` are planned. |
+| Linux x86_64 with GTK 4.14 and libadwaita 1.5 or newer (Ubuntu 24.04, Debian 13, and newer) | The target: a `.deb` and a Flatpak (see [Install](#install)). |
 | Other Linux architectures | Not yet. |
 | macOS, Windows | Not targeted. |
 
 GTK 4.14 and libadwaita 1.5 are the floor because they are what Ubuntu 24.04
-ships; Debian 13 ships newer. The Flatpak will bring its own runtime and so will
-not depend on the distribution's versions.
+ships; Debian 13 ships newer. The Flatpak brings its own runtime (GNOME 51) and
+so does not depend on the distribution's versions.
+
+## Install
+
+There are no releases yet. The packages are built, but none will be published
+until the licensing of the video codecs inside libwebrtc, which the packages
+link for calls, has been reviewed (see [NOTICE](NOTICE)). Flathub is planned
+after the first release.
+
+Each release on this repository's
+[Releases](https://github.com/distronode-corporation/district-linux/releases)
+page will carry two packages for x86_64, both with calls:
+
+- **`district-ai_<version>-1_amd64.deb`**, for Ubuntu 24.04, Debian 13 and
+  newer. Install it with apt, which also installs what it depends on:
+
+  ```
+  sudo apt install ./district-ai_<version>-1_amd64.deb
+  ```
+
+  It depends on GTK 4, libadwaita, GTK's media backend and the GStreamer
+  plugins that play the ringtone, and the PulseAudio client library for a
+  call's audio. It recommends a keyring (GNOME Keyring, KWallet or KeePassXC)
+  to keep your sign-in, the desktop portals, and a PulseAudio server (PipeWire's
+  `pipewire-pulse`, which most desktops already run) for calls.
+
+- **`district-ai_<version>_x86_64.flatpak`**, for any distribution with
+  Flatpak. It needs the Flathub remote, from which Flatpak fetches its runtime:
+
+  ```
+  flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  flatpak install --user ./district-ai_<version>_x86_64.flatpak
+  ```
+
+  It runs sandboxed, with the network, your display, the GPU, PulseAudio and
+  logind (to know when the computer goes to sleep) and nothing else. Your
+  keyring, notifications, links and files go through the desktop portals, so
+  your desktop needs xdg-desktop-portal and a backend for it, as most do.
+
+Each package comes with a signed attestation of the build that made it, which
+you can check with the GitHub CLI:
+
+```
+gh attestation verify district-ai_<version>-1_amd64.deb --repo distronode-corporation/district-linux
+```
 
 ## Build from source
 

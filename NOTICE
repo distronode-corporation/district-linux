@@ -22,7 +22,9 @@ b167adad5291cea0e4d66a0454d9d52d2ad714e6b0ed70f4410317d3ebde70c5, which is the
 pin in scripts/fetch-libwebrtc.sh. The archive's LICENSE.md, which that script
 unpacks beside the library, holds the full licence text of every component
 below, and a distribution of such a build must ship it with the binary. The
-default build links none of this.
+packages do: the .deb as /usr/share/doc/district-ai/libwebrtc-LICENSE.md and
+the Flatpak as /app/share/licenses/com.distronode.DistrictAI/libwebrtc-LICENSE.md,
+each beside this file. The default build links none of this.
 
   WebRTC            The WebRTC project authors                BSD-3-Clause
   Abseil            The Abseil authors                        Apache-2.0

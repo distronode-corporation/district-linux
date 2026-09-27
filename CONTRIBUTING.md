@@ -34,16 +34,21 @@ crates/district-app/      The GTK 4 and libadwaita app, `district-ai`, and the o
                           crate that links GTK: a library the binary and the smoke
                           test share. data/ holds the .ui templates, the
                           stylesheet, the icons, the ringtone, the desktop entry,
-                          the D-Bus service file and the AppStream metadata.
+                          the D-Bus service template and the AppStream metadata;
+                          its Cargo.toml also holds the .deb's metadata.
 contracts/                What this client is checked against: the server's recorded
                           responses, the Android set and the desktop-only set
                           (vendored and sanitised by sync-contracts.py), the
                           Android app's endpoint snapshot (sync-endpoints.py), and
                           the brand colours from the design tokens
                           (sync-palette.py).
+packaging/flatpak/        The Flatpak manifest and cargo-sources.json, the crates it
+                          builds from (see Packaging below).
 scripts/                  check-version.py, check-public-hygiene.py and
                           check-coverage.py, run by CI; fetch-libwebrtc.sh, run by
-                          voice.yml and by hand for a build with calls;
+                          voice.yml, the packages and by hand for a build with
+                          calls; build-deb.sh and flatpak-cargo-sources.sh, run by
+                          the packaging workflows, CI and by hand;
                           sync-contracts.py, sync-endpoints.py, sync-palette.py and
                           make-ringtone.py, run by hand.
 coverage-floors.toml      Each crate's line coverage floor (see Coverage below).
@@ -160,17 +165,146 @@ every test stays on it: an ordinary desktop or CI runner has one, and a containe
 started with `--network none` needs a dummy interface added
 (`ip link add lan0 type dummy`, an address, `up`).
 
-## Packaging notes
+## Packaging
 
-Nothing is packaged yet. What a package needs beyond the binary, the desktop
-entry, the D-Bus service file, the AppStream metadata and the icons:
+There are two packages, both x86_64 and both built with calls: a .deb for Ubuntu
+24.04, Debian 13 and newer, and a Flatpak. What they install is the binary, the
+desktop entry, the AppStream metadata, the two icons and the D-Bus service from
+`crates/district-app/data/`, and the licence texts: LICENSE, NOTICE, and
+libwebrtc's LICENSE.md, which NOTICE says must travel with a build that links
+it. The D-Bus service is a template, `com.distronode.DistrictAI.service.in`,
+whose `@bindir@` each package fills in with its own binary's directory, because
+the desktop starts what its `Exec` names without searching `PATH`.
 
-- **Flatpak:** `--system-talk-name=org.freedesktop.login1` in `finish-args`.
-  The app holds a delay inhibitor and listens for `PrepareForSleep` so that a
-  laptop closing its lid stops ringing at once and ends a call under way;
-  without the permission it cannot reach logind, and a sleeping desktop keeps
-  its registration (and a caller can be held for it) until the registration
-  lapses ten minutes later. It needs nothing else from the system bus.
+`district-ai --version` prints the version and whether the build has calls, and
+exits before it touches GTK, a keyring or the network, which is how both
+packages are checked on machines with no display.
+
+### The .deb
+
+Its metadata is `[package.metadata.deb]` in `crates/district-app/Cargo.toml`, and
+[cargo-deb](https://github.com/kornelski/cargo-deb) builds it. Build it on Ubuntu
+24.04, the oldest distribution it is for: glibc runs a binary linked against an
+older glibc and refuses a newer one, and dpkg-shlibdeps writes the build
+machine's library versions into Depends. With everything "Building with calls"
+lists, and cargo-deb (deb.yml installs the pinned release; `cargo install
+cargo-deb --locked` also works) and `dpkg-dev`:
+
+```
+export LK_CUSTOM_WEBRTC="$(scripts/fetch-libwebrtc.sh ~/.cache/district-libwebrtc)"
+CXX=clang++-21 scripts/build-deb.sh
+sudo apt install ./target/debian/district-ai_*_amd64.deb
+```
+
+The script writes the D-Bus service for `/usr/bin` and copies libwebrtc's licence
+texts into `target/release`, where the asset list names them, then runs
+`cargo deb`.
+
+Depends is what the binary links (dpkg-shlibdeps) and what it loads while
+running, which dpkg-shlibdeps cannot see: the PulseAudio client library, which
+libwebrtc's audio module opens for the microphone and the speakers, and GTK's
+media backend with the GStreamer plugins the ringtone needs. Without
+`gstreamer1.0-plugins-base`'s `playbin` GTK aborts the whole app the first time
+a call rings, and without `gstreamer1.0-plugins-good` the WAV cannot be decoded
+and the ring is silent. Ubuntu 26.04 has no separate
+`libgtk-4-media-gstreamer`: `libgtk-4-1` holds the backend and provides the
+name. Recommends is a Secret Service (GNOME Keyring, KWallet or KeePassXC), the
+desktop portals, and a PulseAudio server (PipeWire's `pipewire-pulse` on most
+desktops). `.github/workflows/deb.yml` asserts Depends and Recommends exactly as
+they come out, so a change to the metadata, or a new library version on the
+build machine, changes that workflow too. It then installs the package in clean
+Ubuntu 24.04, Debian 13 and Ubuntu 26.04 containers, without the recommended
+packages, and runs `district-ai --version` there.
+
+### The Flatpak
+
+The manifest is `packaging/flatpak/com.distronode.DistrictAI.yml`: GNOME 51,
+whose SDK's clang (LLVM 22.1) is new enough for libwebrtc, and the rust-stable SDK
+extension. The build is offline. The crates come from
+`packaging/flatpak/cargo-sources.json`, each checked against the SHA-256
+Cargo.lock records, and libwebrtc from the same pinned archive
+`scripts/fetch-libwebrtc.sh` names, which the build unpacks with that script.
+After any change to Cargo.lock, a Dependabot bump included, regenerate the
+sources and commit them with it:
+
+```
+scripts/flatpak-cargo-sources.sh
+```
+
+It runs a pinned, checksummed flatpak-cargo-generator in a throwaway virtual
+environment (it needs `python3-venv`), and CI's `repo` job runs it with
+`--check`. Moving libwebrtc's pin in `scripts/fetch-libwebrtc.sh` moves the
+manifest's `url` and `sha256` with it; if they disagree, the build fails,
+because the script finds an archive that does not match and has no network to
+fetch another.
+
+To build and install it for your user, with Flatpak and flatpak-builder:
+
+```
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak-builder --user --install-deps-from=flathub --install --force-clean \
+  build-dir packaging/flatpak/com.distronode.DistrictAI.yml
+flatpak run com.distronode.DistrictAI
+```
+
+Its permissions (`finish-args`), each for a reason the manifest states: the
+network; IPC, Wayland and X11 as a fallback, and the GPU, for the window;
+PulseAudio, for a call's audio and the ringtone; and
+`--system-talk-name=org.freedesktop.login1`. The app holds a delay inhibitor
+and listens for `PrepareForSleep` so that a laptop closing its lid stops ringing
+at once and ends a call under way; without the permission it cannot reach
+logind, and a sleeping desktop keeps its registration (and a caller can be held
+for it) until the registration lapses ten minutes later. Nothing else: the
+keyring, notifications, links, the file chooser and autostart all go through
+the portals, so a new permission needs a test that shows the app cannot work
+without it.
+
+`.github/workflows/flatpak.yml` builds the bundle in Flathub's GNOME 51 build
+image, installs it, and runs `district-ai --version` inside the sandbox. It also
+prints what Flathub's linter says, without failing on it: Flathub asks for more
+than a bundle does (screenshots, and a build from a published tag rather than a
+checkout), which the submission to Flathub will have to add.
+
+Both workflows run on pull requests that change what they build from, and by
+hand; each keeps its package as the run's artifact for a week.
+
+## Releases
+
+A release is a `vX.Y.Z` tag on a commit on main, and
+`.github/workflows/release.yml` does the rest. Before tagging, in one pull
+request:
+
+1. Bump `[workspace.package] version` in `Cargo.toml`.
+2. Rename `## [Unreleased]` in CHANGELOG.md to `## [X.Y.Z] - YYYY-MM-DD` and
+   start a new empty `[Unreleased]` above it. That section becomes the release
+   notes.
+3. Make the newest `<release>` in the AppStream metadata that version, stable
+   (no `type`), with the same date.
+
+`python3 scripts/check-version.py` checks all three agree, and with the tag as
+its argument checks them against the tag, as the release does. Once the pull
+request is merged, tag the merge commit and push the tag.
+
+The workflow then refuses a tag that is not on main or that the versions do not
+match, builds the .deb and the Flatpak with deb.yml and flatpak.yml (read-only,
+no caches, from the committed Cargo.lock) and tests them as pull requests do,
+and publishes: it attests each package's build provenance, verifies the
+attestations, creates a draft release with the notes and the two packages,
+checks GitHub holds exactly `district-ai_X.Y.Z-1_amd64.deb` and
+`district-ai_X.Y.Z_x86_64.flatpak`, and only then makes it public. A failed run
+leaves a draft or nothing, and a re-run replaces a leftover draft but never
+touches a published release.
+
+**The licence gate.** The packages are built with calls, which statically link
+libwebrtc, and NOTICE says no build with calls may be distributed until the
+licence and patent position of the codecs in it (FFmpeg's H.264 and H.265
+decoders among them) has been reviewed. So the publish job refuses, before it
+touches anything, unless the repository variable `LIBWEBRTC_LICENCE_CLEARED` is
+exactly `true`, and says why. Set it only once that review has cleared the
+libwebrtc the pin names; a new pin needs the review again. Until then a tag
+still builds and tests both packages and keeps them as the run's artifacts,
+which is testing, not distribution. Attestations also need the repository to be
+public (or on GitHub Enterprise Cloud).
 
 ## The smoke test
 
@@ -233,11 +367,13 @@ python3 scripts/check-public-hygiene.py
 python3 scripts/check-coverage.py --self-test
 desktop-file-validate crates/district-app/data/com.distronode.DistrictAI.desktop
 appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
+scripts/flatpak-cargo-sources.sh --check
 ```
 
 The call engine is built and tested by its own workflow,
 `.github/workflows/voice.yml`, when what it is made of changes, weekly, and by
 hand (see "Building with calls"); the default jobs never download libwebrtc.
+The packages have theirs too, `deb.yml` and `flatpak.yml` (see "Packaging").
 
 CI runs those tests with line coverage measured and checks it against the floors;
 [Coverage](#coverage) below has the commands to do the same. CI also runs
