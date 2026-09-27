@@ -24,6 +24,12 @@ use district_model::{
     DeskTicketStatus, DraftSaveRequest, MeetRoomName, NumberSearch, SendMessageRequest,
     SupportRequestDraft, SupportRequestKind, TelemetryToken, ThreadRef, UpdateContactRequest,
 };
+use district_model::{
+    CallHandlingPatch, KnowledgeDocumentDraft, KnowledgeMode, MemberRole, MessagingAccountSave,
+    MessagingChannel, MessagingCreatorCell, MessagingCredentialSource, MessagingCredentials,
+    MessagingDelete, MessagingSetChannelDefault, MessagingSetDefault, PersonaPatch,
+    PersonaPreviewForm, TelnyxCredentials,
+};
 use serde_json::json;
 use url::Url;
 use wiremock::matchers::{body_string_contains, method, path, query_param};
@@ -1248,4 +1254,374 @@ async fn the_real_exchange_goes_to_the_token_route() {
     assert_eq!(body["deviceName"], "Ubuntu 24.04.1 LTS");
     assert_eq!(body["platform"], "linux");
     assert_eq!(body["code"], "code-1");
+}
+
+#[tokio::test]
+async fn the_api_client_serves_the_workspace_settings() {
+    let server = MockServer::start().await;
+    // More specific first: the first mounted mock that matches answers.
+    for (action, body) in [
+        (
+            "\"setChannelDefault\"",
+            "district-messaging-channel-default.json",
+        ),
+        ("\"setDefault\"", "district-messaging-set-default.json"),
+        ("\"delete\"", "district-messaging-delete.json"),
+        ("\"meta\"", "district-messaging-meta.json"),
+    ] {
+        Mock::given(method("PATCH"))
+            .and(path("/api/district/workspace/messaging"))
+            .and(body_string_contains(action))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(fixture::<serde_json::Value>(body)),
+            )
+            .mount(&server)
+            .await;
+    }
+    let handling = json!({"success": true, "callHandling": "app_first", "appRingSeconds": 12});
+    let availability = json!({"success": true, "availableForCalls": false, "reason": null});
+    let routes: [(&str, &str, serde_json::Value); 24] = [
+        (
+            "GET",
+            "/api/district/workspace/config",
+            fixture("district-workspace-config.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/tools",
+            fixture("district-tools-patch.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/directory",
+            fixture("district-directory-patch.json"),
+        ),
+        (
+            "POST",
+            "/api/district/workspace/routing-rules",
+            fixture("district-routing-patch.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/persona/options",
+            fixture("district-persona-options.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/persona",
+            fixture("district-persona-patch.json"),
+        ),
+        (
+            "POST",
+            "/api/district/workspace/persona/preview-token",
+            fixture("district-persona-preview-token.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/knowledge",
+            fixture("district-knowledge.json"),
+        ),
+        (
+            "POST",
+            "/api/district/workspace/knowledge",
+            fixture("district-knowledge-create.json"),
+        ),
+        (
+            "DELETE",
+            "/api/district/workspace/knowledge",
+            fixture("district-knowledge-delete.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/knowledge-mode",
+            fixture("district-knowledge-mode.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/knowledge-mode",
+            fixture("district-knowledge-mode-patch.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/messaging",
+            fixture("district-messaging.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/messaging",
+            fixture("district-messaging-upsert.json"),
+        ),
+        (
+            "POST",
+            "/api/district/workspace/messaging/test",
+            fixture("district-messaging-test.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/call-handling",
+            handling.clone(),
+        ),
+        ("PATCH", "/api/district/workspace/call-handling", handling),
+        (
+            "GET",
+            "/api/district/workspace/availability",
+            availability.clone(),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/availability",
+            availability,
+        ),
+        (
+            "GET",
+            "/api/district/workspace/members",
+            fixture("district-members.json"),
+        ),
+        (
+            "POST",
+            "/api/district/workspace/members",
+            fixture("district-member-add.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/members",
+            fixture("district-member-role-patch.json"),
+        ),
+        (
+            "DELETE",
+            "/api/district/workspace/members",
+            fixture("district-member-remove.json"),
+        ),
+        (
+            "PATCH",
+            "/api/district/workspace/rename",
+            fixture("district-rename.json"),
+        ),
+    ];
+    for (verb, route, body) in routes {
+        serve(&server, verb, route, body).await;
+    }
+    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let client = ApiClient::new(config, OneToken).unwrap();
+    let ws = "ws-contract-test";
+
+    let row = DistrictApi::workspace_config(&client, ws).await.unwrap();
+    assert_eq!(row.config.plan.as_deref(), Some("studio"));
+    let entries = row.config.directory_entries().unwrap();
+    let rules = row.config.routing_rule_entries().unwrap();
+    assert!(
+        DistrictApi::save_tools(&client, ws, &["send_sms".to_owned()])
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::save_directory(&client, ws, &entries)
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::save_routing_rules(&client, ws, &rules)
+            .await
+            .unwrap()
+            .success
+    );
+    assert_eq!(
+        DistrictApi::persona_options(&client, ws)
+            .await
+            .unwrap()
+            .region,
+        "us"
+    );
+    assert!(
+        DistrictApi::save_persona(&client, ws, &PersonaPatch::default())
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::persona_preview_token(&client, ws, &PersonaPreviewForm::default())
+            .await
+            .unwrap()
+            .room_name
+            .starts_with("preview_")
+    );
+    assert_eq!(
+        DistrictApi::knowledge_documents(&client, ws)
+            .await
+            .unwrap()
+            .documents
+            .len(),
+        2
+    );
+    let draft = KnowledgeDocumentDraft {
+        title: "Holiday hours".to_owned(),
+        content: "Closed on the 25th.".to_owned(),
+        source_type: None,
+        source_url: None,
+    };
+    assert_eq!(
+        DistrictApi::add_knowledge_document(&client, ws, &draft)
+            .await
+            .unwrap()
+            .document
+            .id,
+        "doc_contract_created"
+    );
+    assert!(
+        DistrictApi::delete_knowledge_document(&client, ws, "doc_contract_ready")
+            .await
+            .unwrap()
+            .success
+    );
+    assert_eq!(
+        DistrictApi::knowledge_mode(&client, ws).await.unwrap().mode,
+        "linked"
+    );
+    assert_eq!(
+        DistrictApi::set_knowledge_mode(&client, ws, KnowledgeMode::Internal)
+            .await
+            .unwrap()
+            .mode,
+        "internal"
+    );
+    assert_eq!(
+        DistrictApi::messaging(&client, ws)
+            .await
+            .unwrap()
+            .accounts
+            .len(),
+        2
+    );
+    let credentials = MessagingCredentials::Telnyx(TelnyxCredentials {
+        api_key: Some("KEY-test".to_owned()),
+    });
+    let save = MessagingAccountSave {
+        account_id: None,
+        label: None,
+        credential_source: MessagingCredentialSource::Byok,
+        credentials: credentials.clone(),
+        phone_numbers: None,
+        make_default: None,
+        creator_cell_number: None,
+    };
+    assert_eq!(
+        DistrictApi::save_messaging_account(&client, ws, &save)
+            .await
+            .unwrap()
+            .account_id,
+        "acct-twilio"
+    );
+    let default = MessagingSetDefault {
+        account_id: "acct-twilio".to_owned(),
+    };
+    assert!(
+        DistrictApi::set_default_messaging_account(&client, ws, &default)
+            .await
+            .unwrap()
+            .success
+    );
+    let channel = MessagingSetChannelDefault {
+        channel: MessagingChannel::Sms,
+        account_id: "acct-twilio".to_owned(),
+    };
+    assert!(
+        !DistrictApi::set_messaging_channel_default(&client, ws, &channel)
+            .await
+            .unwrap()
+            .channel_defaults
+            .is_empty()
+    );
+    let delete = MessagingDelete {
+        account_id: "acct-telnyx".to_owned(),
+    };
+    assert!(
+        DistrictApi::delete_messaging_account(&client, ws, &delete)
+            .await
+            .unwrap()
+            .success
+    );
+    let cell = MessagingCreatorCell {
+        creator_cell_number: "+14165550101".to_owned(),
+    };
+    assert!(
+        DistrictApi::save_creator_cell_number(&client, ws, &cell)
+            .await
+            .unwrap()
+            .success
+    );
+    assert!(
+        DistrictApi::test_messaging_credentials(&client, ws, &credentials)
+            .await
+            .unwrap()
+            .success
+    );
+    let patch = CallHandlingPatch {
+        app_ring_seconds: Some(12),
+        ..CallHandlingPatch::default()
+    };
+    assert_eq!(
+        DistrictApi::call_handling(&client, ws)
+            .await
+            .unwrap()
+            .call_handling,
+        "app_first"
+    );
+    assert_eq!(
+        DistrictApi::save_call_handling(&client, ws, &patch)
+            .await
+            .unwrap()
+            .app_ring_seconds,
+        12
+    );
+    assert!(
+        !DistrictApi::availability(&client, ws)
+            .await
+            .unwrap()
+            .available_for_calls
+    );
+    assert!(
+        DistrictApi::set_availability(&client, ws, false)
+            .await
+            .unwrap()
+            .success
+    );
+    assert_eq!(
+        DistrictApi::members(&client, ws)
+            .await
+            .unwrap()
+            .members
+            .len(),
+        3
+    );
+    assert_eq!(
+        DistrictApi::add_member(&client, ws, "newcomer@example.com", MemberRole::Viewer)
+            .await
+            .unwrap()
+            .member
+            .email,
+        "newcomer@example.com"
+    );
+    assert_eq!(
+        DistrictApi::change_member_role(&client, ws, "operator@example.com", MemberRole::Client)
+            .await
+            .unwrap()
+            .member
+            .role,
+        "client"
+    );
+    assert!(
+        DistrictApi::remove_member(&client, ws, "auditor@example.com")
+            .await
+            .unwrap()
+            .success
+    );
+    assert_eq!(
+        DistrictApi::rename_workspace(&client, ws, "Renamed Workspace")
+            .await
+            .unwrap()
+            .name,
+        "Renamed Workspace"
+    );
 }

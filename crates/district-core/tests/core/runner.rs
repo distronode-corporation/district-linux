@@ -12,6 +12,7 @@ use district_core::{
     PickedAttachment, RestoreError, Route, SEARCH_DEBOUNCE, Settings, SignInError, SignedInSession,
     Ticket, TokioClock, UrlOpener,
 };
+use district_core::{MemberWrite, MessagingWrite};
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse, BlockTarget,
     BlockedContactsResponse, CallDetailResponse, CallSummary, CallTranscriptResponse,
@@ -42,6 +43,9 @@ use district_model::{
     MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault, MessagingTestResponse,
     PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
     RenameResponse, RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+};
+use district_model::{
+    CallHandlingMode, MessagingChannel, MessagingCredentialSource, TwilioCredentials,
 };
 
 use crate::support::{
@@ -2177,5 +2181,366 @@ async fn a_one_time_link_is_opened_and_reports_only_a_failure() {
     assert_eq!(
         runner.run(Effect::OpenOneTimeUrl { url }).await,
         Some(Event::UrlOpenFailed)
+    );
+}
+
+/// The fourth milestone's reads and writes: each effect calls its endpoint with
+/// what it carries, and reports the answer under its ticket; a write whose
+/// answer holds nothing worth keeping reports only whether it landed.
+#[tokio::test]
+async fn each_settings_effect_calls_its_endpoint_and_reports_back() {
+    let (runner, log) = fakes(None, true);
+    let ticket = a_ticket();
+    let ws = || AGENCY.to_owned();
+    let row = fixture::<WorkspaceConfigResponse>("district-workspace-config.json").config;
+    let twilio = MessagingCredentials::Twilio(TwilioCredentials {
+        account_sid: Some("AC-sid".to_owned()),
+        auth_token: None,
+    });
+    let written = |ticket| Event::SettingsWritten {
+        ticket,
+        result: Ok(()),
+    };
+
+    let cases: Vec<(Effect, Event)> = vec![
+        (
+            Effect::LoadWorkspaceConfig {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::WorkspaceConfigLoaded {
+                ticket,
+                result: Ok(fixture("district-workspace-config.json")),
+            },
+        ),
+        (
+            Effect::SaveTools {
+                ticket,
+                workspace_id: ws(),
+                allowed_tools: vec!["send_sms".to_owned()],
+            },
+            written(ticket),
+        ),
+        (
+            Effect::SaveDirectory {
+                ticket,
+                workspace_id: ws(),
+                entries: row.directory_entries().unwrap(),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::SaveRoutingRules {
+                ticket,
+                workspace_id: ws(),
+                rules: row.routing_rule_entries().unwrap(),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::SavePersona {
+                ticket,
+                workspace_id: ws(),
+                patch: Box::new(PersonaPatch {
+                    greeting: Some(String::new()),
+                    ..PersonaPatch::default()
+                }),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::LoadPersonaOptions {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::PersonaOptionsLoaded {
+                ticket,
+                result: Ok(fixture("district-persona-options.json")),
+            },
+        ),
+        (
+            Effect::RequestPersonaPreview {
+                ticket,
+                workspace_id: ws(),
+                form: Box::new(PersonaPreviewForm {
+                    greeting: Some("Hello".to_owned()),
+                    ..PersonaPreviewForm::default()
+                }),
+            },
+            Event::PersonaPreviewIssued {
+                ticket,
+                result: Ok(fixture("district-persona-preview-token.json")),
+            },
+        ),
+        (
+            Effect::LoadKnowledge {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::KnowledgeLoaded {
+                ticket,
+                result: Ok(fixture("district-knowledge.json")),
+            },
+        ),
+        (
+            Effect::AddKnowledgeDocument {
+                ticket,
+                workspace_id: ws(),
+                draft: KnowledgeDocumentDraft {
+                    title: "Hours".to_owned(),
+                    content: "Nine to five".to_owned(),
+                    source_type: None,
+                    source_url: None,
+                },
+            },
+            written(ticket),
+        ),
+        (
+            Effect::DeleteKnowledgeDocument {
+                ticket,
+                workspace_id: ws(),
+                document_id: "doc_contract_ready".to_owned(),
+            },
+            Event::SettingsWritten {
+                ticket,
+                result: Err(server_error()),
+            },
+        ),
+        (
+            Effect::LoadKnowledgeMode {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::KnowledgeModeLoaded {
+                ticket,
+                result: Ok(fixture("district-knowledge-mode.json")),
+            },
+        ),
+        (
+            Effect::SetKnowledgeMode {
+                ticket,
+                workspace_id: ws(),
+                mode: KnowledgeMode::Internal,
+            },
+            Event::KnowledgeModeLoaded {
+                ticket,
+                result: Ok(fixture("district-knowledge-mode-patch.json")),
+            },
+        ),
+        (
+            Effect::LoadMessaging {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::MessagingLoaded {
+                ticket,
+                result: Ok(fixture("district-messaging.json")),
+            },
+        ),
+        (
+            Effect::WriteMessaging {
+                ticket,
+                workspace_id: ws(),
+                write: MessagingWrite::SaveAccount(Box::new(MessagingAccountSave {
+                    account_id: Some("acct-twilio".to_owned()),
+                    label: None,
+                    credential_source: MessagingCredentialSource::Byok,
+                    credentials: twilio.clone(),
+                    phone_numbers: None,
+                    make_default: None,
+                    creator_cell_number: None,
+                })),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::WriteMessaging {
+                ticket,
+                workspace_id: ws(),
+                write: MessagingWrite::SetDefault(MessagingSetDefault {
+                    account_id: "acct-twilio".to_owned(),
+                }),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::WriteMessaging {
+                ticket,
+                workspace_id: ws(),
+                write: MessagingWrite::SetChannelDefault(MessagingSetChannelDefault {
+                    channel: MessagingChannel::Sms,
+                    account_id: "acct-telnyx".to_owned(),
+                }),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::WriteMessaging {
+                ticket,
+                workspace_id: ws(),
+                write: MessagingWrite::Delete(MessagingDelete {
+                    account_id: "acct-telnyx".to_owned(),
+                }),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::WriteMessaging {
+                ticket,
+                workspace_id: ws(),
+                write: MessagingWrite::CreatorCell(MessagingCreatorCell {
+                    creator_cell_number: "+14165550101".to_owned(),
+                }),
+            },
+            written(ticket),
+        ),
+        (
+            Effect::TestMessagingCredentials {
+                ticket,
+                workspace_id: ws(),
+                credentials: twilio,
+            },
+            Event::MessagingCredentialsTested {
+                ticket,
+                result: Ok(fixture("district-messaging-test-rejected.json")),
+            },
+        ),
+        (
+            Effect::LoadCallHandling {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::CallHandlingLoaded {
+                ticket,
+                result: Ok(handling_answer("ai_first", 20)),
+            },
+        ),
+        (
+            Effect::SaveCallHandling {
+                ticket,
+                workspace_id: ws(),
+                patch: CallHandlingPatch {
+                    call_handling: Some(CallHandlingMode::AppFirst),
+                    app_ring_seconds: Some(12),
+                },
+            },
+            Event::CallHandlingLoaded {
+                ticket,
+                result: Ok(handling_answer("app_first", 12)),
+            },
+        ),
+        (
+            Effect::LoadAvailability {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::AvailabilityLoaded {
+                ticket,
+                result: Ok(available(true)),
+            },
+        ),
+        (
+            Effect::SetAvailability {
+                ticket,
+                workspace_id: ws(),
+                available: false,
+            },
+            Event::AvailabilityLoaded {
+                ticket,
+                result: Ok(available(false)),
+            },
+        ),
+        (
+            Effect::LoadMembers {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::MembersLoaded {
+                ticket,
+                result: Ok(fixture("district-members.json")),
+            },
+        ),
+        (
+            Effect::WriteMember {
+                ticket,
+                workspace_id: ws(),
+                write: MemberWrite::Add {
+                    email: "newcomer@example.com".to_owned(),
+                    role: MemberRole::Viewer,
+                },
+            },
+            written(ticket),
+        ),
+        (
+            Effect::WriteMember {
+                ticket,
+                workspace_id: ws(),
+                write: MemberWrite::ChangeRole {
+                    email: "operator@example.com".to_owned(),
+                    role: MemberRole::Client,
+                },
+            },
+            written(ticket),
+        ),
+        (
+            Effect::WriteMember {
+                ticket,
+                workspace_id: ws(),
+                write: MemberWrite::Remove {
+                    email: "auditor@example.com".to_owned(),
+                },
+            },
+            written(ticket),
+        ),
+        (
+            Effect::RenameWorkspace {
+                ticket,
+                workspace_id: ws(),
+                name: "Harbour Dental".to_owned(),
+            },
+            Event::WorkspaceRenamed {
+                ticket,
+                result: Ok(fixture("district-rename.json")),
+            },
+        ),
+    ];
+    for (effect, event) in cases {
+        assert_eq!(runner.run(effect.clone()).await, Some(event), "{effect:?}");
+    }
+    assert_eq!(
+        log.take(),
+        [
+            "config ws-contract-active",
+            "save tools ws-contract-active [\"send_sms\"]",
+            "save directory ws-contract-active [\"Ops desk\", \"On-call engineer\"]",
+            "save rules ws-contract-active 3",
+            "save persona ws-contract-active {\"greeting\":\"\"}",
+            "persona options ws-contract-active",
+            "preview ws-contract-active Some(\"Hello\")",
+            "knowledge ws-contract-active",
+            "add document ws-contract-active Hours",
+            "delete document ws-contract-active doc_contract_ready",
+            "knowledge mode ws-contract-active",
+            "set knowledge mode ws-contract-active internal",
+            "messaging ws-contract-active",
+            "save account ws-contract-active {\"activeProvider\":\"twilio\",\
+             \"credentialSource\":\"byok\",\"providerConfig\":{\"accountSid\":\"AC-sid\"},\
+             \"accountId\":\"acct-twilio\"}",
+            "default account ws-contract-active acct-twilio",
+            "channel default ws-contract-active Sms acct-telnyx",
+            "delete account ws-contract-active acct-telnyx",
+            "creator cell ws-contract-active +14165550101",
+            "test credentials ws-contract-active {\"accountSid\":\"AC-sid\"}",
+            "call handling ws-contract-active",
+            "save call handling ws-contract-active {\"callHandling\":\"app_first\",\
+             \"appRingSeconds\":12}",
+            "availability ws-contract-active",
+            "set availability ws-contract-active false",
+            "members ws-contract-active",
+            "add member ws-contract-active newcomer@example.com viewer",
+            "member role ws-contract-active operator@example.com client",
+            "remove member ws-contract-active auditor@example.com",
+            "rename ws-contract-active Harbour Dental",
+        ]
     );
 }
