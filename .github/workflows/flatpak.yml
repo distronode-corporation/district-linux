@@ -56,17 +56,27 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "building $version"
 
+      # flatpak-builder itself, from the image, rather than the
+      # flatpak-github-actions action, which is two commands of it: one less
+      # third party holding code execution in the job that builds what users
+      # install (and this repository's allowed-actions list does not name it).
       # The rust-stable SDK extension comes from Flathub at build time
       # (--install-deps-from). No cache: every crate and libwebrtc are
       # downloaded and checked against their pinned digests on every run, and a
-      # release must never be built from a restored build directory.
+      # release must never be built from a restored build directory. No FUSE in
+      # a container, hence --disable-rofiles-fuse.
       - name: Build the bundle
-        uses: flatpak/flatpak-github-actions/flatpak-builder@79327416609af08178ad73b352877e51450790b3 # v6.8
-        with:
-          manifest-path: packaging/flatpak/com.distronode.DistrictAI.yml
-          bundle: district-ai.flatpak
-          cache: false
-          upload-artifact: false
+        run: |
+          set -euo pipefail
+          flatpak-builder --version
+          flatpak-builder --disable-rofiles-fuse --force-clean \
+            --install-deps-from=flathub --arch=x86_64 \
+            --state-dir=.flatpak-builder --repo=repo \
+            flatpak_app packaging/flatpak/com.distronode.DistrictAI.yml
+          flatpak build-bundle --arch=x86_64 \
+            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
+            repo district-ai.flatpak com.distronode.DistrictAI
+          ls -l district-ai.flatpak
 
       # The bundle as a user installs it, beside the runtime it names (the
       # image's GNOME 51 Platform, installed system-wide, which is where this
