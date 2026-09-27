@@ -12,7 +12,8 @@ use common::{
     memory, next, next_at, no_jitter, settle, token_text,
 };
 use district_api::{
-    ApiError, ErrorDetail, ReauthReason, TransportError, TransportKind, UnauthorizedReason,
+    ApiError, ErrorDetail, ReauthReason, RetryReason, TransportError, TransportKind,
+    UnauthorizedReason,
 };
 use district_live::{
     BACKOFF_CAP, CONNECT_TIMEOUT, Disconnect, EndpointError, LiveError, LiveUpdate, RENEWAL_FLOOR,
@@ -517,7 +518,6 @@ async fn a_mint_that_may_pass_is_retried_after_the_backoff_or_the_servers_wait()
     let detail = ErrorDetail::default();
     let rate_limited = ApiError::RateLimited {
         retry_after: Some(Duration::from_secs(120)),
-        refresh_throttled: false,
         detail: detail.clone(),
     };
     let server_error = ApiError::Server {
@@ -529,17 +529,15 @@ async fn a_mint_that_may_pass_is_retried_after_the_backoff_or_the_servers_wait()
         code: "server_error".to_owned(),
         detail: detail.clone(),
     };
-    let throttled_refresh = ApiError::RateLimited {
-        retry_after: None,
-        refresh_throttled: true,
-        detail,
-    };
+    let throttled_refresh = ApiError::TokenUnavailable(RetryReason::RateLimited);
+    let unsent_refresh = ApiError::TokenUnavailable(RetryReason::Offline);
     minter.script([
         Err(offline()),
         Err(server_error.clone()),
         Err(coded_outage.clone()),
         Err(rate_limited.clone()),
         Err(throttled_refresh.clone()),
+        Err(unsent_refresh.clone()),
     ]);
     let (config, _, mut server) = memory(clock, no_jitter);
     let (connection, mut updates) = TelemetryConnection::start(WORKSPACE, minter.clone(), config);
@@ -551,6 +549,7 @@ async fn a_mint_that_may_pass_is_retried_after_the_backoff_or_the_servers_wait()
         // The server asked for longer than the backoff would wait.
         (Duration::from_secs(120), rate_limited),
         (backoff_delay(5, 0.0), throttled_refresh),
+        (backoff_delay(6, 0.0), unsent_refresh),
     ];
     for (delay, error) in expected {
         assert_eq!(
@@ -560,7 +559,7 @@ async fn a_mint_that_may_pass_is_retried_after_the_backoff_or_the_servers_wait()
     }
     let _conn = server.accept().await;
     assert_eq!(next(&mut updates).await, LiveUpdate::Connected);
-    assert_eq!(minter.calls(), 6);
+    assert_eq!(minter.calls(), 7);
     connection.stop().await;
 }
 
@@ -576,6 +575,9 @@ async fn a_mint_refused_for_good_ends_the_connection() {
             detail: ErrorDetail::default(),
         },
         ApiError::InvalidRequest("TelemetryToken needs a workspace".to_owned()),
+        ApiError::TokenUnavailable(RetryReason::SecretStoreLocked),
+        ApiError::TokenUnavailable(RetryReason::SecretStoreUnavailable),
+        ApiError::TokenUnavailable(RetryReason::StorageFailed),
     ];
     for refusal in refusals {
         let clock = TestClock::new();

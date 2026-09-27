@@ -2,7 +2,7 @@
 
 use std::future::Future;
 
-use district_api::{ApiClient, ApiError, TokenSource};
+use district_api::{ApiClient, ApiError, RetryReason, TokenSource};
 use district_model::TelemetryToken;
 
 /// Mints the credential for a workspace's telemetry socket.
@@ -30,13 +30,19 @@ impl<S: TokenSource + 'static> TokenMinter for ApiClient<S> {
 /// Whether a failed mint may succeed if tried again later, as opposed to one
 /// that needs something to change first.
 ///
-/// Transient: no answer, a server error, a rate limit, including one on the
-/// session's own refresh. Everything else is final: a session that has ended, a
-/// member refused the workspace, and any other 4xx, redirect or unreadable
-/// answer, which retrying the same request cannot fix.
+/// Transient: no answer, a server error, a rate limit, and an access token that
+/// could not be fetched because the session's own refresh was rate limited or
+/// never reached the service. Everything else is final: a session that has
+/// ended, a member refused the workspace, a secret store that is locked or out of
+/// reach (retrying on a timer would raise the unlock prompt again and again), and
+/// any other 4xx, redirect or unreadable answer, which retrying the same request
+/// cannot fix.
 pub(crate) fn is_transient(error: &ApiError) -> bool {
     match error {
-        ApiError::Offline(_) | ApiError::Server { .. } | ApiError::RateLimited { .. } => true,
+        ApiError::Offline(_)
+        | ApiError::Server { .. }
+        | ApiError::RateLimited { .. }
+        | ApiError::TokenUnavailable(RetryReason::RateLimited | RetryReason::Offline) => true,
         ApiError::Envelope { status, .. } => *status >= 500,
         _ => false,
     }
