@@ -231,6 +231,26 @@ pub enum HqEvent {
     Confirm,
     /// Set the proposed change aside.
     Dismiss,
+    /// Open a link in an answer, in the browser. Only a web page is opened
+    /// ([`is_web_link`]): an answer is written by a model, and a link it wrote
+    /// to anything else (a file, another program's scheme) is not followed.
+    OpenLink(String),
+}
+
+/// Whether `url` is a web page this app may hand to the browser: `https://` or
+/// `http://` and then a host, with no space or control character in it. The
+/// scheme is compared without regard to case, as browsers do.
+pub fn is_web_link(url: &str) -> bool {
+    let rest = ["https://", "http://"].iter().find_map(|scheme| {
+        url.get(..scheme.len())
+            .filter(|start| start.eq_ignore_ascii_case(scheme))
+            .map(|_| &url[scheme.len()..])
+    });
+    rest.is_some_and(|rest| {
+        !rest.is_empty()
+            && !rest.starts_with(['/', '?', '#'])
+            && !url.chars().any(|c| c.is_whitespace() || c.is_control())
+    })
 }
 
 impl SignedIn {
@@ -266,6 +286,10 @@ impl SignedIn {
                 }
                 Vec::new()
             }
+            HqEvent::OpenLink(url) => is_web_link(&url)
+                .then_some(Effect::OpenUrl { url })
+                .into_iter()
+                .collect(),
         };
         Next::Stay(effects)
     }

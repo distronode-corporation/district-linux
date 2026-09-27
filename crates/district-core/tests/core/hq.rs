@@ -3,7 +3,7 @@
 
 use district_core::{
     Effect, Event, HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqScreen, HqText,
-    Model, Route, SessionState, Ticket,
+    Model, Route, SessionState, Ticket, is_web_link,
 };
 use district_model::{HqConfirmResponse, HqPendingWrite, HqPromptResponse, HqRole, HqTurn};
 use serde_json::json;
@@ -323,6 +323,52 @@ fn dismissing_forgets_the_proposal_and_sends_nothing() {
     prompt(&ask(&mut model, "Again"));
     model.update(Event::Hq(HqEvent::Dismiss));
     assert_eq!(hq(&model).phase, HqPhase::Thinking);
+}
+
+/// A link in an answer opens in the browser, through the same opener as every
+/// other page, and only when it is a web page: the answer is a model's.
+#[test]
+fn a_link_in_an_answer_opens_only_when_it_is_a_web_page() {
+    for role in ["agency", "viewer"] {
+        let mut model = on_hq(if role == "agency" { AGENCY } else { VIEWER }, role);
+        for url in [
+            "https://www.distronode.com/dashboard/district",
+            "HTTP://example.com/a?b=c#d",
+        ] {
+            assert_eq!(
+                model.update(Event::Hq(HqEvent::OpenLink(url.to_owned()))),
+                [Effect::OpenUrl {
+                    url: url.to_owned()
+                }],
+                "{role} {url}"
+            );
+        }
+        for refused in [
+            "file:///etc/passwd",
+            "districtai://auth?code=x",
+            "javascript:alert(1)",
+            "mailto:ada@example.com",
+            "https://",
+            "https:///path",
+            "https://?q",
+            "https://#top",
+            "https://example.com/a b",
+            "https://example.com/\n",
+            "https://example.com/\u{7}",
+            "ftp://example.com",
+            "http:/example.com",
+            "",
+        ] {
+            assert!(
+                model
+                    .update(Event::Hq(HqEvent::OpenLink(refused.to_owned())))
+                    .is_empty(),
+                "{refused:?}"
+            );
+        }
+    }
+    assert!(is_web_link("https://example.com"));
+    assert!(!is_web_link("https:"));
 }
 
 #[test]

@@ -157,7 +157,9 @@ pub use dialer::{
     format_phone_number,
 };
 pub use failure::FailureText;
-pub use hq::{HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqScreen, HqText};
+pub use hq::{
+    HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqScreen, HqText, is_web_link,
+};
 pub use inbox::{
     ConversationList, Conversations, InboxEvent, InboxScreen, SEARCH_DEBOUNCE, SearchState,
 };
