@@ -3,6 +3,7 @@
 sets for it.
 
     python3 scripts/check-coverage.py target/coverage.json  # check a report
+    python3 scripts/check-coverage.py --feature district-call/livekit report.json
     python3 scripts/check-coverage.py --self-test           # prove each rule works
 
 The report is the JSON that `cargo llvm-cov --json` writes, with or without
@@ -17,6 +18,19 @@ coverage-floors.toml holds one table per workspace crate:
     floor = 100
     reason = "One line saying why the floor is where it is."
 
+A crate whose optional feature builds code the default build does not (and so
+code the `rust` job never measures) has a second table for that build, keyed by
+`<crate>/<feature>`, with the same two keys:
+
+    [features."district-call/livekit"]
+    floor = 97
+    reason = "One line saying why the floor is where it is."
+
+`--feature <crate>/<feature>` checks a report made with that feature on (CI's
+voice.yml makes it) against that table, for that crate alone: the other crates
+in such a report are the ones the `rust` job already holds to their own floors.
+Without `--feature`, the features tables are only checked for being well formed.
+
 The check prints a table of every crate, then fails if any of these holds:
 
     below     A crate's line coverage is under its floor. Compared in whole
@@ -29,7 +43,9 @@ The check prints a table of every crate, then fails if any of these holds:
               above 0. An empty report must never read as 100%.
     unlisted  A workspace member (from Cargo.toml) has no entry in the floors
               file.
-    unknown   The floors file names a crate that is not a workspace member.
+    unknown   The floors file names a crate that is not a workspace member, or a
+              features table is not keyed `<member>/<feature>`, or
+              `--feature` names a table the file does not have.
     reason    An entry has no reason, or a blank one.
     floor     An entry's floor is not a whole number from 0 to 100.
     key       An entry, or the file, has a key this script does not know, which
@@ -119,16 +135,31 @@ def read_floors(data: dict) -> tuple[dict[str, Floor], list[Finding]]:
     findings: list[Finding] = []
     floors: dict[str, Floor] = {}
 
-    for key in sorted(set(data) - {"crates"}):
+    for key in sorted(set(data) - {"crates", "features"}):
         findings.append(
-            Finding("key", f"{FLOORS_FILE}: unknown top-level key {key!r}; every entry is a [crates.<name>] table")
+            Finding(
+                "key",
+                f"{FLOORS_FILE}: unknown top-level key {key!r}; every entry is a [crates.<name>] or "
+                '[features."<crate>/<feature>"] table',
+            )
         )
-    crates = data.get("crates", {})
-    if not isinstance(crates, dict):
-        findings.append(Finding("key", f"{FLOORS_FILE}: `crates` must be a table of [crates.<name>] entries"))
-        return floors, findings
+    entries: list[tuple[str, object]] = []
+    for table in ("crates", "features"):
+        section = data.get(table, {})
+        if not isinstance(section, dict):
+            findings.append(Finding("key", f"{FLOORS_FILE}: `{table}` must be a table of [{table}.<name>] entries"))
+            continue
+        for name, entry in section.items():
+            # A feature's floor is keyed <crate>/<feature>, which is what keeps
+            # it apart from its crate's own.
+            if table == "features" and "/" not in name:
+                findings.append(
+                    Finding("unknown", f'{FLOORS_FILE}: [features."{name}"] is not <workspace member>/<feature>')
+                )
+                continue
+            entries.append((name, entry))
 
-    for name, entry in crates.items():
+    for name, entry in entries:
         if not isinstance(entry, dict):
             findings.append(Finding("key", f"{name}: the entry must be a table with `floor` and `reason`"))
             floors[name] = Floor(None, "")
@@ -255,8 +286,31 @@ def check(
         rows.append(Row(name, tally if tally.files else None, floor, result))
 
     for name in sorted(set(floors) - set(members.values())):
-        findings.append(Finding("unknown", f"{FLOORS_FILE}: [crates.{name}] names no workspace member"))
+        crate, slash, feature = name.partition("/")
+        if not slash:
+            findings.append(Finding("unknown", f"{FLOORS_FILE}: [crates.{name}] names no workspace member"))
+        elif crate not in members.values() or not feature:
+            findings.append(
+                Finding("unknown", f'{FLOORS_FILE}: [features."{name}"] is not <workspace member>/<feature>')
+            )
 
+    return rows, findings, notes
+
+
+def check_feature(
+    members: dict[str, str],
+    floors: dict[str, Floor],
+    tallies: dict[str, Tally],
+    feature: str,
+) -> tuple[list[Row], list[Finding], list[str]]:
+    """The rules for one crate measured with one feature on, against its
+    [features."<crate>/<feature>"] floor. The rest of the report is not judged."""
+    crate = feature.partition("/")[0]
+    entry = floors.get(feature)
+    if "/" not in feature or entry is None or crate not in members.values():
+        return [], [Finding("unknown", f'{FLOORS_FILE}: there is no [features."{feature}"] table to check against')], []
+    rows, findings, notes = check({"feature": crate}, {crate: entry}, {crate: tallies.get(crate, Tally())})
+    rows = [Row(feature, row.tally, row.floor, row.result) for row in rows]
     return rows, findings, notes
 
 
@@ -297,8 +351,9 @@ def table(rows: list[Row]) -> str:
     return "\n".join(render(line) for line in [header, *body])
 
 
-def run(report_path: Path, root: Path) -> int:
-    """The whole check against one report, printing as it goes. 0 passes."""
+def run(report_path: Path, root: Path, feature: str | None = None) -> int:
+    """The whole check against one report, printing as it goes. 0 passes.
+    With `feature`, only that crate's build with that feature is checked."""
     members = workspace_members(root)
     floors_path = root / FLOORS_FILE
     try:
@@ -313,7 +368,13 @@ def run(report_path: Path, root: Path) -> int:
         print(f"ERROR: cannot read the report {report_path}: {error}", file=sys.stderr)
         return 1
 
-    rows, failures, notes = check(members, floors, tallies)
+    if feature is None:
+        rows, failures, notes = check(members, floors, tallies)
+    else:
+        # The rest of the file is still well formed or not, whichever build
+        # the report is of.
+        findings.extend(f for f in check(members, floors, tallies)[1] if f.rule in {"unlisted", "unknown"})
+        rows, failures, notes = check_feature(members, floors, tallies, feature)
     findings.extend(failures)
 
     print(table(rows))
@@ -330,7 +391,10 @@ def run(report_path: Path, root: Path) -> int:
             print(f"ERROR: [{finding.rule}] {finding.message}", file=sys.stderr)
         print(f"\ncoverage check FAILED: {len(findings)} problem(s)", file=sys.stderr)
         return 1
-    print(f"\nline coverage meets every floor in {FLOORS_FILE} ({len(rows)} crates)")
+    if feature is None:
+        print(f"\nline coverage meets every floor in {FLOORS_FILE} ({len(rows)} crates)")
+    else:
+        print(f'\nline coverage meets the floor of [features."{feature}"] in {FLOORS_FILE}')
     return 0
 
 
@@ -471,6 +535,62 @@ def self_test() -> int:
         ),
     ]
 
+    extra = {"floor": 90, "reason": "r"}
+    with_extra = {**good_floors, "features": {"alpha/extra": extra}}
+    cases += [
+        ("a feature's own floor beside the crates'", with_extra, report(*good_files), set()),
+        (
+            "a feature table for a crate that is not a member",
+            {**good_floors, "features": {"delta/extra": extra}},
+            report(*good_files),
+            {"unknown"},
+        ),
+        (
+            "a feature table named like a crate, which must not stand in for the crate's own",
+            {**good_floors, "features": {"alpha": {"floor": 0, "reason": "r"}}},
+            report(("/work/tree/crates/alpha/src/lib.rs", 10, 0), *good_files[2:]),
+            {"unknown", "below"},
+        ),
+        (
+            "a feature table with no feature after its crate",
+            {**good_floors, "features": {"alpha/": extra}},
+            report(*good_files),
+            {"unknown"},
+        ),
+        (
+            "a feature table with no reason",
+            {**good_floors, "features": {"alpha/extra": {"floor": 90}}},
+            report(*good_files),
+            {"reason"},
+        ),
+    ]
+    # (name, floors file contents, report, the feature checked, the rules expected to fail)
+    feature_cases: list[tuple[str, dict, object, str, set[str]]] = [
+        (
+            "a feature build at its floor, other crates in the report not judged",
+            with_extra,
+            report(("/work/tree/crates/alpha/src/lib.rs", 10, 9), ("/work/tree/crates/beta/src/lib.rs", 10, 0)),
+            "alpha/extra",
+            set(),
+        ),
+        (
+            "a feature build under its floor",
+            with_extra,
+            report(("/work/tree/crates/alpha/src/lib.rs", 10, 8)),
+            "alpha/extra",
+            {"below"},
+        ),
+        (
+            "a feature build whose crate is not in the report",
+            with_extra,
+            report(("/work/tree/crates/beta/src/lib.rs", 10, 10)),
+            "alpha/extra",
+            {"missing"},
+        ),
+        ("a feature with no table", with_extra, report(*good_files), "alpha/other", {"unknown"}),
+        ("a feature named without its crate", with_extra, report(*good_files), "extra", {"unknown"}),
+    ]
+
     failures = 0
     for name, floors_data, report_data, expected in cases:
         parsed, found = read_floors(floors_data)
@@ -480,6 +600,14 @@ def self_test() -> int:
             found.append(Finding("report", ""))
         else:
             found.extend(check(members, parsed, tallies)[1])
+        got = {f.rule for f in found}
+        ok = got == expected
+        failures += not ok
+        print(f"  {'pass' if ok else 'FAIL'}  {name}: expected {sorted(expected)}, got {sorted(got)}")
+    for name, floors_data, report_data, feature, expected in feature_cases:
+        parsed, found = read_floors(floors_data)
+        tallies, _ = measure(report_data, root, members)
+        found.extend(check_feature(members, parsed, tallies, feature)[1])
         got = {f.rule for f in found}
         ok = got == expected
         failures += not ok
@@ -532,7 +660,7 @@ def self_test() -> int:
             failures += not ok
             print(f"  {'pass' if ok else 'FAIL'}  {name}: expected {expected_status}, got {status}")
 
-    total = len(cases) + len(checks)
+    total = len(cases) + len(feature_cases) + len(checks)
     if failures:
         print(f"\nself-test FAILED: {failures} of {total} case(s) did not answer as expected", file=sys.stderr)
         return 1
@@ -543,6 +671,8 @@ def self_test() -> int:
 def main(argv: list[str]) -> int:
     if argv[1:] == ["--self-test"]:
         return self_test()
+    if len(argv) == 4 and argv[1] == "--feature" and not argv[3].startswith("-"):
+        return run(Path(argv[3]), ROOT, argv[2])
     if len(argv) != 2 or argv[1].startswith("-"):
         print(__doc__, file=sys.stderr)
         return 2
