@@ -1,0 +1,268 @@
+name: Deb
+
+# Builds District AI for Linux as a .deb, with calls, on Ubuntu 24.04, checks
+# what the package declares and holds, and installs it in clean Ubuntu 24.04,
+# Debian 13 and Ubuntu 26.04 containers to run it there. The package is kept for
+# a week as this run's artifact. release.yml calls it to build the release's
+# .deb.
+#
+# Run by hand, from release.yml, and on pull requests that change what the .deb
+# is built from. Minutes are metered while the repository is private, and a
+# build with calls is long, so it never runs on a push to main.
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    paths:
+      - "packaging/**"
+      - "crates/district-app/Cargo.toml"
+      - "crates/district-app/data/com.distronode.DistrictAI.*"
+      - "scripts/build-deb.sh"
+      - "scripts/fetch-libwebrtc.sh"
+      - ".github/workflows/deb.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deb-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    # The distribution floor. glibc runs binaries linked against an older glibc
+    # and refuses newer ones, and dpkg-shlibdeps writes this machine's library
+    # versions into Depends, so the package installs on 24.04 and anything newer
+    # only because it is built here. Moving the runner is a user-visible change.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the version
+        id: version
+        run: |
+          version="$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "building $version"
+
+      - name: Install the stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustc --version
+
+      # As voice.yml installs them: clang 21 from the LLVM project's apt
+      # repository, signed with the key whose fingerprint is pinned here, and
+      # the headers webrtc-sys compiles against. dpkg-dev is dpkg-shlibdeps,
+      # which works out the shared-library half of Depends.
+      - name: Install clang 21 and the system libraries
+        env:
+          LLVM_KEY_FINGERPRINT: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/llvm.key" https://apt.llvm.org/llvm-snapshot.gpg.key
+          have="$(gpg --show-keys --with-colons "$RUNNER_TEMP/llvm.key" | awk -F: '/^fpr/ { print $10; exit }')"
+          if [ "$have" != "$LLVM_KEY_FINGERPRINT" ]; then
+            echo "::error::apt.llvm.org's key is $have, not the pinned $LLVM_KEY_FINGERPRINT"
+            exit 1
+          fi
+          gpg --dearmor < "$RUNNER_TEMP/llvm.key" | sudo tee /usr/share/keyrings/llvm.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" \
+            | sudo tee /etc/apt/sources.list.d/llvm-21.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang-21 dpkg-dev \
+            pkg-config libgtk-4-dev libadwaita-1-dev \
+            libglib2.0-dev libx11-dev libxext-dev libxfixes-dev libxdamage-dev libxrandr-dev \
+            libxcomposite-dev libgl1-mesa-dev libdrm-dev libgbm-dev libva-dev libpulse-dev
+          echo "CXX=clang++-21" >> "$GITHUB_ENV"
+          clang++-21 --version
+
+      # The upstream release, checked against a pinned SHA-256, as the other
+      # tools are installed.
+      - name: Install cargo-deb
+        env:
+          CARGO_DEB_VERSION: 3.8.0
+          CARGO_DEB_SHA256: c6bd0a4affaa232814cc615b2597457f1d44fdfe1c8ebd643f3a491a1f244040
+        run: |
+          set -euo pipefail
+          deb="$RUNNER_TEMP/cargo-deb.deb"
+          curl -fsSL -o "$deb" \
+            "https://github.com/kornelski/cargo-deb/releases/download/v${CARGO_DEB_VERSION}/cargo-deb_${CARGO_DEB_VERSION}-1_amd64.deb"
+          echo "${CARGO_DEB_SHA256}  $deb" | sha256sum -c -
+          sudo dpkg -i "$deb"
+          cargo deb --version
+
+      # No cache, here or anywhere in this workflow: release.yml builds the
+      # release's .deb with it, and a restored target/ or registry is build input
+      # nobody reviewed. The archive is checked against its pinned SHA-256.
+      - name: Fetch and verify libwebrtc
+        run: |
+          set -euo pipefail
+          dir="$(scripts/fetch-libwebrtc.sh "$RUNNER_TEMP/libwebrtc")"
+          echo "LK_CUSTOM_WEBRTC=$dir" >> "$GITHUB_ENV"
+
+      # Fails if the manifests and Cargo.lock disagree, before anything is
+      # built; the build itself is `--locked` too.
+      - name: Cargo.lock is up to date
+        run: cargo fetch --locked
+
+      - name: Build the .deb
+        run: scripts/build-deb.sh
+
+      - name: Stage the .deb
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p staging
+          want="district-ai_${VERSION}-1_amd64.deb"
+          found="$(find target/debian -maxdepth 1 -name '*.deb' -printf '%f\n')"
+          if [ "$found" != "$want" ]; then
+            echo "::error::expected target/debian/$want and nothing else, found: $found"
+            exit 1
+          fi
+          cp "target/debian/$want" staging/
+          ls -l staging
+
+      # ⛔ EXACTLY, NOT "CONTAINS". Depends is dpkg-shlibdeps's reading of what
+      # the binary links on this runner (the entries with versions) and what it
+      # loads while running, which dpkg-shlibdeps cannot see
+      # ([package.metadata.deb] in crates/district-app/Cargo.toml says why each
+      # of those is there), sorted by cargo-deb. A change to either is a change
+      # to what a user's machine must have, so it fails here until this list is
+      # changed with it.
+      - name: The package declares exactly what it needs
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          WANT_DEPENDS: >-
+            gstreamer1.0-plugins-base, gstreamer1.0-plugins-good,
+            libadwaita-1-0 (>= 1.5~beta), libc6 (>= 2.39), libcairo2 (>= 1.2.4),
+            libglib2.0-0t64 (>= 2.58.0), libgtk-4-1 (>= 4.12.0),
+            libgtk-4-media-gstreamer, libpango-1.0-0 (>= 1.14.0), libpulse0
+          WANT_RECOMMENDS: >-
+            gnome-keyring | kwallet6 | keepassxc, xdg-desktop-portal,
+            pipewire-pulse | pulseaudio
+        run: |
+          set -euo pipefail
+          deb="staging/district-ai_${VERSION}-1_amd64.deb"
+          dpkg-deb --info "$deb"
+          fail=0
+          check() {
+            local field="$1" want="$2" got
+            got="$(dpkg-deb --field "$deb" "$field")"
+            if [ "$got" != "$want" ]; then
+              echo "::error::$field is '$got', not '$want'"
+              fail=1
+            fi
+          }
+          check Package district-ai
+          check Version "${VERSION}-1"
+          check Architecture amd64
+          check Depends "$WANT_DEPENDS"
+          check Recommends "$WANT_RECOMMENDS"
+          exit "$fail"
+
+      - name: The package holds what the desktop needs
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          deb="staging/district-ai_${VERSION}-1_amd64.deb"
+          dpkg-deb --contents "$deb"
+          fail=0
+          for path in \
+            ./usr/bin/district-ai \
+            ./usr/share/applications/com.distronode.DistrictAI.desktop \
+            ./usr/share/metainfo/com.distronode.DistrictAI.metainfo.xml \
+            ./usr/share/icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg \
+            ./usr/share/icons/hicolor/symbolic/apps/com.distronode.DistrictAI-symbolic.svg \
+            ./usr/share/dbus-1/services/com.distronode.DistrictAI.service \
+            ./usr/share/doc/district-ai/copyright \
+            ./usr/share/doc/district-ai/NOTICE \
+            ./usr/share/doc/district-ai/libwebrtc-LICENSE.md; do
+            if ! dpkg-deb --contents "$deb" | awk '{ print $6 }' | grep -qxF "$path"; then
+              echo "::error::the package has no $path"
+              fail=1
+            fi
+          done
+          dpkg-deb --extract "$deb" "$RUNNER_TEMP/deb"
+          exec_line="$(grep '^Exec=' "$RUNNER_TEMP/deb/usr/share/dbus-1/services/com.distronode.DistrictAI.service")"
+          if [ "$exec_line" != "Exec=/usr/bin/district-ai --gapplication-service" ]; then
+            echo "::error::the D-Bus service says '$exec_line'"
+            fail=1
+          fi
+          exit "$fail"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: district-ai-deb
+          path: staging/
+          if-no-files-found: error
+          retention-days: 7
+          # Already compressed.
+          compression-level: 0
+
+  # The package on the oldest distributions it is for, and on the newest Ubuntu,
+  # where GTK's media backend is part of libgtk-4-1 and only provided by name.
+  # Each container starts clean; apt resolves Depends from that distribution's
+  # own archive, and the app runs there.
+  install:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["ubuntu:24.04", "debian:13", "ubuntu:26.04"]
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: district-ai-deb
+          path: deb
+
+      # With --no-install-recommends, so that Depends alone is what makes the
+      # app start: --version exits before GTK, the keyring or the network, `ldd`
+      # checks every library the binary links resolves, and the library the
+      # audio module opens while running must be there too. apt skips a
+      # Recommends it cannot satisfy without a word, so each one is looked up
+      # first: at least one of its alternatives must exist on that distribution.
+      - name: Install and run on ${{ matrix.image }}
+        env:
+          IMAGE: ${{ matrix.image }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD/deb:/deb:ro" -e VERSION "$IMAGE" bash -euo pipefail -c '
+            deb="/deb/district-ai_${VERSION}-1_amd64.deb"
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq
+            dpkg-deb --field "$deb" Recommends | tr "," "\n" | while read -r group; do
+              found=""
+              for alternative in $(echo "$group" | tr "|" " "); do
+                if apt-cache show --no-all-versions "$alternative" > /dev/null 2>&1; then
+                  found="$alternative"
+                  break
+                fi
+              done
+              [ -n "$found" ] || { echo "::error::nothing here satisfies Recommends: $group"; exit 1; }
+              echo "Recommends $group: $found"
+            done
+            apt-get install -y -qq --no-install-recommends "$deb" > /dev/null
+            got="$(district-ai --version)"
+            want="district-ai ${VERSION} (with calls)"
+            echo "$got"
+            [ "$got" = "$want" ] || { echo "::error::--version said \"$got\", not \"$want\""; exit 1; }
+            if ldd /usr/bin/district-ai | grep "not found"; then
+              echo "::error::the binary links a library the package does not bring"
+              exit 1
+            fi
+            ldconfig -p | grep -F "libpulse.so.0 " || { echo "::error::no libpulse.so.0"; exit 1; }
+          '

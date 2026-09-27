@@ -65,3 +65,51 @@ tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync
 
 [lints]
 workspace = true
+
+# The .deb, built by cargo-deb through scripts/build-deb.sh (see "Packaging" in
+# CONTRIBUTING.md), always with calls. Built on Ubuntu 24.04, whose glibc, GTK
+# 4.14 and libadwaita 1.5 are the floor: it installs on Ubuntu 24.04, Debian 13
+# and newer. The Depends and Recommends below are asserted, exactly as they
+# come out, by .github/workflows/deb.yml, so a change here changes that too.
+[package.metadata.deb]
+name = "district-ai"
+maintainer = "Distronode Corporation <opensource@distronode.com>"
+copyright = "2026 Distronode Corporation"
+license-file = ["../../LICENSE", "0"]
+extended-description = """\
+A native GTK 4 and libadwaita desktop client for District AI, the AI voice \
+receptionist from Distronode: the calls and their transcripts, the inbox, \
+contacts, the workspace settings, and calls on the desktop. You need a \
+District AI account to use it."""
+section = "comm"
+priority = "optional"
+features = ["voice"]
+# `$auto` is what the binary links (dpkg-shlibdeps). The rest is what it loads
+# while running, which dpkg-shlibdeps cannot see:
+# - libpulse0: libwebrtc's audio module opens libpulse.so.0 for the microphone
+#   and the speakers.
+# - libgtk-4-media-gstreamer: GTK's media backend, which plays the ringtone.
+#   Ubuntu 26.04 folds it into libgtk-4-1, which provides the name.
+# - gstreamer1.0-plugins-base: without its `playbin`, GTK aborts the whole app
+#   the first time a call rings.
+# - gstreamer1.0-plugins-good: the WAV decoder and the audio sinks; without it
+#   the ringtone is silent.
+depends = "$auto, libpulse0, libgtk-4-media-gstreamer, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good"
+# Any Secret Service keeps the sign-in (without one the app keeps it until it
+# quits, and says so); the portals are how GTK opens links and files and shows
+# notifications; a PulseAudio server (PipeWire's, on most desktops) carries a
+# call's audio.
+recommends = "gnome-keyring | kwallet6 | keepassxc, xdg-desktop-portal, pipewire-pulse | pulseaudio"
+assets = [
+  ["target/release/district-ai", "usr/bin/", "755"],
+  ["data/com.distronode.DistrictAI.desktop", "usr/share/applications/", "644"],
+  ["data/com.distronode.DistrictAI.metainfo.xml", "usr/share/metainfo/", "644"],
+  ["data/icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
+  ["data/icons/hicolor/symbolic/apps/com.distronode.DistrictAI-symbolic.svg", "usr/share/icons/hicolor/symbolic/apps/", "644"],
+  # Written by scripts/build-deb.sh: the D-Bus service from its template, with
+  # /usr/bin for @bindir@, and the licence texts of libwebrtc, which NOTICE says
+  # must travel with a build that links it.
+  ["target/release/com.distronode.DistrictAI.service", "usr/share/dbus-1/services/", "644"],
+  ["target/release/libwebrtc-LICENSE.md", "usr/share/doc/district-ai/", "644"],
+  ["../../NOTICE", "usr/share/doc/district-ai/", "644"],
+]
