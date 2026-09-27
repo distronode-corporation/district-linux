@@ -7,8 +7,10 @@ use std::pin::Pin;
 
 use district_api::{ApiClient, ApiError, Endpoint};
 use district_model::{
-    BlockTarget, CHANNEL_SMS, CreateContactRequest, DraftSaveRequest, SendMessageRequest,
-    ThreadRef, UpdateContactRequest,
+    AnalyticsRange, BlockTarget, CHANNEL_SMS, CreateContactRequest, DeskBrandName,
+    DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus, DraftSaveRequest, HqPendingWrite, HqRole,
+    HqTurn, MeetRoomName, NumberSearch, SendMessageRequest, SupportRequestDraft,
+    SupportRequestKind, ThreadRef, UpdateContactRequest,
 };
 use serde_json::{Value, json};
 
@@ -47,8 +49,11 @@ pub enum Sent {
     Nothing,
     /// This JSON object, exactly.
     Json(Value),
-    /// A multipart form with the workspace as a field and this file.
+    /// A multipart form with this file, and the workspace as a field when
+    /// `workspace_field` says so (the help desk's logo names it in the query).
     Form {
+        /// Whether the form carries the workspace as a `workspaceId` field.
+        workspace_field: bool,
         /// The file part's name.
         file_name: &'static str,
         /// The file part's type.
@@ -84,13 +89,26 @@ pub struct Case {
 
 /// A recorded response from `contracts/fixtures/`.
 pub fn fixture(name: &str) -> Value {
+    fixture_in("fixtures", name)
+}
+
+/// A recorded response from `contracts/desktop/`.
+pub fn desktop_fixture(name: &str) -> Value {
+    fixture_in("desktop", name)
+}
+
+fn fixture_in(set: &str, name: &str) -> Value {
     let file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../contracts/fixtures")
+        .join("../../contracts")
+        .join(set)
         .join(name);
     let text = fs::read_to_string(&file)
         .unwrap_or_else(|error| panic!("cannot read {}: {error}", file.display()));
     serde_json::from_str(&text).expect("a fixture is JSON")
 }
+
+/// An idempotency key, as a submit mints one.
+pub const KEY: &str = "3f1c9a52-7d0e-4b8a-9c61-2e5f08b7d4a1";
 
 pub const PNG: &[u8] = b"\x89PNG\r\n\x1a\nroof";
 
@@ -139,7 +157,67 @@ fn contact_change() -> UpdateContactRequest {
     }
 }
 
-/// Every typed method for the inbox, the call log and contacts.
+fn history() -> Vec<HqTurn> {
+    vec![
+        HqTurn {
+            role: HqRole::User,
+            text: "How many calls did we miss?".to_owned(),
+        },
+        HqTurn {
+            role: HqRole::Model,
+            text: "Three this week.".to_owned(),
+        },
+    ]
+}
+
+/// The change HQ proposed in its recorded answer.
+fn proposal() -> HqPendingWrite {
+    let answer = fixture("district-hq-pending-write.json");
+    serde_json::from_value(answer["pendingWrite"].clone()).expect("a proposal")
+}
+
+fn toronto_numbers() -> NumberSearch {
+    NumberSearch {
+        area_code: Some("416".to_owned()),
+        country: Some("CA".to_owned()),
+        ..NumberSearch::default()
+    }
+}
+
+fn desk_patch() -> DeskSettingsPatch {
+    DeskSettingsPatch {
+        enabled: Some(false),
+        notify_customers_by_email: None,
+        public_brand_name: Some(DeskBrandName::Clear),
+    }
+}
+
+fn desk_draft() -> DeskTicketDraft {
+    DeskTicketDraft {
+        subject: "Reschedule Thursday's appointment".to_owned(),
+        message: "I need to move Thursday's appointment to next week.".to_owned(),
+        requester_name: Some("Contract Test Caller".to_owned()),
+        requester_email: Some("caller@example.com".to_owned()),
+        requester_phone: Some("+14165550142".to_owned()),
+        contact_id: Some("5b0e3c9e-1f2a-4d7b-8c3e-6a9d2f4b1c07".to_owned()),
+    }
+}
+
+fn support_draft() -> SupportRequestDraft {
+    SupportRequestDraft {
+        kind: SupportRequestKind::Problem,
+        subject: "Outbound calls failing on the Toronto number".to_owned(),
+        message: "Every outbound call from the +1 416 number fails immediately.".to_owned(),
+    }
+}
+
+fn weekly_review() -> MeetRoomName {
+    MeetRoomName::new(WS, "Weekly Review").expect("a room name")
+}
+
+/// Every typed method for the inbox, the call log, contacts, HQ, analytics,
+/// numbers, billing, automations, booking pages, the help desk, support
+/// requests and meeting rooms.
 pub fn cases() -> Vec<Case> {
     vec![
         // The inbox.
@@ -254,6 +332,7 @@ pub fn cases() -> Vec<Case> {
             path: "/api/district/messages/media",
             query: vec![],
             body: Sent::Form {
+                workspace_field: true,
                 file_name: "roof.png",
                 mime_type: "image/png",
                 bytes: PNG,
@@ -494,6 +573,457 @@ pub fn cases() -> Vec<Case> {
                 "contactId": "contact_contract_1",
                 "blocked": true,
             })),
+        },
+        // District HQ.
+        Case {
+            name: "hq_prompt",
+            endpoint: Endpoint::Hq,
+            retried: false,
+            answer: fixture("district-hq-answer.json"),
+            call: call!(c => c.hq_prompt(WS, "How many calls this week?", &history())),
+            method: "POST",
+            path: "/api/district/hq",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "prompt": "How many calls this week?",
+                "history": [
+                    {"role": "user", "text": "How many calls did we miss?"},
+                    {"role": "model", "text": "Three this week."},
+                ],
+            })),
+        },
+        Case {
+            name: "hq_confirm",
+            endpoint: Endpoint::Hq,
+            retried: false,
+            answer: fixture("district-hq-confirm.json"),
+            call: call!(c => c.hq_confirm(WS, &proposal())),
+            method: "POST",
+            path: "/api/district/hq",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "confirm": {
+                    "tool": "update_persona",
+                    "args": {
+                        "greeting": "Good afternoon, thanks for calling Analytical Engines.",
+                    },
+                },
+            })),
+        },
+        // Analytics and usage.
+        Case {
+            name: "analytics",
+            endpoint: Endpoint::Analytics,
+            retried: true,
+            answer: fixture("district-analytics.json"),
+            call: call!(c => c.analytics(WS, AnalyticsRange::ThirtyDays)),
+            method: "GET",
+            path: "/api/district/analytics",
+            query: vec![("workspaceId", WS), ("timeRange", "30d")],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "usage",
+            endpoint: Endpoint::Usage,
+            retried: true,
+            answer: fixture("district-usage.json"),
+            call: call!(c => c.usage(WS)),
+            method: "GET",
+            path: "/api/district/workspace/usage",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "usage_history",
+            endpoint: Endpoint::Usage,
+            retried: true,
+            answer: fixture("district-usage-history.json"),
+            call: call!(c => c.usage_history(WS, 3)),
+            method: "GET",
+            path: "/api/district/workspace/usage",
+            query: vec![("workspaceId", WS), ("history", "true"), ("months", "3")],
+            body: Sent::Nothing,
+        },
+        // Phone numbers.
+        Case {
+            name: "number_search",
+            endpoint: Endpoint::NumberSearch,
+            retried: true,
+            answer: fixture("district-numbers-search.json"),
+            call: call!(c => c.number_search(WS, &toronto_numbers())),
+            method: "GET",
+            path: "/api/district/workspace/numbers/search",
+            query: vec![("workspaceId", WS), ("areaCode", "416"), ("country", "CA")],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "owned_numbers",
+            endpoint: Endpoint::OwnedNumbers,
+            retried: true,
+            answer: fixture("district-provider-numbers-partial.json"),
+            call: call!(c => c.owned_numbers(WS)),
+            method: "GET",
+            path: "/api/district/workspace/provider/numbers",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        // Billing.
+        Case {
+            name: "workspace_billing",
+            endpoint: Endpoint::WorkspaceBilling,
+            retried: true,
+            answer: fixture("district-workspace-billing.json"),
+            call: call!(c => c.workspace_billing(WS)),
+            method: "GET",
+            path: "/api/district/workspace/billing",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "account_billing",
+            endpoint: Endpoint::StripeBilling,
+            retried: true,
+            answer: fixture("district-billing.json"),
+            call: call!(c => c.account_billing()),
+            method: "GET",
+            path: "/api/billing",
+            query: vec![],
+            body: Sent::Nothing,
+        },
+        // Automations.
+        Case {
+            name: "workflows",
+            endpoint: Endpoint::Workflows,
+            retried: true,
+            answer: fixture("district-workflows.json"),
+            call: call!(c => c.workflows(WS)),
+            method: "GET",
+            path: "/api/district/workflows",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "workflow_runs",
+            endpoint: Endpoint::WorkflowRuns,
+            retried: true,
+            answer: fixture("district-workflow-runs.json"),
+            call: call!(c => c.workflow_runs(WS, "wf_contract_active", 4, 0)),
+            method: "GET",
+            path: "/api/district/workflows/runs",
+            query: vec![
+                ("workspaceId", WS),
+                ("workflowId", "wf_contract_active"),
+                ("limit", "4"),
+                ("offset", "0"),
+            ],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "set_workflow_active",
+            endpoint: Endpoint::WorkflowSetActive,
+            retried: false,
+            answer: fixture("district-workflow-toggle.json"),
+            call: call!(c => c.set_workflow_active(WS, "wf_contract_paused", true)),
+            method: "PATCH",
+            path: "/api/district/workflows",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "workflowId": "wf_contract_paused",
+                "active": true,
+            })),
+        },
+        Case {
+            name: "campaign_status",
+            endpoint: Endpoint::CampaignStatus,
+            retried: true,
+            answer: fixture("district-campaign-status.json"),
+            call: call!(c => c.campaign_status(WS)),
+            method: "GET",
+            path: "/api/district/workspace/campaign-status",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "set_campaign_enabled",
+            endpoint: Endpoint::CampaignSetEnabled,
+            retried: false,
+            answer: fixture("district-campaign-pause.json"),
+            call: call!(c => c.set_campaign_enabled(WS, false)),
+            method: "PATCH",
+            path: "/api/district/workspace/campaign-status",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS, "infiniteSdrEnabled": false})),
+        },
+        // Booking pages.
+        Case {
+            name: "scheduling_status",
+            endpoint: Endpoint::SchedulingStatus,
+            retried: true,
+            answer: fixture("district-scheduling-status-ready.json"),
+            call: call!(c => c.scheduling_status(WS)),
+            method: "GET",
+            path: "/api/district/scheduling/status",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "enable_scheduling",
+            endpoint: Endpoint::SchedulingEnable,
+            retried: false,
+            answer: fixture("district-scheduling-enable.json"),
+            call: call!(c => c.enable_scheduling(WS)),
+            method: "POST",
+            path: "/api/district/scheduling/enable",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS})),
+        },
+        Case {
+            name: "scheduling_hand_off",
+            endpoint: Endpoint::SchedulingHandOff,
+            retried: false,
+            answer: desktop_fixture("district-scheduling-handoff.json"),
+            call: call!(c => c.scheduling_hand_off(WS, Some("/dashboard/district/scheduling"))),
+            method: "POST",
+            path: "/api/district/scheduling/handoff",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "next": "/dashboard/district/scheduling",
+            })),
+        },
+        // The help desk: the workspace in the query on every route.
+        Case {
+            name: "desk_settings",
+            endpoint: Endpoint::DeskSettings,
+            retried: true,
+            answer: fixture("district-desk-settings.json"),
+            call: call!(c => c.desk_settings(WS)),
+            method: "GET",
+            path: "/api/district/desk/settings",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "save_desk_settings",
+            endpoint: Endpoint::DeskSettingsSave,
+            retried: false,
+            answer: fixture("district-desk-settings-patch.json"),
+            call: call!(c => c.save_desk_settings(WS, &desk_patch())),
+            method: "PATCH",
+            path: "/api/district/desk/settings",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Json(json!({"enabled": false, "publicBrandName": null})),
+        },
+        Case {
+            name: "upload_desk_logo",
+            endpoint: Endpoint::DeskLogoUpload,
+            retried: false,
+            answer: fixture("district-desk-logo.json"),
+            call: call!(c => c.upload_desk_logo(WS, "logo.png", "image/png", PNG.to_vec())),
+            method: "POST",
+            path: "/api/district/desk/logo",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Form {
+                workspace_field: false,
+                file_name: "logo.png",
+                mime_type: "image/png",
+                bytes: PNG,
+            },
+        },
+        Case {
+            name: "delete_desk_logo",
+            endpoint: Endpoint::DeskLogoDelete,
+            retried: false,
+            answer: fixture("district-desk-logo-delete.json"),
+            call: call!(c => c.delete_desk_logo(WS)),
+            method: "DELETE",
+            path: "/api/district/desk/logo",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "desk_tickets",
+            endpoint: Endpoint::DeskTickets,
+            retried: true,
+            answer: fixture("district-desk-tickets.json"),
+            call: call!(c => c.desk_tickets(WS, None)),
+            method: "GET",
+            path: "/api/district/desk/tickets",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "create_desk_ticket",
+            endpoint: Endpoint::DeskTicketCreate,
+            retried: false,
+            answer: fixture("district-desk-ticket-create.json"),
+            call: call!(c => c.create_desk_ticket(WS, &desk_draft(), Some(KEY))),
+            method: "POST",
+            path: "/api/district/desk/tickets",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Json(json!({
+                "subject": "Reschedule Thursday's appointment",
+                "message": "I need to move Thursday's appointment to next week.",
+                "requesterName": "Contract Test Caller",
+                "requesterEmail": "caller@example.com",
+                "requesterPhone": "+14165550142",
+                "contactId": "5b0e3c9e-1f2a-4d7b-8c3e-6a9d2f4b1c07",
+                "idempotencyKey": KEY,
+            })),
+        },
+        Case {
+            name: "desk_ticket",
+            endpoint: Endpoint::DeskTicket,
+            retried: true,
+            answer: fixture("district-desk-ticket.json"),
+            call: call!(c => c.desk_ticket(WS, "desk_ticket_open")),
+            method: "GET",
+            path: "/api/district/desk/tickets/desk_ticket_open",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "reply_to_desk_ticket",
+            endpoint: Endpoint::DeskTicketReply,
+            retried: false,
+            answer: fixture("district-desk-ticket-reply.json"),
+            call: call!(c => c.reply_to_desk_ticket(
+                WS,
+                "desk_ticket_open",
+                "Moved to Tuesday at 10am. Anything else?",
+                Some(KEY),
+            )),
+            method: "POST",
+            path: "/api/district/desk/tickets/desk_ticket_open/reply",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Json(json!({
+                "message": "Moved to Tuesday at 10am. Anything else?",
+                "idempotencyKey": KEY,
+            })),
+        },
+        Case {
+            name: "set_desk_ticket_status",
+            endpoint: Endpoint::DeskTicketStatus,
+            retried: false,
+            answer: fixture("district-desk-ticket-status.json"),
+            call: call!(c => c.set_desk_ticket_status(
+                WS,
+                "desk_ticket_open",
+                DeskTicketStatus::Resolved,
+            )),
+            method: "POST",
+            path: "/api/district/desk/tickets/desk_ticket_open/status",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Json(json!({"status": "resolved"})),
+        },
+        // Support requests: the workspace in the query on every route.
+        Case {
+            name: "support_requests",
+            endpoint: Endpoint::SupportRequests,
+            retried: true,
+            answer: fixture("district-support-requests.json"),
+            call: call!(c => c.support_requests(WS)),
+            method: "GET",
+            path: "/api/district/support/requests",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "create_support_request",
+            endpoint: Endpoint::SupportRequestCreate,
+            retried: false,
+            answer: fixture("district-support-request-create.json"),
+            call: call!(c => c.create_support_request(WS, &support_draft(), Some(KEY))),
+            method: "POST",
+            path: "/api/district/support/requests",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Json(json!({
+                "kind": "problem",
+                "subject": "Outbound calls failing on the Toronto number",
+                "message": "Every outbound call from the +1 416 number fails immediately.",
+                "idempotencyKey": KEY,
+            })),
+        },
+        Case {
+            name: "support_request",
+            endpoint: Endpoint::SupportRequest,
+            retried: true,
+            answer: fixture("district-support-request.json"),
+            call: call!(c => c.support_request(WS, "DA-42")),
+            method: "GET",
+            path: "/api/district/support/requests/DA-42",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "reply_to_support_request",
+            endpoint: Endpoint::SupportRequestReply,
+            retried: false,
+            answer: fixture("district-support-reply.json"),
+            call: call!(c => c.reply_to_support_request(
+                WS,
+                "DA-42",
+                "Still failing as of this morning.",
+            )),
+            method: "POST",
+            path: "/api/district/support/requests/DA-42/reply",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Json(json!({"body": "Still failing as of this morning."})),
+        },
+        Case {
+            name: "close_support_request",
+            endpoint: Endpoint::SupportRequestClose,
+            retried: false,
+            answer: fixture("district-support-close.json"),
+            call: call!(c => c.close_support_request(WS, "DA-42")),
+            method: "POST",
+            path: "/api/district/support/requests/DA-42/close",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        // Meeting rooms.
+        Case {
+            name: "room_token",
+            endpoint: Endpoint::CallRoomToken,
+            // It signs a short-lived credential and stores nothing, so it is
+            // repeated after a refused token like a read.
+            retried: true,
+            answer: fixture("district-room-token.json"),
+            call: call!(c => c.room_token(&weekly_review())),
+            method: "POST",
+            path: "/api/district/calls/token",
+            query: vec![],
+            // Android sends `identity: "android"`; the route requires the key
+            // and ignores its value, and this client names its own platform.
+            body: Sent::Json(json!({
+                "roomName": "meet_ws-contract-test_weekly-review",
+                "identity": "linux",
+            })),
+        },
+        Case {
+            name: "meetings",
+            endpoint: Endpoint::Meetings,
+            retried: true,
+            answer: fixture("district-meetings.json"),
+            call: call!(c => c.meetings(WS)),
+            method: "GET",
+            path: "/api/district/meetings",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "meeting_detail",
+            endpoint: Endpoint::MeetingDetail,
+            retried: true,
+            answer: fixture("district-meeting-detail.json"),
+            call: call!(c => c.meeting_detail(WS, "meeting_contract_completed")),
+            method: "GET",
+            path: "/api/district/meetings/meeting_contract_completed",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
         },
     ]
 }

@@ -1,12 +1,42 @@
 //! The checks every typed method must pass.
 
-use district_api::{ApiError, RetryPolicy, UnauthorizedReason, WorkspaceIn};
+use std::collections::BTreeSet;
+
+use district_api::{ApiError, Endpoint, RetryPolicy, UnauthorizedReason, WorkspaceIn};
 use serde_json::{Value, json};
 use wiremock::matchers::{any, header};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::cases::{Case, Sent, WS, cases};
 use crate::common::client;
+
+/// The methods whose answer has no `success` flag to check: the two bare arrays,
+/// and the answers the service sends without an envelope. For these, required
+/// fields are what refuse an empty body.
+const NO_SUCCESS_FLAG: &[&str] = &[
+    "calls",
+    "meetings",
+    "meeting_detail",
+    "account_billing",
+    "scheduling_status",
+    "enable_scheduling",
+    "scheduling_hand_off",
+];
+
+/// Whether two JSON values are the same, numbers compared by value: a total the
+/// service sends as `412` comes back from an `f64` field as `412.0`.
+fn same(a: &Value, b: &Value) -> bool {
+    match (a, b) {
+        (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
+        (Value::Array(x), Value::Array(y)) => {
+            x.len() == y.len() && x.iter().zip(y).all(|(x, y)| same(x, y))
+        }
+        (Value::Object(x), Value::Object(y)) => {
+            x.len() == y.len() && x.iter().all(|(k, v)| y.get(k).is_some_and(|w| same(v, w)))
+        }
+        _ => a == b,
+    }
+}
 
 /// A server that answers every request with `body`, and a 401 to the token
 /// `refused` when one is named.
@@ -44,7 +74,10 @@ fn workspace_place(case: &Case) -> Option<WorkspaceIn> {
     }
     match &case.body {
         Sent::Json(body) if body["workspaceId"] == WS => Some(WorkspaceIn::Body),
-        Sent::Form { .. } => Some(WorkspaceIn::Form),
+        Sent::Form {
+            workspace_field: true,
+            ..
+        } => Some(WorkspaceIn::Form),
         _ => None,
     }
 }
@@ -80,6 +113,7 @@ fn assert_sent_as_android_sends(case: &Case, request: &wiremock::Request) {
             assert_eq!(&sent, body, "{name}: body");
         }
         Sent::Form {
+            workspace_field,
             file_name,
             mime_type,
             bytes,
@@ -92,7 +126,16 @@ fn assert_sent_as_android_sends(case: &Case, request: &wiremock::Request) {
             let body = &request.body;
             let contains = |needle: &[u8]| body.windows(needle.len()).any(|w| w == needle);
             let field = format!("name=\"workspaceId\"\r\n\r\n{WS}\r\n");
-            assert!(contains(field.as_bytes()), "{name}: the workspace field");
+            assert_eq!(
+                contains(field.as_bytes()),
+                *workspace_field,
+                "{name}: the workspace field"
+            );
+            assert_eq!(
+                contains(b"name=\"workspaceId\""),
+                *workspace_field,
+                "{name}: a workspace field in the form"
+            );
             let mut part = format!(
                 "name=\"file\"; filename=\"{file_name}\"\r\nContent-Type: {mime_type}\r\n\r\n"
             )
@@ -112,7 +155,9 @@ fn assert_sent_as_android_sends(case: &Case, request: &wiremock::Request) {
 #[tokio::test]
 async fn every_method_sends_what_android_sends_and_decodes_the_answer() {
     let cases = cases();
-    assert_eq!(cases.len(), 25, "a method without a row is not tested");
+    assert_eq!(cases.len(), 59, "a method without a row is not tested");
+    let names: BTreeSet<&str> = cases.iter().map(|case| case.name).collect();
+    assert_eq!(names.len(), cases.len(), "two rows share a name");
     for case in &cases {
         let server = serving(&case.answer, None).await;
         let client = client(&server);
@@ -121,7 +166,12 @@ async fn every_method_sends_what_android_sends_and_decodes_the_answer() {
             .await
             .unwrap_or_else(|error| panic!("{}: {error:?}", case.name));
 
-        assert_eq!(answer, case.answer, "{}: decoded without loss", case.name);
+        assert!(
+            same(&answer, &case.answer),
+            "{}: decoded without loss\n{answer}\n{}",
+            case.name,
+            case.answer
+        );
         let sent = requests(&server).await;
         assert_eq!(sent.len(), 1, "{}: exactly one request", case.name);
         assert_sent_as_android_sends(case, &sent[0]);
@@ -139,8 +189,10 @@ async fn a_refused_token_is_retried_by_the_reads_and_never_by_a_write() {
             case.endpoint.spec().retry == RetryPolicy::OnceAfterRefresh,
             "{name}: the endpoint table's retry policy changed"
         );
+        // The room token is a POST that stores and spends nothing: it signs a
+        // short-lived credential, which is why the table lets it repeat.
         assert!(
-            case.method == "GET" || !case.retried,
+            case.method == "GET" || !case.retried || case.endpoint == Endpoint::CallRoomToken,
             "{name}: a write is retried"
         );
         let server = serving(&case.answer, Some("t1")).await;
@@ -154,7 +206,12 @@ async fn a_refused_token_is_retried_by_the_reads_and_never_by_a_write() {
             .map(|r| text(r, "authorization").unwrap_or_default().to_owned())
             .collect();
         if case.retried {
-            assert_eq!(outcome.as_ref().ok(), Some(&case.answer), "{name}");
+            assert!(
+                outcome
+                    .as_ref()
+                    .is_ok_and(|answer| same(answer, &case.answer)),
+                "{name}: {outcome:?}"
+            );
             assert_eq!(tokens, ["Bearer t1", "Bearer t2"], "{name}");
         } else {
             assert_eq!(
@@ -170,18 +227,35 @@ async fn a_refused_token_is_retried_by_the_reads_and_never_by_a_write() {
     }
 }
 
-/// Every answer here but the call log's carries a `success` flag, and all their
-/// other fields have defaults: without the check, a stray `{}` or a body saying
-/// `success: false` would read as a confident empty answer.
+/// Every answer here with a `success` flag has defaults for its other fields:
+/// without the check, a stray `{}` or a body saying `success: false` would read
+/// as a confident empty answer. The answers without the flag refuse `{}` by
+/// their required fields instead.
 #[tokio::test]
 async fn an_answer_that_does_not_confirm_success_is_an_error() {
-    for case in cases() {
+    let cases = cases();
+    for listed in NO_SUCCESS_FLAG {
+        assert!(
+            cases.iter().any(|case| case.name == *listed),
+            "{listed} has no row"
+        );
+    }
+    for case in cases {
         let name = case.name;
-        let Some(object) = case.answer.as_object() else {
-            assert_eq!(name, "calls", "only the call log is a bare array");
+        if NO_SUCCESS_FLAG.contains(&name) {
+            assert!(
+                case.answer.get("success").is_none(),
+                "{name}: the answer has a success flag after all"
+            );
+            let server = serving(&json!({}), None).await;
+            let outcome = (case.call)(&client(&server)).await;
+            assert!(
+                matches!(outcome, Err(ApiError::Decode { endpoint, .. }) if endpoint == case.endpoint),
+                "{name}: an empty body read as {outcome:?}"
+            );
             continue;
-        };
-        let mut refused = object.clone();
+        }
+        let mut refused = case.answer.as_object().expect("an object").clone();
         refused.insert("success".to_owned(), Value::Bool(false));
 
         let server = serving(&Value::Object(refused), None).await;

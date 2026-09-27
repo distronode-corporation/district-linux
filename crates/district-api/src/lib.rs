@@ -30,13 +30,35 @@
 //! over them: [`Request::send`] decodes into any `serde::de::DeserializeOwned`
 //! type, and [`Request::json`] takes any `serde::Serialize` one. The endpoints
 //! the screens use also have typed methods on [`ApiClient`], which decode into
-//! the model's types and check the response's `success` flag: the first screens
-//! ([`ApiClient::workspace_list`], [`ApiClient::overview`] and the rest), the
-//! call log ([`ApiClient::calls`], [`ApiClient::call_detail`],
-//! [`ApiClient::call_transcript`]), the inbox ([`ApiClient::conversations`],
-//! [`ApiClient::timeline`], [`ApiClient::send_message`] and the rest) and
-//! contacts ([`ApiClient::contacts`], [`ApiClient::contact`],
-//! [`ApiClient::update_contact`] and the rest).
+//! the model's types and check the response's `success` flag where it has one:
+//!
+//! - the first screens ([`ApiClient::workspace_list`], [`ApiClient::overview`]
+//!   and the rest);
+//! - the call log ([`ApiClient::calls`], [`ApiClient::call_detail`],
+//!   [`ApiClient::call_transcript`]);
+//! - the inbox ([`ApiClient::conversations`], [`ApiClient::timeline`],
+//!   [`ApiClient::send_message`] and the rest);
+//! - contacts ([`ApiClient::contacts`], [`ApiClient::contact`],
+//!   [`ApiClient::update_contact`] and the rest);
+//! - District HQ ([`ApiClient::hq_prompt`], and [`ApiClient::hq_confirm`] for a
+//!   change the member confirmed);
+//! - analytics and usage ([`ApiClient::analytics`], [`ApiClient::usage`],
+//!   [`ApiClient::usage_history`]);
+//! - phone numbers and billing, read only ([`ApiClient::number_search`],
+//!   [`ApiClient::owned_numbers`], [`ApiClient::workspace_billing`],
+//!   [`ApiClient::account_billing`]);
+//! - automations ([`ApiClient::workflows`], [`ApiClient::workflow_runs`],
+//!   [`ApiClient::set_workflow_active`], [`ApiClient::campaign_status`],
+//!   [`ApiClient::set_campaign_enabled`]);
+//! - booking pages ([`ApiClient::scheduling_status`],
+//!   [`ApiClient::enable_scheduling`], [`ApiClient::scheduling_hand_off`]);
+//! - the help desk ([`ApiClient::desk_tickets`], [`ApiClient::desk_ticket`],
+//!   [`ApiClient::reply_to_desk_ticket`], [`ApiClient::desk_settings`] and the
+//!   rest) and support requests ([`ApiClient::support_requests`],
+//!   [`ApiClient::create_support_request`] and the rest);
+//! - meeting rooms ([`ApiClient::meetings`], [`ApiClient::meeting_detail`], and
+//!   [`ApiClient::room_token`], which takes only a
+//!   [`MeetRoomName`](district_model::MeetRoomName)).
 //!
 //! ```no_run
 //! # async fn example(tokens: impl district_api::TokenSource) -> Result<(), Box<dyn std::error::Error>> {
@@ -55,17 +77,26 @@
 
 #![forbid(unsafe_code)]
 
+mod analytics;
+mod billing;
 mod calls;
 mod client;
 mod config;
 mod contacts;
+mod desk;
 mod endpoints;
 mod error;
 mod exclusions;
+mod hq;
 mod inbox;
 mod methods;
+mod numbers;
+mod rooms;
+mod scheduling;
+mod support;
 mod telemetry;
 mod token;
+mod workflows;
 
 pub use client::{ApiClient, Request};
 pub use config::{ApiConfig, ConfigError, DEFAULT_BASE_URL, USER_AGENT};

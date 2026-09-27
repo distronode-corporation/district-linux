@@ -2,12 +2,16 @@
 //! refusals worth reading.
 
 use district_api::{ApiError, Endpoint};
-use district_model::{BlockTarget, ThreadRef, TimelinePageInfo, TimelineResponse};
+use district_model::{
+    BlockTarget, DeskBrandName, DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus,
+    HqPendingWrite, NumberSearch, SupportRequestDraft, SupportRequestFiling, SupportRequestKind,
+    ThreadRef, TimelinePageInfo, TimelineResponse,
+};
 use serde_json::{Value, json};
 use wiremock::matchers::any;
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::cases::{WS, fixture};
+use crate::cases::{WS, desktop_fixture, fixture};
 use crate::common::client;
 
 async fn answering(status: u16, body: Value) -> MockServer {
@@ -199,5 +203,287 @@ async fn a_call_log_that_is_not_an_array_is_a_decode_error() {
             }
         ),
         "{error:?}"
+    );
+}
+
+/// An empty history is left out, as Android leaves it out; the route reads an
+/// absent history and an empty one alike.
+#[tokio::test]
+async fn a_first_prompt_sends_no_history() {
+    let server = answering(200, fixture("district-hq-answer.json")).await;
+
+    client(&server).hq_prompt(WS, "Hello", &[]).await.unwrap();
+
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({"workspaceId": WS, "prompt": "Hello"})
+    );
+}
+
+/// A confirmation the workspace refused is an answer, and says nothing was
+/// applied.
+#[tokio::test]
+async fn a_confirmed_change_that_did_not_apply_is_an_answer_that_says_so() {
+    let proposal: HqPendingWrite =
+        serde_json::from_value(fixture("district-hq-pending-write.json")["pendingWrite"].clone())
+            .unwrap();
+    let mut refused = fixture("district-hq-confirm.json");
+    refused["executed"] = json!(false);
+    refused["result"] = json!({"ok": false, "error": "Viewers cannot change the persona."});
+    let server = answering(200, refused).await;
+
+    let answer = client(&server).hq_confirm(WS, &proposal).await.unwrap();
+
+    assert!(answer.success && !answer.executed);
+    assert!(answer.is_the_proposal(&proposal));
+}
+
+#[tokio::test]
+async fn a_search_with_every_filter_sends_them_in_androids_order() {
+    let server = answering(200, fixture("district-numbers-search.json")).await;
+    let search = NumberSearch {
+        area_code: Some("800".to_owned()),
+        country: Some("US".to_owned()),
+        number_type: Some("tollFree".to_owned()),
+        provider: Some("twilio".to_owned()),
+    };
+
+    client(&server).number_search(WS, &search).await.unwrap();
+
+    assert_eq!(
+        query(&only_request(&server).await),
+        pairs(&[
+            ("workspaceId", WS),
+            ("areaCode", "800"),
+            ("country", "US"),
+            ("type", "tollFree"),
+            ("provider", "twilio"),
+        ])
+    );
+}
+
+/// A workspace with no carrier connected is refused with a code worth reading,
+/// not with an empty list.
+#[tokio::test]
+async fn a_search_without_a_carrier_is_a_coded_refusal() {
+    let server = answering(
+        400,
+        json!({
+            "success": false,
+            "error": "Messaging provider not configured for workspace",
+            "code": "messaging_provider_not_configured",
+        }),
+    )
+    .await;
+
+    let refused = client(&server)
+        .number_search(WS, &NumberSearch::default())
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(&refused, ApiError::Envelope { status: 400, code, .. }
+            if code == "messaging_provider_not_configured"),
+        "{refused:?}"
+    );
+    assert_eq!(
+        query(&only_request(&server).await),
+        pairs(&[("workspaceId", WS)])
+    );
+}
+
+/// A payment processor that could not be reached is a success that says so, not
+/// an error and not an account without billing.
+#[tokio::test]
+async fn billing_that_could_not_be_read_is_an_answer_that_says_so() {
+    let server = answering(200, fixture("district-billing-unavailable.json")).await;
+
+    let billing = client(&server).account_billing().await.unwrap();
+
+    assert!(billing.billing_unavailable && billing.subscriptions.is_empty());
+}
+
+/// A setup that ran and failed answers 202 with its reason: an answer, not a
+/// failed request.
+#[tokio::test]
+async fn booking_pages_that_failed_to_set_up_are_an_answer_with_the_reason() {
+    let server = answering(
+        202,
+        json!({
+            "ok": false,
+            "status": "error",
+            "publicHost": "booking.example.com",
+            "error": "cloudflare refused the dns record (HTTP 403)",
+        }),
+    )
+    .await;
+
+    let answer = client(&server).enable_scheduling(WS).await.unwrap();
+
+    assert!(!answer.ok && answer.error.is_some());
+    assert_eq!(answer.public_host.as_deref(), Some("booking.example.com"));
+}
+
+/// Without a landing page the hand-off sends only the workspace, and its answer
+/// never prints the one-time code.
+#[tokio::test]
+async fn a_hand_off_without_a_landing_page_sends_only_the_workspace() {
+    let server = answering(200, desktop_fixture("district-scheduling-handoff.json")).await;
+
+    let link = client(&server).scheduling_hand_off(WS, None).await.unwrap();
+
+    assert!(link.url.contains("code="));
+    assert!(!format!("{link:?}").contains("contract-handoff-code"));
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({"workspaceId": WS})
+    );
+}
+
+#[tokio::test]
+async fn a_filtered_queue_names_the_state() {
+    let server = answering(200, fixture("district-desk-tickets.json")).await;
+
+    client(&server)
+        .desk_tickets(WS, Some(DeskTicketStatus::Waiting))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        query(&only_request(&server).await),
+        pairs(&[("workspaceId", WS), ("status", "waiting")])
+    );
+}
+
+/// A brand name is set by value, and nothing else in the patch is sent.
+#[tokio::test]
+async fn a_brand_name_patch_sends_the_name_alone() {
+    let server = answering(200, fixture("district-desk-settings.json")).await;
+    let patch = DeskSettingsPatch {
+        public_brand_name: Some(DeskBrandName::Set("Contract Test Desk".to_owned())),
+        ..DeskSettingsPatch::default()
+    };
+
+    client(&server)
+        .save_desk_settings(WS, &patch)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({"publicBrandName": "Contract Test Desk"})
+    );
+}
+
+/// A ticket raised with only an address and no idempotency key sends neither
+/// the unknown details nor an empty key.
+#[tokio::test]
+async fn a_sparse_ticket_sends_only_what_it_has() {
+    let server = answering(200, fixture("district-desk-ticket-create.json")).await;
+    let draft = DeskTicketDraft {
+        subject: "Invoice question".to_owned(),
+        message: "Which card was charged?".to_owned(),
+        requester_name: None,
+        requester_email: Some("billing@example.com".to_owned()),
+        requester_phone: None,
+        contact_id: None,
+    };
+
+    client(&server)
+        .create_desk_ticket(WS, &draft, None)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({
+            "subject": "Invoice question",
+            "message": "Which card was charged?",
+            "requesterEmail": "billing@example.com",
+        })
+    );
+}
+
+/// A request the service holds but could not file yet is a success, and a
+/// repeat of one already raised is too. Neither is worth raising again.
+#[tokio::test]
+async fn a_support_request_held_for_filing_or_repeated_is_a_success() {
+    let draft = SupportRequestDraft {
+        kind: SupportRequestKind::Question,
+        subject: "Billing question".to_owned(),
+        message: "Which plan are we on?".to_owned(),
+    };
+    for (answer, filing) in [
+        (
+            json!({"success": true, "pending": true}),
+            SupportRequestFiling::Pending,
+        ),
+        (
+            json!({"success": true, "deduplicated": true}),
+            SupportRequestFiling::Deduplicated,
+        ),
+    ] {
+        let server = answering(200, answer).await;
+
+        let created = client(&server)
+            .create_support_request(WS, &draft, None)
+            .await
+            .unwrap();
+
+        assert_eq!(created.filing(), filing);
+        assert_eq!(
+            body(&only_request(&server).await),
+            json!({
+                "kind": "question",
+                "subject": "Billing question",
+                "message": "Which plan are we on?",
+            })
+        );
+    }
+}
+
+/// A support request the desk offers no single way to close is a conflict with
+/// a sentence to show.
+#[tokio::test]
+async fn a_request_that_cannot_be_closed_from_here_is_a_conflict() {
+    let server = answering(
+        409,
+        json!({
+            "success": false,
+            "error": "This request cannot be closed from here.",
+            "code": "ticket_not_closable",
+        }),
+    )
+    .await;
+
+    let refused = client(&server)
+        .close_support_request(WS, "DA-42")
+        .await
+        .unwrap_err();
+
+    let ApiError::Conflict(detail) = &refused else {
+        panic!("{refused:?}");
+    };
+    assert_eq!(detail.code.as_deref(), Some("ticket_not_closable"));
+}
+
+/// A meeting the service cannot find in this workspace is not found, and the
+/// credential for a viewer comes without a guest invitation.
+#[tokio::test]
+async fn a_meeting_elsewhere_is_not_found_and_a_viewer_gets_no_invitation() {
+    let server = answering(404, json!({"error": "Meeting not found"})).await;
+    let missing = client(&server)
+        .meeting_detail(WS, "meeting_elsewhere")
+        .await
+        .unwrap_err();
+    assert!(matches!(missing, ApiError::NotFound(_)), "{missing:?}");
+
+    let server = answering(200, fixture("district-room-token-viewer.json")).await;
+    let room = district_model::MeetRoomName::new(WS, "standup").unwrap();
+    let viewer = client(&server).room_token(&room).await.unwrap();
+    assert!(viewer.guest_invite.is_none() && viewer.e2ee.is_some());
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({"roomName": "meet_ws-contract-test_standup", "identity": "linux"})
     );
 }
