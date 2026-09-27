@@ -42,16 +42,39 @@ The project is pre-release, and parts of this are not implemented yet.
 - The browser returns to the app through the custom URI scheme `districtai://auth`.
   Another application on the same machine can register the same scheme and receive
   the authorization code. PKCE neutralises that: the code is useless without the
-  verifier, and the verifier never leaves the app.
+  verifier, and the verifier never leaves the app. It is held in memory for one
+  sign-in attempt and never written anywhere.
+- Each attempt also carries a random `state`. A callback whose `state` is not the
+  attempt's (compared in constant time), or that repeats a parameter, is refused
+  before anything in it is used, so a code injected by another program, or an old
+  callback replayed from the browser's history, is never exchanged. An attempt is
+  used up by its first callback, whatever the outcome.
 
 ### Tokens
 
 - The refresh token is kept in the desktop secret store (the Secret Service, or
   inside a Flatpak an encrypted keyring file whose key comes from the secret
-  portal). It is never written to a plain file, a log or a settings store.
+  portal). It is never written to a plain file, a log or a settings store. If no
+  secret store can be reached, the app says so and keeps the session in memory
+  only, so the user signs in again at the next start.
 - The access token is kept only in memory.
-- Signing out removes the refresh token from the secret store and forgets the
-  access token.
+- The service rotates the refresh token on every refresh and treats a second
+  presentation of one as theft. The app therefore refreshes one request at a
+  time, records a SHA-256 fingerprint of the token it is about to send (never the
+  token) in a file under `$XDG_STATE_HOME` before sending, and saves the successor
+  before using it. If the app stops mid-refresh, the next start finds the
+  fingerprint and asks the user to sign in again rather than present a token that
+  may already be spent.
+- The device id sent at sign-in is a random UUID kept under `$XDG_DATA_HOME`, and
+  the device name is the operating system's `PRETTY_NAME`. Neither is derived from
+  the machine, and the host name is never sent.
+- Signing out forgets the access token, asks the service to revoke the refresh
+  token, and removes it from the secret store. If the service cannot be reached,
+  the token is kept in the secret store, apart from the session, and presented for
+  revocation again at the next start, because the service may otherwise honour it
+  until it expires.
+- Every type that holds a credential redacts it from its `Debug` output, and no
+  error carries a token, a code or a response body.
 
 ### Requests
 

@@ -28,5 +28,20 @@ date, and bump `[workspace.package] version` to match.
 - A line coverage gate in CI: every crate is held to a floor in `coverage-floors.toml`
   by `scripts/check-coverage.py`, 100 for each crate that needs no desktop session,
   live media or GTK main loop.
+- `district-auth`: sign-in with OAuth 2.0 and PKCE through the system browser
+  (`LoginFlow`, checked against the server's PKCE vectors), the token exchange,
+  refresh and revoke calls (`NativeAuthApi`, which tells the service it is the
+  `linux` platform), and `TokenRefreshCoordinator`: single-flight refresh-token
+  rotation that never presents a refresh token twice, marks a refresh before sending
+  it, saves the successor before handing out its access token, and survives its
+  caller being cancelled. `SignOut` revokes the session and keeps a token the
+  service could not take in an outbox that is retried at the next start.
+- `district-desktop`: the session in the desktop secret store through `oo7`
+  (`Oo7SessionStore`: the Secret Service, or the secret portal inside a Flatpak),
+  the refresh-pending marker as a durably written file holding only a fingerprint
+  of the token, this installation's random device id, and the device name from the
+  operating system's `os-release` (never the host name).
+- `district-api`: `ApiConfig::http_client`, so the sign-in calls go out with the
+  same HTTP configuration as every other request.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main
