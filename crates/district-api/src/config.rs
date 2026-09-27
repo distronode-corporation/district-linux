@@ -46,6 +46,26 @@ impl ApiConfig {
         })
     }
 
+    /// The HTTP client these settings describe: no cookie store, redirects never
+    /// followed, the HTTP stack's own retries off, this crate's `User-Agent`, and
+    /// the three timeouts above. [`ApiClient`](crate::ApiClient) is built on it,
+    /// and so are the few calls made outside the endpoint table (the sign-in
+    /// crate's unauthenticated token calls), so that every request to the service
+    /// goes out the same way. Fails, as `ApiClient::new` does, for a base URL that
+    /// is not `https` and not a loopback address.
+    pub fn http_client(&self) -> Result<reqwest::Client, ConfigError> {
+        self.check()?;
+        reqwest::Client::builder()
+            .user_agent(USER_AGENT)
+            .redirect(reqwest::redirect::Policy::none())
+            .retry(reqwest::retry::never())
+            .connect_timeout(self.connect_timeout)
+            .read_timeout(self.read_timeout)
+            .timeout(self.request_timeout)
+            .build()
+            .map_err(ConfigError::described(ConfigError::Client))
+    }
+
     /// Refuses a base URL that would send the access token in clear text.
     pub(crate) fn check(&self) -> Result<(), ConfigError> {
         let loopback = match self.base_url.host() {

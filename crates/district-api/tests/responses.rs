@@ -626,6 +626,7 @@ fn only_https_or_loopback_http_is_accepted() {
         "http://[::1]:1",
     ] {
         let config = ApiConfig::with_base_url(accepted).unwrap();
+        assert!(config.http_client().is_ok(), "{accepted}");
         assert!(
             ApiClient::new(config, common::ScriptedTokens::issuing(&[])).is_ok(),
             "{accepted}"
@@ -638,6 +639,12 @@ fn only_https_or_loopback_http_is_accepted() {
         "file:///tmp/x",
     ] {
         let config = ApiConfig::with_base_url(refused).unwrap();
+        // The bare HTTP client, which the sign-in crate builds its token calls on,
+        // refuses exactly what the API client refuses.
+        assert!(
+            matches!(config.http_client(), Err(ConfigError::InsecureBaseUrl(_))),
+            "{refused}"
+        );
         let error = ApiClient::new(config, common::ScriptedTokens::issuing(&[]))
             .err()
             .unwrap();

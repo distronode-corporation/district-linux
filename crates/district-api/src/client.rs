@@ -6,14 +6,14 @@
 //! That keeps the compiled size down, and it means the checks and the error
 //! mapping are one piece of code rather than one copy per type.
 
+use reqwest::Response;
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
-use reqwest::{Response, redirect};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value};
 use url::Url;
 
-use crate::config::{ApiConfig, ConfigError, USER_AGENT};
+use crate::config::{ApiConfig, ConfigError};
 use crate::endpoints::{BodyKind, Endpoint, EndpointSpec, HttpMethod, RetryPolicy, WorkspaceIn};
 use crate::error::{ApiError, TransportError, TransportKind, UnauthorizedReason};
 use crate::token::{TokenError, TokenSource};
@@ -118,18 +118,8 @@ struct Transport {
 
 impl Transport {
     fn new(config: ApiConfig) -> Result<Self, ConfigError> {
-        config.check()?;
-        let http = reqwest::Client::builder()
-            .user_agent(USER_AGENT)
-            .redirect(redirect::Policy::none())
-            .retry(reqwest::retry::never())
-            .connect_timeout(config.connect_timeout)
-            .read_timeout(config.read_timeout)
-            .timeout(config.request_timeout)
-            .build()
-            .map_err(ConfigError::described(ConfigError::Client))?;
         Ok(Self {
-            http,
+            http: config.http_client()?,
             base_url: config.base_url,
         })
     }
