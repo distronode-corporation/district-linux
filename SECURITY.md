@@ -113,15 +113,30 @@ The project is pre-release, and parts of this are not implemented yet.
 - Managing booking pages opens the web in the system browser through a link the
   service mints on request. The link carries a code good for one sign-in within a
   minute: it is asked for when the user asks to go, opened at once, and never
-  logged, stored or cached.
+  logged, stored or cached. It is opened only when it is on the service's own
+  address over HTTPS (the host is compared up to the `/` after it), and a link
+  that arrives after the user opened another workspace or signed out is not opened
+  at all.
 - A meeting room is named only by `meet_<workspace>_<name>`, built in one place.
   The service mints credentials for one other kind of room, an AI video avatar
   session that is billed, and the client has no way to name one.
 - Joining a room returns a short-lived media credential, the room's end-to-end
   encryption passphrase and, for a member who may speak, a signed guest link. All
-  three are kept in memory only and redacted from `Debug`. The passphrase is handed
-  to the media library as the text it is, never decoded, so every participant
-  derives the same key.
+  three are kept in memory only and redacted from `Debug`, and only while the rooms
+  lobby is showing: leaving it drops them. The passphrase is handed to the media
+  library as the text it is, never decoded, so every participant derives the same
+  key.
+
+### The help desk and support requests
+
+- Help desk tickets carry the workspace's customers' names, contact details and
+  correspondence, and support requests the workspace's own correspondence with
+  Distronode. The service refuses a viewer every route behind both, reads
+  included, and the app sends none of those requests for a member whose role it
+  has read as viewer.
+- When the overview shows that a member's role has narrowed while a ticket or a
+  request is open, the app leaves it and drops what it had read, rather than
+  keeping it behind another screen.
 
 ### Privileges
 

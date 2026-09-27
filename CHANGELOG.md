@@ -150,6 +150,41 @@ date, and bump `[workspace.package] version` to match.
   credential, which signs and stores nothing, are repeated once after a refused
   access token. An answer without a `success` flag refuses an empty body through its
   required fields.
+- `district-core`: the rest of the workspace's screens, still with no GTK and no IO, each
+  with its own route under the overview (`Route::Hq`, `Analytics`, `Marketplace`,
+  `Billing`, `Workflows`, `Scheduling`, `Desk`, `DeskTicket`, `DeskSettings`, `Support`,
+  `SupportRequest`, `Rooms`). District HQ (`HqScreen`) holds the conversation for as long
+  as the workspace is open, sends a failed prompt again without asking it twice, and
+  applies a proposed change only when a member whose role may change the workspace
+  confirms it, never by itself, saying whether the change the service reports is the
+  one confirmed. Analytics (`AnalyticsScreen`) reads call analytics, this month's usage
+  and the last three months as three cards that fail apart, reads only the window's own
+  figures when another window is picked, and prepares the charts as plain series (bars
+  scaled to the largest, sentiment shares, usage and history rows) in which a measure
+  never metered is "Not recorded", never zero. Phone numbers (`MarketplaceScreen`) are
+  read only, with the search run once the typing stops, a workspace with no carrier
+  explained rather than failed, and buying opened on the web for a role that could buy
+  there. Billing (`BillingScreen`) is read only, keeps a payment processor outage apart
+  from an account without billing, and opens invoices and the web billing page. Workflows
+  (`WorkflowsScreen`) are turned on and off at once and put back on a refusal, one change
+  per workflow at a time and not for a viewer, with each workflow's runs read once and
+  paged by what is held; the outbound campaign asks before pausing and before resuming,
+  and shows only what the service answers. Booking pages (`SchedulingScreen`) show every
+  state the service reports, offer Enable only where the service says the member may
+  (the answer of a setup that ran and failed is an ordinary one), and manage on the web
+  through the hand-off link, which `Effect::OpenOneTimeUrl` opens at once, only when it
+  is on the service's own address over HTTPS, and which no `Debug` prints (`OneTimeUrl`).
+  The help desk (`DeskScreen`, `DeskTicketScreen`, `DeskSettingsView`) and support
+  requests (`SupportScreen`, `SupportRequestScreen`) are closed to a viewer, reads
+  included: the queue behind the desk's switch with its status filter, raising a ticket
+  with a key per press, replying and moving a ticket as the service answers, the settings
+  form built only from the settings read and sending only what changed, the logo; and
+  support's draft key kept through every retry, replies, and a close that asks first. The
+  rooms lobby (`RoomsScreen`) lists the meetings, opens a meeting's record over itself,
+  and starts or rejoins a room through `MeetRoomName`, keeping the credential for the
+  call engine to come and dropping it, passphrase included, when the lobby is left.
+- `district-core`: `DistrictApi` gains the 34 methods behind those screens, which
+  `ApiClient` implements, and the runner the effects that call them.
 
 ### Changed
 
@@ -188,5 +223,9 @@ date, and bump `[workspace.package] version` to match.
   any screen sees it, and only while the result is still awaited. The setup status
   read, whose failures were all ignored, now ends an ended session like every other
   read. `Effect` no longer derives `Hash`, and `Ticket` is ordered.
+- `district-core`: `Event`, `SessionState` and `SignedIn` derive `PartialEq` without `Eq`,
+  because usage, billing and number prices are fractional. When a fresh overview
+  narrows the member's role, the screen the role may no longer read is left, and its
+  state dropped, rather than hidden behind the overview.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main
