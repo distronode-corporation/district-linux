@@ -114,6 +114,14 @@ oo7 = { version = "0.6.0", default-features = false, features = ["tokio", "nativ
 # distribution the .deb can install on.
 gtk4 = { version = "0.11.5", features = ["v4_14"] }
 libadwaita = { version = "0.9.2", features = ["v1_5"] }
+# The app's build script: compiles data/ into the gresource the binary carries
+# (the .ui templates, the stylesheet, the ringtone and the icons), with the
+# glib-compile-resources that ships beside the GTK development files.
+glib-build-tools = "0.22.8"
+# The app's two channels into the GTK main loop, from the effect runner's
+# threads: the core's events, and the few calls only the main thread may make
+# (opening a link, a notification, the ringtone, the window).
+async-channel = "2.5.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

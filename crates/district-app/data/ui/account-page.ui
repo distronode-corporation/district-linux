@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The account: this build and this computer, the devices signed in, signing
+     out, and where deleting the account starts. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictAccountPage" parent="AdwBin">
+    <property name="child">
+      <object class="AdwPreferencesPage">
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title">This computer</property>
+            <child>
+              <object class="AdwActionRow" id="device_row">
+                <property name="title">Device name</property>
+                <property name="use-markup">False</property>
+                <property name="subtitle-selectable">True</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="version_row">
+                <property name="title">District AI for Linux</property>
+                <property name="use-markup">False</property>
+                <property name="subtitle-selectable">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title">Your account</property>
+            <child>
+              <object class="AdwActionRow" id="devices_row">
+                <property name="title">Devices</property>
+                <property name="use-markup">False</property>
+                <property name="activatable">True</property>
+                <child type="suffix">
+                  <object class="GtkImage">
+                    <property name="icon-name">go-next-symbolic</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="sign_out_row">
+                <property name="title">Sign out</property>
+                <property name="use-markup">False</property>
+                <property name="activatable">True</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="delete_row">
+                <property name="title">Delete your account</property>
+                <property name="use-markup">False</property>
+                <property name="activatable">True</property>
+                <child type="suffix">
+                  <object class="GtkImage">
+                    <property name="icon-name">adw-external-link-symbolic</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

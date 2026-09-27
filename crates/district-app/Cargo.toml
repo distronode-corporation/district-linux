@@ -9,19 +9,53 @@ repository.workspace = true
 authors.workspace = true
 publish.workspace = true
 
+# A library as well as the binary, so the smoke test can build the window.
+[lib]
+name = "district_app"
+path = "src/lib.rs"
+
 [[bin]]
 name = "district-ai"
 path = "src/main.rs"
 
+# The headless smoke test. It needs a display and a session bus, so it is not
+# part of a plain `cargo test`: CONTRIBUTING.md has the command, and CI runs it
+# under Xvfb with `--features gtk-tests`.
+[[test]]
+name = "smoke"
+path = "tests/smoke.rs"
+harness = false
+required-features = ["gtk-tests"]
+
+[features]
+# Builds the smoke test. Nothing in the app itself changes.
+gtk-tests = []
+
 [dependencies]
+async-channel = { workspace = true }
 district-api = { workspace = true }
 district-auth = { workspace = true }
 district-call = { workspace = true }
 district-core = { workspace = true }
 district-desktop = { workspace = true }
 district-live = { workspace = true }
+district-model = { workspace = true }
 gtk4 = { workspace = true }
 libadwaita = { workspace = true }
+# The runtime the effect runner, the sign-in and the live updates run on,
+# beside the GTK main loop: its own threads, a timer, and the one-shot replies
+# from the main thread.
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time"] }
+
+[build-dependencies]
+glib-build-tools = { workspace = true }
+
+[dev-dependencies]
+# Test only: the smoke test answers the app's effects with the recorded server
+# responses under contracts/.
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
 
 [lints]
 workspace = true

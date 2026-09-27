@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Everything before and after a session: looking for a stored one, signed
+     out, signing in through the browser, and signing out. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSessionPage" parent="AdwBin">
+    <property name="child">
+      <object class="AdwStatusPage" id="status">
+        <property name="icon-name">com.distronode.DistrictAI</property>
+        <property name="title">District AI</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">420</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">18</property>
+                <child>
+                  <object class="GtkLabel" id="error_label">
+                    <property name="wrap">True</property>
+                    <property name="justify">center</property>
+                    <property name="visible">False</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSpinner" id="spinner">
+                    <property name="halign">center</property>
+                    <property name="width-request">32</property>
+                    <property name="height-request">32</property>
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="sign_in_button">
+                    <property name="label">Sign in with your browser</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="suggested-action"/>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="retry_button">
+                    <property name="label">Try again</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="retry_sign_out_button">
+                    <property name="label">Sign out again</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="cancel_button">
+                    <property name="label">Cancel</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

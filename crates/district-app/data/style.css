@@ -1,0 +1,42 @@
+/* Layout only. The brand's colours are set at run time from
+   district_core::palette, for the style showing (see src/style.rs). */
+
+.metric {
+  padding: 18px;
+}
+
+.metric .value {
+  font-feature-settings: "tnum";
+}
+
+.setup-card {
+  padding: 18px;
+  background-color: alpha(@accent_bg_color, 0.12);
+}
+
+.read-only {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background-color: alpha(currentColor, 0.1);
+}
+
+.sidebar-heading {
+  margin: 12px 12px 2px 12px;
+}
+
+.inbox-badge {
+  min-width: 16px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  font-weight: bold;
+}
+
+.this-device {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: alpha(@accent_bg_color, 0.15);
+  color: @accent_color;
+  font-weight: bold;
+}
