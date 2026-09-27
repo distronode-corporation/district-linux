@@ -140,12 +140,26 @@ The project is pre-release, and parts of this are not implemented yet.
 - Phone numbers are grouped for reading on screen; what is sent, and what a form
   is filled with, is the number as stored or as typed.
 
+### District HQ
+
+- An answer from District HQ is written by a model on the service, so it is shown
+  as text: a small set of Markdown formatting (paragraphs, emphasis, lists, code
+  and links) is drawn, and every character of the answer is escaped before it is,
+  so the answer cannot style or rewrite the window with markup of its own.
+- A link in an answer is opened only when it goes to a web page (`https://` or
+  `http://` and a host), and only through the core, which opens it in the system
+  browser as it opens every other page. A link to anything else (a file, another
+  program's scheme) is shown as its words and never followed.
+- A question is sent only when the member presses Ask or Enter, one at a time,
+  because each is billed; a change the assistant proposes is made only when a
+  member whose role may change the workspace presses Confirm.
+
 ### Hand-offs and meeting rooms
 
 - Managing booking pages opens the web in the system browser through a link the
   service mints on request. The link carries a code good for one sign-in within a
   minute: it is asked for when the user asks to go, opened at once, and never
-  logged, stored or cached. It is opened only when it is on the service's own
+  shown, logged, stored or cached. It is opened only when it is on the service's own
   address over HTTPS (the host is compared up to the `/` after it), and a link
   that arrives after the user opened another workspace or signed out is not opened
   at all.
@@ -226,6 +240,11 @@ follow.
 - When the overview shows that a member's role has narrowed while a ticket or a
   request is open, the app leaves it and drops what it had read, rather than
   keeping it behind another screen.
+- The help desk's logo is uploaded only from a file the member picks in the
+  desktop's file chooser (the file chooser portal inside a Flatpak), read no
+  further than one byte past five megabytes; the service checks its type, size
+  and dimensions, and says why it refused one. A file chooser still open when the
+  settings are left is closed.
 
 ### Workspace settings
 

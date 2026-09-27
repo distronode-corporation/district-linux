@@ -113,8 +113,15 @@ arriving through the desktop), the overview, the inbox (search, a thread, its
 older messages, the composer with Enter to send, a reply written on request and
 an image picked through the file chooser), the call log and a call's transcript,
 contacts (adding, editing, research, blocking, deleting, each question) and the
-blocked callers, live updates and a message's notification, the account, the
-devices and the question before each sign-out, a narrow window, signing out. It needs a display
+blocked callers, District HQ (a question, an answer in Markdown and its links, a
+change proposed, dismissed and confirmed), analytics and its charts, the phone
+numbers and their search, billing, workflows with their runs, switches and the
+campaign's question, booking pages and the hand-off to the web, the help desk
+(the queue, raising a ticket, a ticket's status and reply, the settings and a logo
+picked in the file chooser), support requests (raising one, a reply, closing one),
+the meeting rooms lobby and a meeting's record, each as a viewer where it
+differs, live updates and a message's notification, the account, the devices and
+the question before each sign-out, a narrow window, signing out. It needs a display
 and a session bus, so it is built only with the `gtk-tests` feature and runs
 under Xvfb, as CI runs it (the packages are `xvfb`, `xauth` and `dbus`):
 

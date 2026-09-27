@@ -43,5 +43,5 @@ floor = 100
 reason = "Measured, not a target: live media needs a LiveKit server and audio devices CI does not have."
 
 [crates.district-app]
-floor = 95
+floor = 97
 reason = "Measured, not a target: the smoke test drives the real window under Xvfb, but the start-up wiring (the keyring, the network, the runtime) and the runner's thread run only in the real app."

@@ -437,6 +437,60 @@ date, and bump `[workspace.package] version` to match.
   the number grouped, else the address, else `UNNAMED_CONTACT`); and
   `ThreadScreen::read_only_note`, why a thread has no composer
   (`READ_ONLY_ROLE`, `NO_REPLY_TARGET`).
+- The app's third screens, drawn from `district-core` as the others are, each
+  with its loading, empty and failed states and what a viewer is offered:
+  - District HQ: the conversation, the member's words as the text they are and
+    the assistant's answers as a safe subset of Markdown (paragraphs, emphasis,
+    lists, inline code and code blocks, headings as bold lines, links), every
+    character escaped before any markup is written, so an answer cannot style the
+    window; a link opens through the core only when it goes to a web page. A
+    proposed change is shown by the service's own summary on a card, applied only
+    on Confirm and set aside on Dismiss; the card stays when a confirmation fails,
+    and says the change may have been made before the answer was lost. Asking is
+    billed and says so.
+  - Analytics: the window's figures, how volume moved, and three charts drawn with
+    cairo on a `gtk::DrawingArea` from the series the core prepares (calls per day
+    or week as columns with their scale and first and last day, the funnel as
+    horizontal bars, sentiment as one stacked bar with a legend), each an image
+    with a sentence for a screen reader. Colours are the palette's for the light
+    and dark styles; under high contrast the marks take the text colour and the
+    sentiment bands are told apart by their fill. This month's usage and the last
+    months follow, each card reading and failing on its own, and a measure never
+    metered reading "Not recorded".
+  - Phone numbers, read only: the numbers held (with the note when a carrier did
+    not answer), the search typed or picked and run once the typing stops, a
+    workspace with no carrier explained rather than failed, and the web
+    marketplace for a role that could buy there.
+  - Billing, read only: the plan and its status, what happens past the included
+    minutes, the minutes used against those included, this month's usage, the
+    subscriptions with their renewal or end, the invoices with a link to each,
+    the payment processor out of reach said to be, and the web billing page for a
+    role that could use it.
+  - Workflows: the outbound campaign with a question before it is paused or
+    resumed, each workflow with its switch (shown at once, put back on a refusal)
+    and its runs read page by page, and what a viewer can see without changing it.
+  - Booking pages: every state the service reports with its reason, Enable where
+    the service says the member may, Check again while one is being set up, and
+    Manage on the web, which asks for the one-time link and never shows it.
+  - The help desk: the queue beside the open ticket or the settings, filtered by
+    status with each status's count; the desk switched off and turned on; raising
+    a ticket in a form; a ticket's status moved and a reply sent, with whether
+    the customer was emailed; the settings (sending only what changed) and the
+    logo, picked in the desktop's file chooser and checked by the service.
+  - Support: the requests open and resolved beside the open one, raising one in a
+    form (a retry is the same request), replying, and marking one resolved after
+    a question.
+  - The meeting rooms lobby: a room named and joined (in this build, which has no
+    call engine, said to be unavailable), who is in it and its microphone, a
+    meeting still running rejoined, and a meeting's record over the lobby with its
+    minutes, action items and transcript.
+  - Outcomes as toasts (a reply sent, the desk's settings saved, a logo changed),
+    every question and form closed with its screen, and each list and its detail
+    one pane at a time in a narrow window.
+  - The smoke test drives every one of these, and draws each, light and dark.
+- `district-core`: `HqEvent::OpenLink` and `is_web_link`: a link in a District HQ
+  answer is opened through the same `Effect::OpenUrl` as every other page, and
+  only when it is `https://` or `http://` and a host.
 
 ### Changed
 
@@ -448,7 +502,12 @@ date, and bump `[workspace.package] version` to match.
   `DisconnectReason::Unavailable` ("Calls and meeting rooms are not available in
   this build of District AI."), which a call or an audition also shows as its
   failure.
-- `district-app`'s coverage floor is 95, measured by the smoke test, up from 0.
+- `district-app`'s coverage floor is 97, measured by the smoke test, up from 0.
+- `district-core`: `format_phone_number` reads a North American number stored as
+  bare digits (eleven, the first a `1`) with its `+`, as it reads the same number
+  stored in E.164: both are `+1 416 555 0142`. Nothing else gains a `+`.
+- Times in the app follow the desktop's clock, 12 or 24 hours (GNOME's setting,
+  else the locale's own form), and dates use the locale's names for the months.
 
 - `district-core`: `Auth::sign_out` takes the sign-out's ticket, which orders its
   unregistration of the presence after every change the session asked for, and
