@@ -43,5 +43,30 @@ date, and bump `[workspace.package] version` to match.
   operating system's `os-release` (never the host name).
 - `district-api`: `ApiConfig::http_client`, so the sign-in calls go out with the
   same HTTP configuration as every other request.
+- `district-api`: typed methods for the first screens (`workspace_list`, `overview`,
+  `setup_status`, `native_devices`, `revoke_device`, `revoke_all_devices`), which
+  decode into the model's types and refuse a body that does not confirm
+  `success: true` (`ApiError::Unconfirmed`) instead of reading `{}` as an empty
+  answer.
+- `district-core`: the application core, with no GTK and no IO of its own. A
+  `Model` updated by events returns effects as plain data, and an `EffectRunner`
+  runs them against five traits (the API, sign-in, settings, opening a link, a
+  clock) and reports each result as an event. It holds the session (resuming one
+  at start-up, retrying by itself while offline, signing in through the browser,
+  signing out and saying what the service was told), the routes, the role
+  matrix (`Capabilities`, failing closed on a role it does not know), the
+  overview with its finish-setup card, the workspace switcher, the account
+  screen, the devices list with a question before every sign-out, and
+  `FailureText`, the words for every failure. `NativeAuth` and the API client
+  implement the sign-in and API traits.
+
+### Changed
+
+- A session that has no token right now says why. `TokenError::RetryLater`
+  carries a `RetryReason` (rate limited, offline, a missing or locked secret
+  store, a storage failure), and the API client reports it as
+  `ApiError::TokenUnavailable` rather than as a rate limit, so the app can tell
+  "wait", "check your connection" and "unlock your keyring" apart.
+  `ApiError::RateLimited` no longer has a `refresh_throttled` flag.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main

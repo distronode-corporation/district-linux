@@ -16,8 +16,10 @@ crates/district-auth/     Sign-in with OAuth 2.0 and PKCE through the system
                           browser, the token exchange, single-flight refresh-token
                           rotation, sign-out.
 crates/district-live/     The live telemetry WebSocket client.
-crates/district-core/     App state with no GTK in it: routes, role capabilities, one
-                          reducer model per screen, and the `CallEngine` trait.
+crates/district-core/     App state with no GTK and no IO of its own: the session,
+                          routes, role capabilities, a model per screen, and the
+                          effect runner with the traits the app implements. The
+                          `CallEngine` trait lands here later.
 crates/district-desktop/  Linux adapters with no GTK in them: secret storage (oo7),
                           device id, settings, autostart through the portals.
 crates/district-call/     The call engine. The LiveKit implementation is behind the

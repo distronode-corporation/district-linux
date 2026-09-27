@@ -414,7 +414,15 @@ dependencies = [
 name = "district-core"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "district-api",
+ "district-auth",
  "district-model",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
+ "wiremock",
 ]
 
 [[package]]

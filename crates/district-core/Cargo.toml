@@ -1,6 +1,6 @@
 [package]
 name = "district-core"
-description = "GTK-free application state for District AI for Linux: routes, role capabilities, screen models and the call engine seam."
+description = "GTK-free application state for District AI for Linux: the session, routes, role capabilities, screen models and the effect runner."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,22 @@ authors.workspace = true
 publish.workspace = true
 
 [dependencies]
+district-api = { workspace = true }
+district-auth = { workspace = true }
 district-model = { workspace = true }
+# `time` for the one clock this crate provides, `TokioClock`, which the effect
+# runner sleeps on between attempts to resume a session.
+tokio = { workspace = true, features = ["time"] }
+url = { workspace = true }
+
+[dev-dependencies]
+# Test only: to build access tokens whose claims the sign-in code can read.
+base64 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+# `test-util` lets a test stop and step the clock instead of sleeping for real.
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "test-util", "time"] }
+wiremock = { workspace = true }
 
 [lints]
 workspace = true
