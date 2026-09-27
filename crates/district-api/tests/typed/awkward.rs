@@ -3,15 +3,18 @@
 
 use district_api::{ApiError, Endpoint};
 use district_model::{
-    BlockTarget, DeskBrandName, DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus,
-    HqPendingWrite, NumberSearch, SupportRequestDraft, SupportRequestFiling, SupportRequestKind,
-    ThreadRef, TimelinePageInfo, TimelineResponse,
+    AVAILABILITY_REASON_NO_MEMBER_ROW, BlockTarget, CODE_LAST_AGENCY_MEMBER, CODE_MEMBER_EXISTS,
+    CallHandlingPatch, DeskBrandName, DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus,
+    HqPendingWrite, MemberRole, MessagingAccountSave, MessagingCredentialSource,
+    MessagingCredentials, NumberSearch, PersonaPatch, RoutingRule, RoutingRuleField,
+    SinchCredentials, SupportRequestDraft, SupportRequestFiling, SupportRequestKind, ThreadRef,
+    TimelinePageInfo, TimelineResponse,
 };
 use serde_json::{Value, json};
 use wiremock::matchers::any;
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::cases::{WS, desktop_fixture, fixture};
+use crate::cases::{WS, desktop_fixture, fixture, typed_twilio};
 use crate::common::client;
 
 async fn answering(status: u16, body: Value) -> MockServer {
@@ -485,5 +488,184 @@ async fn a_meeting_elsewhere_is_not_found_and_a_viewer_gets_no_invitation() {
     assert_eq!(
         body(&only_request(&server).await),
         json!({"roomName": "meet_ws-contract-test_standup", "identity": "linux"})
+    );
+}
+
+/// The two recorded refusals of the member writes are conflicts, each with its
+/// own code: an address already a member, and a change that would leave nobody
+/// to administer the workspace.
+#[tokio::test]
+async fn a_duplicate_member_and_the_last_administrator_are_conflicts_with_their_codes() {
+    let server = answering(409, fixture("district-member-duplicate.json")).await;
+    let duplicate = client(&server)
+        .add_member(WS, "founder@example.com", MemberRole::Client)
+        .await
+        .unwrap_err();
+    assert_eq!(duplicate.code(), Some(CODE_MEMBER_EXISTS), "{duplicate:?}");
+    assert!(matches!(duplicate, ApiError::Conflict(_)), "{duplicate:?}");
+
+    let server = answering(409, fixture("district-member-last-agency.json")).await;
+    let last = client(&server)
+        .change_member_role(WS, "founder@example.com", MemberRole::Viewer)
+        .await
+        .unwrap_err();
+    let ApiError::Conflict(detail) = &last else {
+        panic!("{last:?}");
+    };
+    assert_eq!(detail.code.as_deref(), Some(CODE_LAST_AGENCY_MEMBER));
+    assert!(
+        detail.display_message().contains("administrator"),
+        "{detail:?}"
+    );
+}
+
+/// A carrier that refuses the credentials is an answer with its reason, sent
+/// with a 200, not an error.
+#[tokio::test]
+async fn a_carrier_refusal_is_an_answer_with_the_carriers_reason() {
+    let server = answering(200, fixture("district-messaging-test-rejected.json")).await;
+
+    let verdict = client(&server)
+        .test_messaging_credentials(WS, &typed_twilio())
+        .await
+        .unwrap();
+
+    assert_eq!(verdict.refusal(), Some("Authenticate (20003)"));
+}
+
+/// A new account names no account id, and a Sinch account's plain project id
+/// travels with its secrets under `providerConfig`.
+#[tokio::test]
+async fn a_new_account_is_sent_without_an_id_and_with_its_numbers() {
+    let server = answering(200, fixture("district-messaging-upsert.json")).await;
+    let save = MessagingAccountSave {
+        account_id: None,
+        label: Some("Sinch (EU)".to_owned()),
+        credential_source: MessagingCredentialSource::Managed,
+        credentials: MessagingCredentials::Sinch(SinchCredentials {
+            project_id: Some("project-contract".to_owned()),
+            key_id: Some("key-contract".to_owned()),
+            key_secret: Some("key-secret-contract".to_owned()),
+            application_key: None,
+            application_secret: None,
+        }),
+        phone_numbers: Some(vec!["+14165550112".to_owned()]),
+        make_default: Some(true),
+        creator_cell_number: None,
+    };
+
+    client(&server)
+        .save_messaging_account(WS, &save)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({
+            "workspaceId": WS,
+            "activeProvider": "sinch",
+            "credentialSource": "managed",
+            "providerConfig": {
+                "phoneNumbers": ["+14165550112"],
+                "projectId": "project-contract",
+                "keyId": "key-contract",
+                "keySecret": "key-secret-contract",
+            },
+            "label": "Sinch (EU)",
+            "makeDefault": true,
+        })
+    );
+}
+
+/// The research switch lives on another screen and saves through the persona
+/// route: the one field alone, so every other persona field is kept.
+#[tokio::test]
+async fn the_research_switch_alone_sends_only_that_field() {
+    let server = answering(200, fixture("district-persona-patch.json")).await;
+    let patch = PersonaPatch {
+        dgi_enabled: Some(true),
+        ..PersonaPatch::default()
+    };
+
+    client(&server).save_persona(WS, &patch).await.unwrap();
+
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({"workspaceId": WS, "dgiEnabled": true})
+    );
+}
+
+/// A voice the workspace is not allowed is refused with a sentence naming it.
+#[tokio::test]
+async fn a_rule_with_a_voice_the_workspace_may_not_use_is_refused_by_name() {
+    let server = answering(
+        400,
+        json!({"error": "Invalid voice identifier: Kore", "code": "invalid_request"}),
+    )
+    .await;
+    let rule = RoutingRule::new("rule-new").with(RoutingRuleField::Voice, "Kore");
+
+    let refused = client(&server)
+        .save_routing_rules(WS, &[rule])
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(&refused, ApiError::Envelope { status: 400, detail, .. }
+            if detail.display_message().contains("Kore")),
+        "{refused:?}"
+    );
+}
+
+/// An empty patch is the service's to refuse; the client sends it as it is.
+#[tokio::test]
+async fn an_empty_call_handling_patch_is_refused_by_the_service() {
+    let server = answering(
+        400,
+        json!({"success": false, "error": "Nothing to update", "code": "nothing_to_update"}),
+    )
+    .await;
+
+    let refused = client(&server)
+        .save_call_handling(WS, &CallHandlingPatch::default())
+        .await
+        .unwrap_err();
+
+    assert_eq!(refused.code(), Some("nothing_to_update"));
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({"workspaceId": WS})
+    );
+}
+
+/// An owner with no membership has nothing to set: a conflict, and the read's
+/// reason says the same.
+#[tokio::test]
+async fn an_owner_without_a_membership_cannot_be_made_available() {
+    let server = answering(
+        409,
+        json!({
+            "success": false,
+            "error": "You have no membership row in this workspace to set availability on.",
+            "code": "member_not_found",
+            "reason": "no_member_row",
+        }),
+    )
+    .await;
+    let refused = client(&server)
+        .set_availability(WS, true)
+        .await
+        .unwrap_err();
+    assert!(matches!(refused, ApiError::Conflict(_)), "{refused:?}");
+
+    let server = answering(
+        200,
+        json!({"success": true, "availableForCalls": false, "reason": "no_member_row"}),
+    )
+    .await;
+    let read = client(&server).availability(WS).await.unwrap();
+    assert_eq!(
+        read.reason.as_deref(),
+        Some(AVAILABILITY_REASON_NO_MEMBER_ROW)
     );
 }

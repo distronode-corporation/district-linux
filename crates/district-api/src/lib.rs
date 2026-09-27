@@ -58,7 +58,21 @@
 //!   [`ApiClient::create_support_request`] and the rest);
 //! - meeting rooms ([`ApiClient::meetings`], [`ApiClient::meeting_detail`], and
 //!   [`ApiClient::room_token`], which takes only a
-//!   [`MeetRoomName`](district_model::MeetRoomName)).
+//!   [`MeetRoomName`](district_model::MeetRoomName));
+//! - the workspace settings: the settings row ([`ApiClient::workspace_config`])
+//!   and the three saves that replace a whole list
+//!   ([`ApiClient::save_tools`], [`ApiClient::save_directory`],
+//!   [`ApiClient::save_routing_rules`]), each to be built from that row read
+//!   just before; the persona ([`ApiClient::persona_options`],
+//!   [`ApiClient::save_persona`], and [`ApiClient::persona_preview_token`],
+//!   a billed audition); the knowledge base
+//!   ([`ApiClient::knowledge_documents`], [`ApiClient::add_knowledge_document`]
+//!   and the rest); the carrier accounts ([`ApiClient::messaging`], a method
+//!   per change, and [`ApiClient::test_messaging_credentials`]); call handling
+//!   and availability ([`ApiClient::call_handling`],
+//!   [`ApiClient::availability`] and their saves); and the members and the
+//!   workspace's name ([`ApiClient::members`], [`ApiClient::add_member`],
+//!   [`ApiClient::rename_workspace`] and the rest).
 //!
 //! ```no_run
 //! # async fn example(tokens: impl district_api::TokenSource) -> Result<(), Box<dyn std::error::Error>> {
@@ -79,6 +93,7 @@
 
 mod analytics;
 mod billing;
+mod call_handling;
 mod calls;
 mod client;
 mod config;
@@ -89,10 +104,15 @@ mod error;
 mod exclusions;
 mod hq;
 mod inbox;
+mod knowledge;
+mod members;
+mod messaging;
 mod methods;
 mod numbers;
+mod persona;
 mod rooms;
 mod scheduling;
+mod settings;
 mod support;
 mod telemetry;
 mod token;

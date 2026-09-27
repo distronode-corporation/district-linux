@@ -7,10 +7,15 @@ use std::pin::Pin;
 
 use district_api::{ApiClient, ApiError, Endpoint};
 use district_model::{
-    AnalyticsRange, BlockTarget, CHANNEL_SMS, CreateContactRequest, DeskBrandName,
-    DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus, DraftSaveRequest, HqPendingWrite, HqRole,
-    HqTurn, MeetRoomName, NumberSearch, SendMessageRequest, SupportRequestDraft,
-    SupportRequestKind, ThreadRef, UpdateContactRequest,
+    AnalyticsRange, BlockTarget, CHANNEL_SMS, CallHandlingMode, CallHandlingPatch,
+    CreateContactRequest, DeskBrandName, DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus,
+    DirectoryEntry, DraftSaveRequest, HqPendingWrite, HqRole, HqTurn, KnowledgeDocumentDraft,
+    KnowledgeMode, MeetRoomName, MemberRole, MessagingAccountSave, MessagingChannel,
+    MessagingCreatorCell, MessagingCredentialSource, MessagingCredentials, MessagingDelete,
+    MessagingSetChannelDefault, MessagingSetDefault, NumberSearch, PersonaEngineChoice,
+    PersonaPatch, PersonaPreviewForm, RoutingRule, RoutingRuleField, SendMessageRequest,
+    SupportRequestDraft, SupportRequestKind, ThreadRef, TwilioCredentials, UpdateContactRequest,
+    WorkspaceConfig, WorkspaceConfigResponse,
 };
 use serde_json::{Value, json};
 
@@ -215,9 +220,100 @@ fn weekly_review() -> MeetRoomName {
     MeetRoomName::new(WS, "Weekly Review").expect("a room name")
 }
 
+/// The loaded config, which every list save is built from.
+fn loaded_config() -> WorkspaceConfig {
+    let answer: WorkspaceConfigResponse =
+        serde_json::from_value(fixture("district-workspace-config.json")).expect("a config");
+    answer.config
+}
+
+/// The stored allowed tools less one the member switched off.
+fn tools_less_email() -> Vec<String> {
+    let tools = loaded_config().tool_config.expect("a tool configuration");
+    let mut allowed = tools.allowed_tools.expect("a stored list");
+    allowed.retain(|tool| tool != "dispatch_email");
+    allowed
+}
+
+/// The stored directory with its first entry renamed and a new one added.
+fn directory_edited() -> Vec<DirectoryEntry> {
+    let mut entries = loaded_config().directory_entries().expect("editable");
+    entries[0] = entries[0].clone().with_name("Operations desk");
+    entries.push(DirectoryEntry::new("Front desk", "+14165550155"));
+    entries
+}
+
+/// The stored rules with the third one's voice changed.
+fn rules_edited() -> Vec<RoutingRule> {
+    let mut rules = loaded_config().routing_rule_entries().expect("editable");
+    rules[2] = rules[2].clone().with(RoutingRuleField::Voice, "Kore");
+    rules
+}
+
+fn greeting_and_length() -> PersonaPatch {
+    PersonaPatch {
+        greeting: Some("Good afternoon, Contract Test.".to_owned()),
+        engine: Some(PersonaEngineChoice {
+            model_id: "deepgram-pipeline".to_owned(),
+            response_length: Some("balanced".to_owned()),
+        }),
+        ..PersonaPatch::default()
+    }
+}
+
+fn audition() -> PersonaPreviewForm {
+    PersonaPreviewForm {
+        name: Some("Ada".to_owned()),
+        greeting: Some("Thanks for calling.".to_owned()),
+        voice: Some("aura-2-asteria-en".to_owned()),
+        language: Some("en-US".to_owned()),
+        model_id: Some("deepgram-pipeline".to_owned()),
+        response_length: Some("concise".to_owned()),
+        temperature: Some(0.5),
+        ..PersonaPreviewForm::default()
+    }
+}
+
+fn holiday_hours() -> KnowledgeDocumentDraft {
+    KnowledgeDocumentDraft {
+        title: "Holiday hours".to_owned(),
+        content: "Closed on the 25th and the 26th.".to_owned(),
+        source_type: None,
+        source_url: None,
+    }
+}
+
+/// An edit of the Twilio account: its label and numbers, no secret retyped.
+fn twilio_edit() -> MessagingAccountSave {
+    MessagingAccountSave {
+        account_id: Some("acct-twilio".to_owned()),
+        label: Some("Twilio (main)".to_owned()),
+        credential_source: MessagingCredentialSource::Byok,
+        credentials: MessagingCredentials::Twilio(TwilioCredentials::default()),
+        phone_numbers: Some(vec!["+14165550111".to_owned()]),
+        make_default: None,
+        creator_cell_number: None,
+    }
+}
+
+/// Twilio credentials as typed, for a check.
+pub fn typed_twilio() -> MessagingCredentials {
+    MessagingCredentials::Twilio(TwilioCredentials {
+        account_sid: Some("AC_contract".to_owned()),
+        auth_token: Some("contract-auth-token".to_owned()),
+    })
+}
+
+fn app_first_quickly() -> CallHandlingPatch {
+    CallHandlingPatch {
+        call_handling: Some(CallHandlingMode::AppFirst),
+        app_ring_seconds: Some(15),
+    }
+}
+
 /// Every typed method for the inbox, the call log, contacts, HQ, analytics,
 /// numbers, billing, automations, booking pages, the help desk, support
-/// requests and meeting rooms.
+/// requests, meeting rooms and the workspace settings.
 pub fn cases() -> Vec<Case> {
     vec![
         // The inbox.
@@ -1024,6 +1120,427 @@ pub fn cases() -> Vec<Case> {
             path: "/api/district/meetings/meeting_contract_completed",
             query: vec![("workspaceId", WS)],
             body: Sent::Nothing,
+        },
+        // Workspace settings: the row, and the saves that replace a whole list.
+        Case {
+            name: "workspace_config",
+            endpoint: Endpoint::WorkspaceConfig,
+            retried: true,
+            answer: fixture("district-workspace-config.json"),
+            call: call!(c => c.workspace_config(WS)),
+            method: "GET",
+            path: "/api/district/workspace/config",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "save_tools",
+            endpoint: Endpoint::ToolsSave,
+            retried: false,
+            answer: fixture("district-tools-patch.json"),
+            call: call!(c => c.save_tools(WS, &tools_less_email())),
+            method: "PATCH",
+            path: "/api/district/workspace/tools",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "allowedTools": [
+                    "search_knowledge_base",
+                    "transfer_to_agent",
+                    "book_appointment",
+                    "transfer_to_creator",
+                    "leave_message",
+                ],
+            })),
+        },
+        Case {
+            name: "save_directory",
+            endpoint: Endpoint::DirectorySave,
+            retried: false,
+            answer: fixture("district-directory-patch.json"),
+            call: call!(c => c.save_directory(WS, &directory_edited())),
+            method: "PATCH",
+            path: "/api/district/workspace/directory",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "callDirectory": [
+                    {"name": "Operations desk", "phoneNumber": "+14165550177"},
+                    {"name": "On-call engineer", "phoneNumber": "+14165550166", "extension": "402"},
+                    {"name": "Front desk", "phoneNumber": "+14165550155"},
+                ],
+            })),
+        },
+        Case {
+            name: "save_routing_rules",
+            endpoint: Endpoint::RoutingRulesSave,
+            retried: false,
+            answer: fixture("district-routing-patch.json"),
+            call: call!(c => c.save_routing_rules(WS, &rules_edited())),
+            method: "POST",
+            path: "/api/district/workspace/routing-rules",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "routingRules": [
+                    {"id": "rule-contract-1", "match": "billing", "action": "transfer",
+                     "target": "+14165550188"},
+                    {"id": "rule-contract-2", "match": "support", "action": "knowledge",
+                     "target": null},
+                    {"id": "rule-contract-3", "field": "industry", "operator": "contains",
+                     "value": "tech", "voice": "Kore",
+                     "instruction": "Speak with high energy and use technical terminology.",
+                     "model": ""},
+                ],
+            })),
+        },
+        // The persona.
+        Case {
+            name: "persona_options",
+            endpoint: Endpoint::PersonaOptions,
+            retried: true,
+            answer: fixture("district-persona-options.json"),
+            call: call!(c => c.persona_options(WS)),
+            method: "GET",
+            path: "/api/district/workspace/persona/options",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "save_persona",
+            endpoint: Endpoint::PersonaSave,
+            retried: false,
+            answer: fixture("district-persona-patch.json"),
+            call: call!(c => c.save_persona(WS, &greeting_and_length())),
+            method: "PATCH",
+            path: "/api/district/workspace/persona",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "greeting": "Good afternoon, Contract Test.",
+                "modelId": "deepgram-pipeline",
+                "responseLength": "balanced",
+            })),
+        },
+        Case {
+            name: "persona_preview_token",
+            endpoint: Endpoint::PersonaPreviewToken,
+            retried: false,
+            answer: fixture("district-persona-preview-token.json"),
+            call: call!(c => c.persona_preview_token(WS, &audition())),
+            method: "POST",
+            path: "/api/district/workspace/persona/preview-token",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "formData": {
+                    "name": "Ada",
+                    "greeting": "Thanks for calling.",
+                    "voice": "aura-2-asteria-en",
+                    "language": "en-US",
+                    "modelId": "deepgram-pipeline",
+                    "responseLength": "concise",
+                    "temperature": 0.5,
+                },
+            })),
+        },
+        // The knowledge base.
+        Case {
+            name: "knowledge_documents",
+            endpoint: Endpoint::KnowledgeDocuments,
+            retried: true,
+            answer: fixture("district-knowledge.json"),
+            call: call!(c => c.knowledge_documents(WS)),
+            method: "GET",
+            path: "/api/district/workspace/knowledge",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "add_knowledge_document",
+            endpoint: Endpoint::KnowledgeDocumentCreate,
+            retried: false,
+            answer: fixture("district-knowledge-create.json"),
+            call: call!(c => c.add_knowledge_document(WS, &holiday_hours())),
+            method: "POST",
+            path: "/api/district/workspace/knowledge",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "title": "Holiday hours",
+                "content": "Closed on the 25th and the 26th.",
+            })),
+        },
+        Case {
+            name: "delete_knowledge_document",
+            endpoint: Endpoint::KnowledgeDocumentDelete,
+            retried: false,
+            answer: fixture("district-knowledge-delete.json"),
+            call: call!(c => c.delete_knowledge_document(WS, "doc_contract_ready")),
+            method: "DELETE",
+            path: "/api/district/workspace/knowledge",
+            query: vec![("workspaceId", WS), ("documentId", "doc_contract_ready")],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "knowledge_mode",
+            endpoint: Endpoint::KnowledgeMode,
+            retried: true,
+            answer: fixture("district-knowledge-mode.json"),
+            call: call!(c => c.knowledge_mode(WS)),
+            method: "GET",
+            path: "/api/district/workspace/knowledge-mode",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "set_knowledge_mode",
+            endpoint: Endpoint::KnowledgeModeSave,
+            retried: false,
+            answer: fixture("district-knowledge-mode-patch.json"),
+            call: call!(c => c.set_knowledge_mode(WS, KnowledgeMode::Internal)),
+            method: "PATCH",
+            path: "/api/district/workspace/knowledge-mode",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS, "mode": "internal"})),
+        },
+        // Carrier accounts: five changes on one route, told apart by `action`.
+        Case {
+            name: "messaging",
+            endpoint: Endpoint::Messaging,
+            retried: true,
+            answer: fixture("district-messaging.json"),
+            call: call!(c => c.messaging(WS)),
+            method: "GET",
+            path: "/api/district/workspace/messaging",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "save_messaging_account",
+            endpoint: Endpoint::MessagingSave,
+            retried: false,
+            answer: fixture("district-messaging-upsert.json"),
+            call: call!(c => c.save_messaging_account(WS, &twilio_edit())),
+            method: "PATCH",
+            path: "/api/district/workspace/messaging",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "activeProvider": "twilio",
+                "credentialSource": "byok",
+                "providerConfig": {"phoneNumbers": ["+14165550111"]},
+                "accountId": "acct-twilio",
+                "label": "Twilio (main)",
+            })),
+        },
+        Case {
+            name: "set_default_messaging_account",
+            endpoint: Endpoint::MessagingSave,
+            retried: false,
+            answer: fixture("district-messaging-set-default.json"),
+            call: call!(c => c.set_default_messaging_account(
+                WS,
+                &MessagingSetDefault { account_id: "acct-twilio".to_owned() },
+            )),
+            method: "PATCH",
+            path: "/api/district/workspace/messaging",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "accountId": "acct-twilio",
+                "action": "setDefault",
+            })),
+        },
+        Case {
+            name: "set_messaging_channel_default",
+            endpoint: Endpoint::MessagingSave,
+            retried: false,
+            answer: fixture("district-messaging-channel-default.json"),
+            call: call!(c => c.set_messaging_channel_default(
+                WS,
+                &MessagingSetChannelDefault {
+                    channel: MessagingChannel::Voice,
+                    account_id: "acct-telnyx".to_owned(),
+                },
+            )),
+            method: "PATCH",
+            path: "/api/district/workspace/messaging",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "channel": "voice",
+                "accountId": "acct-telnyx",
+                "action": "setChannelDefault",
+            })),
+        },
+        Case {
+            name: "delete_messaging_account",
+            endpoint: Endpoint::MessagingSave,
+            retried: false,
+            answer: fixture("district-messaging-delete.json"),
+            call: call!(c => c.delete_messaging_account(
+                WS,
+                &MessagingDelete { account_id: "acct-telnyx".to_owned() },
+            )),
+            method: "PATCH",
+            path: "/api/district/workspace/messaging",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "accountId": "acct-telnyx",
+                "action": "delete",
+            })),
+        },
+        Case {
+            name: "save_creator_cell_number",
+            endpoint: Endpoint::MessagingSave,
+            retried: false,
+            answer: fixture("district-messaging-meta.json"),
+            call: call!(c => c.save_creator_cell_number(
+                WS,
+                &MessagingCreatorCell { creator_cell_number: "+14165550101".to_owned() },
+            )),
+            method: "PATCH",
+            path: "/api/district/workspace/messaging",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "creatorCellNumber": "+14165550101",
+                "action": "meta",
+            })),
+        },
+        Case {
+            name: "test_messaging_credentials",
+            endpoint: Endpoint::MessagingTest,
+            retried: false,
+            answer: fixture("district-messaging-test.json"),
+            call: call!(c => c.test_messaging_credentials(WS, &typed_twilio())),
+            method: "POST",
+            path: "/api/district/workspace/messaging/test",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "providerConfig": {
+                    "provider": "twilio",
+                    "accountSid": "AC_contract",
+                    "authToken": "contract-auth-token",
+                },
+            })),
+        },
+        // Call handling and availability. No fixture records these routes; each
+        // answer is the shape the route builds.
+        Case {
+            name: "call_handling",
+            endpoint: Endpoint::CallHandling,
+            retried: true,
+            answer: json!({"success": true, "callHandling": "ai_then_app", "appRingSeconds": 20}),
+            call: call!(c => c.call_handling(WS)),
+            method: "GET",
+            path: "/api/district/workspace/call-handling",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "save_call_handling",
+            endpoint: Endpoint::CallHandlingSave,
+            retried: false,
+            answer: json!({"success": true, "callHandling": "app_first", "appRingSeconds": 15}),
+            call: call!(c => c.save_call_handling(WS, &app_first_quickly())),
+            method: "PATCH",
+            path: "/api/district/workspace/call-handling",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "callHandling": "app_first",
+                "appRingSeconds": 15,
+            })),
+        },
+        Case {
+            name: "availability",
+            endpoint: Endpoint::Availability,
+            retried: true,
+            answer: json!({"success": true, "availableForCalls": true, "reason": null}),
+            call: call!(c => c.availability(WS)),
+            method: "GET",
+            path: "/api/district/workspace/availability",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "set_availability",
+            endpoint: Endpoint::AvailabilitySave,
+            retried: false,
+            answer: json!({"success": true, "availableForCalls": false, "reason": null}),
+            call: call!(c => c.set_availability(WS, false)),
+            method: "PATCH",
+            path: "/api/district/workspace/availability",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS, "availableForCalls": false})),
+        },
+        // Members and the workspace's name.
+        Case {
+            name: "members",
+            endpoint: Endpoint::Members,
+            retried: true,
+            answer: fixture("district-members.json"),
+            call: call!(c => c.members(WS)),
+            method: "GET",
+            path: "/api/district/workspace/members",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "add_member",
+            endpoint: Endpoint::MemberAdd,
+            retried: false,
+            answer: fixture("district-member-add.json"),
+            call: call!(c => c.add_member(WS, "newcomer@example.com", MemberRole::Viewer)),
+            method: "POST",
+            path: "/api/district/workspace/members",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "email": "newcomer@example.com",
+                "role": "viewer",
+            })),
+        },
+        Case {
+            name: "change_member_role",
+            endpoint: Endpoint::MemberRoleChange,
+            retried: false,
+            answer: fixture("district-member-role-patch.json"),
+            call: call!(c => c.change_member_role(WS, "operator@example.com", MemberRole::Client)),
+            method: "PATCH",
+            path: "/api/district/workspace/members",
+            query: vec![],
+            body: Sent::Json(json!({
+                "workspaceId": WS,
+                "email": "operator@example.com",
+                "role": "client",
+            })),
+        },
+        Case {
+            name: "remove_member",
+            endpoint: Endpoint::MemberRemove,
+            retried: false,
+            answer: fixture("district-member-remove.json"),
+            call: call!(c => c.remove_member(WS, "auditor@example.com")),
+            method: "DELETE",
+            path: "/api/district/workspace/members",
+            query: vec![("workspaceId", WS), ("email", "auditor@example.com")],
+            body: Sent::Nothing,
+        },
+        Case {
+            name: "rename_workspace",
+            endpoint: Endpoint::WorkspaceRename,
+            retried: false,
+            answer: fixture("district-rename.json"),
+            call: call!(c => c.rename_workspace(WS, "Renamed Workspace")),
+            method: "PATCH",
+            path: "/api/district/workspace/rename",
+            query: vec![],
+            body: Sent::Json(json!({"workspaceId": WS, "name": "Renamed Workspace"})),
         },
     ]
 }
