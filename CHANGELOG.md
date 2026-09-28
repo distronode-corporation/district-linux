@@ -739,6 +739,12 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Changed
 
+- A build with calls links this project's own libwebrtc instead of LiveKit's
+  prebuilt: the same library, from LiveKit's recipe and pinned sources, built by
+  `scripts/build-libwebrtc.sh` without the H.264 and H.265 codecs or FFmpeg, and
+  published as release `libwebrtc-89d790b-audio-1` of this repository.
+  `scripts/fetch-libwebrtc.sh`, the Flatpak manifests and NOTICE pin it by
+  SHA-256, and NOTICE's list of components no longer has FFmpeg or OpenH264.
 - Logging below warn level is compiled out of the whole build (`log`'s
   `max_level_warn`, from `max_level_debug`). With calls, the LiveKit SDK forwards
   every libwebrtc line at debug level, and libwebrtc logs an encrypted room's key

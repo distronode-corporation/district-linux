@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
-# Downloads the prebuilt libwebrtc that a build with calls links, checks it
-# against a pinned SHA-256, and unpacks it for LK_CUSTOM_WEBRTC.
+# Downloads the libwebrtc that a build with calls links, checks it against a
+# pinned SHA-256, and unpacks it for LK_CUSTOM_WEBRTC.
+#
+# The archive is this project's own audio-only build, published as a release of
+# this repository: LiveKit's libwebrtc for its Rust SDK, built from the same
+# pinned sources and patches by scripts/build-libwebrtc.sh without the H.264 and
+# H.265 codecs or FFmpeg. It has the layout of LiveKit's prebuilt
+# webrtc-linux-x64-release.zip, so the SDK's build takes it the same way.
 #
 #   scripts/fetch-libwebrtc.sh <directory>
 #
@@ -9,28 +15,32 @@
 # cache the directory and a local build can reuse it; a second run with a good
 # archive downloads nothing.
 #
-# Why this exists: the LiveKit SDK's build (webrtc-sys-build) downloads the same
-# archive from GitHub itself when LK_CUSTOM_WEBRTC is unset, with no checksum and
-# no signature, so the only thing vouching for 85 MB of C++ statically linked
-# into the app would be TLS to github.com. Setting LK_CUSTOM_WEBRTC to what this
-# script unpacks means the build never downloads anything, and what it links is
-# the archive whose digest is written below.
+# Why this exists: when LK_CUSTOM_WEBRTC is unset, the LiveKit SDK's build
+# (webrtc-sys-build) downloads LiveKit's own prebuilt from GitHub itself, with no
+# checksum and no signature, and that prebuilt carries the codecs this build
+# leaves out. Setting LK_CUSTOM_WEBRTC to what this script unpacks means the
+# build never downloads anything, and what it links is the archive whose digest
+# is written below.
 #
 # The pin moves with the SDK. WEBRTC_TAG is webrtc-sys-build's own WEBRTC_TAG
 # for the version below; the script refuses to run when Cargo.lock holds another
 # version, because a different webrtc-sys against this libwebrtc fails to link at
-# best. To move it: read WEBRTC_TAG in the new webrtc-sys-build's src/lib.rs,
-# download that release's webrtc-linux-x64-release.zip, check its digest against
-# the one GitHub publishes for the release asset, and change all three together.
+# best. To move it, rebuild the library for the new SDK and publish it as a new
+# release (CONTRIBUTING.md, "Rebuilding libwebrtc"), then change the version,
+# WEBRTC_TAG, RELEASE and SHA256 here, and the url and sha256 in the Flatpak
+# manifest, together.
 #
 # Linux x86_64 only, the one target a release ships.
 set -euo pipefail
 
 WEBRTC_SYS_BUILD_VERSION="0.3.19"
 WEBRTC_TAG="webrtc-89d790b"
+# The release of this repository that holds the archive. The number after
+# "audio" counts builds for the same WEBRTC_TAG.
+RELEASE="libwebrtc-89d790b-audio-1"
 ARCHIVE="webrtc-linux-x64-release.zip"
-SHA256="b167adad5291cea0e4d66a0454d9d52d2ad714e6b0ed70f4410317d3ebde70c5"
-URL="https://github.com/livekit/rust-sdks/releases/download/${WEBRTC_TAG}/${ARCHIVE}"
+SHA256="2355bc8c6cdaf9613c471da944ac901bb293f346dda5e94cdbe6249a36914317"
+URL="https://github.com/distronode-corporation/district-linux/releases/download/${RELEASE}/${ARCHIVE}"
 UNPACKED="linux-x64-release"
 
 if [ "$#" -ne 1 ]; then

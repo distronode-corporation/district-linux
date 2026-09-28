@@ -15,16 +15,19 @@ libwebrtc
 ---------
 
 A build with calls (district-call's `livekit` feature, which the app's `voice`
-feature turns on) statically links libwebrtc as LiveKit prebuilds it for its Rust
-SDK: release webrtc-89d790b of github.com/livekit/rust-sdks, the file
-webrtc-linux-x64-release.zip, SHA-256
-b167adad5291cea0e4d66a0454d9d52d2ad714e6b0ed70f4410317d3ebde70c5, which is the
-pin in scripts/fetch-libwebrtc.sh. The archive's LICENSE.md, which that script
-unpacks beside the library, holds the full licence text of every component
-below, and a distribution of such a build must ship it with the binary. The
-packages do: the .deb as /usr/share/doc/district-ai/libwebrtc-LICENSE.md and
-the Flatpak as /app/share/licenses/com.distronode.DistrictAI/libwebrtc-LICENSE.md,
-each beside this file. The default build links none of this.
+feature turns on) statically links libwebrtc, as this project builds it for the
+LiveKit Rust SDK: LiveKit's own recipe and pinned sources for release
+webrtc-89d790b of github.com/livekit/rust-sdks, with every patch LiveKit
+applies, built by scripts/build-libwebrtc.sh without the H.264 and H.265 codecs
+or FFmpeg. The archive is webrtc-linux-x64-release.zip in release
+libwebrtc-89d790b-audio-1 of this repository, SHA-256
+2355bc8c6cdaf9613c471da944ac901bb293f346dda5e94cdbe6249a36914317, which is the pin in
+scripts/fetch-libwebrtc.sh. The archive's LICENSE.md, which that script unpacks
+beside the library, holds the full licence text of every component below, and a
+distribution of such a build must ship it with the binary. The packages do: the
+.deb as /usr/share/doc/district-ai/libwebrtc-LICENSE.md and the Flatpak as
+/app/share/licenses/com.distronode.DistrictAI/libwebrtc-LICENSE.md, each beside
+this file. The default build links none of this.
 
   WebRTC            The WebRTC project authors                BSD-3-Clause
   Abseil            The Abseil authors                        Apache-2.0
@@ -32,7 +35,6 @@ each beside this file. The default build links none of this.
                                                               BSD-style terms for
                                                               older parts
   dav1d             VideoLAN and the dav1d authors            BSD-2-Clause
-  FFmpeg            The FFmpeg developers                     see below
   fft               Mark Olesen                               permissive notice
   fiat-crypto       The fiat-crypto authors                   Apache-2.0
   G.711, G.722      Steve Underwood (SpanDSP)                 public domain
@@ -47,7 +49,6 @@ each beside this file. The default build links none of this.
   libyuv            The LibYuv project authors                BSD-3-Clause
   NASM              The NASM authors                          BSD-2-Clause
   Ooura FFT         Takuya Ooura                              permissive notice
-  OpenH264          Cisco Systems                             BSD-2-Clause
   Opus              Xiph.Org, Skype, Octasic and others       BSD-3-Clause
   Perfetto          The Chromium and Perfetto authors         Apache-2.0
   PFFFT             Julien Pommier (after FFTPACK, NCAR)      FFTPACK licence
@@ -58,15 +59,11 @@ each beside this file. The default build links none of this.
   spl_sqrt_floor    Wilco Dijkstra                            permissive grant
   zlib              Jean-loup Gailly and Mark Adler           Zlib
 
-FFmpeg: the archive builds FFmpeg's H.264 and H.265 decoders into the library,
-and they are linked into a build with calls, as are the H.264, AV1, VP8 and VP9
-codecs above, although the app sends and receives no video. LICENSE.md's FFmpeg
-entry holds the texts of the GNU General Public License versions 2 and 3 and the
-GNU Lesser General Public License versions 2.1 and 3, and does not say which of
-them applies to the code linked. No build with calls has been distributed, and
-none should be until that, and the patent licensing of the H.264 and H.265
-decoders, has been reviewed. A libwebrtc built without them would remove the
-question.
+The library carries no H.264 or H.265 codec: FFmpeg and OpenH264, which
+LiveKit's own prebuilt links, are not built into it, and the build fails if any
+of their symbols is found. It still carries the VP8, VP9 and AV1 video codecs
+(libvpx, libaom and dav1d), which are royalty free, although the app sends and
+receives no video.
 
 "District AI" and "Distronode" are names used by Distronode Corporation.
 
