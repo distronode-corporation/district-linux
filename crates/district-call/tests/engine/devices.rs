@@ -509,24 +509,13 @@ fn tone_share(samples: &[i16]) -> f64 {
     (tone / power).min(1.0)
 }
 
-// A process with the desktop's devices and a frame microphone is what aborted
-// the whole process inside libwebrtc (`Check failed:
-// !race_checker404.RaceDetected()` in `audio_send_stream.cc`). When a
-// renegotiation gives a frame microphone's stream a new encoder, libwebrtc
-// registers that stream for the devices' capture as well, whatever room each
-// is in: two threads then deliver audio to it, the desktop's microphone goes
-// out inside the frames, and once the stream is gone the capture thread still
-// delivers to it. Unmuting a frame track also starts the devices' capture.
-// Measured before the engine refused the pair: with the peer of the test above
-// in Alice's process, 12 aborts in 30 runs. With the engine's refusal taken
-// out, the frames-first test below opened the desktop's microphone, Alice's
-// off, in all 13 runs; in 5 Dave heard it from Bob's silent microphone, and of
-// those one aborted and one crashed in the capture thread once Bob had left
-// (the one run of the 5 that went on after Bob left, under gdb). These two
-// tests make the pair on purpose, in each order, in two rooms, with the
-// renegotiation that sets it off, and hold the engine to refusing whichever
-// comes second. Bob's frame microphone is silent, so anything Dave hears from
-// him is the desktop's. See SECURITY.md.
+// The engine refuses the desktop's devices and a frame microphone in one
+// process, whichever comes second. The refusal is deliberate, because of
+// defects in the libwebrtc the LiveKit SDK links that have been reported
+// privately upstream; this comment will say more once upstream has published a
+// fix. These two tests ask for the pair on purpose, in each order, and hold the
+// engine to refusing the second. Bob's frame microphone is silent, so anything
+// Dave hears from him is the desktop's. See SECURITY.md.
 
 #[test]
 fn a_frame_microphone_in_a_process_with_the_devices_is_refused() {
@@ -573,8 +562,7 @@ async fn bob_alone(url: &str) -> (Peer, district_core::Ticket) {
     (bob, session)
 }
 
-/// Dave joins `other` with the tone, which renegotiates Bob's connection, and
-/// listens for `window`; returns what he heard of the room, which is Bob.
+/// Dave joins `other` with the tone and listens for `window`; returns what he heard of the room, which is Bob.
 async fn dave_hears_bob(name: &str, url: &str, window: Duration) -> (u64, f64) {
     let dave = FarEnd::start(name, url, &token("other", "dave", Kind::Standard), true);
     dave.connected(Duration::from_secs(20)).await;
@@ -697,9 +685,8 @@ fn in_child_frames_first(name: &str) {
             ]
         );
 
-        // Dave joins Bob's room three times. With the devices open, that
-        // started their capture, Alice's microphone off, and sent it out in
-        // Bob's frames. Here Dave hears Bob's silence, and nothing is opened.
+        // Dave joins Bob's room three times: he hears Bob's silence, and the
+        // devices are never opened.
         let mut heard = Vec::new();
         for _ in 0..3 {
             let (frames, rms) = dave_hears_bob(name, &url, Duration::from_secs(2)).await;
