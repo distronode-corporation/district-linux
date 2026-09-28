@@ -717,6 +717,16 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   contacts' addresses shared with the workspace (`social-contacts`), the
   service's online API and nothing else (`social-info`, mild), and messages,
   calls and the AI features billed to the workspace (`money-purchasing`).
+- `packaging/flathub/`: the manifest Flathub builds from, the Flatpak manifest
+  with the app's source named by URL, tag and commit instead of by directory,
+  and `flathub.json` (x86_64 only, as the prebuilt libwebrtc is).
+  `scripts/flathub-manifest.py` writes the manifest from the local one and the
+  version, CI's `repo` job runs its `--check` and `--self-test`, and
+  `--submission vX.Y.Z <dir>` writes the files Flathub's repository holds, read
+  from the tag, with the commit the tag names. CONTRIBUTING.md ("Flathub") has
+  the submission, with what is still open: the logind exception, the prebuilt
+  libwebrtc, and the app id's domain verification.
+
 ### Changed
 
 - Logging below warn level is compiled out of the whole build (`log`'s
@@ -836,5 +846,8 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   metadata to the tag of the version in Cargo.toml.
 - README.md shows two of the screenshots, and says what the app does now rather
   than what it will do.
+- `.github/workflows/flatpak.yml` runs on pull requests that change
+  `packaging/flatpak/`, not all of `packaging/`: `packaging/flathub/` is written
+  from that manifest and builds nothing there.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main

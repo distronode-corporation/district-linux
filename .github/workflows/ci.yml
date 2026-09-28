@@ -241,6 +241,14 @@ jobs:
       - name: packaging/flatpak/cargo-sources.json is current with Cargo.lock
         run: scripts/flatpak-cargo-sources.sh --check
 
+      # The manifest Flathub builds from is written from the one above, so an
+      # edit to that one, or a version bump, has to bring it along.
+      - name: The Flathub manifest's derivation still refuses what it claims to
+        run: python3 scripts/flathub-manifest.py --self-test
+
+      - name: packaging/flathub is current with the Flatpak manifest and the version
+        run: python3 scripts/flathub-manifest.py --check
+
       # Before the scan, so that a rule which has stopped matching anything fails
       # here instead of letting the scan pass quietly.
       - name: The public-hygiene rules still catch what they claim to

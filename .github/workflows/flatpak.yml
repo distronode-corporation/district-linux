@@ -7,15 +7,16 @@ name: Flatpak
 #
 # Run by hand, from release.yml, and on pull requests that change what the
 # Flatpak is built from (the manifest and cargo-sources.json, which moves with
-# every Cargo.lock change, and the files the manifest installs or runs). Minutes
-# are metered while the repository is private, and a build with calls is long,
-# so it is one job and never runs on a push to main.
+# every Cargo.lock change, and the files the manifest installs or runs; not
+# packaging/flathub/, which is written from the manifest and builds nothing
+# here). Minutes are metered while the repository is private, and a build with
+# calls is long, so it is one job and never runs on a push to main.
 on:
   workflow_dispatch:
   workflow_call:
   pull_request:
     paths:
-      - "packaging/**"
+      - "packaging/flatpak/**"
       - "crates/district-app/data/com.distronode.DistrictAI.*"
       - "scripts/fetch-libwebrtc.sh"
       - ".github/workflows/flatpak.yml"
