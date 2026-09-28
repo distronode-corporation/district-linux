@@ -125,7 +125,7 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
-    <release version="0.1.0" date="2026-09-27" type="development"/>
+    <release version="0.1.0" date="2026-09-28"/>
   </releases>
 
   <requires>
