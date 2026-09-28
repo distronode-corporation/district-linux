@@ -6,7 +6,7 @@
   <project_license>Apache-2.0</project_license>
 
   <name>District AI</name>
-  <!-- Flathub's quality guidelines: 35 characters at most, no full stop.
+  <!-- Software-centre guidelines: 35 characters at most, no full stop.
        The desktop entry's Comment says the same. -->
   <summary>Your AI receptionist on the desktop</summary>
   <description>
@@ -84,9 +84,8 @@
   </content_rating>
 
   <!-- The pictures are the PNGs under data/screenshots/, drawn from the real
-       window by tests/store_screenshots.rs. Flathub takes a picture's link
-       from a tag or a commit, never a branch, and copies the pictures when it
-       builds. The links name this release's own tag, v followed by the version
+       window by tests/store_screenshots.rs. A store takes a picture's link as
+       given, so a link names a tag, never a branch, which moves. The links name this release's own tag, v followed by the version
        in Cargo.toml: the metadata at a tag then names the pictures that tag
        holds, so a release needs no second change to point at its pictures,
        and a store's pictures change only with a release, as the app does. A

@@ -13,6 +13,12 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Removed
+
+- The Flathub packaging (`packaging/flathub/`, `scripts/flathub-manifest.py`, and the
+  report-only Flathub lint in the Flatpak build). The app is not published on Flathub; it
+  ships as the .deb and the Flatpak bundle on this repository's releases.
+
 ## [0.1.0] - 2026-09-28
 
 The first release: District AI on the Linux desktop, as a .deb for Ubuntu 24.04,
