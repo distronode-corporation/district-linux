@@ -144,6 +144,9 @@ jobs:
   # make a release public. It sees packages, never source, and runs no build.
   publish:
     needs: [guard, deb, flatpak]
+    # The `release` environment admits only `v*` tags, so this job, the one
+    # that can write, cannot run for anything else whatever starts the workflow.
+    environment: release
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
