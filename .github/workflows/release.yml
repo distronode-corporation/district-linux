@@ -20,14 +20,15 @@ name: Release
 #   DRAFT release with the notes from CHANGELOG.md, checks that GitHub holds
 #   exactly the two assets, and only then makes the release public.
 #
-# ⛔ THE LICENCE GATE. A build with calls statically links libwebrtc, whose
-# FFmpeg H.264 and H.265 decoders and other codecs have a licence and patent
-# position nobody has reviewed; NOTICE says no such build may be distributed
-# until someone has. Until the repository variable LIBWEBRTC_LICENCE_CLEARED is
-# exactly `true`, `publish` fails before it touches anything. The packages are
-# still built and tested, and not kept: in a public repository an artifact is a
-# download anyone can take, so deb.yml and flatpak.yml upload theirs only once
-# the variable is `true`.
+# ⛔ THE LICENCE GATE. A build with calls statically links libwebrtc, so
+# publishing it distributes the libwebrtc the pin names. The repository
+# variable LIBWEBRTC_LICENCE_CLEARED says whether that libwebrtc has been
+# reviewed and cleared; unless it is exactly `true`, `publish` fails before it
+# touches anything, and deb.yml and flatpak.yml keep no artifact (in a public
+# repository an artifact is a download anyone can take). It is `true` for this
+# project's own build without the H.264 and H.265 codecs or FFmpeg
+# (CONTRIBUTING.md, "The licence gate"); a new pin sets it back to `false`
+# until that build is reviewed.
 #
 # Artifact attestations need the repository to be public (or GitHub Enterprise
 # Cloud); in a private repository `publish` fails at the attestation.
@@ -127,7 +128,7 @@ jobs:
   # ⛔ READ-ONLY, DELIBERATELY. These run `cargo build`, which executes every
   # build script in the dependency tree, so they hold no write permission and
   # no token that could create a release; they only upload this run's
-  # artifacts, and only once libwebrtc's licensing is cleared.
+  # artifacts, and only while the licence gate is open.
   deb:
     needs: guard
     permissions:
@@ -171,9 +172,9 @@ jobs:
         run: |
           if [ "$CLEARED" != "true" ]; then
             echo "::error::Refusing to publish: the repository variable LIBWEBRTC_LICENCE_CLEARED is '${CLEARED}', not 'true'."
-            echo "These packages are built with calls, which statically links libwebrtc, including FFmpeg's H.264 and H.265 decoders."
-            echo "NOTICE says no build with calls may be distributed until the licence and patent position of those codecs has been reviewed."
-            echo "Set the variable to true only once that review has cleared it. The packages this run built and tested were not kept."
+            echo "These packages statically link libwebrtc, so publishing them distributes the libwebrtc scripts/fetch-libwebrtc.sh pins."
+            echo "The variable says that libwebrtc has been reviewed and cleared; set it to true only once it has (CONTRIBUTING.md, \"The licence gate\")."
+            echo "The packages this run built and tested were not kept."
             exit 1
           fi
 

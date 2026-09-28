@@ -10,8 +10,8 @@ name: libwebrtc
 # publishes the zip as a release of this repository, and moves the pin in
 # scripts/fetch-libwebrtc.sh to it; CONTRIBUTING.md ("Rebuilding libwebrtc")
 # has the steps. Unlike deb.yml and flatpak.yml, this artifact is kept whatever
-# LIBWEBRTC_LICENCE_CLEARED says, because it is the library this project means
-# to distribute: it carries none of the codecs that variable is about.
+# LIBWEBRTC_LICENCE_CLEARED says: it is a candidate for review, built without
+# the codecs that were never cleared, and nothing links it until the pin moves.
 #
 # To test a run's build before it is published, start voice.yml by hand with
 # that run's id.

@@ -745,6 +745,11 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   published as release `libwebrtc-89d790b-audio-1` of this repository.
   `scripts/fetch-libwebrtc.sh`, the Flatpak manifests and NOTICE pin it by
   SHA-256, and NOTICE's list of components no longer has FFmpeg or OpenH264.
+- The licence gate is open: `LIBWEBRTC_LICENCE_CLEARED` is `true` for that
+  build, so deb.yml and flatpak.yml keep their packages as artifacts again and
+  release.yml can publish. The variable now means that the libwebrtc the pin
+  names has been reviewed and cleared; a new pin sets it back to `false` until
+  its build has been.
 - Logging below warn level is compiled out of the whole build (`log`'s
   `max_level_warn`, from `max_level_debug`). With calls, the LiveKit SDK forwards
   every libwebrtc line at debug level, and libwebrtc logs an encrypted room's key

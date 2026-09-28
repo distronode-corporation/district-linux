@@ -2,10 +2,9 @@ name: Deb
 
 # Builds District AI for Linux as a .deb, with calls, on Ubuntu 24.04, checks
 # what the package declares and holds, and installs it in clean Ubuntu 24.04,
-# Debian 13 and Ubuntu 26.04 containers to run it there. Once libwebrtc's
-# licensing is cleared (LIBWEBRTC_LICENCE_CLEARED), the package is also kept for
-# a week as this run's artifact; release.yml calls it to build the release's
-# .deb.
+# Debian 13 and Ubuntu 26.04 containers to run it there. While the licence
+# gate is open (LIBWEBRTC_LICENCE_CLEARED), the package is also kept for a week
+# as this run's artifact; release.yml calls it to build the release's .deb.
 #
 # Run by hand, from release.yml, and on pull requests that change what the .deb
 # is built from. Minutes are metered while the repository is private, and a
@@ -251,11 +250,11 @@ jobs:
             echo "::endgroup::"
           done
 
-      # ⛔ ONLY ONCE libwebrtc'S LICENSING IS CLEARED. An artifact of a public
-      # repository can be downloaded by anyone, which would distribute the
-      # build with calls that NOTICE says must not be distributed yet. Until
-      # then the package is built and tested and then thrown away with the
-      # runner; release.yml refuses to publish for the same reason.
+      # ⛔ ONLY WHILE THE LICENCE GATE IS OPEN. An artifact of a public
+      # repository can be downloaded by anyone, so keeping one distributes the
+      # libwebrtc the pin names, which LIBWEBRTC_LICENCE_CLEARED says has been
+      # cleared. Without it the package is built and tested and thrown away
+      # with the runner; release.yml refuses to publish for the same reason.
       - if: vars.LIBWEBRTC_LICENCE_CLEARED == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

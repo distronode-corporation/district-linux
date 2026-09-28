@@ -332,9 +332,10 @@ the AppStream metadata, which now has them, and
 clears (see "Flathub" below).
 
 Both workflows run on pull requests that change what they build from, and by
-hand. Neither keeps its package until libwebrtc's licensing is cleared (below):
-an artifact of a public repository is a download anyone can take, which would
-distribute the build with calls. Build a package locally to try it.
+hand. Each keeps its package as the run's artifact for a week only while the
+licence gate (below) is open: an artifact of a public repository is a download
+anyone can take, so it is distribution, and a libwebrtc nobody has cleared must
+not reach one.
 
 ### Flathub
 
@@ -366,11 +367,8 @@ Before a submission, and what is still open:
    Flatpak build, because building libwebrtc takes Chromium's own toolchain and
    a large source tree. Either Flathub grants an exception for it, or the
    manifest builds libwebrtc from source, or the app goes to Flathub as a build
-   without calls. Nothing has decided which yet. The licence gate applies too:
-   release.yml refuses to publish until `LIBWEBRTC_LICENCE_CLEARED` is `true`,
-   and publishing on Flathub is distributing. The build leaves out the H.264
-   and H.265 codecs that the gate was written for (see NOTICE); setting the
-   variable is still a maintainer's decision, made after that review.
+   without calls. Nothing has decided which yet. The licence gate (below)
+   applies too, since publishing on Flathub is distributing.
 3. **The logind permission needs an exception.** Flathub's linter refuses
    `--system-talk-name=org.freedesktop.login1` unless Flathub grants an
    exception, which it does on a sufficient explanation, through a pull request
@@ -428,14 +426,16 @@ checks GitHub holds exactly `district-ai_X.Y.Z-1_amd64.deb` and
 leaves a draft or nothing, and a re-run replaces a leftover draft but never
 touches a published release.
 
-**The licence gate.** The packages are built with calls, which statically link
-libwebrtc, and NOTICE says no build with calls may be distributed until the
-licence and patent position of the codecs in it (FFmpeg's H.264 and H.265
-decoders among them) has been reviewed. So the publish job refuses, before it
-touches anything, unless the repository variable `LIBWEBRTC_LICENCE_CLEARED` is
-exactly `true`, and says why. Set it only once that review has cleared the
-libwebrtc the pin names; a new pin needs the review again. Until then a tag
-still builds and tests both packages, and keeps neither. Attestations also need
+**The licence gate.** The packages statically link libwebrtc, so distributing
+them distributes it. The repository variable `LIBWEBRTC_LICENCE_CLEARED` says
+whether the libwebrtc the pin names has been reviewed and cleared for that: the
+publish job refuses, before it touches anything, unless it is exactly `true`,
+and deb.yml and flatpak.yml keep no artifact without it. It is `true` for
+`libwebrtc-89d790b-audio-1`, this project's build without the H.264 and H.265
+codecs or FFmpeg, whose remaining components NOTICE lists. LiveKit's prebuilt,
+which carries those codecs, was never cleared. Moving the pin to a new build
+means setting the variable to `false` in the same change and back to `true`
+only once that build's components have been reviewed. Attestations also need
 the repository to be public (or on GitHub Enterprise Cloud).
 
 ## The smoke test

@@ -5,9 +5,8 @@ receptionist from Distronode.
 
 ![The call log, with a call's summary and transcript](crates/district-app/data/screenshots/call-log.png)
 
-> **Status: no releases yet.** The packages are built and tested by CI, and the
-> first release waits on a review of the licensing of libwebrtc's codecs (see
-> [Install](#install)). Calls on the desktop need a build with the `voice`
+> **Status: no releases yet.** The packages are built and tested by CI, with
+> calls, and the first release follows (see [Install](#install)). Calls on the desktop need a build with the `voice`
 > feature, as both packages are; a default build from source has everything
 > else, and says so where calls would be.
 
@@ -50,10 +49,10 @@ so does not depend on the distribution's versions.
 
 ## Install
 
-There are no releases yet. The packages are built, but none will be published
-until the licensing of the video codecs inside libwebrtc, which the packages
-link for calls, has been reviewed (see [NOTICE](NOTICE)). Flathub is planned
-after the first release.
+There are no releases yet. The packages are built and tested by CI, and the
+first release will carry them. Both link this project's own build of libwebrtc
+for calls, which leaves out the H.264 and H.265 codecs and FFmpeg (see
+[NOTICE](NOTICE)). Flathub is planned after the first release.
 
 Each release on this repository's
 [Releases](https://github.com/distronode-corporation/district-linux/releases)
