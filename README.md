@@ -1,14 +1,22 @@
 # District AI for Linux
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/distronode-corporation/district-linux/badge)](https://scorecard.dev/viewer/?uri=github.com/distronode-corporation/district-linux)
+
 A native GTK 4 and libadwaita desktop client for District AI, the AI voice
 receptionist from Distronode.
 
 ![The call log, with a call's summary and transcript](crates/district-app/data/screenshots/call-log.png)
 
-> **Status: no releases yet.** The packages are built and tested by CI, with
-> calls, and the first release follows (see [Install](#install)). Calls on the desktop need a build with the `voice`
-> feature, as both packages are; a default build from source has everything
-> else, and says so where calls would be.
+> **Status: 0.1.0 is the current release**, as a .deb and a Flatpak bundle for
+> x86_64, both with calls, on the
+> [Releases](https://github.com/distronode-corporation/district-linux/releases/latest)
+> page (see [Install](#install)). Calls on the desktop need a build with the
+> `voice` feature, as both packages are; a default build from source has
+> everything else, and says so where calls would be.
+
+**Links:** [project page](https://www.distronode.com/open-source/district-linux),
+[GitLab mirror](https://gitlab.com/distronode-corporation/district-linux) (read-only
+mirror; issues and pull requests live on GitHub), [CHANGELOG](CHANGELOG.md).
 
 ## What it does
 
@@ -49,20 +57,17 @@ so does not depend on the distribution's versions.
 
 ## Install
 
-There are no releases yet. The packages are built and tested by CI, and the
-first release will carry them. Both link this project's own build of libwebrtc
-for calls, which leaves out the H.264 and H.265 codecs and FFmpeg (see
-[NOTICE](NOTICE)). Flathub is planned after the first release.
+The current release is
+[0.1.0](https://github.com/distronode-corporation/district-linux/releases/latest).
+It carries two packages for x86_64, both with calls. Both link this project's
+own build of libwebrtc for calls, which leaves out the H.264 and H.265 codecs
+and FFmpeg (see [NOTICE](NOTICE)). Flathub is planned.
 
-Each release on this repository's
-[Releases](https://github.com/distronode-corporation/district-linux/releases)
-page will carry two packages for x86_64, both with calls:
-
-- **`district-ai_<version>-1_amd64.deb`**, for Ubuntu 24.04, Debian 13 and
-  newer. Install it with apt, which also installs what it depends on:
+- **`district-ai_0.1.0-1_amd64.deb`**, for Ubuntu 24.04, Debian 13 and newer.
+  Install it with apt, which also installs what it depends on:
 
   ```
-  sudo apt install ./district-ai_<version>-1_amd64.deb
+  sudo apt install ./district-ai_0.1.0-1_amd64.deb
   ```
 
   It depends on GTK 4, libadwaita, GTK's media backend and the GStreamer
@@ -71,12 +76,12 @@ page will carry two packages for x86_64, both with calls:
   to keep your sign-in, the desktop portals, and a PulseAudio server (PipeWire's
   `pipewire-pulse`, which most desktops already run) for calls.
 
-- **`district-ai_<version>_x86_64.flatpak`**, for any distribution with
-  Flatpak. It needs the Flathub remote, from which Flatpak fetches its runtime:
+- **`district-ai_0.1.0_x86_64.flatpak`**, for any distribution with Flatpak.
+  It needs the Flathub remote, from which Flatpak fetches its runtime:
 
   ```
   flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-  flatpak install --user ./district-ai_<version>_x86_64.flatpak
+  flatpak install --user ./district-ai_0.1.0_x86_64.flatpak
   ```
 
   It runs sandboxed, with the network, your display, the GPU, PulseAudio and
@@ -88,7 +93,7 @@ Each package comes with a signed attestation of the build that made it, which
 you can check with the GitHub CLI:
 
 ```
-gh attestation verify district-ai_<version>-1_amd64.deb --repo distronode-corporation/district-linux
+gh attestation verify district-ai_0.1.0-1_amd64.deb --repo distronode-corporation/district-linux
 ```
 
 ## Build from source
@@ -121,25 +126,33 @@ has the steps.
 
 Signing in opens your browser, which hands the result back through a
 `districtai://` link. For the browser to find the app, the desktop entry has to
-be installed; until there are packages, [CONTRIBUTING.md](CONTRIBUTING.md#running-the-app)
-says how to install it for your user.
+be installed. The packages install it; for a build from source,
+[CONTRIBUTING.md](CONTRIBUTING.md#running-the-app) says how to install it for
+your user.
 
 Without a keyring (GNOME Keyring, KeePassXC or another Secret Service), the app
 works but keeps your sign-in only until it quits, and says so.
 
-## Contributing
+## Contributing, security and conduct
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the layout, the local checks CI runs,
-and the commit message rule. Everyone taking part is expected to follow the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+- [CONTRIBUTING.md](CONTRIBUTING.md): the layout, the local checks CI runs, and
+  the commit message rule.
+- [SECURITY.md](SECURITY.md): report vulnerabilities privately through
+  [GitHub's private vulnerability reporting](https://github.com/distronode-corporation/district-linux/security/advisories/new),
+  not in a public issue. It also describes the sign-in and token design.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): everyone taking part is expected to
+  follow it.
+- [SUPPORT.md](.github/SUPPORT.md): where questions, bugs and product support go.
 
-## Security
+## License and trademarks
 
-See [SECURITY.md](SECURITY.md), which also describes the sign-in and token design.
-Report vulnerabilities privately through
-[GitHub's private vulnerability reporting](https://github.com/distronode-corporation/district-linux/security/advisories/new),
-not in a public issue.
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). Third-party
+dependencies keep their own licences; NOTICE says where their texts are.
 
-## License
+District AI, Distronode and the District AI and Distronode logos and app icons
+are trademarks of Distronode Corporation. They are not licensed under the
+Apache License 2.0: a build you distribute must use its own name, icon and
+identifier.
 
-Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+This project is not affiliated with or endorsed by LiveKit, the GNOME project
+or Flathub.

@@ -45,3 +45,6 @@ The history of how it was built is in the repository's commits.
   fits a narrow window.
 - Calls link this project's own build of LiveKit's libwebrtc, which leaves out the
   H.264 and H.265 codecs and FFmpeg (NOTICE lists what it contains).
+
+[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/distronode-corporation/district-linux/releases/tag/v0.1.0

@@ -1,0 +1,34 @@
+# cargo-about configuration: the third-party licence file the .deb ships as
+# /usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt, written at build time by
+# scripts/build-deb.sh from about.hbs. It holds the licence text of every crate
+# the binary links, with the crates each text covers, because MIT, BSD, ISC and
+# MPL-2.0 ask for their notices to travel with a binary.
+#
+# `accepted` is exactly deny.toml's `[licenses] allow`. cargo-deny is the gate
+# that decides which licences may enter the tree; this list only has to agree
+# with it, so a change to one changes the other in the same pull request.
+accepted = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "MIT",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "Unicode-3.0",
+  "Unlicense",
+  "CC0-1.0",
+  "MPL-2.0",
+  "0BSD",
+]
+
+# Only the target a release ships, as deny.toml's [graph] says.
+targets = ["x86_64-unknown-linux-gnu"]
+
+# What is linked into the binary: build scripts, proc macros used only while
+# compiling and dev-dependencies are not distributed.
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+
+# The workspace's own crates are this project, under LICENSE and NOTICE.
+private = { ignore = true }

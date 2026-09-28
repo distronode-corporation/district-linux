@@ -76,29 +76,41 @@ SOURCE = DEST / "SOURCE.toml"
 class FixtureSet:
     """One directory of fixtures in the server repository, and where it goes here.
 
-    name       the directory under contracts/ it is vendored into, and its
-               `[sets.<name>]` table in SOURCE.toml
-    source     the directory inside the server repository
-    generator  the server test that records it, checked to exist so a moved
-               generator makes the recorded path fail loudly rather than go stale
+    name         the directory under contracts/ it is vendored into, and its
+                 `[sets.<name>]` table in SOURCE.toml
+    description  what SOURCE.toml records as the set's origin, in words
+    source       the directory inside the server repository
+    generator    the server test that records it, checked to exist so a moved
+                 generator fails the sync loudly rather than going stale
     """
 
     name: str
+    description: str
     source: str
     generator: str
 
+
+# THE PRIVATE SERVER REPOSITORY'S LAYOUT. These paths are read from the checkout
+# --monorepo names and are used for nothing else; they are not published in
+# SOURCE.toml, which records each set's description instead.
+SERVER_REPO_ANDROID_FIXTURES = "district-android/contracts"
+SERVER_REPO_ANDROID_GENERATOR = "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts"
+SERVER_REPO_DESKTOP_FIXTURES = "distronode-website/contracts/desktop"
+SERVER_REPO_DESKTOP_GENERATOR = "distronode-website/src/lib/contracts/__tests__/desktop-contracts.test.ts"
 
 # In the order SOURCE.toml lists them.
 SETS: tuple[FixtureSet, ...] = (
     FixtureSet(
         "fixtures",
-        "district-android/contracts",
-        "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts",
+        "the Android app's contract fixtures, recorded by the District AI server's contract tests",
+        SERVER_REPO_ANDROID_FIXTURES,
+        SERVER_REPO_ANDROID_GENERATOR,
     ),
     FixtureSet(
         "desktop",
-        "distronode-website/contracts/desktop",
-        "distronode-website/src/lib/contracts/__tests__/desktop-contracts.test.ts",
+        "the desktop-only contract fixtures, recorded by the District AI server's contract tests",
+        SERVER_REPO_DESKTOP_FIXTURES,
+        SERVER_REPO_DESKTOP_GENERATOR,
     ),
 )
 
@@ -484,7 +496,7 @@ def read_monorepo(path: Path, allow_dirty: bool) -> tuple[str, dict[str, bool], 
             raise SyncError(f"{directory} does not exist; is {top} the server repository?")
         if not (top / fixture_set.generator).is_file():
             raise SyncError(
-                f"{top / fixture_set.generator} does not exist; the recorded generator path is stale"
+                f"{top / fixture_set.generator} does not exist; the generator path in SERVER_REPO_* is stale"
             )
         # Ignored files count too: a fixture on disk that git does not track is not
         # part of the commit being recorded.
@@ -563,9 +575,8 @@ def render_source(
         count = sum(1 for path in outputs if path.startswith(f"{fixture_set.name}/"))
         lines.append("")
         lines.append(f"[sets.{fixture_set.name}]")
-        lines.append(f"source_dir = {toml_string(fixture_set.source)}")
+        lines.append(f"source = {toml_string(fixture_set.description)}")
         lines.append(f"source_clean = {'true' if clean[fixture_set.name] else 'false'}")
-        lines.append(f"generator = {toml_string(fixture_set.generator)}")
         lines.append(f"file_count = {count}")
     lines.append("")
     lines.append("[sync]")

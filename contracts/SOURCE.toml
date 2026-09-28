@@ -24,15 +24,13 @@
 commit = "b5918ef9517246eba57ab4b8011bd927c6fb5071"
 
 [sets.fixtures]
-source_dir = "district-android/contracts"
+source = "the Android app's contract fixtures, recorded by the District AI server's contract tests"
 source_clean = true
-generator = "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts"
 file_count = 177
 
 [sets.desktop]
-source_dir = "distronode-website/contracts/desktop"
+source = "the desktop-only contract fixtures, recorded by the District AI server's contract tests"
 source_clean = true
-generator = "distronode-website/src/lib/contracts/__tests__/desktop-contracts.test.ts"
 file_count = 13
 
 [sync]

@@ -4,13 +4,13 @@
     python3 scripts/sync-palette.py --monorepo <path>          # rewrite the snapshot
     python3 scripts/sync-palette.py --monorepo <path> --check  # fail if it is stale
 
-The Distronode design tokens live in the repository that holds the website, in
-distronode-marketing/src/app/tokens.css: one table of custom properties for the
+The Distronode design tokens live in the private repository that holds the
+website (SERVER_REPO_TOKENS below): one table of custom properties for the
 light theme (`:root`) and one for the dark (`[data-theme="dark"]`). This app takes
 only the accent and the semantic colours from it (the neutrals stay
 libadwaita's own), and this script writes those, both themes, into
-contracts/palette.snapshot.json with the source file, the commit it was read at
-and the date.
+contracts/palette.snapshot.json with a description of the source, the commit it
+was read at and the date.
 
 `district_core::palette` holds the same colours as constants, and a test in
 crates/district-core/tests/core/palette.rs fails when the two disagree, so a
@@ -35,7 +35,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SNAPSHOT = ROOT / "contracts" / "palette.snapshot.json"
-SOURCE = Path("distronode-marketing/src/app/tokens.css")
+# THE PRIVATE SERVER REPOSITORY'S LAYOUT: where the design tokens are read from in
+# the checkout --monorepo names. The snapshot records SOURCE_LABEL instead.
+SERVER_REPO_TOKENS = Path("distronode-marketing/src/app/tokens.css")
+SOURCE = SERVER_REPO_TOKENS
+SOURCE_LABEL = "the Distronode design tokens (tokens.css)"
 
 # In the order the snapshot lists them, which is the order of
 # `district_core::Palette::tokens`.
@@ -90,7 +94,7 @@ def snapshot(monorepo: Path) -> dict:
         raise SyncError(f"{SOURCE} has uncommitted changes; commit them or stash them first")
     css = (monorepo / SOURCE).read_text(encoding="utf-8")
     return {
-        "source": str(SOURCE),
+        "source": SOURCE_LABEL,
         "commit": git(monorepo, "log", "-1", "--format=%H", "--", str(SOURCE)),
         "recorded": datetime.date.today().isoformat(),
         "tokens": list(TOKENS),
