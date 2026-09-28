@@ -27,6 +27,12 @@ path = "tests/smoke.rs"
 harness = false
 required-features = ["gtk-tests"]
 
+[[test]]
+name = "store_screenshots"
+path = "tests/store_screenshots.rs"
+harness = false
+required-features = ["gtk-tests"]
+
 [features]
 # Builds the smoke test. Nothing in the app itself changes.
 gtk-tests = []

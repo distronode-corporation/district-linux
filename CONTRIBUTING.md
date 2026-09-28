@@ -34,8 +34,9 @@ crates/district-app/      The GTK 4 and libadwaita app, `district-ai`, and the o
                           crate that links GTK: a library the binary and the smoke
                           test share. data/ holds the .ui templates, the
                           stylesheet, the icons, the ringtone, the desktop entry,
-                          the D-Bus service template and the AppStream metadata;
-                          its Cargo.toml also holds the .deb's metadata.
+                          the D-Bus service template, the AppStream metadata and
+                          the store screenshots it names; its Cargo.toml also
+                          holds the .deb's metadata.
 contracts/                What this client is checked against: the server's recorded
                           responses, the Android set and the desktop-only set
                           (vendored and sanitised by sync-contracts.py), the
@@ -44,8 +45,9 @@ contracts/                What this client is checked against: the server's reco
                           (sync-palette.py).
 packaging/flatpak/        The Flatpak manifest and cargo-sources.json, the crates it
                           builds from (see Packaging below).
-scripts/                  check-version.py, check-public-hygiene.py and
-                          check-coverage.py, run by CI; fetch-libwebrtc.sh, run by
+scripts/                  check-version.py, check-public-hygiene.py,
+                          check-coverage.py and check-screenshots.py, run by CI;
+                          fetch-libwebrtc.sh, run by
                           voice.yml, the packages and by hand for a build with
                           calls; build-deb.sh and flatpak-cargo-sources.sh, run by
                           the packaging workflows, CI and by hand;
@@ -275,10 +277,10 @@ without it.
 `.github/workflows/flatpak.yml` builds the bundle in Flathub's GNOME 51 build
 image, installs it, and runs `district-ai --version` inside the sandbox. It also
 prints what Flathub's linter says, without failing on it, because Flathub asks
-for more than a bundle does. Today it reports screenshots missing from the
-AppStream metadata, and `finish-args-login1-system-talk-name`: Flathub refuses
-the logind permission unless it grants an exception, so the submission has to
-ask for one, with the reason above. Flathub also
+for more than a bundle does: its first run reported the screenshots missing from
+the AppStream metadata, which now has them, and
+`finish-args-login1-system-talk-name`, which only an exception from Flathub
+clears: the submission has to ask for one, with the reason above. Flathub also
 builds from a published tag, not from a checkout, so its manifest will name the
 sources by URL and commit rather than by directory.
 
@@ -296,8 +298,8 @@ request:
    start a new empty `[Unreleased]` above it. That section becomes the release
    notes.
 3. Make the newest `<release>` in the AppStream metadata that version, stable
-   (no `type`), with the same date.
-
+   (no `type`), with the same date, and move its screenshot links to the new
+   tag, `vX.Y.Z` (see "Store screenshots").
 `python3 scripts/check-version.py` checks all three agree, and with the tag as
 its argument checks them against the tag, as the release does. Once the pull
 request is merged, tag the merge commit and push the tag.
@@ -369,6 +371,49 @@ them after changing a page. Keep decisions out of the widgets: a page reads the
 core's state and sends events, and what it shows is tested in `district-core`
 wherever it can be.
 
+## Store screenshots
+
+The AppStream metadata names five screenshots, which Flathub and the other
+software centres show on the app's page. They are the PNGs in
+`crates/district-app/data/screenshots/`, and a second test beside the smoke
+test draws them, `crates/district-app/tests/store_screenshots.rs`: the real
+window against the same kind of scripted runner, answered with an invented
+plumbing business's calls, messages and contacts written in the test (every
+person in it made up, every number in the 555-0100 to 555-0199 range), rather
+than with the contract fixtures, whose names read like test data. Each scene is
+a window of 1000 by 700, the largest Flathub's quality guidelines allow, in the
+light style, with the rounded corners and the shadow a compositing desktop
+draws and nothing behind it. CI runs the test with the others; without
+`DISTRICT_STORE_SHOTS` it only draws the scenes, so a change to the window that
+breaks one fails there. Flathub asks that the pictures show the app as it is, so
+a visible change to one of these screens makes them again: run the test as the
+smoke test runs, with `DISTRICT_STORE_SHOTS` set to a directory:
+
+```
+DISTRICT_STORE_SHOTS=/tmp/store GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none \
+  GTK_MEDIA=none GSETTINGS_BACKEND=memory \
+  xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
+  cargo test -p district-app --locked --features gtk-tests --test store_screenshots
+```
+
+Look at each one, then copy them over the committed ones, which were
+recompressed losslessly and are about a third smaller for it. The test sets
+GNOME's defaults that Xvfb lacks: Cantarell 11 as the interface font, which
+needs `fonts-cantarell` installed (GNOME's own default is now Adwaita Sans,
+where a distribution packages it), and a close button alone in the header bar.
+
+The metadata links each picture at the release's tag,
+`https://raw.githubusercontent.com/distronode-corporation/district-linux/vX.Y.Z/crates/district-app/data/screenshots/<name>.png`,
+because Flathub takes a link from a tag or a commit, never a branch, and the
+metadata at a tag then names the pictures that tag holds. The comment above
+`<screenshots>` in the metadata has the reasoning. Two checks keep it honest:
+`scripts/check-version.py` holds every link to the tag of the version in
+Cargo.toml, and `scripts/check-screenshots.py` holds every link to a picture
+committed in that directory and every picture there to a link, with one
+default screenshot, first, and a caption for each that is one sentence without
+a full stop, as Flathub asks. Adding a picture means adding its
+`<screenshot>` in the same change.
+
 ## The whole local gate
 
 This is what CI's `rust` and `repo` jobs run:
@@ -377,11 +422,13 @@ This is what CI's `rust` and `repo` jobs run:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked --features district-app/gtk-tests -- -D warnings
 cargo test --workspace --locked --exclude district-app
-# then the app's tests, the smoke test included, as "The smoke test" says
+# then the app's tests, the smoke test and the store screenshots included, as "The smoke test" says
 python3 scripts/check-version.py
 python3 scripts/check-public-hygiene.py --self-test
 python3 scripts/check-public-hygiene.py
 python3 scripts/check-coverage.py --self-test
+python3 scripts/check-screenshots.py --self-test
+python3 scripts/check-screenshots.py
 desktop-file-validate crates/district-app/data/com.distronode.DistrictAI.desktop
 appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
 scripts/flatpak-cargo-sources.sh --check

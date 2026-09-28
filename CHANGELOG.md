@@ -696,7 +696,27 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 - The AppStream metadata has a `<releases>` entry for the version in
   Cargo.toml, `type="development"` until CHANGELOG.md releases it, and
   `scripts/check-version.py` holds it to Cargo.toml and CHANGELOG.md.
-
+- Store screenshots: five pictures of the real window (the call log with a
+  call's transcript, the inbox with a thread open, a call under way, contacts,
+  and the overview) in `crates/district-app/data/screenshots/`, named in the
+  AppStream metadata with a caption each, the call log first and the default.
+  They are drawn by a second headless test, `tests/store_screenshots.rs`
+  (`--features gtk-tests`, which CI runs with the smoke test), from an invented
+  business's calls, messages and contacts written in the test, in a window of
+  1000 by 700 with the rounded corners and the shadow a compositing desktop
+  draws, and saved when `DISTRICT_STORE_SHOTS` names a directory. The metadata
+  links them at the release's tag, `vX.Y.Z`, so the metadata at a tag names the
+  pictures that tag holds.
+- `scripts/check-screenshots.py`, run by CI's `repo` job with its
+  `--self-test`: every screenshot the metadata links is a PNG committed in that
+  directory, every picture there is linked, the first screenshot is the one
+  default, and each caption is one sentence without a full stop.
+- The AppStream metadata's age rating (OARS 1.1), each value with its reason:
+  unmoderated text messages and emails (`social-chat`) and audio
+  (`social-audio`) between the workspace and anyone who writes or calls,
+  contacts' addresses shared with the workspace (`social-contacts`), the
+  service's online API and nothing else (`social-info`, mild), and messages,
+  calls and the AI features billed to the workspace (`money-purchasing`).
 ### Changed
 
 - Logging below warn level is compiled out of the whole build (`log`'s
@@ -807,5 +827,14 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   `@bindir@` each package fills in with its own binary's directory (`/usr/bin`
   in the .deb, `/app/bin` in the Flatpak), instead of a file that named
   `/usr/bin` for every install.
+- The AppStream description is written for someone reading a store page: what
+  the app does, what it needs (an account, and a role that allows calls to take
+  or place them), and no more "early build" or "arrives later". The summary is
+  "Your AI receptionist on the desktop", within Flathub's 35 characters, and the
+  desktop entry's Comment follows it.
+- `scripts/check-version.py` also holds every screenshot link in the AppStream
+  metadata to the tag of the version in Cargo.toml.
+- README.md shows two of the screenshots, and says what the app does now rather
+  than what it will do.
 
 [Unreleased]: https://github.com/distronode-corporation/district-linux/commits/main

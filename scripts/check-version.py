@@ -13,6 +13,7 @@ Where the version lives:
     crates/*/Cargo.toml  version.workspace = true      inherit it, never restate it
     CHANGELOG.md         the newest `## [x.y.z] - date` once a release exists
     the metainfo         the newest <release>          always (see below)
+                         each screenshot's link        at the tag vx.y.z
 
 A member crate that writes its own version literal is an error even when the
 number agrees today, because nothing would keep it agreeing after the next bump.
@@ -26,6 +27,12 @@ its newest <release> is always the version in Cargo.toml. While CHANGELOG.md
 has no section for that version the release is `type="development"`; once it
 has one, the release is stable (no `type`, or `type="stable"`) and carries the
 section's date.
+
+The metainfo's screenshots are linked at the release's tag,
+https://raw.githubusercontent.com/distronode-corporation/district-linux/vx.y.z/...,
+so the metadata a tag holds names the pictures that tag holds. Every link must
+name the tag of the version in Cargo.toml; scripts/check-screenshots.py holds
+the rest of each link to a committed picture.
 
 With a tag, the version must equal the tag and CHANGELOG.md must have a section
 for it, because that section is what the release notes are made from; the
@@ -45,6 +52,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 METAINFO = ROOT / "crates/district-app/data/com.distronode.DistrictAI.metainfo.xml"
+# Where the metainfo's screenshots are fetched from, before the ref.
+RAW = "https://raw.githubusercontent.com/distronode-corporation/district-linux/"
 
 # `## [1.2.3] - 2026-01-31`, the Keep a Changelog release heading. The first
 # capture is whatever sits between the brackets (`Unreleased` is filtered out
@@ -126,6 +135,18 @@ def metainfo_errors(version: str, dated: dict[str, str]) -> list[str]:
     return errors
 
 
+def screenshot_errors(version: str) -> list[str]:
+    """Each screenshot link in the metainfo that is not at the tag v`version`."""
+    prefix = f"{RAW}v{version}/"
+    screenshots = ElementTree.parse(METAINFO).getroot().find("screenshots")
+    links = [] if screenshots is None else screenshots.findall("screenshot/image")
+    return [
+        f"the metainfo's screenshot {link!r} is not at the tag v{version} ({prefix}...)"
+        for link in ((image.text or "").strip() for image in links)
+        if not link.startswith(prefix)
+    ]
+
+
 def main(argv: list[str]) -> int:
     version, members = workspace()
     errors: list[str] = []
@@ -149,6 +170,8 @@ def main(argv: list[str]) -> int:
     print(f"  Cargo.toml    {version} ({len(members)} workspace members)")
     print(f"  CHANGELOG.md  {latest or '(no release yet)'}")
     print(f"  metainfo      {' '.join(meta[0]) if meta else '(no release)'}")
+    shots = ElementTree.parse(METAINFO).getroot().findall("screenshots/screenshot/image")
+    print(f"  screenshots   {len(shots)} linked")
 
     if latest is not None and latest != version:
         errors.append(
@@ -156,6 +179,7 @@ def main(argv: list[str]) -> int:
         )
 
     errors.extend(metainfo_errors(version, dated))
+    errors.extend(screenshot_errors(version))
 
     if len(argv) > 1:
         # Accept `v0.1.0` and `0.1.0`. Anything else is a mistake worth stopping

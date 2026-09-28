@@ -6,21 +6,36 @@
   <project_license>Apache-2.0</project_license>
 
   <name>District AI</name>
-  <summary>Your AI receptionist's calls, messages and contacts</summary>
+  <!-- Flathub's quality guidelines: 35 characters at most, no full stop.
+       The desktop entry's Comment says the same. -->
+  <summary>Your AI receptionist on the desktop</summary>
   <description>
     <p>
-      District AI answers your business's phone calls. This app brings your
-      District AI workspace to the Linux desktop, following your system's light
-      and dark style.
+      District AI answers your business's phone calls with an AI receptionist.
+      This app brings your District AI workspace to the Linux desktop, so you
+      can see what the receptionist handled, reply to your customers and take
+      calls yourself.
     </p>
+    <ul>
+      <li>The call log, with each call's summary and transcript</li>
+      <li>One inbox for your customers' text messages and emails, with a reply
+        written by AI when you ask for one</li>
+      <li>Your contacts, and the callers you have blocked</li>
+      <li>Calls handed to you ring on this computer, and a dialler places your
+        own</li>
+      <li>Meeting rooms, audio only, and each meeting's record</li>
+      <li>District HQ, which answers questions about your workspace, and
+        analytics of your calls</li>
+      <li>Your receptionist's settings: its voice and greeting, what it knows,
+        and where it sends calls</li>
+      <li>The help desk, support requests, workflows and booking pages</li>
+    </ul>
     <p>
-      This is an early build. It signs in through your browser, so it never sees
-      your password; shows your workspace's overview, with its latest calls; and
-      lets you see, and sign out, the devices signed in to your account. The
-      inbox, the call log, contacts, workspace settings and calls on the desktop
-      arrive in later builds.
+      You need a District AI account. What you can see and change follows your
+      role in each workspace, and taking or placing calls needs a role that
+      allows them. The app signs in through your web browser, so it never sees
+      your password, and it follows your system's light and dark style.
     </p>
-    <p>You need a District AI account to use it.</p>
   </description>
 
   <developer id="com.distronode">
@@ -45,7 +60,64 @@
     <color type="primary" scheme_preference="dark">#01657d</color>
   </branding>
 
-  <content_rating type="oars-1.1"/>
+  <!-- OARS 1.1, where an attribute left out is "none". The app shows no
+       content of its own: what it carries is what people send each other
+       through a District AI workspace, and what that costs. -->
+  <content_rating type="oars-1.1">
+    <!-- The inbox sends and receives text messages and emails between the
+         workspace's members and anyone who writes to the business, and nothing
+         moderates them. -->
+    <content_attribute id="social-chat">intense</content_attribute>
+    <!-- Calls on the desktop and meeting rooms carry live audio between the
+         member and whoever calls, is called or joins, unmoderated. -->
+    <content_attribute id="social-audio">intense</content_attribute>
+    <!-- Contacts' email addresses and phone numbers are shared with every member
+         of the workspace, and replies can go out by email. -->
+    <content_attribute id="social-contacts">intense</content_attribute>
+    <!-- Everything goes through the District AI service's online API. The app
+         sends no crash reports, analytics or diagnostics. -->
+    <content_attribute id="social-info">mild</content_attribute>
+    <!-- Messages sent, calls placed and the AI features (a reply written by
+         AI, a District HQ question, a persona audition, a knowledge document)
+         are billed to the workspace's District AI account. -->
+    <content_attribute id="money-purchasing">intense</content_attribute>
+  </content_rating>
+
+  <!-- The pictures are the PNGs under data/screenshots/, drawn from the real
+       window by tests/store_screenshots.rs. Flathub takes a picture's link
+       from a tag or a commit, never a branch, and copies the pictures when it
+       builds. The links name this release's own tag, v followed by the version
+       in Cargo.toml: the metadata at a tag then names the pictures that tag
+       holds, so a release needs no second change to point at its pictures,
+       and a store's pictures change only with a release, as the app does. A
+       commit could not be named that way, because the commit that changes a
+       picture cannot name itself. Until the tag is pushed, and while the
+       repository is private, the links answer nothing; nothing reads them
+       before a release. scripts/check-version.py holds the tag to the
+       version, and scripts/check-screenshots.py holds each link to a
+       committed picture and each committed picture to a link. -->
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v0.1.0/crates/district-app/data/screenshots/call-log.png</image>
+      <caption>The call log, with each call's summary and transcript</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v0.1.0/crates/district-app/data/screenshots/inbox.png</image>
+      <caption>Your customers' text messages and emails in one inbox</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v0.1.0/crates/district-app/data/screenshots/call.png</image>
+      <caption>A call placed from the desktop, with mute and hang up always in reach</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v0.1.0/crates/district-app/data/screenshots/contacts.png</image>
+      <caption>Your contacts, with each customer's details</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v0.1.0/crates/district-app/data/screenshots/overview.png</image>
+      <caption>The workspace at a glance, with its latest calls</caption>
+    </screenshot>
+  </screenshots>
 
   <!-- The newest release comes first and is always the version in Cargo.toml.
        Until CHANGELOG.md has a section for that version it is

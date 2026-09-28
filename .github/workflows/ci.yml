@@ -229,6 +229,8 @@ jobs:
         with:
           persist-credentials: false
 
+      # The AppStream metadata's release, and the tag its screenshot links
+      # name, included.
       - name: The version agrees across the workspace, CHANGELOG.md and the AppStream metadata
         run: python3 scripts/check-version.py
 
@@ -251,6 +253,14 @@ jobs:
       # report. Its self-test needs no report, so it runs here, in seconds.
       - name: The coverage check still catches what it claims to
         run: python3 scripts/check-coverage.py --self-test
+
+      # A software centre fetches the screenshots by link, so a link with no
+      # committed picture behind it is a broken picture on the store page.
+      - name: The screenshot check still catches what it claims to
+        run: python3 scripts/check-screenshots.py --self-test
+
+      - name: Every screenshot linked is a committed picture, and every picture is linked
+        run: python3 scripts/check-screenshots.py
 
       # The files the desktop and the software centres read, against their
       # specifications, offline: a desktop entry a launcher refuses, or metadata a

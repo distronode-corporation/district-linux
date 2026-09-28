@@ -3,6 +3,8 @@
 A native GTK 4 and libadwaita desktop client for District AI, the AI voice
 receptionist from Distronode.
 
+![The call log, with a call's summary and transcript](crates/district-app/data/screenshots/call-log.png)
+
 > **Status: pre-release, under active development, not yet usable day to day.**
 > The app signs in through your browser and shows your workspace's overview, the
 > inbox with its threads and replies, the call log with each call's transcript,
@@ -19,23 +21,32 @@ receptionist from Distronode.
 > with the call's duration, mute and hang up under every screen; its call
 > engine is tested against a local media server and not yet against District
 > AI's own. A default build does none of that, and says so. There are no
-> releases yet (see [Install](#install)). Screenshots will follow with the
-> first release.
+> releases yet (see [Install](#install)).
 
-## What it will do
+## What it does
 
-District AI answers a business's phone calls. This app brings a District AI
-workspace to the Linux desktop:
+District AI answers a business's phone calls with an AI receptionist. This app
+brings a District AI workspace to the Linux desktop:
 
-- **Calls:** the call log, each call's transcript and summary, and calls updating
-  live as they happen.
-- **Inbox:** the workspace's message threads, read and answered from the desktop.
-- **Contacts:** the workspace's contacts and their call history.
-- **Workspace settings:** what the signed-in member's role allows them to change.
-- **Calls on the desktop:** answering a call handed to a person, and placing one,
-  without picking up a phone.
+- **Calls:** the call log, each call's summary and transcript, and calls
+  updating live as they happen.
+- **Inbox:** the workspace's text messages and emails, read and answered from
+  the desktop, with a reply written by AI when you ask for one.
+- **Contacts:** the workspace's contacts, and the callers it has blocked.
+- **Calls on the desktop,** in a build with calls, as the packages are: a call
+  handed to you rings on this computer, a dialler places your own without
+  picking up a phone, and meeting rooms are joined the same way, audio only.
+- **The rest of the workspace:** District HQ, analytics, the help desk, support
+  requests, workflows, booking pages, and the phone numbers and billing, read
+  only.
+- **Workspace settings:** the receptionist's persona and voice, what it can do,
+  where it transfers calls, how calls are routed, its knowledge base, the
+  carrier accounts and the members, as far as your role allows.
 
-You need a District AI account to use it. See <https://www.distronode.com>.
+You need a District AI account to use it, and taking or placing calls needs a
+role that allows them. See <https://www.distronode.com>.
+
+![A call placed from the desktop, under way over the contact's details](crates/district-app/data/screenshots/call.png)
 
 ## Platform support
 
