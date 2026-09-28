@@ -41,6 +41,12 @@ brings a District AI workspace to the Linux desktop:
 You need a District AI account to use it, and taking or placing calls needs a
 role that allows them. See <https://www.distronode.com>.
 
+**Without an account with us.** Today this app needs a District AI account to sign in. We
+want the District AI apps to work without an account with us too. We have not worked out
+what that looks like or whether it can work, and the answer depends on what people would
+use them with, so we are asking before we build anything:
+[tell us what you would connect them to](https://github.com/distronode-corporation/.github/discussions/1).
+
 ![A call placed from the desktop, under way over the contact's details](crates/district-app/data/screenshots/call.png)
 
 ## Platform support
