@@ -1,0 +1,110 @@
+name: libwebrtc
+
+# Builds the audio-only libwebrtc that a build with calls links, with
+# scripts/build-libwebrtc.sh: LiveKit's own recipe for its Rust SDK's prebuilt
+# library, from the same pinned sources and patches, without the H.264 and H.265
+# codecs and FFmpeg. The script checks the arguments the library was built with
+# and fails if any H.264 or H.265 codec symbol is left in it.
+#
+# The zip and its SHA-256 are this run's artifact. A maintainer compares them,
+# publishes the zip as a release of this repository, and moves the pin in
+# scripts/fetch-libwebrtc.sh to it; CONTRIBUTING.md ("Rebuilding libwebrtc")
+# has the steps. Unlike deb.yml and flatpak.yml, this artifact is kept whatever
+# LIBWEBRTC_LICENCE_CLEARED says, because it is the library this project means
+# to distribute: it carries none of the codecs that variable is about.
+#
+# To test a run's build before it is published, start voice.yml by hand with
+# that run's id.
+#
+# By hand only. It downloads about 15 GB and builds for hours, and nothing in
+# it changes unless its pins do.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: libwebrtc
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      # The build needs about 40 GB, more than the runner has free as it
+      # comes. The same toolchains flatpak.yml deletes, none of which this
+      # uses, and the cached container images.
+      - name: Make room on the runner
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift \
+            /usr/local/share/powershell /usr/local/share/chromium /usr/lib/jvm
+          docker image prune --all --force > /dev/null
+          df -h /
+          df -h /mnt || true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # What LiveKit's own CI installs for this build, less Java, which only
+      # its Android builds use. setuptools from apt, because Ubuntu's Python
+      # refuses a pip install outside a virtual environment.
+      - name: Install the build's tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build pkg-config python3-setuptools cpio zip
+          ninja --version
+
+      # On whichever of the root disk and the runner's scratch disk has more
+      # room once the step above has run.
+      - name: Choose where to build
+        run: |
+          set -euo pipefail
+          root_free="$(df --output=avail -B1 / | tail -1)"
+          mnt_free="$(df --output=avail -B1 /mnt 2>/dev/null | tail -1 || echo 0)"
+          if [ "${mnt_free:-0}" -gt "$root_free" ]; then
+            sudo mkdir -p /mnt/libwebrtc
+            sudo chown "$(id -u):$(id -g)" /mnt/libwebrtc
+            work=/mnt/libwebrtc/work
+          else
+            work="$RUNNER_TEMP/libwebrtc/work"
+          fi
+          echo "building in $work"
+          echo "WORK=$work" >> "$GITHUB_ENV"
+
+      - name: Build libwebrtc without H.264, H.265 or FFmpeg
+        run: |
+          set -euo pipefail
+          scripts/build-libwebrtc.sh "$WORK"
+          df -h "$WORK"
+
+      - name: The archive and its digest
+        run: |
+          set -euo pipefail
+          cd "$WORK"
+          ls -l webrtc-linux-x64-release.zip
+          cat webrtc-linux-x64-release.zip.sha256
+          sha256sum --check webrtc-linux-x64-release.zip.sha256
+          {
+            echo "### libwebrtc"
+            echo '```'
+            cat webrtc-linux-x64-release.zip.sha256
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: libwebrtc-linux-x64-release
+          path: |
+            ${{ env.WORK }}/webrtc-linux-x64-release.zip
+            ${{ env.WORK }}/webrtc-linux-x64-release.zip.sha256
+            ${{ env.WORK }}/libwebrtc-symbols.txt
+          if-no-files-found: error
+          retention-days: 30
+          # Already compressed.
+          compression-level: 0

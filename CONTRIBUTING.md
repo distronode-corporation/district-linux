@@ -53,6 +53,7 @@ scripts/                  check-version.py, check-public-hygiene.py,
                           voice.yml, the packages and by hand for a build with
                           calls; build-deb.sh and flatpak-cargo-sources.sh, run by
                           the packaging workflows, CI and by hand;
+                          build-libwebrtc.sh, run by libwebrtc.yml and by hand;
                           sync-contracts.py, sync-endpoints.py, sync-palette.py and
                           make-ringtone.py, run by hand.
 coverage-floors.toml      Each crate's line coverage floor (see Coverage below).
@@ -180,6 +181,44 @@ for the test to read. A test that put a frame microphone in the child would be
 refused, as the last two `devices::` tests show. Before this, the device test's
 peer shared its process and the test aborted inside libwebrtc (`Check failed:
 !race_checker404.RaceDetected()` in `audio_send_stream.cc`) in 12 of 30 runs.
+
+### Rebuilding libwebrtc
+
+LiveKit's prebuilt libwebrtc is built with FFmpeg's H.264 and H.265 decoders and
+the OpenH264 encoder, which carry patent licensing that an audio-only app has no
+use for. `scripts/build-libwebrtc.sh` builds the same library without them: it
+runs LiveKit's own recipe (`webrtc-sys/libwebrtc/` in `livekit/rust-sdks`, at the
+commit the SDK's release names) on the WebRTC commit that release was built
+from, with every patch LiveKit applies, and changes exactly three GN arguments:
+`ffmpeg_branding="Chromium"`, `rtc_use_h264=false` and `rtc_use_h265=false`.
+VP8, VP9, AV1 and Opus stay, as does every other argument, including
+`use_custom_libcxx=true`, which webrtc-sys depends on. The script then checks
+the arguments GN recorded, fails if any H.264 or H.265 codec symbol is left in
+the library, and writes `webrtc-linux-x64-release.zip` in the prebuilt's layout,
+with its SHA-256.
+
+The build downloads about 15 GB, needs about 40 GB of free disk and takes hours,
+so it runs on a GitHub runner: start `.github/workflows/libwebrtc.yml` by hand,
+and the run keeps the zip, its digest and the library's symbol list as an
+artifact. To try that build with the call engine before anything is published,
+start `.github/workflows/voice.yml` by hand with the libwebrtc run's id as
+`libwebrtc_run`. To build it locally instead, on Linux x86_64 with git, curl,
+python3 and setuptools, ninja, pkg-config, cpio and zip:
+
+```
+scripts/build-libwebrtc.sh ~/libwebrtc-build
+```
+
+The directory must be empty or missing, because LiveKit's script applies its
+patches to the checkout it builds.
+
+When the LiveKit SDK moves to a webrtc-sys-build with a different libwebrtc,
+read that crate's `WEBRTC_TAG`, find the `livekit/rust-sdks` commit the tag names
+and the WebRTC commit its `.gclient` branch pointed at, and move the pins at the
+top of `scripts/build-libwebrtc.sh`. The script refuses a Cargo.lock whose
+webrtc-sys-build it is not pinned to, and refuses a recipe in which any of the
+three arguments or the `.gclient` branch no longer appears exactly once, so an
+upstream change fails the build instead of changing what it makes.
 
 ## Packaging
 

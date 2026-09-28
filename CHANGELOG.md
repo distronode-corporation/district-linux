@@ -726,6 +726,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   from the tag, with the commit the tag names. CONTRIBUTING.md ("Flathub") has
   the submission, with what is still open: the logind exception, the prebuilt
   libwebrtc, and the app id's domain verification.
+- `scripts/build-libwebrtc.sh` and `.github/workflows/libwebrtc.yml`: build
+  libwebrtc from LiveKit's own recipe and pinned sources without the H.264 and
+  H.265 codecs or FFmpeg (`ffmpeg_branding="Chromium"`, `rtc_use_h264=false`,
+  `rtc_use_h265=false`, nothing else changed), check the arguments GN recorded,
+  fail if any H.264 or H.265 codec symbol is left, and keep the zip in the
+  prebuilt's layout with its SHA-256. By hand only; CONTRIBUTING.md
+  ("Rebuilding libwebrtc") has the steps.
 
 ### Changed
 
