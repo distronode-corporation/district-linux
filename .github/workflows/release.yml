@@ -132,13 +132,13 @@ jobs:
     needs: guard
     permissions:
       contents: read
-    uses: ./.github/workflows/deb.yml
+    uses: $/.github/workflows/deb.yml
 
   flatpak:
     needs: guard
     permissions:
       contents: read
-    uses: ./.github/workflows/flatpak.yml
+    uses: $/.github/workflows/flatpak.yml
 
   # The only job that can write to the repository and the only one that can
   # make a release public. It sees packages, never source, and runs no build.
