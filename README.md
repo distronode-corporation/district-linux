@@ -67,7 +67,7 @@ The current release is
 [0.1.0](https://github.com/distronode-corporation/district-linux/releases/latest).
 It carries two packages for x86_64, both with calls. Both link this project's
 own build of libwebrtc for calls, which leaves out the H.264 and H.265 codecs
-and FFmpeg (see [NOTICE](NOTICE)). Flathub is planned.
+and FFmpeg (see [NOTICE](NOTICE)).
 
 - **`district-ai_0.1.0-1_amd64.deb`**, for Ubuntu 24.04, Debian 13 and newer.
   Install it with apt, which also installs what it depends on:

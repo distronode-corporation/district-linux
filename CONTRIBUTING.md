@@ -49,12 +49,9 @@ contracts/                What this client is checked against: the server's reco
                           (sync-palette.py).
 packaging/flatpak/        The Flatpak manifest and cargo-sources.json, the crates it
                           builds from (see Packaging below).
-packaging/flathub/        The manifest Flathub builds from, written from the one
-                          above by flathub-manifest.py, and flathub.json (see
-                          "Flathub" below).
 scripts/                  check-version.py, check-public-hygiene.py,
-                          check-coverage.py, check-screenshots.py and
-                          flathub-manifest.py, run by CI; fetch-libwebrtc.sh, run by
+                          check-coverage.py and check-screenshots.py, run by
+                          CI; fetch-libwebrtc.sh, run by
                           voice.yml, the packages and by hand for a build with
                           calls; build-deb.sh and flatpak-cargo-sources.sh, run by
                           the packaging workflows, CI and by hand;
@@ -211,8 +208,7 @@ start `.github/workflows/voice.yml` by hand with the libwebrtc run's id as
 repository named `libwebrtc-<webrtc tag>-audio-<n>` (the number counts builds
 for the same LiveKit tag), with the digest from the run beside it, and move
 `RELEASE` and `SHA256` in `scripts/fetch-libwebrtc.sh`, the `url` and `sha256`
-in the Flatpak manifest (then run `scripts/flathub-manifest.py`), and the
-digest in NOTICE, in one change. Compare the published asset's digest with the
+in the Flatpak manifest, and the digest in NOTICE, in one change. Compare the published asset's digest with the
 run's before pinning it. To build it locally instead, on Linux x86_64 with git, curl,
 python3 and setuptools, ninja, pkg-config, cpio and zip:
 
@@ -333,75 +329,15 @@ the portals, so a new permission needs a test that shows the app cannot work
 without it.
 
 `.github/workflows/flatpak.yml` builds the bundle in Flathub's GNOME 51 build
-image, installs it, and runs `district-ai --version` inside the sandbox. It also
-prints what Flathub's linter says, without failing on it, because Flathub asks
-for more than a bundle does: its first run reported the screenshots missing from
-the AppStream metadata, which now has them, and
-`finish-args-login1-system-talk-name`, which only an exception from Flathub
-clears (see "Flathub" below).
+image, installs it, and runs `district-ai --version` inside the sandbox. The app
+ships as that bundle and the .deb, on this repository's releases only; it is not
+published on Flathub.
 
 Both workflows run on pull requests that change what they build from, and by
 hand. Each keeps its package as the run's artifact for a week only while the
 licence gate (below) is open: an artifact of a public repository is a download
 anyone can take, so it is distribution, and a libwebrtc nobody has cleared must
 not reach one.
-
-### Flathub
-
-Flathub builds from a published tag, not from a checkout, and keeps the
-manifest in a repository of its own (`flathub/com.distronode.DistrictAI` on
-GitHub, which Flathub creates when it accepts the submission). What goes there
-is written here:
-
-- `packaging/flathub/com.distronode.DistrictAI.yml` is the Flatpak manifest
-  above with the app's source named by URL, tag and commit, as Flathub
-  requires, instead of by directory; everything else is the same.
-  `python3 scripts/flathub-manifest.py` writes it from the local manifest and
-  the version in Cargo.toml, and CI's `repo` job fails when it is out of date,
-  so the two cannot drift. It carries a placeholder for the commit, because a
-  commit cannot name itself.
-- `packaging/flathub/flathub.json` builds for x86_64 only, because the prebuilt
-  libwebrtc is x86_64 only.
-
-Before a submission, and what is still open:
-
-1. **The repository is public and the release's tag is pushed.** Flathub
-   fetches the tag, and copies the screenshots from their links (see "Store
-   screenshots"), when it builds.
-2. **The prebuilt libwebrtc is an open decision.** Flathub requires everything
-   to be built from source, with exceptions only case by case, and the manifest
-   downloads this project's own build of libwebrtc (a release of this
-   repository, built in the open by libwebrtc.yml from pinned sources and
-   checked against its pinned SHA-256) instead of building it inside the
-   Flatpak build, because building libwebrtc takes Chromium's own toolchain and
-   a large source tree. Either Flathub grants an exception for it, or the
-   manifest builds libwebrtc from source, or the app goes to Flathub as a build
-   without calls. Nothing has decided which yet. The licence gate (below)
-   applies too, since publishing on Flathub is distributing.
-3. **The logind permission needs an exception.** Flathub's linter refuses
-   `--system-talk-name=org.freedesktop.login1` unless Flathub grants an
-   exception, which it does on a sufficient explanation, through a pull request
-   to the linter's list of exceptions. The reason: the app holds a delay
-   inhibitor and listens for logind's `PrepareForSleep`, so that a laptop going
-   to sleep first unregisters its ring presence, which keeps the service from
-   holding a caller for a desktop that cannot answer, and ends a call under way
-   at once.
-   Without it a sleeping desktop keeps its registration until it lapses, up to
-   ten minutes later, while the service may hold a caller for it (SECURITY.md
-   has the protocol). It asks logind for nothing else. Flathub asks that no LLM
-   be used in any way to handle an exception request.
-4. **The app id's domain has to be verified** for Flathub to mark the app
-   verified: Flathub gives a token, which has to be served at
-   `https://distronode.com/.well-known/org.flathub.VerifiedApps.txt`. That is
-   the website's side, not this repository's.
-5. **The submission.** `python3 scripts/flathub-manifest.py --submission vX.Y.Z
-   <dir>` writes the three files Flathub's repository holds into `<dir>`: the
-   manifest with the commit the tag names, `flathub.json` and
-   `cargo-sources.json`, all read from the tag itself, never from the working
-   tree. The first submission is a pull request adding them to
-   `flathub/flathub`'s `new-pr` branch, as Flathub's submission guide says; once
-   it is accepted, each release is a pull request to the app's own repository
-   there.
 
 ## Releases
 
@@ -416,14 +352,10 @@ request:
 3. Make the newest `<release>` in the AppStream metadata that version, stable
    (no `type`), with the same date, and move its screenshot links to the new
    tag, `vX.Y.Z` (see "Store screenshots").
-4. Run `python3 scripts/flathub-manifest.py`, which moves
-   `packaging/flathub/`'s manifest to the new tag.
 
-`python3 scripts/check-version.py` checks the first three agree, and with the
-tag as its argument checks them against the tag, as the release does;
-`python3 scripts/flathub-manifest.py --check` checks the fourth. Once the pull
-request is merged, tag the merge commit and push the tag. Submitting it to
-Flathub is "Flathub" under Packaging.
+`python3 scripts/check-version.py` checks the three agree, and with the tag as
+its argument checks them against the tag, as the release does. Once the pull
+request is merged, tag the merge commit and push the tag.
 
 The workflow then refuses a tag that is not on main or that the versions do not
 match, builds the .deb and the Flatpak with deb.yml and flatpak.yml (read-only,
@@ -495,20 +427,19 @@ wherever it can be.
 
 ## Store screenshots
 
-The AppStream metadata names five screenshots, which Flathub and the other
-software centres show on the app's page. They are the PNGs in
+The AppStream metadata names five screenshots, which software centres such as
+GNOME Software show on the app's page. They are the PNGs in
 `crates/district-app/data/screenshots/`, and a second test beside the smoke
 test draws them, `crates/district-app/tests/store_screenshots.rs`: the real
 window against the same kind of scripted runner, answered with an invented
 plumbing business's calls, messages and contacts written in the test (every
 person in it made up, every number in the 555-0100 to 555-0199 range), rather
 than with the contract fixtures, whose names read like test data. Each scene is
-a window of 1000 by 700, the largest Flathub's quality guidelines allow, in the
-light style, with the rounded corners and the shadow a compositing desktop
+a window of 1000 by 700, in the light style, with the rounded corners and the shadow a compositing desktop
 draws and nothing behind it. CI runs the test with the others; without
 `DISTRICT_STORE_SHOTS` it only draws the scenes, so a change to the window that
-breaks one fails there. Flathub asks that the pictures show the app as it is, so
-a visible change to one of these screens makes them again: run the test as the
+breaks one fails there. The pictures must show the app as it is, so a visible
+change to one of these screens makes them again: run the test as the
 smoke test runs, with `DISTRICT_STORE_SHOTS` set to a directory:
 
 ```
@@ -526,14 +457,14 @@ where a distribution packages it), and a close button alone in the header bar.
 
 The metadata links each picture at the release's tag,
 `https://raw.githubusercontent.com/distronode-corporation/district-linux/vX.Y.Z/crates/district-app/data/screenshots/<name>.png`,
-because Flathub takes a link from a tag or a commit, never a branch, and the
+because a tag never moves under a store page the way a branch does, and the
 metadata at a tag then names the pictures that tag holds. The comment above
 `<screenshots>` in the metadata has the reasoning. Two checks keep it honest:
 `scripts/check-version.py` holds every link to the tag of the version in
 Cargo.toml, and `scripts/check-screenshots.py` holds every link to a picture
 committed in that directory and every picture there to a link, with one
 default screenshot, first, and a caption for each that is one sentence without
-a full stop, as Flathub asks. Adding a picture means adding its
+a full stop, as software centres expect. Adding a picture means adding its
 `<screenshot>` in the same change.
 
 ## The whole local gate
@@ -554,8 +485,6 @@ python3 scripts/check-screenshots.py
 desktop-file-validate crates/district-app/data/com.distronode.DistrictAI.desktop
 appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
 scripts/flatpak-cargo-sources.sh --check
-python3 scripts/flathub-manifest.py --self-test
-python3 scripts/flathub-manifest.py --check
 ```
 
 The call engine is built and tested by its own workflow,

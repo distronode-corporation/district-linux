@@ -8,9 +8,8 @@ name: Flatpak
 #
 # Run by hand, from release.yml, and on pull requests that change what the
 # Flatpak is built from (the manifest and cargo-sources.json, which moves with
-# every Cargo.lock change, and the files the manifest installs or runs; not
-# packaging/flathub/, which is written from the manifest and builds nothing
-# here). Minutes are metered while the repository is private, and a build with
+# every Cargo.lock change, and the files the manifest installs or runs).
+# Minutes are metered while the repository is private, and a build with
 # calls is long, so it is one job and never runs on a push to main.
 on:
   workflow_dispatch:
@@ -146,12 +145,3 @@ jobs:
           retention-days: 7
           # Already compressed.
           compression-level: 0
-
-      # Flathub's own checks, which ask for more than a bundle needs (on the
-      # first run: screenshots in the metainfo, and an exception for the
-      # logind permission). Reported here for the Flathub submission and never
-      # fatal.
-      - name: Flathub's linter (report only)
-        run: |
-          docker exec flatpak flatpak-builder-lint manifest packaging/flatpak/com.distronode.DistrictAI.yml || true
-          docker exec flatpak flatpak-builder-lint repo repo || true

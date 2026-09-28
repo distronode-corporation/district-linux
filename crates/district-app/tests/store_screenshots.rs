@@ -1,4 +1,4 @@
-//! The store screenshots: the pictures Flathub and the software centres show,
+//! The store screenshots: the pictures the software centres show,
 //! drawn from the real window.
 //!
 //! Like the smoke test (`tests/smoke.rs`), this builds the whole window
@@ -10,12 +10,12 @@
 //!
 //! It draws five scenes in the light style: the overview, the inbox with a
 //! thread open, the call log with a call's transcript, contacts, and a call
-//! under way. Each is a window of 1000 by 700, the largest Flathub's quality
+//! under way. Each is a window of 1000 by 700, the largest the usual store
 //! guidelines allow, drawn with the rounded corners and the shadow a
 //! compositing desktop gives it (see [`Store::render`]), so each picture is a
 //! little larger than the window. With `DISTRICT_STORE_SHOTS` set to a
-//! directory it saves them there as PNGs, checking each is what Flathub asks
-//! for; without it, it only draws them, which is how CI runs it, so the scenes
+//! directory it saves them there as PNGs, checking each is what a store page
+//! asks for; without it, it only draws them, which is how CI runs it, so the scenes
 //! keep working as the window changes. The pictures under
 //! `crates/district-app/data/screenshots/` come from it, and CONTRIBUTING.md
 //! ("Store screenshots") says how to make them again.
@@ -51,7 +51,7 @@ use libadwaita as adw;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-/// The window's size in every scene: the largest Flathub asks for, so the
+/// The window's size in every scene: the largest a store page asks for, so the
 /// three panes of the inbox, the call log and contacts all fit.
 const WIDTH: i32 = 1000;
 const HEIGHT: i32 = 700;
@@ -246,7 +246,7 @@ impl Store {
     ///
     /// Xvfb has no compositing manager, so GTK gives the window its
     /// `solid-csd` style, square and without a shadow, which is how it looks
-    /// on a desktop without one. Flathub asks for the rounded corners and the
+    /// on a desktop without one. Store pictures show the rounded corners and the
     /// shadow, so the window is given the `csd` style GTK gives it on a
     /// compositing desktop, and the shadow libadwaita's stylesheet then draws
     /// is kept: a widget paintable clips a widget to its own box, and the
@@ -278,7 +278,7 @@ impl Store {
         let Some(dir) = &self.shots else {
             return;
         };
-        // What Flathub asks of a picture, checked only for the pictures kept,
+        // What a store asks of a picture, checked only for the pictures kept,
         // which are made on one machine rather than on every CI runner: the
         // window no larger than 1000 by 700, its shadow around it, and
         // nothing behind it.

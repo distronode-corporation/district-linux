@@ -6,8 +6,7 @@
 
 The metadata (crates/district-app/data/com.distronode.DistrictAI.metainfo.xml)
 names its screenshots by link, and a software centre fetches them from there:
-Flathub copies them when it builds a release, and GNOME Software and the others
-show them on the app's page. The pictures are the PNGs under
+GNOME Software and the others show them on the app's page. The pictures are the PNGs under
 crates/district-app/data/screenshots/, which
 crates/district-app/tests/store_screenshots.rs draws. A link with no committed
 picture behind it is a broken picture on the store page, found only once the
@@ -19,7 +18,7 @@ link is
 and scripts/check-version.py holds <ref> to the release's tag. The check fails
 on any of these:
 
-    none      The metadata has no screenshots. Flathub requires at least one.
+    none      The metadata has no screenshots. A store page needs at least one.
     link      A link is not of the form above, or the links do not all name the
               same <ref>.
     missing   A link's <path> is not a PNG committed under the screenshots
@@ -29,8 +28,8 @@ on any of these:
               link names.
     twice     Two links name the same picture.
     shape     A screenshot without exactly one <image> and one <caption>.
-    caption   A caption that is empty or ends with a full stop. Flathub asks
-              for one sentence with no full stop.
+    caption   A caption that is empty or ends with a full stop. Software
+              centres expect one sentence with no full stop.
     default   The first screenshot is not type="default", or another one is.
               The first is the one a store shows first.
 
@@ -74,7 +73,7 @@ def check(root: Path) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     screenshots = component.find("screenshots")
     entries = [] if screenshots is None else screenshots.findall("screenshot")
     if not entries:
-        return [("none", "the metadata has no screenshots; Flathub requires at least one")], shown
+        return [("none", "the metadata has no screenshots; a store page needs at least one")], shown
 
     tracked = git_files(root)
     present = tracked | git_files(root, "--others", "--exclude-standard")
