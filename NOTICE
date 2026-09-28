@@ -5,8 +5,12 @@ This product includes software developed by Distronode Corporation, licensed
 under the Apache License, Version 2.0. The full licence text is in LICENSE.
 
 The distributed binaries statically link a number of third-party Rust crates.
-Those crates keep their own licences, which are declared in Cargo.toml and
-Cargo.lock and are not restated here.
+Third-party dependencies keep their own licences. The .deb carries the licence
+text of every crate the binary links, with the crates each text covers, as
+/usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt, beside this file. It is
+written from Cargo.lock by cargo-about (about.toml and about.hbs in this
+repository) when the package is built, and running scripts/build-deb.sh
+writes the same file into target/release for a build of your own.
 
 Third-party notices for native libraries bundled with a release (for example in
 a Flatpak or a .deb) are listed in this file when such a library is added.
@@ -65,7 +69,11 @@ of their symbols is found. It still carries the VP8, VP9 and AV1 video codecs
 (libvpx, libaom and dav1d), which are royalty free, although the app sends and
 receives no video.
 
-"District AI" and "Distronode" are names used by Distronode Corporation.
+District AI, Distronode and the District AI and Distronode logos and app icons
+are trademarks of Distronode Corporation. They are not licensed under the Apache
+License 2.0: a build you distribute must use its own name, icon and identifier.
+This project is not affiliated with or endorsed by LiveKit, the GNOME project or
+Flathub.
 
 The app's icons (crates/district-app/data/icons/) are the Distronode mark. The
 licence covers these files as part of the project, and, as its section 6 says,

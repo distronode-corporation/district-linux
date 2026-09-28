@@ -3,11 +3,16 @@
 Issues and pull requests are welcome. This guide covers how the repository is
 laid out, how to build and test it, and what CI holds every change to.
 
+Questions, build trouble and ideas go to
+[Discussions](https://github.com/distronode-corporation/district-linux/discussions);
+the issue tracker is for reproducible bugs.
+
 ## Layout
 
 ```
 crates/district-model/    Serde data types for the District AI API, mirroring the
-                          Android app's core model, and the live telemetry
+                          Android app's core model (district-android, public),
+                          and the live telemetry
                           envelopes. No IO.
 crates/district-api/      The HTTP client and the endpoint table. A bearer token and
                           an explicit workspace on every call, no cookie store,
@@ -87,9 +92,9 @@ cargo test --workspace --exclude district-app
 `cargo run -p district-app` opens the window. Signing in opens your browser, and
 the browser hands the result back through a `districtai://auth` link, which the
 desktop delivers to the running app because the app's desktop entry claims the
-scheme. Until there are packages, install the entry for your user, pointing at
-your build; the D-Bus service file lets the desktop start the app for a link or a
-notification when it is not running:
+scheme. The packages install it; for a build from source, install the entry
+for your user, pointing at your build; the D-Bus service file lets the desktop
+start the app for a link or a notification when it is not running:
 
 ```
 cargo build -p district-app
@@ -173,16 +178,14 @@ started with `--network none` needs a dummy interface added
 (`ip link add lan0 type dummy`, an address, `up`).
 
 A process never holds the desktop's devices and a frame microphone at once, or one
-after the other: the LiveKit SDK's libwebrtc lets the devices' capture reach a frame
-microphone's stream, which aborts the process or sends the desktop's microphone in
-the frames (SECURITY.md has the three defects), so the engine refuses whichever
-comes second. The tests keep to it: each test of the devices runs in a child
+after the other: the engine refuses whichever comes second, because of defects in
+the libwebrtc the LiveKit SDK links that have been reported privately upstream
+(SECURITY.md says what is refused; details will be published once upstream has
+published a fix). The tests keep to it: each test of the devices runs in a child
 process of its own, and whoever it talks to is a `FarEnd`, the test binary run
 again as an engine on frame audio in a third process, which prints what it hears
 for the test to read. A test that put a frame microphone in the child would be
-refused, as the last two `devices::` tests show. Before this, the device test's
-peer shared its process and the test aborted inside libwebrtc (`Check failed:
-!race_checker404.RaceDetected()` in `audio_send_stream.cc`) in 12 of 30 runs.
+refused, as the last two `devices::` tests show.
 
 ### Rebuilding libwebrtc
 
@@ -235,7 +238,12 @@ There are two packages, both x86_64 and both built with calls: a .deb for Ubuntu
 desktop entry, the AppStream metadata, the two icons and the D-Bus service from
 `crates/district-app/data/`, and the licence texts: LICENSE, NOTICE, and
 libwebrtc's LICENSE.md, which NOTICE says must travel with a build that links
-it. The D-Bus service is a template, `com.distronode.DistrictAI.service.in`,
+it. The .deb also carries THIRD-PARTY-LICENSES.txt, the licence texts of every
+crate the binary links, which `scripts/build-deb.sh` writes with
+[cargo-about](https://github.com/EmbarkStudios/cargo-about) from `about.toml`
+and `about.hbs` (`about.toml`'s accepted licences are deny.toml's allow list,
+and a change to one changes the other). The D-Bus service is a template,
+`com.distronode.DistrictAI.service.in`,
 whose `@bindir@` each package fills in with its own binary's directory, because
 the desktop starts what its `Exec` names without searching `PATH`.
 
@@ -250,8 +258,9 @@ Its metadata is `[package.metadata.deb]` in `crates/district-app/Cargo.toml`, an
 24.04, the oldest distribution it is for: glibc runs a binary linked against an
 older glibc and refuses a newer one, and dpkg-shlibdeps writes the build
 machine's library versions into Depends. With everything "Building with calls"
-lists, and cargo-deb (deb.yml installs the pinned release; `cargo install
-cargo-deb --locked` also works) and `dpkg-dev`:
+lists, cargo-deb and cargo-about (deb.yml installs the pinned releases;
+`cargo install cargo-deb --locked` and
+`cargo install cargo-about --locked --features cli` also work) and `dpkg-dev`:
 
 ```
 export LK_CUSTOM_WEBRTC="$(scripts/fetch-libwebrtc.sh ~/.cache/district-libwebrtc)"
@@ -259,9 +268,9 @@ CXX=clang++-21 scripts/build-deb.sh
 sudo apt install ./target/debian/district-ai_*_amd64.deb
 ```
 
-The script writes the D-Bus service for `/usr/bin` and copies libwebrtc's licence
-texts into `target/release`, where the asset list names them, then runs
-`cargo deb`.
+The script writes the D-Bus service for `/usr/bin`, copies libwebrtc's licence
+texts and writes the crates' licence texts into `target/release`, where the
+asset list names them, then runs `cargo deb`.
 
 Depends is what the binary links (dpkg-shlibdeps) and what it loads while
 running, which dpkg-shlibdeps cannot see: the PulseAudio client library, which
@@ -689,8 +698,14 @@ additions, each with its reason. `contracts/endpoints.snapshot.json` is the Andr
 app's endpoint list, and `crates/district-api/tests/endpoint_parity.rs` fails on any
 difference that is not on one of those two lists.
 
-The Android app's sources are not public, so the snapshot is committed and CI never
-regenerates it. A maintainer with access refreshes it with
+The Android app is public, at
+[district-android](https://github.com/distronode-corporation/district-android), and
+the snapshot is read from its
+[`core/core-network/src/main/kotlin/com/distronode/districtai/core/network`](https://github.com/distronode-corporation/district-android/tree/main/core/core-network/src/main/kotlin/com/distronode/districtai/core/network)
+directory (with the auth API and the core model beside it). The script reads them
+from a checkout of the private server repository, which holds `district-android/`
+as a directory, so the snapshot is committed and CI never regenerates it. A
+maintainer with that checkout refreshes it with
 `python3 scripts/sync-endpoints.py --monorepo <checkout>` and commits the result
 together with whatever change to the table it calls for.
 
@@ -705,4 +720,11 @@ Pull requests run `.github/workflows/ci.yml`, and all of it must be green.
 ## Reporting bugs
 
 Open an issue with the bug report form. For anything security-relevant, do not
-open an issue; see [SECURITY.md](SECURITY.md).
+open an issue; see [SECURITY.md](SECURITY.md). Questions go to
+[Discussions](https://github.com/distronode-corporation/district-linux/discussions).
+
+## Licence of contributions
+
+By contributing you agree that your contribution is licensed under the Apache
+License 2.0, as section 5 of the licence provides. There is no CLA and no
+sign-off requirement.

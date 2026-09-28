@@ -70,7 +70,6 @@ EMAIL = re.compile(
 )
 ALLOWED_EMAILS = {
     "opensource@distronode.com",
-    "distronode@distronode.com",
     "noreply@anthropic.com",
     "noreply@github.com",
 }
@@ -182,7 +181,7 @@ def self_test() -> int:
             "C++ and a+b and 1+2=3.",
             "https://www.distronode.com/pricing and https://www.distronode.ca/fr",
             "distronode.com, distronode.ca, @distronode-com, distronode-corporation.",
-            "Mail opensource@distronode.com or distronode@distronode.com.",
+            "Mail opensource@distronode.com or Opensource@Distronode.com.",
             "Co-Authored-By: someone <noreply@anthropic.com>",
             "12345+someone@users.noreply.github.com and noreply@github.com",
             "Fixture addresses: ada@example.com, Caller@Example.com.",

@@ -113,9 +113,11 @@ assets = [
   ["data/icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
   ["data/icons/hicolor/symbolic/apps/com.distronode.DistrictAI-symbolic.svg", "usr/share/icons/hicolor/symbolic/apps/", "644"],
   # Written by scripts/build-deb.sh: the D-Bus service from its template, with
-  # /usr/bin for @bindir@, and the licence texts of libwebrtc, which NOTICE says
-  # must travel with a build that links it.
+  # /usr/bin for @bindir@, the licence texts of libwebrtc, which NOTICE says
+  # must travel with a build that links it, and those of every crate the
+  # binary links (cargo-about).
   ["target/release/com.distronode.DistrictAI.service", "usr/share/dbus-1/services/", "644"],
   ["target/release/libwebrtc-LICENSE.md", "usr/share/doc/district-ai/", "644"],
+  ["target/release/THIRD-PARTY-LICENSES.txt", "usr/share/doc/district-ai/", "644"],
   ["../../NOTICE", "usr/share/doc/district-ai/", "644"],
 ]

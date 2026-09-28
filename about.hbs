@@ -1,0 +1,31 @@
+District AI for Linux: third-party licences
+
+The district-ai binary statically links the Rust crates below. Each keeps its
+own licence; this file holds the text of every licence they are under, with the
+crates each text covers. It is written by cargo-about from Cargo.lock when the
+package is built (about.toml and about.hbs in the source repository).
+
+libwebrtc, which a build with calls also links, has its own licence file,
+libwebrtc-LICENSE.md, beside this one. The project's own licence is in the
+copyright file and NOTICE.
+
+Overview
+========
+{{#each overview}}
+{{{name}}} ({{{id}}}): {{count}} crate(s)
+{{/each}}
+
+Licences
+========
+{{#each licenses}}
+
+------------------------------------------------------------------------------
+{{{name}}} ({{{id}}})
+
+Used by:
+{{#each used_by}}
+  {{{crate.name}}} {{{crate.version}}}
+{{/each}}
+
+{{{text}}}
+{{/each}}

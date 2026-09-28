@@ -20,6 +20,8 @@ on:
       - "crates/district-app/data/com.distronode.DistrictAI.*"
       - "scripts/build-deb.sh"
       - "scripts/fetch-libwebrtc.sh"
+      - "about.toml"
+      - "about.hbs"
       - ".github/workflows/deb.yml"
 
 permissions:
@@ -100,6 +102,22 @@ jobs:
           echo "${CARGO_DEB_SHA256}  $deb" | sha256sum -c -
           sudo dpkg -i "$deb"
           cargo deb --version
+
+      # The third-party licence file the package ships, written by build-deb.sh.
+      # Installed like cargo-deb.
+      - name: Install cargo-about
+        env:
+          CARGO_ABOUT_VERSION: 0.9.2
+          CARGO_ABOUT_SHA256: 9099a59e820c38a68b9d65f300662a567d56562f9a10f6aa4c7e86c17c2566af
+        run: |
+          set -euo pipefail
+          name="cargo-about-${CARGO_ABOUT_VERSION}-x86_64-unknown-linux-musl"
+          curl -fsSL -o "$RUNNER_TEMP/about.tgz" \
+            "https://github.com/EmbarkStudios/cargo-about/releases/download/${CARGO_ABOUT_VERSION}/${name}.tar.gz"
+          echo "${CARGO_ABOUT_SHA256}  $RUNNER_TEMP/about.tgz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/about.tgz" -C "$RUNNER_TEMP"
+          install -m 0755 "$RUNNER_TEMP/${name}/cargo-about" "$HOME/.cargo/bin/cargo-about"
+          cargo about --version
 
       # No cache, here or anywhere in this workflow: release.yml builds the
       # release's .deb with it, and a restored target/ or registry is build input
@@ -188,13 +206,19 @@ jobs:
             ./usr/share/dbus-1/services/com.distronode.DistrictAI.service \
             ./usr/share/doc/district-ai/copyright \
             ./usr/share/doc/district-ai/NOTICE \
-            ./usr/share/doc/district-ai/libwebrtc-LICENSE.md; do
+            ./usr/share/doc/district-ai/libwebrtc-LICENSE.md \
+            ./usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt; do
             if ! dpkg-deb --contents "$deb" | awk '{ print $6 }' | grep -qxF "$path"; then
               echo "::error::the package has no $path"
               fail=1
             fi
           done
           dpkg-deb --extract "$deb" "$RUNNER_TEMP/deb"
+          # A crate every build links, so an empty or truncated file fails.
+          if ! grep -qE '^  gtk4 [0-9]' "$RUNNER_TEMP/deb/usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt"; then
+            echo "::error::THIRD-PARTY-LICENSES.txt does not list gtk4"
+            fail=1
+          fi
           exec_line="$(grep '^Exec=' "$RUNNER_TEMP/deb/usr/share/dbus-1/services/com.distronode.DistrictAI.service")"
           if [ "$exec_line" != "Exec=/usr/bin/district-ai --gapplication-service" ]; then
             echo "::error::the D-Bus service says '$exec_line'"

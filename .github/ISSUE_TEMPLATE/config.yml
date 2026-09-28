@@ -1,18 +1,17 @@
 # No blank issues: bugs go through the structured Bug report form, and everything
 # else through the links below.
 #
-# The Discussions link needs Discussions ENABLED on the repository (Settings,
+# The Discussions link needs Discussions enabled on the repository (Settings,
 # Features). With blank issues off and Discussions off there is nowhere for a
-# question or an idea to go, so turn it on before the repository is public or
-# delete that entry.
+# question or an idea to go.
 blank_issues_enabled: false
 contact_links:
-  - name: README (status, building from source)
+  - name: README
     url: https://github.com/distronode-corporation/district-linux#readme
-    about: The project is pre-release. The README says what works today and how to build it.
+    about: What the app does, how to install the current release, and how to build it from source.
   - name: Questions and ideas
     url: https://github.com/distronode-corporation/district-linux/discussions
     about: For "how do I", build trouble and feature ideas. The issue tracker is for reproducible bugs.
-  - name: Security vulnerability
+  - name: Security report
     url: https://github.com/distronode-corporation/district-linux/security/advisories/new
-    about: Do not open a public issue. Report it privately here (see SECURITY.md).
+    about: Please do not open a public issue for a vulnerability. Report it privately here (see SECURITY.md).

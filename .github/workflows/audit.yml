@@ -25,6 +25,11 @@ on:
 permissions:
   contents: read
 
+# A scheduled run and a manual one never overlap; the later one waits.
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   # The install step is a deliberate copy of ci.yml's `cargo-deny` job. A
   # cargo-deny bump changes the version and the digest in BOTH files, or the two

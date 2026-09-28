@@ -24,11 +24,8 @@ backported.
 
 | Version | Supported |
 | --- | --- |
-| Latest 0.x release, until 1.0 | Yes |
-| Latest 1.x release, from 1.0 | Yes |
+| 0.1.x (the current release, [0.1.0](https://github.com/distronode-corporation/district-linux/releases/latest)) | Yes |
 | Anything older | No |
-
-There are no releases yet.
 
 ## Security model
 
@@ -305,33 +302,12 @@ What the call engine itself does (district-call, with its `livekit` feature):
   which is for tests and anything that is not a desktop), never both, for its
   whole life: whichever it asks for first, the other is refused, as a microphone
   that is unavailable (and, for the devices, a call that hears nothing). The app
-  builds only the devices, so it is never refused. The reason is three defects
-  in the libwebrtc the LiveKit SDK links (webrtc-sys 0.3.47, the prebuilt
-  `webrtc-89d790b`), found when a test that held both aborted in 12 of 30 runs:
-  - `AudioSendStream::StoreEncoderProperties` registers a stream for the
-    devices' capture whenever it is sending, without the check the SDK's
-    `external_audio_source.patch` adds to `Start()`. So when a renegotiation
-    gives a frame microphone's stream a new encoder (`SetupSendCodec`), the
-    devices' capture thread starts delivering to it alongside the frame
-    source's own thread: the desktop's microphone goes out inside the frame
-    track, in whatever room that track is, and when two deliveries overlap
-    `RTC_CHECK_RUNS_SERIALIZED` in `AudioSendStream::SendAudioData` aborts the
-    process (`Check failed: !race_checker404.RaceDetected()`).
-  - The same patch drops `sending_ = false` from `Stop()` and skips
-    `RemoveSendingStream` for such a stream, so the registration is never
-    removed: once the stream is destroyed the capture thread still delivers to
-    it (measured once: a segmentation fault in
-    `AudioTransportImpl::SendProcessedData`).
-  - The webrtc-sdk fork's `AudioDeviceModule::IsStopOnMuteModeEnabled()` is
-    true by default and the SDK's `AdmProxy` keeps it, so unmuting any send
-    stream starts the devices' capture: a frame track opens the desktop's
-    microphone while the member has theirs off (with the refusal taken out,
-    in all 13 runs of the test that tries it).
-
-  `devices::` in the engine's tests holds the engine to the refusal in both
-  orders, with the renegotiation that sets the first defect off. They have been
-  reported to the LiveKit Rust SDK, privately; until they are fixed there, the
-  refusal stays.
+  builds only the devices, so it is never refused. The refusal is deliberate:
+  certain audio capture and track combinations are unsafe because of defects in
+  the libwebrtc the LiveKit SDK links, which have been reported privately
+  upstream. Details will be published once upstream has published a fix; until
+  then, the refusal stays, and the engine's tests (`devices::`) hold it to the
+  refusal in both orders.
 
 ### The help desk and support requests
 
