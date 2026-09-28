@@ -66,20 +66,11 @@ static PROCESS_KIND: AtomicU8 = AtomicU8::new(0);
 /// process asks for, or the same one again, and false for good once the
 /// process has asked for the other.
 ///
-/// The media library cannot hold the desktop's devices and a frame microphone
-/// in one process. While the devices record, their capture thread hands every
-/// frame to each send stream registered for it, and libwebrtc as the SDK builds
-/// it (webrtc-sys 0.3.47's `external_audio_source.patch`) registers a frame
-/// microphone's stream as well whenever a renegotiation gives it a new encoder.
-/// From then on two threads deliver audio to one stream: the desktop's
-/// microphone goes out inside the frames, whatever room each is in, and when
-/// two deliveries overlap libwebrtc aborts the whole process (`Check failed:
-/// !race_checker404.RaceDetected()` in `audio_send_stream.cc`). Nothing undoes
-/// the registration, so once the frame microphone is gone the capture thread
-/// delivers to a stream that no longer exists. And unmuting any send stream
-/// starts the devices' capture, so a frame track opens the desktop's
-/// microphone even while the member has it off. So the two never share a
-/// process, not only never at once. SECURITY.md has the details.
+/// The desktop's devices and a frame microphone never share a process, not
+/// only never at once: whichever is asked for second is refused. This is
+/// deliberate, because of defects in the libwebrtc the LiveKit SDK links that
+/// have been reported privately upstream; this comment will say more once
+/// upstream has published a fix. See SECURITY.md.
 fn claim(kind: Kind) -> bool {
     claim_in(&PROCESS_KIND, kind)
 }
