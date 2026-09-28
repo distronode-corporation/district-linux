@@ -2,8 +2,9 @@ name: Flatpak
 
 # Builds District AI for Linux as a Flatpak bundle, with calls, from
 # packaging/flatpak/com.distronode.DistrictAI.yml, installs the bundle and runs
-# the built app's --version inside the sandbox, and keeps the bundle for a week
-# as this run's artifact. release.yml calls it to build the release's bundle.
+# the built app's --version inside the sandbox. Once libwebrtc's licensing is
+# cleared (LIBWEBRTC_LICENCE_CLEARED), the bundle is also kept for a week as this
+# run's artifact; release.yml calls it to build the release's bundle.
 #
 # Run by hand, from release.yml, and on pull requests that change what the
 # Flatpak is built from (the manifest and cargo-sources.json, which moves with
@@ -134,7 +135,10 @@ jobs:
           cp district-ai.flatpak "staging/district-ai_${VERSION}_x86_64.flatpak"
           ls -l staging
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      # ⛔ ONLY ONCE libwebrtc'S LICENSING IS CLEARED: an artifact of a public
+      # repository can be downloaded by anyone. See deb.yml.
+      - if: vars.LIBWEBRTC_LICENCE_CLEARED == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: district-ai-flatpak
           path: staging/

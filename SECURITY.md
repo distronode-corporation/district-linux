@@ -28,12 +28,11 @@ backported.
 | Latest 1.x release, from 1.0 | Yes |
 | Anything older | No |
 
-The project is pre-release and has no releases yet.
+There are no releases yet.
 
 ## Security model
 
-The design the app is being built to, so a report can say which part of it breaks.
-The project is pre-release, and parts of this are not implemented yet.
+How the app is built, so a report can say which part of it breaks.
 
 ### Sign-in
 
@@ -183,9 +182,9 @@ engine (and libwebrtc; see NOTICE). The default build has no calls at all
 (`CoreConfig::calls_available` is false): it registers no presence, so the
 service never holds a caller for it; it never rings, answers or dials, and starts
 no billed audition; and a meeting room it is asked to join fails, saying calls
-are not available in this build. The engine has been tested against a local
-media server (`.github/workflows/voice.yml`); what it does with the service's own
-servers, the web client and the Android app in a real room is not yet proven.
+are not available in this build. CI tests the engine against a media server of
+its own (`.github/workflows/voice.yml`): two-way audio, end-to-end encryption, the
+desktop's devices through a sound server, and reconnecting.
 
 - A desktop has no push service. While "ring on this computer" is on and the
   machine is awake, it registers its presence with the service: the pair

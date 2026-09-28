@@ -25,8 +25,9 @@ name: Release
 # position nobody has reviewed; NOTICE says no such build may be distributed
 # until someone has. Until the repository variable LIBWEBRTC_LICENCE_CLEARED is
 # exactly `true`, `publish` fails before it touches anything. The packages are
-# still built and tested, and kept for a week as this run's artifacts, which is
-# testing, not distribution.
+# still built and tested, and not kept: in a public repository an artifact is a
+# download anyone can take, so deb.yml and flatpak.yml upload theirs only once
+# the variable is `true`.
 #
 # Artifact attestations need the repository to be public (or GitHub Enterprise
 # Cloud); in a private repository `publish` fails at the attestation.
@@ -125,18 +126,19 @@ jobs:
 
   # ⛔ READ-ONLY, DELIBERATELY. These run `cargo build`, which executes every
   # build script in the dependency tree, so they hold no write permission and
-  # no token that could create a release; they only upload this run's artifacts.
+  # no token that could create a release; they only upload this run's
+  # artifacts, and only once libwebrtc's licensing is cleared.
   deb:
     needs: guard
     permissions:
       contents: read
-    uses: $/.github/workflows/deb.yml
+    uses: ./.github/workflows/deb.yml
 
   flatpak:
     needs: guard
     permissions:
       contents: read
-    uses: $/.github/workflows/flatpak.yml
+    uses: ./.github/workflows/flatpak.yml
 
   # The only job that can write to the repository and the only one that can
   # make a release public. It sees packages, never source, and runs no build.
@@ -168,7 +170,7 @@ jobs:
             echo "::error::Refusing to publish: the repository variable LIBWEBRTC_LICENCE_CLEARED is '${CLEARED}', not 'true'."
             echo "These packages are built with calls, which statically links libwebrtc, including FFmpeg's H.264 and H.265 decoders."
             echo "NOTICE says no build with calls may be distributed until the licence and patent position of those codecs has been reviewed."
-            echo "Set the variable to true only once that review has cleared it. The packages this run built are its artifacts, for testing."
+            echo "Set the variable to true only once that review has cleared it. The packages this run built and tested were not kept."
             exit 1
           fi
 

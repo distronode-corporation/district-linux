@@ -5,23 +5,11 @@ receptionist from Distronode.
 
 ![The call log, with a call's summary and transcript](crates/district-app/data/screenshots/call-log.png)
 
-> **Status: pre-release, under active development, not yet usable day to day.**
-> The app signs in through your browser and shows your workspace's overview, the
-> inbox with its threads and replies, the call log with each call's transcript,
-> contacts and the blocked callers, District HQ, analytics with its charts, the
-> phone numbers and billing (read only), workflows and the outbound campaign,
-> booking pages, the help desk, support requests, the meeting rooms lobby with
-> each meeting's record, the workspace settings (the receptionist's persona, its
-> capabilities, the transfer directory, the routing rules, call handling and your
-> availability, the knowledge base, the carrier accounts, and the members and the
-> workspace's name), your account and the devices signed in to it. A build
-> with the `voice` feature also rings for calls handed to you (in the window,
-> or as a notification with Answer and Decline while it is hidden), places
-> calls from a dialler, joins meeting rooms and plays a persona's audition,
-> with the call's duration, mute and hang up under every screen; its call
-> engine is tested against a local media server and not yet against District
-> AI's own. A default build does none of that, and says so. There are no
-> releases yet (see [Install](#install)).
+> **Status: no releases yet.** The packages are built and tested by CI, and the
+> first release waits on a review of the licensing of libwebrtc's codecs (see
+> [Install](#install)). Calls on the desktop need a build with the `voice`
+> feature, as both packages are; a default build from source has everything
+> else, and says so where calls would be.
 
 ## What it does
 

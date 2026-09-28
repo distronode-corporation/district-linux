@@ -1,8 +1,7 @@
 # Contributing to District AI for Linux
 
-The project is pre-release: the app has its first screens and the rest are on
-their way. Issues and pull requests are welcome, but expect the layout below to
-keep filling in.
+Issues and pull requests are welcome. This guide covers how the repository is
+laid out, how to build and test it, and what CI holds every change to.
 
 ## Layout
 
@@ -286,7 +285,9 @@ the AppStream metadata, which now has them, and
 clears (see "Flathub" below).
 
 Both workflows run on pull requests that change what they build from, and by
-hand; each keeps its package as the run's artifact for a week.
+hand. Neither keeps its package until libwebrtc's licensing is cleared (below):
+an artifact of a public repository is a download anyone can take, which would
+distribute the build with calls. Build a package locally to try it.
 
 ### Flathub
 
@@ -385,9 +386,8 @@ decoders among them) has been reviewed. So the publish job refuses, before it
 touches anything, unless the repository variable `LIBWEBRTC_LICENCE_CLEARED` is
 exactly `true`, and says why. Set it only once that review has cleared the
 libwebrtc the pin names; a new pin needs the review again. Until then a tag
-still builds and tests both packages and keeps them as the run's artifacts,
-which is testing, not distribution. Attestations also need the repository to be
-public (or on GitHub Enterprise Cloud).
+still builds and tests both packages, and keeps neither. Attestations also need
+the repository to be public (or on GitHub Enterprise Cloud).
 
 ## The smoke test
 
