@@ -121,8 +121,9 @@ website's repository: a maintainer with access refreshes
 
 Calls, meeting rooms and auditions need the LiveKit call engine, which a default
 build leaves out: the app's `voice` feature (district-call's `livekit`) turns it
-on. It statically links libwebrtc, a prebuilt C++ library of about 85 MB, so it
-needs a little more than the default build:
+on. It statically links libwebrtc, a prebuilt C++ library that this project
+builds from LiveKit's recipe without the H.264 and H.265 codecs (see "Rebuilding
+libwebrtc" below), so it needs a little more than the default build:
 
 - clang and clang++ 21.1 or newer. The prebuilt library is built against
   Chromium's own libc++, which needs it, and the build refuses GCC, which would
@@ -140,8 +141,9 @@ needs a little more than the default build:
   cargo build -p district-app --features voice --locked
   ```
 
-  Without `LK_CUSTOM_WEBRTC` the LiveKit SDK's build downloads the same archive
-  itself and checks nothing, so always set it. The script refuses to run when
+  Without `LK_CUSTOM_WEBRTC` the LiveKit SDK's build downloads LiveKit's own
+  prebuilt instead, which carries the codecs this project leaves out, and
+  checks nothing, so always set it. The script refuses to run when
   Cargo.lock names a different `webrtc-sys-build`, whose libwebrtc would not link;
   its header says how to move the pin with the SDK. A cold build with the feature
   took about 4 minutes in debug and 9 in release on a 4-core laptop, and the
@@ -202,7 +204,13 @@ so it runs on a GitHub runner: start `.github/workflows/libwebrtc.yml` by hand,
 and the run keeps the zip, its digest and the library's symbol list as an
 artifact. To try that build with the call engine before anything is published,
 start `.github/workflows/voice.yml` by hand with the libwebrtc run's id as
-`libwebrtc_run`. To build it locally instead, on Linux x86_64 with git, curl,
+`libwebrtc_run`. Once it passes, publish the zip as a release of this
+repository named `libwebrtc-<webrtc tag>-audio-<n>` (the number counts builds
+for the same LiveKit tag), with the digest from the run beside it, and move
+`RELEASE` and `SHA256` in `scripts/fetch-libwebrtc.sh`, the `url` and `sha256`
+in the Flatpak manifest (then run `scripts/flathub-manifest.py`), and the
+digest in NOTICE, in one change. Compare the published asset's digest with the
+run's before pinning it. To build it locally instead, on Linux x86_64 with git, curl,
 python3 and setuptools, ninja, pkg-config, cpio and zip:
 
 ```
@@ -352,15 +360,17 @@ Before a submission, and what is still open:
    screenshots"), when it builds.
 2. **The prebuilt libwebrtc is an open decision.** Flathub requires everything
    to be built from source, with exceptions only case by case, and the manifest
-   downloads LiveKit's prebuilt libwebrtc (checked against its pinned SHA-256)
-   instead of building it, because building libwebrtc takes Chromium's own
-   toolchain and a large source tree. Either Flathub grants an exception for
-   it, or the manifest builds libwebrtc from source, or the app goes to Flathub
-   as a build without calls. Nothing has decided which yet. The licence gate
-   applies too: NOTICE says no build with calls may be distributed until
-   libwebrtc's licensing has been reviewed, release.yml refuses to publish until
-   `LIBWEBRTC_LICENCE_CLEARED` is `true`, and publishing on Flathub is
-   distributing, so no submission with calls goes in before that review.
+   downloads this project's own build of libwebrtc (a release of this
+   repository, built in the open by libwebrtc.yml from pinned sources and
+   checked against its pinned SHA-256) instead of building it inside the
+   Flatpak build, because building libwebrtc takes Chromium's own toolchain and
+   a large source tree. Either Flathub grants an exception for it, or the
+   manifest builds libwebrtc from source, or the app goes to Flathub as a build
+   without calls. Nothing has decided which yet. The licence gate applies too:
+   release.yml refuses to publish until `LIBWEBRTC_LICENCE_CLEARED` is `true`,
+   and publishing on Flathub is distributing. The build leaves out the H.264
+   and H.265 codecs that the gate was written for (see NOTICE); setting the
+   variable is still a maintainer's decision, made after that review.
 3. **The logind permission needs an exception.** Flathub's linter refuses
    `--system-talk-name=org.freedesktop.login1` unless Flathub grants an
    exception, which it does on a sufficient explanation, through a pull request

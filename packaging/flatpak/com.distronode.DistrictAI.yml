@@ -105,6 +105,6 @@ modules:
       - cargo-sources.json
       # The pin in scripts/fetch-libwebrtc.sh. Moving it moves both.
       - type: file
-        url: https://github.com/livekit/rust-sdks/releases/download/webrtc-89d790b/webrtc-linux-x64-release.zip
-        sha256: b167adad5291cea0e4d66a0454d9d52d2ad714e6b0ed70f4410317d3ebde70c5
+        url: https://github.com/distronode-corporation/district-linux/releases/download/libwebrtc-89d790b-audio-1/webrtc-linux-x64-release.zip
+        sha256: 2355bc8c6cdaf9613c471da944ac901bb293f346dda5e94cdbe6249a36914317
         dest: libwebrtc
