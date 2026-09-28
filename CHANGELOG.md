@@ -733,6 +733,9 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   fail if any H.264 or H.265 codec symbol is left, and keep the zip in the
   prebuilt's layout with its SHA-256. By hand only; CONTRIBUTING.md
   ("Rebuilding libwebrtc") has the steps.
+- `.github/workflows/voice.yml` takes a libwebrtc.yml run id (`libwebrtc_run`)
+  when started by hand, and tests the call engine against that run's build
+  instead of the pinned archive.
 
 ### Changed
 
