@@ -329,9 +329,9 @@ What the call engine itself does (district-call, with its `livekit` feature):
     in all 13 runs of the test that tries it).
 
   `devices::` in the engine's tests holds the engine to the refusal in both
-  orders, with the renegotiation that sets the first defect off. These are to
-  be reported to the LiveKit Rust SDK; until they are fixed there, the refusal
-  stays.
+  orders, with the renegotiation that sets the first defect off. They have been
+  reported to the LiveKit Rust SDK, privately; until they are fixed there, the
+  refusal stays.
 
 ### The help desk and support requests
 
