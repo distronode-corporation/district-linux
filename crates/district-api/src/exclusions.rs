@@ -74,15 +74,16 @@ pub const EXCLUDED: &[Exclusion] = &[
         name: "service administration",
         method: None,
         path: PathMatch::Subtree("/api/admin"),
-        reason: "Cross-tenant administration is web-only; the service admits no app credential to it.",
-        android_calls_it: true,
+        reason: "Cross-tenant administration is web-only; the service admits no app credential to it. \
+                 The Android app dropped its administration screens too, so it no longer calls it either.",
+        android_calls_it: false,
     },
     Exclusion {
         name: "administrator step-up sign-in",
         method: None,
         path: PathMatch::Subtree("/api/auth/native/elevate"),
         reason: "Removed from the service together with administration from the apps.",
-        android_calls_it: true,
+        android_calls_it: false,
     },
     Exclusion {
         name: "sign-in code exchange",
@@ -145,11 +146,19 @@ pub struct Addition {
 }
 
 /// Endpoints only this client calls, and why.
-pub const LINUX_ONLY: &[Addition] = &[Addition {
-    endpoint: Endpoint::TelemetryToken,
-    reason: "A desktop has no mobile push service, so live calls and messages arrive over the \
-             telemetry socket instead.",
-}];
+pub const LINUX_ONLY: &[Addition] = &[
+    Addition {
+        endpoint: Endpoint::TelemetryToken,
+        reason: "A desktop has no mobile push service, so live calls and messages arrive over the \
+                 telemetry socket instead.",
+    },
+    Addition {
+        endpoint: Endpoint::AuthMe,
+        reason: "The simplest authenticated request, which the client's own auth tests drive. \
+                 The Android app called it only to decide whether to show its administration \
+                 screens, and stopped when those left the app.",
+    },
+];
 
 /// A path template with every `{name}` placeholder written as `{}`, so that two
 /// templates naming the same parameter differently compare equal.

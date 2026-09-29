@@ -3,7 +3,7 @@
   "canManage": false,
   "tenant": {
     "status": "error",
-    "publicHost": "booking.example.com",
+    "publicHost": "book.example.com",
     "region": "us",
     "lastReadyAt": "2026-09-06T11:20:00.000Z",
     "lastError": "cloudflare refused the dns record (HTTP 403)",

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Record which HTTP endpoints the District AI Android client calls.
 
-    python3 scripts/sync-endpoints.py --monorepo <path>          # rewrite the snapshot
-    python3 scripts/sync-endpoints.py --monorepo <path> --check  # fail if it is stale
+    python3 scripts/sync-endpoints.py --android <path>          # rewrite the snapshot
+    python3 scripts/sync-endpoints.py --android <path> --check  # fail if it is stale
 
 The Android client is the reference implementation this client mirrors, and it is
-not in this repository. This script reads its Kotlin sources out of a checkout of
-the repository that holds them and writes the endpoint list they add up to into
+not in this repository. It is public, at
+https://github.com/distronode-corporation/district-android, and <path> is a checkout
+of it. This script reads its Kotlin sources and writes the endpoint list they add up to into
 contracts/endpoints.snapshot.json: one entry per (method, path), with how the
 request authenticates and where it names its workspace. The source commit is
 recorded too, so the snapshot says what it was taken from.
@@ -57,10 +58,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SNAPSHOT = ROOT / "contracts" / "endpoints.snapshot.json"
 
-ANDROID = Path("district-android")
-NETWORK_DIR = ANDROID / "core/core-network/src/main/kotlin/com/distronode/districtai/core/network"
-AUTH_FILE = ANDROID / "core/core-auth/src/main/kotlin/com/distronode/districtai/core/auth/NativeAuthApi.kt"
-MODEL_DIR = ANDROID / "core/core-model/src/main"
+# Relative to the root of the district-android checkout. Until 2026-09-29 these were
+# read from a `district-android/` directory inside the private server repository; that
+# copy was deleted when the public repository became the app's only home.
+CORE = Path("core")
+NETWORK_DIR = CORE / "core-network/src/main/kotlin/com/distronode/districtai/core/network"
+AUTH_FILE = CORE / "core-auth/src/main/kotlin/com/distronode/districtai/core/auth/NativeAuthApi.kt"
+MODEL_DIR = CORE / "core-model/src/main"
 
 CLIENT_CALL = re.compile(r"\bclient\.(get|send|sendMultipart|redirectTarget)\s*\(")
 TRANSPORT_METHOD = {"get": "GET", "redirectTarget": "GET", "sendMultipart": "POST"}
@@ -527,18 +531,18 @@ def read_tree(directory: Path, pattern: str) -> dict[str, str]:
     return {str(f.relative_to(directory)): strip_comments(f.read_text(encoding="utf-8")) for f in files}
 
 
-def git(monorepo: Path, *args: str) -> str:
+def git(checkout: Path, *args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=monorepo, check=True, capture_output=True, text=True
+        ["git", *args], cwd=checkout, check=True, capture_output=True, text=True
     ).stdout.strip()
 
 
-def build(monorepo: Path) -> dict:
-    network = read_tree(monorepo / NETWORK_DIR, "*.kt")
-    models = read_tree(monorepo / MODEL_DIR, "**/*.kt")
-    auth_path = monorepo / AUTH_FILE
+def build(android: Path) -> dict:
+    network = read_tree(android / NETWORK_DIR, "*.kt")
+    models = read_tree(android / MODEL_DIR, "**/*.kt")
+    auth_path = android / AUTH_FILE
     if not auth_path.is_file():
-        raise SyncError(f"{AUTH_FILE} is missing from the monorepo checkout")
+        raise SyncError(f"{AUTH_FILE} is missing from the district-android checkout")
 
     evaluator = PathEvaluator(collect_symbols(network))
     dtos = request_types_with_workspace({**models, **network})
@@ -549,10 +553,10 @@ def build(monorepo: Path) -> dict:
     if len(endpoints) < 50:
         raise SyncError(f"only {len(endpoints)} endpoints found; the extraction has stopped matching")
 
-    dirty = git(monorepo, "status", "--porcelain", "--", str(ANDROID / "core")) != ""
+    dirty = git(android, "status", "--porcelain", "--", str(CORE)) != ""
     return {
         "generated_by": "scripts/sync-endpoints.py",
-        "source": {"commit": git(monorepo, "rev-parse", "HEAD"), "uncommitted_changes": dirty},
+        "source": {"commit": git(android, "rev-parse", "HEAD"), "uncommitted_changes": dirty},
         "endpoints": [
             {"method": e.method, "path": e.path, "auth": e.auth, "workspace": e.workspace}
             for e in endpoints
@@ -566,12 +570,12 @@ def render(snapshot: dict) -> str:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--monorepo", required=True, type=Path, help="checkout holding district-android/")
+    parser.add_argument("--android", required=True, type=Path, help="a checkout of district-android")
     parser.add_argument("--check", action="store_true", help="fail if the committed snapshot differs")
     args = parser.parse_args(argv[1:])
 
     try:
-        snapshot = build(args.monorepo.resolve())
+        snapshot = build(args.android.resolve())
     except (SyncError, subprocess.CalledProcessError, OSError) as e:
         print(f"sync-endpoints: {e}", file=sys.stderr)
         return 1
@@ -579,7 +583,7 @@ def main(argv: list[str]) -> int:
     text = render(snapshot)
     if args.check:
         current = SNAPSHOT.read_text(encoding="utf-8") if SNAPSHOT.exists() else ""
-        # The commit moves on every monorepo change; only the endpoint list is compared.
+        # The commit moves on every Android change; only the endpoint list is compared.
         if current and json.loads(current)["endpoints"] == snapshot["endpoints"]:
             print(f"{SNAPSHOT.relative_to(ROOT)} is current ({len(snapshot['endpoints'])} endpoints)")
             return 0

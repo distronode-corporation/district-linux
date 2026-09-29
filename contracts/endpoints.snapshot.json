@@ -1,76 +1,10 @@
 {
   "generated_by": "scripts/sync-endpoints.py",
   "source": {
-    "commit": "9a02975e2e4f6844c2adb686e383ce97320c2498",
+    "commit": "c6ec95fb331ae31bd0820a904092fbc5c9d494fb",
     "uncommitted_changes": false
   },
   "endpoints": [
-    {
-      "method": "GET",
-      "path": "/api/admin/diagnostics",
-      "auth": "elevated",
-      "workspace": "query"
-    },
-    {
-      "method": "GET",
-      "path": "/api/admin/messages",
-      "auth": "elevated",
-      "workspace": "none"
-    },
-    {
-      "method": "POST",
-      "path": "/api/admin/messages/send-sms",
-      "auth": "elevated",
-      "workspace": "none"
-    },
-    {
-      "method": "GET",
-      "path": "/api/admin/overview",
-      "auth": "elevated",
-      "workspace": "none"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/admin/phone-numbers",
-      "auth": "elevated",
-      "workspace": "body"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/admin/users",
-      "auth": "elevated",
-      "workspace": "none"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/admin/users",
-      "auth": "elevated",
-      "workspace": "none"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/admin/workspaces",
-      "auth": "elevated",
-      "workspace": "none"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/admin/workspaces",
-      "auth": "elevated",
-      "workspace": "none"
-    },
-    {
-      "method": "POST",
-      "path": "/api/admin/workspaces",
-      "auth": "elevated",
-      "workspace": "body"
-    },
-    {
-      "method": "GET",
-      "path": "/api/auth/me",
-      "auth": "bearer",
-      "workspace": "none"
-    },
     {
       "method": "GET",
       "path": "/api/auth/native/devices",
@@ -80,24 +14,6 @@
     {
       "method": "POST",
       "path": "/api/auth/native/devices/revoke",
-      "auth": "bearer",
-      "workspace": "none"
-    },
-    {
-      "method": "GET",
-      "path": "/api/auth/native/elevate",
-      "auth": "bearer",
-      "workspace": "none"
-    },
-    {
-      "method": "POST",
-      "path": "/api/auth/native/elevate",
-      "auth": "bearer",
-      "workspace": "none"
-    },
-    {
-      "method": "POST",
-      "path": "/api/auth/native/elevate/sso",
       "auth": "bearer",
       "workspace": "none"
     },

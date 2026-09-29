@@ -11,8 +11,10 @@ the server repository, which is private. PATH is a checkout of it. They come in
 two sets, each from its own directory there and each vendored into its own
 directory here (SETS below):
 
-  fixtures  the Android app's set, which this client reads too; into
-            contracts/fixtures/
+  fixtures  the mobile apps' set, which this client reads too; into
+            contracts/fixtures/. Since 2026-09-29 the server keeps its
+            administration fixtures in a separate directory this script does not
+            read, because no app calls those routes.
   desktop   the shapes only this client reads, which no Android fixture records;
             into contracts/desktop/
 
@@ -93,7 +95,7 @@ class FixtureSet:
 # THE PRIVATE SERVER REPOSITORY'S LAYOUT. These paths are read from the checkout
 # --monorepo names and are used for nothing else; they are not published in
 # SOURCE.toml, which records each set's description instead.
-SERVER_REPO_ANDROID_FIXTURES = "district-android/contracts"
+SERVER_REPO_ANDROID_FIXTURES = "distronode-website/contracts/mobile"
 SERVER_REPO_ANDROID_GENERATOR = "distronode-website/src/lib/contracts/__tests__/android-contracts.test.ts"
 SERVER_REPO_DESKTOP_FIXTURES = "distronode-website/contracts/desktop"
 SERVER_REPO_DESKTOP_GENERATOR = "distronode-website/src/lib/contracts/__tests__/desktop-contracts.test.ts"
@@ -196,14 +198,8 @@ SUBSTITUTIONS: tuple[Substitution, ...] = (
                  "a workspace member's address in the members list"),
     Substitution("email", "c921e912c34c775639044a430fda120f829d59e4c43fcf7200b931fe55f9f28d", "gone@example.com",
                  "a removed user in the scheduling user list"),
-    Substitution("email", "30381464c9b6151cf3ad1477a37d4a2b0db48213b11d9d8ae1455e9aa0686ee2", "grace@example.com",
-                 "a user and message recipient in the admin fixtures"),
-    Substitution("email", "3dfb33d6df973ad1bb70be396dfa5ceea441b63e569723a79906cc4ccd0079a6", "hello@example.com",
-                 "a message sender in the admin message feed"),
     Substitution("email", "24dc04b75b5360285731a45e8cac814c20e9ec889d23401c2c157efe1acf283d", "holidays@example.com",
                  "a shared holiday calendar's address-shaped id in the scheduling calendar list"),
-    Substitution("email", "9decc0335b8c753ca87736b419cc20dec619ec047cc0d7cacf57f489b6f7e0f2", "member@example.com",
-                 "a workspace member's address in the admin fixtures"),
     Substitution("email", "71c9f49e8f284d69cfcf4c703aa878c78557ede007dbf8c43ff28a3b05acd432", "newcomer@example.com",
                  "the member added by the member-add fixture"),
     Substitution("email", "2890d0be96aa7857beebb30dc8c7c2b528d31bcc4cfffdf057e704c7f64efca3", "operator@example.com",
@@ -215,8 +211,6 @@ SUBSTITUTIONS: tuple[Substitution, ...] = (
     Substitution("email", "f310f9d00a146bc476cbe2663f4d222f9a218f63e270ece7653c7f9ba9a2fb89", "sparse@example.com",
                  "the sparsely filled contact in the contact list"),
     # Host names under the service's domain, other than the public website's.
-    Substitution("host", "0742f7355697974551a2c75b6ecc0fc0fb42f4a011ab7f7399d0da55c2204fad", "booking.example.com",
-                 "an internal test host that serves booking pages and scheduling media"),
     Substitution("host", "32ca8563ef65ed5c4ce3f28255954bfd1b433b329dcc0250dd56138ef0c02981", "media.example.com",
                  "the real-time media server's host, in the call and room token fixtures"),
     # Text. The em dash is not allowed anywhere in this repository; in the

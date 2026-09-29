@@ -631,12 +631,12 @@ The Android app is public, at
 [district-android](https://github.com/distronode-corporation/district-android), and
 the snapshot is read from its
 [`core/core-network/src/main/kotlin/com/distronode/districtai/core/network`](https://github.com/distronode-corporation/district-android/tree/main/core/core-network/src/main/kotlin/com/distronode/districtai/core/network)
-directory (with the auth API and the core model beside it). The script reads them
-from a checkout of the private server repository, which holds `district-android/`
-as a directory, so the snapshot is committed and CI never regenerates it. A
-maintainer with that checkout refreshes it with
-`python3 scripts/sync-endpoints.py --monorepo <checkout>` and commits the result
-together with whatever change to the table it calls for.
+directory (with the auth API and the core model beside it). Anyone can refresh it
+from a checkout of that repository with
+`python3 scripts/sync-endpoints.py --android <checkout>` and commit the result
+together with whatever change to the table it calls for. The snapshot is committed
+and CI never regenerates it, so a change in the Android app shows up here only
+after that re-run.
 
 ## Commits and pull requests
 

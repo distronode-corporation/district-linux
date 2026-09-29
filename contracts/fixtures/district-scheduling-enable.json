@@ -1,6 +1,6 @@
 {
   "ok": true,
   "status": "ready",
-  "publicHost": "booking.example.com",
+  "publicHost": "book.example.com",
   "error": null
 }
