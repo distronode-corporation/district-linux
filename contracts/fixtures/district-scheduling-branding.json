@@ -2,10 +2,10 @@
   "ok": true,
   "data": {
     "business_name": "Contract Agency",
-    "logo_url": "https://booking.example.com/media/branding/logo.png",
+    "logo_url": "https://book.example.com/media/branding/logo.png",
     "logo_height": 48,
     "logo_opacity": 100,
-    "banner_url": "https://booking.example.com/media/branding/banner.png",
+    "banner_url": "https://book.example.com/media/branding/banner.png",
     "banner_opacity": 80,
     "privacy_url": "",
     "terms_url": "https://www.contract.test/terms",

@@ -18,6 +18,6 @@
     "notify_host_booking": true,
     "notify_host_cancel": false,
     "notify_host_reschedule": true,
-    "avatar_url": "https://booking.example.com/media/avatars/contract.png"
+    "avatar_url": "https://book.example.com/media/avatars/contract.png"
   }
 }

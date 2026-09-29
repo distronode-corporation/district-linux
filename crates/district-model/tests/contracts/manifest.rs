@@ -87,7 +87,7 @@ pub const SETS: &[Manifest] = &[
 /// Asserted exactly, not as a floor: a floor passes against a directory that lost
 /// files, and never notices one the server started recording. When a sync adds a
 /// fixture, this fails until the new file is placed in one of the sets below.
-pub const EXPECTED_FIXTURE_COUNT: usize = 177;
+pub const EXPECTED_FIXTURE_COUNT: usize = 164;
 
 /// Fixtures decoded by a type in this crate: the fixture's name and the decoder
 /// for its type. Sorted by name.
@@ -528,31 +528,6 @@ pub struct Exclusion {
 
 /// Fixtures of endpoints this client will not use, by decision.
 pub const EXCLUDED_BY_DECISION: &[Exclusion] = &[
-    Exclusion {
-        reason: "The admin console is web-only, and the credential a native app signs in \
-                 with can never reach its routes.",
-        fixtures: &[
-            "district-admin-diagnostics.json",
-            "district-admin-messages.json",
-            "district-admin-overview.json",
-            "district-admin-phone-patch.json",
-            "district-admin-send-sms.json",
-            "district-admin-user-delete.json",
-            "district-admin-user-patch.json",
-            "district-admin-workspace-delete.json",
-            "district-admin-workspace-patch.json",
-            "district-admin-workspace-sync.json",
-        ],
-    },
-    Exclusion {
-        reason: "The elevation feature these record was removed from the server, so there \
-                 is nothing left for a client to call.",
-        fixtures: &[
-            "district-elevate-forbidden.json",
-            "district-elevate-no-password.json",
-            "district-elevate.json",
-        ],
-    },
     Exclusion {
         reason: "Scheduling is managed on the web. Like the Android app, this client only \
                  reads the scheduling status and turns scheduling on, which are the \

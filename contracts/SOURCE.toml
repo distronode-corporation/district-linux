@@ -21,12 +21,12 @@
 # `sha256sum -c SHA256SUMS` checks them.
 
 [source]
-commit = "b5918ef9517246eba57ab4b8011bd927c6fb5071"
+commit = "bd24c13b622939eeb489e3a4a38bb6d7de3e23ef"
 
 [sets.fixtures]
 source = "the Android app's contract fixtures, recorded by the District AI server's contract tests"
 source_clean = true
-file_count = 177
+file_count = 164
 
 [sets.desktop]
 source = "the desktop-only contract fixtures, recorded by the District AI server's contract tests"
@@ -34,7 +34,7 @@ source_clean = true
 file_count = 13
 
 [sync]
-date = "2026-09-27"
+date = "2026-09-29"
 checksums = "SHA256SUMS"
 
 [[substitution]]
@@ -42,10 +42,9 @@ kind = "phone"
 original_sha256 = "da624dd9d311d5fc6f92bfdeeb818e6525a505be2793a2c45083be744a9b1ee3"
 replacement = "+14165550142"
 reason = "the recurring caller across the call, contact, message, desk and booking fixtures; outside the fictional range"
-count = 27
+count = 26
 
 [substitution.files]
-"fixtures/district-admin-messages.json" = 1
 "fixtures/district-call-detail.json" = 3
 "fixtures/district-calls.json" = 3
 "fixtures/district-contact-detail.json" = 3
@@ -115,11 +114,9 @@ kind = "email"
 original_sha256 = "767ccefb5496543e5390b4b087d6091bdbb69b385fda5489023e40c3a9027799"
 replacement = "ada@example.com"
 reason = "a contact's address in the contact, conversation and message fixtures"
-count = 10
+count = 7
 
 [substitution.files]
-"fixtures/district-admin-overview.json" = 2
-"fixtures/district-admin-user-patch.json" = 1
 "fixtures/district-contact-detail.json" = 1
 "fixtures/district-contacts.json" = 1
 "fixtures/district-conversations.json" = 4
@@ -244,27 +241,6 @@ count = 1
 
 [[substitution]]
 kind = "email"
-original_sha256 = "30381464c9b6151cf3ad1477a37d4a2b0db48213b11d9d8ae1455e9aa0686ee2"
-replacement = "grace@example.com"
-reason = "a user and message recipient in the admin fixtures"
-count = 3
-
-[substitution.files]
-"fixtures/district-admin-messages.json" = 1
-"fixtures/district-admin-overview.json" = 2
-
-[[substitution]]
-kind = "email"
-original_sha256 = "3dfb33d6df973ad1bb70be396dfa5ceea441b63e569723a79906cc4ccd0079a6"
-replacement = "hello@example.com"
-reason = "a message sender in the admin message feed"
-count = 1
-
-[substitution.files]
-"fixtures/district-admin-messages.json" = 1
-
-[[substitution]]
-kind = "email"
 original_sha256 = "24dc04b75b5360285731a45e8cac814c20e9ec889d23401c2c157efe1acf283d"
 replacement = "holidays@example.com"
 reason = "a shared holiday calendar's address-shaped id in the scheduling calendar list"
@@ -272,18 +248,6 @@ count = 1
 
 [substitution.files]
 "fixtures/district-scheduling-calendars.json" = 1
-
-[[substitution]]
-kind = "email"
-original_sha256 = "9decc0335b8c753ca87736b419cc20dec619ec047cc0d7cacf57f489b6f7e0f2"
-replacement = "member@example.com"
-reason = "a workspace member's address in the admin fixtures"
-count = 3
-
-[substitution.files]
-"fixtures/district-admin-overview.json" = 1
-"fixtures/district-admin-workspace-patch.json" = 1
-"fixtures/district-admin-workspace-sync.json" = 1
 
 [[substitution]]
 kind = "email"
@@ -336,26 +300,6 @@ count = 1
 
 [substitution.files]
 "fixtures/district-contacts.json" = 1
-
-[[substitution]]
-kind = "host"
-original_sha256 = "0742f7355697974551a2c75b6ecc0fc0fb42f4a011ab7f7399d0da55c2204fad"
-replacement = "booking.example.com"
-reason = "an internal test host that serves booking pages and scheduling media"
-count = 13
-
-[substitution.files]
-"fixtures/district-scheduling-branding.json" = 2
-"fixtures/district-scheduling-enable.json" = 1
-"fixtures/district-scheduling-hosts.json" = 1
-"fixtures/district-scheduling-me.json" = 1
-"fixtures/district-scheduling-slots.json" = 1
-"fixtures/district-scheduling-status-error.json" = 1
-"fixtures/district-scheduling-status-provisioning.json" = 1
-"fixtures/district-scheduling-status-ready.json" = 2
-"fixtures/district-scheduling-teams.json" = 1
-"fixtures/district-scheduling-upload.json" = 1
-"fixtures/district-scheduling-users.json" = 1
 
 [[substitution]]
 kind = "host"

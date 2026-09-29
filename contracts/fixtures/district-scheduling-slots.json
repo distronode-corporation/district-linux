@@ -18,7 +18,7 @@
     "hosts": {
       "sched-user-contract": {
         "name": "Contract Member",
-        "avatar_url": "https://booking.example.com/media/avatars/contract.png"
+        "avatar_url": "https://book.example.com/media/avatars/contract.png"
       }
     },
     "taken": [
