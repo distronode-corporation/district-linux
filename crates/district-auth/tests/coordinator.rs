@@ -10,14 +10,18 @@ mod common;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use common::{
     FakeRefreshApi, Gate, Log, MINUTE, NOW, RecordingStore, TEN_MINUTES, coordinator, session,
     settle, tokens, within,
 };
 use district_auth::{
-    AccessToken, Clock, EARLY_REFRESH_MARGIN_MS, Persistence, ReauthReason, RefreshOutcome,
-    RetryReason, StoreErrorKind, SystemClock, TokenError, TokenRefreshCoordinator, TokenSource,
+    AccessToken, Clock, EARLY_REFRESH_MARGIN_MS, NativeTokens, Persistence, ReauthReason,
+    RefreshOutcome, RetryReason, StoreErrorKind, SystemClock, TokenError, TokenRefreshCoordinator,
+    TokenSource,
 };
+use serde_json::json;
 
 fn sign_in(reason: ReauthReason) -> Result<AccessToken, TokenError> {
     Err(TokenError::SignInRequired(reason))
@@ -709,6 +713,93 @@ async fn a_sign_in_the_store_refuses_lasts_as_long_as_the_process() {
     assert_eq!(error.kind, StoreErrorKind::Unavailable);
     assert_eq!(coordinator.access_token().await, access(1));
     assert_eq!(store.session(), None);
+}
+
+// The service's clock.
+
+/// The token pair numbered `n`, as the service issues it at `issued_at` by its
+/// own clock: an access token that is a JWT saying when it was issued, good
+/// for ten minutes from then.
+fn issued(n: u32, issued_at: i64) -> NativeTokens {
+    let header = URL_SAFE_NO_PAD.encode(br#"{"alg":"HS256","typ":"JWT"}"#);
+    let payload = URL_SAFE_NO_PAD.encode(
+        json!({
+            "sub": "user-1",
+            "did": "device-under-test",
+            "iat": issued_at / 1000,
+            "exp": (issued_at + TEN_MINUTES) / 1000,
+        })
+        .to_string(),
+    );
+    NativeTokens {
+        access_token: AccessToken::new(format!("{header}.{payload}.access-{n}")),
+        ..common::tokens_at(n, issued_at)
+    }
+}
+
+/// A clock running nine and a half minutes fast would see every ten-minute
+/// token as already inside the refresh margin, and refresh on every call until
+/// the service's rate limit refused it. The token's issue time says how far
+/// off the clock is, and expiries are read by the service's time.
+#[tokio::test(start_paused = true)]
+async fn a_fast_clock_does_not_refresh_on_every_call() {
+    let log = Log::default();
+    let store = RecordingStore::with_log(Some(session(0)), log.clone());
+    let api = FakeRefreshApi::new(
+        &log,
+        [
+            RefreshOutcome::Success(issued(1, NOW)),
+            RefreshOutcome::Success(issued(2, NOW + 9 * MINUTE)),
+        ],
+    );
+    let (coordinator, clock) = coordinator(&store, &api);
+    let fast = 9 * MINUTE + 30_000;
+    clock.set(NOW + fast);
+    let first = within(coordinator.access_token()).await.unwrap();
+    for _ in 0..3 {
+        assert_eq!(within(coordinator.access_token()).await, Ok(first.clone()));
+    }
+    assert_eq!(api.calls(), 1);
+    let server = coordinator.server_clock();
+    assert_eq!(server.now_ms(), NOW);
+
+    // Nine minutes on by the service's clock, it is time.
+    clock.advance(9 * MINUTE);
+    assert_eq!(server.now_ms(), NOW + 9 * MINUTE);
+    let second = within(coordinator.access_token()).await.unwrap();
+    assert_ne!(second, first);
+    assert_eq!(api.presented(), ["refresh-0", "refresh-1"]);
+}
+
+/// A rotated session the store refused is saved when the app asks as it
+/// quits, rather than lost with the process: the next start would find only
+/// its spent predecessor, and sign the user out.
+#[tokio::test(start_paused = true)]
+async fn an_unsaved_successor_is_saved_when_asked_at_quit() {
+    let log = Log::default();
+    let store = RecordingStore::with_log(Some(session(0)), log.clone());
+    let api = FakeRefreshApi::rotating(&log, 1, 1);
+    let (coordinator, _) = coordinator(&store, &api);
+    assert_eq!(coordinator.save_unsaved().await, Persistence::Saved);
+    store.fail("save", StoreErrorKind::Locked);
+    assert_eq!(coordinator.access_token().await, access(1));
+
+    let Persistence::MemoryOnly(error) = coordinator.save_unsaved().await else {
+        panic!("the store still refuses it");
+    };
+    assert_eq!(error.kind, StoreErrorKind::Locked);
+    store.heal("save");
+    log.clear();
+    assert_eq!(coordinator.save_unsaved().await, Persistence::Saved);
+    assert_eq!(log.entries(), ["save(refresh-1)", "unmark"]);
+    assert_eq!(store.stored_token().as_deref(), Some("refresh-1"));
+    assert_eq!(store.marker(), None);
+
+    // So a restart finds a session it may use.
+    let restarted = store.restarted();
+    let next_run = FakeRefreshApi::rotating(restarted.log(), 2, 1);
+    let (coordinator, _) = common::coordinator(&restarted, &next_run);
+    assert_eq!(coordinator.restore().await, Ok(()));
 }
 
 // The clock.

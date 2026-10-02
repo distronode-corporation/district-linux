@@ -1,6 +1,7 @@
-//! Compiles `data/` (the `.ui` templates, the stylesheet, the ringtone and the
-//! icons) into the gresource the binary carries, with the
-//! `glib-compile-resources` that ships beside the GTK development files.
+//! Compiles `data/` (the `.ui` templates, the stylesheet, the ringtone, the
+//! icons and the AppStream metadata) into the gresource the binary carries,
+//! with the `glib-compile-resources` that ships beside the GTK development
+//! files.
 
 fn main() {
     glib_build_tools::compile_resources(

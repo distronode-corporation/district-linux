@@ -698,7 +698,7 @@ dependencies = [
 
 [[package]]
 name = "district-api"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "district-model",
  "httpdate",
@@ -707,13 +707,14 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "tokio",
+ "toml",
  "url",
  "wiremock",
 ]
 
 [[package]]
 name = "district-app"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "async-channel",
  "district-api",
@@ -733,7 +734,7 @@ dependencies = [
 
 [[package]]
 name = "district-auth"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "base64 0.22.1",
  "district-api",
@@ -752,7 +753,7 @@ dependencies = [
 
 [[package]]
 name = "district-call"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "base64 0.22.1",
  "district-auth",
@@ -773,7 +774,7 @@ dependencies = [
 
 [[package]]
 name = "district-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "base64 0.22.1",
  "district-api",
@@ -790,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "district-desktop"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "district-auth",
  "district-core",
@@ -808,7 +809,7 @@ dependencies = [
 
 [[package]]
 name = "district-live"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "district-api",
  "district-model",
@@ -828,7 +829,7 @@ dependencies = [
 
 [[package]]
 name = "district-model"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "district-model",
  "serde",

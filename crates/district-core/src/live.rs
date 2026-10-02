@@ -1,18 +1,34 @@
-//! Live updates for the open workspace, and the notification for a message that
-//! arrives while nobody is looking.
+//! Live updates for the open workspace and for every other workspace where the
+//! member takes calls, and the notification for a message that arrives while
+//! nobody is looking.
 //!
 //! An event is a hint that something changed, not the change: it names a call
-//! or a message, and the screens read what they show again. Each read that a
-//! hint starts goes out at most once at a time, with one more after it if
-//! another hint arrived meanwhile, so a burst of events costs two reads, not one
-//! each.
+//! or a message, and the screens read what they show again. Each read of a
+//! list, a badge or a thread that a hint starts goes out at most once at a
+//! time, with one more after it if another hint arrived meanwhile, so a burst
+//! of events costs two reads of each, not one each. A message arriving while a
+//! thread shows is the exception: each one is looked up, to tell whether it is
+//! in that thread, and each one that is marks the thread read.
 //!
 //! Events are delivered only while the socket is open. Every reconnection after
 //! the first follows a gap in which events may have been missed, so what is on
 //! screen is read again then.
 //!
-//! Only the open workspace is watched, so an update for any other workspace
-//! (the last one's socket closing, say) changes nothing.
+//! # Which workspaces are watched
+//!
+//! The service rings a desktop through a workspace's own socket, so a member of
+//! two workspaces who takes calls in both is rung for the one off screen only if
+//! its socket is open too. The open workspace is always watched, and so is every
+//! other workspace where the member's role may answer a call, in a build that
+//! can carry one. That is known from the workspace list, which names the
+//! member's role in each, so it costs no request of its own. Nothing of those
+//! other workspaces is on screen, so their sockets only ring, end a ring or a
+//! call taken here, and notify a new message, each tagged with its workspace.
+//! Switching between two of them leaves both sockets running. An update for a
+//! workspace not watched (a socket closing after it was dropped, say) changes
+//! nothing.
+
+use std::collections::BTreeMap;
 
 use district_api::ApiError;
 use district_live::{Disconnect, LiveUpdate, WorkspaceUpdate};
@@ -21,19 +37,73 @@ use district_model::{MessageThreadResponse, TelemetryEnvelope, TelemetryEventTyp
 use crate::failure::FailureText;
 use crate::model::{Effect, Event, Slot, Ticket, Tickets};
 use crate::ringing::{IncomingRing, RingEvent};
+use crate::role::Capabilities;
 use crate::route::Route;
 use crate::signed_in::{Next, SignedIn, stay};
+use crate::workspaces::WorkspacesState;
 
-/// The open workspace's live updates.
+/// The live updates: the open workspace's, and those of the other workspaces
+/// where the member takes calls.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LiveState {
-    /// Where the socket stands, for a status line.
+    /// Where the open workspace's socket stands, for a status line.
     pub status: LiveStatus,
-    /// The workspace watched.
+    /// The open workspace.
     pub(crate) workspace_id: Option<String>,
-    /// Whether the socket has been open since the workspace was watched, so the
-    /// next opening follows a gap.
+    /// Whether the open workspace's socket has been open since it was watched,
+    /// so the next opening follows a gap.
     pub(crate) connected_before: bool,
+    /// The other workspaces watched, where the member takes calls, and where
+    /// each one's socket stands.
+    pub(crate) others: BTreeMap<String, Socket>,
+}
+
+impl LiveState {
+    /// Every workspace watched, the open one included, in order.
+    fn watched(&self) -> Vec<String> {
+        let mut watched: Vec<String> = self.others.keys().cloned().collect();
+        watched.extend(self.workspace_id.clone());
+        watched.sort();
+        watched
+    }
+}
+
+/// Where the socket of a workspace watched in the background stands.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Socket {
+    status: LiveStatus,
+    connected_before: bool,
+}
+
+impl Socket {
+    /// A socket just asked for.
+    fn connecting() -> Self {
+        Self {
+            status: LiveStatus::Connecting,
+            connected_before: false,
+        }
+    }
+}
+
+/// Takes in what a socket reported about itself. Answers whether it has just
+/// opened again after a gap, in which events may have been missed.
+fn reported(status: &mut LiveStatus, connected_before: &mut bool, update: &LiveUpdate) -> bool {
+    match update {
+        LiveUpdate::Connected => {
+            *status = LiveStatus::Connected;
+            return std::mem::replace(connected_before, true);
+        }
+        LiveUpdate::Reconnecting { cause, .. } => {
+            if *cause != Disconnect::Renewal {
+                *status = LiveStatus::Reconnecting;
+            }
+        }
+        LiveUpdate::Ended(error) => {
+            *status = LiveStatus::Stopped(error.as_ref().map(FailureText::from_live_error));
+        }
+        LiveUpdate::Event(_) | LiveUpdate::Discarded => {}
+    }
+    false
 }
 
 /// Where the open workspace's live socket stands.
@@ -252,16 +322,96 @@ pub enum NotificationTarget {
 }
 
 impl SignedIn {
-    /// Watches `workspace_id`, and only it.
-    pub(crate) fn watch(&mut self, workspace_id: &str, tickets: &mut Tickets) -> Effect {
-        self.live = LiveState {
-            status: LiveStatus::Connecting,
-            workspace_id: Some(workspace_id.to_owned()),
-            connected_before: false,
+    /// The workspaces where the member takes calls: each one whose role in the
+    /// workspace list may answer a call, in a build that can carry one.
+    pub(crate) fn call_workspaces(&self) -> Vec<String> {
+        let WorkspacesState::Ready(workspaces) = &self.workspaces else {
+            return Vec::new();
         };
+        workspaces
+            .list
+            .iter()
+            .filter(|entry| {
+                self.calls_available && Capabilities::for_role(Some(&entry.role)).can_dial
+            })
+            .map(|entry| entry.id.clone())
+            .collect()
+    }
+
+    /// Whether the member may answer a call in `workspace_id`: by the open
+    /// workspace's effective role, or by the role the list gives another.
+    pub(crate) fn takes_calls_in(&self, workspace_id: &str) -> bool {
+        if self.active_id().as_deref() == Some(workspace_id) {
+            return self.capabilities().can_dial;
+        }
+        self.call_workspaces().iter().any(|id| id == workspace_id)
+    }
+
+    /// Watches `workspace_id`, just opened, and every other workspace where the
+    /// member takes calls. A socket already running for one of them goes on as
+    /// it was, so switching between two of them restarts neither.
+    pub(crate) fn watch(&mut self, workspace_id: &str, tickets: &mut Tickets) -> Effect {
+        self.plan_watch(workspace_id);
+        self.watch_effect(tickets)
+    }
+
+    /// The workspace list was read again with `workspace_id` still open: the
+    /// workspaces where the member takes calls may have changed with it.
+    pub(crate) fn watch_again(&mut self, workspace_id: &str, tickets: &mut Tickets) -> Vec<Effect> {
+        let before = self.live.watched();
+        self.plan_watch(workspace_id);
+        if self.live.watched() == before {
+            return Vec::new();
+        }
+        vec![self.watch_effect(tickets)]
+    }
+
+    /// Makes `workspace_id` the open one among the sockets, and the others the
+    /// workspaces where the member takes calls, each keeping where its socket
+    /// stood if it was watched already.
+    fn plan_watch(&mut self, workspace_id: &str) {
+        let wanted = self.call_workspaces();
+        let live = &mut self.live;
+        let mut sockets = std::mem::take(&mut live.others);
+        if let Some(open) = live.workspace_id.take() {
+            let socket = Socket {
+                status: std::mem::take(&mut live.status),
+                connected_before: live.connected_before,
+            };
+            sockets.insert(open, socket);
+        }
+        let open = sockets
+            .remove(workspace_id)
+            .unwrap_or_else(Socket::connecting);
+        live.workspace_id = Some(workspace_id.to_owned());
+        live.status = open.status;
+        live.connected_before = open.connected_before;
+        live.others = wanted
+            .into_iter()
+            .filter(|id| id != workspace_id)
+            .map(|id| {
+                let socket = sockets.remove(&id).unwrap_or_else(Socket::connecting);
+                (id, socket)
+            })
+            .collect();
+    }
+
+    /// The watched set, for the runner to apply. A socket that stopped is
+    /// started again by it, so each one stopped is connecting again.
+    fn watch_effect(&mut self, tickets: &mut Tickets) -> Effect {
+        let live = &mut self.live;
+        if matches!(live.status, LiveStatus::Stopped(_)) {
+            live.status = LiveStatus::Connecting;
+            live.connected_before = false;
+        }
+        for socket in live.others.values_mut() {
+            if matches!(socket.status, LiveStatus::Stopped(_)) {
+                *socket = Socket::connecting();
+            }
+        }
         Effect::WatchLive {
             revision: tickets.revision(),
-            workspace_ids: vec![workspace_id.to_owned()],
+            workspace_ids: live.watched(),
         }
     }
 
@@ -277,47 +427,85 @@ impl SignedIn {
             .collect()
     }
 
-    /// Tries the socket again after it stopped for good, at a refresh.
+    /// Tries the sockets again after any of them stopped for good, at a
+    /// refresh.
     pub(crate) fn rewatch(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
-        match (&self.live.status, self.live.workspace_id.clone()) {
-            (LiveStatus::Stopped(_), Some(workspace_id)) => {
-                vec![self.watch(&workspace_id, tickets)]
-            }
-            _ => Vec::new(),
+        let stopped = |status: &LiveStatus| matches!(status, LiveStatus::Stopped(_));
+        let any_stopped = stopped(&self.live.status)
+            || self
+                .live
+                .others
+                .values()
+                .any(|socket| stopped(&socket.status));
+        if !any_stopped {
+            return Vec::new();
         }
+        vec![self.watch_effect(tickets)]
     }
 
     pub(crate) fn live(&mut self, update: WorkspaceUpdate, tickets: &mut Tickets) -> Next {
-        if self.live.workspace_id.as_deref() != Some(update.workspace_id.as_str()) {
-            return stay();
+        let WorkspaceUpdate {
+            workspace_id,
+            update,
+        } = update;
+        if self.live.workspace_id.as_deref() == Some(workspace_id.as_str()) {
+            return Next::Stay(self.open_live(update, tickets));
         }
-        let effects = match update.update {
-            LiveUpdate::Connected => {
-                self.live.status = LiveStatus::Connected;
-                if std::mem::replace(&mut self.live.connected_before, true) {
-                    self.reread_on_screen(tickets)
-                } else {
-                    Vec::new()
-                }
-            }
+        let Some(socket) = self.live.others.get_mut(&workspace_id) else {
+            return stay();
+        };
+        reported(&mut socket.status, &mut socket.connected_before, &update);
+        let effects = match update {
+            LiveUpdate::Event(envelope) => self.other_event(workspace_id, envelope, tickets),
+            _ => Vec::new(),
+        };
+        Next::Stay(effects)
+    }
+
+    /// An update from the open workspace's socket.
+    fn open_live(&mut self, update: LiveUpdate, tickets: &mut Tickets) -> Vec<Effect> {
+        let gap = reported(
+            &mut self.live.status,
+            &mut self.live.connected_before,
+            &update,
+        );
+        match update {
             LiveUpdate::Event(envelope) => self.live_event(envelope, tickets),
-            LiveUpdate::Reconnecting { cause, .. } => {
-                if cause != Disconnect::Renewal {
-                    self.live.status = LiveStatus::Reconnecting;
-                }
-                Vec::new()
-            }
-            LiveUpdate::Ended(error) => {
-                self.live.status =
-                    LiveStatus::Stopped(error.as_ref().map(FailureText::from_live_error));
-                Vec::new()
-            }
+            LiveUpdate::Connected if gap => self.reread_on_screen(tickets),
             // Something arrived that could not be read. The next reconnection's
             // read covers what it may have been; reading everything for each
             // one would let a message this build cannot parse drive the reads.
-            LiveUpdate::Discarded => Vec::new(),
-        };
-        Next::Stay(effects)
+            LiveUpdate::Connected
+            | LiveUpdate::Reconnecting { .. }
+            | LiveUpdate::Ended(_)
+            | LiveUpdate::Discarded => Vec::new(),
+        }
+    }
+
+    /// An event from the socket of `workspace_id`, a workspace where the member
+    /// takes calls that is not the one open. Nothing of it is on screen, so
+    /// nothing is read again: a ring rings, a call's end ends its ring or the
+    /// call answered here, and a new message is notified.
+    fn other_event(
+        &mut self,
+        workspace_id: String,
+        envelope: TelemetryEnvelope,
+        tickets: &mut Tickets,
+    ) -> Vec<Effect> {
+        match envelope.event_type {
+            TelemetryEventType::CallRinging => self.call_ringing(&envelope, tickets),
+            TelemetryEventType::CallUpdated | TelemetryEventType::CallEnded => {
+                self.ringing_call_changed(&envelope, tickets)
+            }
+            TelemetryEventType::MessageReceived => vec![Effect::Notify(Notification::message(
+                workspace_id,
+                envelope.call_id,
+            ))],
+            TelemetryEventType::MessageSent
+            | TelemetryEventType::CallStarted
+            | TelemetryEventType::ToolOutcome
+            | TelemetryEventType::Unknown(_) => Vec::new(),
+        }
     }
 
     fn live_event(&mut self, envelope: TelemetryEnvelope, tickets: &mut Tickets) -> Vec<Effect> {

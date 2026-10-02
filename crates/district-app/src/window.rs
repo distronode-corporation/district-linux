@@ -22,8 +22,8 @@ use crate::gtk::{self, CompositeTemplate, gio, glib};
 use crate::pages::{
     AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
     DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
-    SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage, WorkflowsPage, in_contacts,
-    in_desk, in_settings, in_support,
+    SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage, WorkflowsPage, draw_line,
+    draw_spinner, in_contacts, in_desk, in_settings, in_support,
 };
 
 /// The window action that turns the microphone on or off, and its shortcut.
@@ -446,9 +446,7 @@ impl DistrictWindow {
             self.draw_switcher(workspaces);
         }
         let warning = workspaces.partial_warning();
-        imp.workspace_warning.set_visible(warning.is_some());
-        imp.workspace_warning
-            .set_label(warning.as_deref().unwrap_or_default());
+        draw_line(&imp.workspace_warning, warning.as_deref());
     }
 
     fn draw_switcher(&self, workspaces: &Workspaces) {
@@ -516,8 +514,7 @@ impl DistrictWindow {
         let arrived = imp.route.replace(Some(route.clone())).as_ref() != Some(route);
         let (refreshable, refreshing) = refresh_state(signed_in);
         imp.refresh_button.set_visible(refreshable && !refreshing);
-        imp.refresh_spinner.set_visible(refreshing);
-        imp.refresh_spinner.set_spinning(refreshing);
+        draw_spinner(&imp.refresh_spinner, refreshing);
         let notice = signed_in.notice.map(|notice| notice.message());
         imp.notice_banner
             .set_title(notice.as_deref().unwrap_or_default());
@@ -604,7 +601,7 @@ impl DistrictWindow {
             }
             Route::Rooms => {
                 imp.page_stack.set_visible_child_name("rooms");
-                imp.rooms_page.update(signed_in);
+                imp.rooms_page.update(signed_in, model.config());
             }
             Route::Workspace(section) => {
                 imp.page_stack.set_visible_child_name("settings");
@@ -687,11 +684,11 @@ fn refresh_state(signed_in: &SignedIn) -> (bool, bool) {
         ),
         Route::Calls => (
             true,
-            matches!(&signed_in.calls, CallLog::Ready(rows) if rows.refreshing),
+            matches!(&signed_in.calls, CallLog::Ready(rows) if rows.paging.refreshing),
         ),
         Route::Contacts => (
             true,
-            matches!(&signed_in.contacts.list, ContactList::Ready(rows) if rows.refreshing),
+            matches!(&signed_in.contacts.list, ContactList::Ready(rows) if rows.paging.refreshing),
         ),
         Route::Analytics => (true, AnalyticsPage::refreshing(&signed_in.analytics)),
         Route::Marketplace => (true, MarketplacePage::refreshing(&signed_in.marketplace)),

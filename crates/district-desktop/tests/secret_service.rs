@@ -200,14 +200,14 @@ fn child_real_secret_service() {
             .unwrap();
         assert_eq!(
             store.revoke_outbox().await,
-            Ok(vec![RefreshToken::new("rt-old")])
+            Ok(vec![Ok(RefreshToken::new("rt-old"))])
         );
 
         store.clear_session().await.unwrap();
         assert_eq!(store.load_session().await, Ok(None));
         assert_eq!(
             store.revoke_outbox().await,
-            Ok(vec![RefreshToken::new("rt-old")])
+            Ok(vec![Ok(RefreshToken::new("rt-old"))])
         );
         store
             .remove_revoke(&RefreshToken::new("rt-old"))

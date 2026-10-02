@@ -18,8 +18,10 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
-use crate::pages::settings_kit::{Echoed, draw_line};
-use crate::pages::shared::{Ask, Asking, humanize, icon_button, short_text};
+use crate::pages::settings_kit::Echoed;
+use crate::pages::shared::{
+    Ask, Asking, draw_line, draw_spinner, failure_text, humanize, icon_button, short_text,
+};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -221,15 +223,14 @@ impl KnowledgeView {
     fn draw_mode(&self, section: &KnowledgeSection, can_change: bool) {
         let imp = self.imp();
         let loading = section.mode == ModeRead::Loading;
-        imp.mode_spinner.set_visible(loading);
-        imp.mode_spinner.set_spinning(loading);
+        draw_spinner(&imp.mode_spinner, loading);
         let failure = match &section.mode {
             ModeRead::Failed(failure) => Some(failure),
             _ => None,
         };
         imp.mode_failed.set_visible(failure.is_some());
         if let Some(failure) = failure {
-            imp.mode_failed.set_subtitle(&failure.message);
+            imp.mode_failed.set_subtitle(&failure_text(failure));
             imp.mode_retry.set_visible(failure.retryable);
         }
         let stored = section.mode();
@@ -267,16 +268,14 @@ impl KnowledgeView {
                 .then_some(KnowledgeSection::ADD_REJECTED),
         );
         let adding = busy && section.last_write == Some(KnowledgeWrite::Add);
-        imp.add_spinner.set_visible(adding);
-        imp.add_spinner.set_spinning(adding);
+        draw_spinner(&imp.add_spinner, adding);
         imp.add_button.set_sensitive(!busy);
     }
 
     fn draw_documents(&self, section: &KnowledgeSection, can_change: bool) {
         let imp = self.imp();
         let loading = section.documents == KnowledgeDocuments::Loading;
-        imp.documents_spinner.set_visible(loading);
-        imp.documents_spinner.set_spinning(loading);
+        draw_spinner(&imp.documents_spinner, loading);
         let (documents, failure) = match &section.documents {
             KnowledgeDocuments::Ready(documents) => (documents.clone(), None),
             KnowledgeDocuments::Failed(failure) => (Vec::new(), Some(failure)),
@@ -284,7 +283,7 @@ impl KnowledgeView {
         };
         imp.documents_failed.set_visible(failure.is_some());
         if let Some(failure) = failure {
-            imp.documents_failed.set_subtitle(&failure.message);
+            imp.documents_failed.set_subtitle(&failure_text(failure));
             imp.documents_retry.set_visible(failure.retryable);
         }
         imp.empty_row.set_visible(matches!(
@@ -350,6 +349,7 @@ impl KnowledgeView {
                 .as_ref()
                 .map(|(confirm, key, question, destructive)| Ask {
                     key: key.clone(),
+                    heading: None,
                     question,
                     action: confirm.action(),
                     destructive: *destructive,

@@ -24,7 +24,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::messaging_form::{MessagingFormDialog, PROVIDERS};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed};
-use crate::pages::shared::{Ask, Asking, humanize, icon_button};
+use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text, humanize, icon_button};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -294,15 +294,14 @@ impl MessagingView {
             .set_visible(!can_change || imp.notice.showing());
         let loading = section.accounts == MessagingAccounts::Loading;
         let busy = section.busy();
-        imp.accounts_spinner.set_visible(loading || busy);
-        imp.accounts_spinner.set_spinning(loading || busy);
+        draw_spinner(&imp.accounts_spinner, loading || busy);
         let failure = match &section.accounts {
             MessagingAccounts::Failed(failure) => Some(failure),
             _ => None,
         };
         imp.accounts_failed.set_visible(failure.is_some());
         if let Some(failure) = failure {
-            imp.accounts_failed.set_subtitle(&failure.message);
+            imp.accounts_failed.set_subtitle(&failure_text(failure));
             imp.accounts_retry.set_visible(failure.retryable);
         }
         let response = section.response();
@@ -332,8 +331,7 @@ impl MessagingView {
             .draw_text(&*imp.creator_row, &section.creator_cell);
         imp.creator_row.set_sensitive(!busy);
         let saving_number = busy && section.last_write == Some(MessagingAction::CreatorCell);
-        imp.creator_spinner.set_visible(saving_number);
-        imp.creator_spinner.set_spinning(saving_number);
+        draw_spinner(&imp.creator_spinner, saving_number);
         imp.creator_button
             .set_sensitive(section.can_edit_now() && !section.creator_cell.trim().is_empty());
         self.draw_question(section);
@@ -486,6 +484,7 @@ impl MessagingView {
             self,
             asked.as_ref().map(|(confirm, question)| Ask {
                 key: format!("remove-{}", confirm.account_id),
+                heading: None,
                 question,
                 action: MessagingDeleteConfirm::ACTION,
                 destructive: true,

@@ -1,14 +1,21 @@
 //! What the pages share: times as a person reads them, words for the
-//! service's status values, text fields that type ahead of the model, lists
-//! built from rows, and the lists that read more near their end.
+//! service's status values and its failures, text fields that type ahead of
+//! the model, lines and spinners shown only when there is something to show,
+//! lists built from rows and the lists that read more near their end, the
+//! detail panes a folded window leaves by a gesture, questions, the file
+//! chooser for an image, and a change that lands on the screen it was made on.
 
+use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use district_core::{Event, FailureText, MAX_ATTACHMENT_BYTES, Paging, PickedAttachment};
+
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, gio, glib};
+use crate::pages::Sends;
 
 /// Text a person types into a field the model also writes to (the composer,
 /// the search box): which of the model's values to put into the field.
@@ -54,6 +61,66 @@ impl Echo {
     pub(crate) fn reset(&mut self) {
         *self = Self::default();
     }
+}
+
+/// A change on its way on a detail screen (a reply, a block), remembered with
+/// the item it was for, so that its landing is reported once and only on that
+/// item's screen. The screen stays as one item gives way to the next, and a
+/// change still on its way for the first is discarded by the core when the
+/// second opens: that is no success to report.
+#[derive(Debug)]
+pub struct Landing<T>(RefCell<Option<(String, T)>>);
+
+impl<T> Default for Landing<T> {
+    fn default() -> Self {
+        Self(RefCell::new(None))
+    }
+}
+
+impl<T: Copy> Landing<T> {
+    /// The screen shows `id` with `now` on its way, if anything. Answers the
+    /// change that was on its way for the same item when last drawn and is no
+    /// longer: the one that just landed.
+    pub(crate) fn landed(&self, id: &str, now: Option<T>) -> Option<T> {
+        let before = self.0.replace(now.map(|change| (id.to_owned(), change)));
+        match (before, now) {
+            (Some((was, change)), None) if was == id => Some(change),
+            _ => None,
+        }
+    }
+
+    /// The screen was left: nothing is on its way any more.
+    pub(crate) fn forget(&self) {
+        self.0.replace(None);
+    }
+}
+
+/// What a failure says on screen: its message, and on a line of its own the
+/// regions that could not be reached, when it names any.
+pub(crate) fn failure_text(failure: &FailureText) -> Cow<'_, str> {
+    match failure.regions_line() {
+        Some(regions) => Cow::Owned(format!("{}\n{regions}", failure.message)),
+        None => Cow::Borrowed(&failure.message),
+    }
+}
+
+/// Shows `text` on `label`, or hides it when there is none.
+pub(crate) fn draw_line(label: &gtk::Label, text: Option<impl AsRef<str>>) {
+    label.set_visible(text.is_some());
+    label.set_label(text.as_ref().map_or("", AsRef::as_ref));
+}
+
+/// A spinner that spins, and shows, only while `busy`.
+pub(crate) fn draw_spinner(spinner: &gtk::Spinner, busy: bool) {
+    spinner.set_visible(busy);
+    spinner.set_spinning(busy);
+}
+
+/// A button's sensitivity and a spinner beside it, drawn together: `busy`
+/// spins the spinner and makes the button wait.
+pub(crate) fn draw_busy(button: &gtk::Button, spinner: &gtk::Spinner, works: bool, busy: bool) {
+    button.set_sensitive(works && !busy);
+    draw_spinner(spinner, busy);
 }
 
 /// `iso`, an instant the service wrote, in the zone of `now`.
@@ -126,8 +193,25 @@ fn locale_clock_24h() -> bool {
 /// The time of day of `when` on a 24-hour clock (`14:30`) or a 12-hour one
 /// (`2:30 PM`, in the locale's words for the half of the day).
 pub(crate) fn clock_time(when: &glib::DateTime, h24: bool) -> String {
-    let format = if h24 { "%H:%M" } else { "%-I:%M %p" };
-    when.format(format).map(String::from).unwrap_or_default()
+    let half = if h24 {
+        String::new()
+    } else {
+        when.format("%p").map(String::from).unwrap_or_default()
+    };
+    when.format(clock_format(h24, &half))
+        .map(String::from)
+        .unwrap_or_default()
+}
+
+/// The format of a time of day. A locale with no words for the half of the
+/// day writes `half` empty, and `2:30` would not say which 2:30, so a 12-hour
+/// clock there reads on 24 hours.
+fn clock_format(h24: bool, half: &str) -> &'static str {
+    if h24 || half.trim().is_empty() {
+        "%H:%M"
+    } else {
+        "%-I:%M %p"
+    }
 }
 
 /// The time of day of `when`, as this desktop reads times.
@@ -236,6 +320,29 @@ pub(crate) fn icon_button(icon: &str, label: &str) -> gtk::Button {
     button
 }
 
+/// A tile showing one figure over its caption, and the two labels to write
+/// them into. `size` is the figure's type size (`title-1`, `title-2`). A
+/// caption too long for the tile wraps.
+pub(crate) fn metric_tile(size: &str) -> (gtk::Box, gtk::Label, gtk::Label) {
+    let value = gtk::Label::builder()
+        .xalign(0.0)
+        .css_classes([size, "value"])
+        .build();
+    let caption = gtk::Label::builder()
+        .xalign(0.0)
+        .wrap(true)
+        .css_classes(["dim-label"])
+        .build();
+    let tile = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(4)
+        .css_classes(["card", "metric"])
+        .build();
+    tile.append(&value);
+    tile.append(&caption);
+    (tile, value, caption)
+}
+
 /// A label that shows text as it is, never as markup: the text can be a
 /// customer's.
 pub(crate) fn plain_label(text: &str, classes: &[&str]) -> gtk::Label {
@@ -252,6 +359,158 @@ pub(crate) fn plain_label(text: &str, classes: &[&str]) -> gtk::Label {
 /// Takes every row out of `list`.
 pub(crate) fn clear_list(list: &gtk::ListBox) {
     list.remove_all();
+}
+
+/// The rows of a list, each with the key of what it shows (an id, a
+/// section): what a row activated opens, and which row to select for what is
+/// open.
+#[derive(Debug)]
+pub struct RowIds<K = String>(RefCell<Vec<(gtk::ListBoxRow, K)>>);
+
+impl<K> Default for RowIds<K> {
+    fn default() -> Self {
+        Self(RefCell::new(Vec::new()))
+    }
+}
+
+impl<K: Clone + PartialEq> RowIds<K> {
+    /// The list was built again with `rows`.
+    pub(crate) fn replace(&self, rows: Vec<(gtk::ListBoxRow, K)>) {
+        self.0.replace(rows);
+    }
+
+    /// `row`, showing `key`, was added at the end.
+    pub(crate) fn push(&self, row: gtk::ListBoxRow, key: K) {
+        self.0.borrow_mut().push((row, key));
+    }
+
+    /// The key of what `row` shows.
+    pub(crate) fn key_of(&self, row: &gtk::ListBoxRow) -> Option<K> {
+        self.0
+            .borrow()
+            .iter()
+            .find_map(|(listed, key)| (listed == row).then(|| key.clone()))
+    }
+
+    /// The row showing `open`, if one does.
+    pub(crate) fn row_of(&self, open: Option<&K>) -> Option<gtk::ListBoxRow> {
+        self.0
+            .borrow()
+            .iter()
+            .find(|(_, key)| Some(key) == open)
+            .map(|(row, _)| row.clone())
+    }
+
+    /// Selects in `list` the row showing `open`, or none.
+    pub(crate) fn select(&self, list: &gtk::ListBox, open: Option<&K>) {
+        list.select_row(self.row_of(open).as_ref());
+    }
+}
+
+/// A list read a page at a time, drawn from the core's rows: the rows it was
+/// last built from, and each row's id. A page added at the end adds its rows
+/// below the others, which keeps the place the person scrolled to; anything
+/// else builds the list again.
+#[derive(Debug)]
+pub struct PagedRows<T> {
+    listed: RefCell<Vec<T>>,
+    ids: RowIds,
+}
+
+impl<T> Default for PagedRows<T> {
+    fn default() -> Self {
+        Self {
+            listed: RefCell::new(Vec::new()),
+            ids: RowIds::default(),
+        }
+    }
+}
+
+impl<T: Clone + PartialEq> PagedRows<T> {
+    /// Draws `items` into `list`, each row and its id built by `build`. The
+    /// rows drawn are compared where they are kept, and copied only when they
+    /// changed: the core's state is drawn again many times a second during a
+    /// call, and a long list is long to copy.
+    pub(crate) fn draw(
+        &self,
+        list: &gtk::ListBox,
+        items: &[T],
+        build: impl Fn(&T) -> (gtk::ListBoxRow, String),
+    ) {
+        let start = {
+            let listed = self.listed.borrow();
+            if listed.as_slice() == items {
+                return;
+            }
+            if !listed.is_empty() && items.starts_with(&listed) {
+                listed.len()
+            } else {
+                clear_list(list);
+                self.ids.replace(Vec::new());
+                0
+            }
+        };
+        for item in &items[start..] {
+            let (row, id) = build(item);
+            list.append(&row);
+            self.ids.push(row, id);
+        }
+        self.listed.replace(items.to_vec());
+    }
+
+    /// Each row's id.
+    pub(crate) fn ids(&self) -> &RowIds {
+        &self.ids
+    }
+}
+
+/// The end of a list read a page at a time, each part named by its template.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct PagingFooter<'a> {
+    /// Why the last read again failed, beside the list.
+    pub(crate) refresh_failure: &'a gtk::Label,
+    /// The spinner while the next page is on its way.
+    pub(crate) more_spinner: &'a gtk::Spinner,
+    /// Why the next page failed.
+    pub(crate) more_failure: &'a gtk::Label,
+    /// The button that asks for it again.
+    pub(crate) more_button: &'a gtk::Button,
+}
+
+impl PagingFooter<'_> {
+    /// Draws where `paging` stands, and answers whether to ask for the next
+    /// page once the person nears the end: one that failed waits for its
+    /// button.
+    pub(crate) fn draw(&self, paging: &Paging) -> bool {
+        draw_line(
+            self.refresh_failure,
+            paging.refresh_failure.as_ref().map(failure_text),
+        );
+        draw_spinner(self.more_spinner, paging.loading_more);
+        let more_failure = paging.more_failure.as_ref().map(failure_text);
+        draw_line(self.more_failure, more_failure.as_ref());
+        self.more_button.set_visible(more_failure.is_some());
+        paging.can_load_more() && paging.more_failure.is_none()
+    }
+}
+
+/// Sends [`Event::Back`] from `page` each time `split`, folded into one pane,
+/// is left for its list by a gesture or a key rather than a button, while
+/// `open` says a detail is open.
+pub(crate) fn back_on_fold<P: Sends>(
+    split: &adw::NavigationSplitView,
+    page: &P,
+    open: impl Fn(&P) -> bool + 'static,
+) {
+    let page = page.downgrade();
+    split.connect_show_content_notify(move |split| {
+        if let Some(page) = page.upgrade()
+            && !split.shows_content()
+            && open(&page)
+        {
+            page.send(Event::Back);
+        }
+    });
 }
 
 /// A message of a conversation: who wrote it and when, over the text in a
@@ -355,6 +614,9 @@ pub struct Asking(RefCell<Option<Question>>);
 pub(crate) struct Ask<'a> {
     /// What it is about: the same key keeps the dialog showing.
     pub(crate) key: String,
+    /// The heading, when it is not the question's own first sentence: the
+    /// whole question is then the body under it.
+    pub(crate) heading: Option<&'a str>,
     /// The question, as the core words it.
     pub(crate) question: &'a str,
     /// The label of the button that says yes.
@@ -392,7 +654,10 @@ impl Asking {
         let Some(ask) = wanted else {
             return;
         };
-        let (heading, body) = split_question(ask.question);
+        let (heading, body) = match ask.heading {
+            Some(heading) => (heading, ask.question),
+            None => split_question(ask.question),
+        };
         let dialog = adw::AlertDialog::new(Some(heading), Some(body).filter(|b| !b.is_empty()));
         dialog.add_response("cancel", "Cancel");
         dialog.add_response("confirm", ask.action);
@@ -426,6 +691,120 @@ impl Asking {
             open.dialog.force_close();
         }
     }
+}
+
+/// What a file chooser for an image asks for.
+pub(crate) struct Pick<'a> {
+    /// The chooser's title.
+    pub(crate) title: &'a str,
+    /// The image types it offers.
+    pub(crate) types: &'a [&'a str],
+    /// The name of a file the desktop gives no name for.
+    pub(crate) unnamed: &'a str,
+}
+
+/// The desktop's file chooser for one image, opened from a screen, and the
+/// read of the file picked: no further than one byte past the largest image
+/// the service takes, which the core then refuses.
+///
+/// A file can take a while to read (a network mount, a slow disk), and the
+/// screen may have moved on meanwhile. The file picked is handed over only if
+/// this chooser was not closed (the screen was left) or opened again since;
+/// what else the screen needs to be the same (the thread, the workspace) it
+/// checks itself.
+#[derive(Debug, Default)]
+pub struct ImagePicker(RefCell<Option<gio::Cancellable>>);
+
+impl ImagePicker {
+    /// Opens the chooser over `parent`, closing one still open, and hands
+    /// the image picked, or why it could not be read, to `picked`.
+    pub(crate) fn open<W: IsA<gtk::Widget>>(
+        &self,
+        parent: &W,
+        pick: Pick<'_>,
+        picked: impl FnOnce(&W, Result<PickedAttachment, glib::Error>) + 'static,
+    ) {
+        let filter = gtk::FileFilter::new();
+        filter.set_name(Some("Images"));
+        for mime_type in pick.types {
+            filter.add_mime_type(mime_type);
+        }
+        let filters = gio::ListStore::new::<gtk::FileFilter>();
+        filters.append(&filter);
+        let dialog = gtk::FileDialog::builder()
+            .title(pick.title)
+            .modal(true)
+            .filters(&filters)
+            .default_filter(&filter)
+            .build();
+        let cancellable = gio::Cancellable::new();
+        if let Some(earlier) = self.0.replace(Some(cancellable.clone())) {
+            earlier.cancel();
+        }
+        let window = parent.root().and_downcast::<gtk::Window>();
+        let weak = parent.downgrade();
+        let unnamed = pick.unnamed.to_owned();
+        let open = cancellable.clone();
+        dialog.open(window.as_ref(), Some(&open), move |chosen| {
+            // Dismissed or cancelled: nothing was picked.
+            let Ok(file) = chosen else {
+                return;
+            };
+            glib::spawn_future_local(async move {
+                let read = read_capped(&file, MAX_ATTACHMENT_BYTES + 1).await;
+                let Some(parent) = weak.upgrade().filter(|_| !cancellable.is_cancelled()) else {
+                    return;
+                };
+                let name = file
+                    .basename()
+                    .map_or(unnamed, |name| name.to_string_lossy().into());
+                picked(&parent, read.map(|bytes| attachment(&name, bytes)));
+            });
+        });
+    }
+
+    /// Closes the chooser, if it is open, and drops a file still being read:
+    /// the screen was left.
+    pub(crate) fn close(&self) {
+        if let Some(picking) = self.0.take() {
+            picking.cancel();
+        }
+    }
+}
+
+/// `bytes`, read from the file `name`, as the attachment the core checks.
+/// The type is the one the desktop's content sniffing gives it, from the
+/// name and the bytes together.
+fn attachment(name: &str, bytes: Vec<u8>) -> PickedAttachment {
+    let (content_type, _) = gio::content_type_guess(Some(name), bytes.as_slice());
+    let mime_type = gio::content_type_get_mime_type(&content_type)
+        .map_or_else(|| "application/octet-stream".to_owned(), String::from);
+    PickedAttachment {
+        file_name: name.to_owned(),
+        mime_type,
+        bytes,
+    }
+}
+
+/// How much of a picked file is read at a time.
+const READ_CHUNK: usize = 64 * 1024;
+
+/// Reads `file` until its end or until `cap` bytes are read, whichever is
+/// first: never more than `cap`.
+async fn read_capped(file: &gio::File, cap: usize) -> Result<Vec<u8>, glib::Error> {
+    let stream = file.read_future(glib::Priority::DEFAULT).await?;
+    let mut bytes = Vec::new();
+    while bytes.len() < cap {
+        let want = (cap - bytes.len()).min(READ_CHUNK);
+        let chunk = stream
+            .read_bytes_future(want, glib::Priority::DEFAULT)
+            .await?;
+        if chunk.is_empty() {
+            break;
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    Ok(bytes)
 }
 
 /// How close to the end of a list, in pixels, reading the next page starts.
@@ -556,6 +935,11 @@ mod tests {
         let afternoon = utc("2026-08-15T14:30:00Z");
         assert_eq!(clock_time(&afternoon, true), "14:30");
         assert_eq!(clock_time(&afternoon, false), "2:30 PM");
+        // A locale with no words for the half of the day reads 24 hours.
+        assert_eq!(clock_format(false, ""), "%H:%M");
+        assert_eq!(clock_format(false, " "), "%H:%M");
+        assert_eq!(clock_format(false, "PM"), "%-I:%M %p");
+        assert_eq!(clock_format(true, "PM"), "%H:%M");
         assert!(clock_24h(), "the tests read a 24-hour clock");
         assert_eq!(time_of_day(&afternoon), "14:30");
         assert_eq!(long_date(&afternoon), "15 August 2026");
@@ -601,6 +985,72 @@ mod tests {
             ("Unblock this caller?", "")
         );
         assert_eq!(split_question("No question."), ("No question.", ""));
+    }
+
+    #[test]
+    fn a_change_lands_only_on_the_screen_of_the_item_it_was_for() {
+        let landing = Landing::default();
+        assert_eq!(landing.landed("a", Some('x')), None, "on its way");
+        assert_eq!(landing.landed("a", Some('x')), None, "still");
+        assert_eq!(landing.landed("a", None), Some('x'), "landed");
+        assert_eq!(landing.landed("a", None), None, "reported once");
+        // Another item opened while the change was on its way.
+        assert_eq!(landing.landed("a", Some('x')), None);
+        assert_eq!(landing.landed("b", None), None, "not b's change");
+        // Left while on its way.
+        assert_eq!(landing.landed("b", Some('y')), None);
+        landing.forget();
+        assert_eq!(landing.landed("b", None), None);
+    }
+
+    #[test]
+    fn a_picked_file_is_read_no_further_than_asked() {
+        let path =
+            std::env::temp_dir().join(format!("district-read-capped-{}.bin", std::process::id()));
+        std::fs::write(&path, vec![7_u8; 3 * READ_CHUNK + 5]).unwrap();
+        let file = gio::File::for_path(&path);
+        let context = glib::MainContext::new();
+        let read = |cap| context.block_on(read_capped(&file, cap)).unwrap();
+        assert_eq!(
+            read(READ_CHUNK + 1).len(),
+            READ_CHUNK + 1,
+            "one past a chunk"
+        );
+        assert_eq!(
+            read(10 * READ_CHUNK).len(),
+            3 * READ_CHUNK + 5,
+            "the whole file"
+        );
+        std::fs::remove_file(&path).unwrap();
+        assert!(context.block_on(read_capped(&file, 1)).is_err(), "gone");
+    }
+
+    #[test]
+    fn a_picked_file_is_typed_by_its_content() {
+        let png = [
+            0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n', 0, 0, 0, 13,
+        ];
+        let picked = attachment("roof.png", png.to_vec());
+        assert_eq!(picked.file_name, "roof.png");
+        assert_eq!(picked.mime_type, "image/png");
+        assert_eq!(picked.bytes, png);
+        let text = attachment("notes.txt", b"hello".to_vec());
+        assert_eq!(text.mime_type, "text/plain");
+        assert!(text.problem(0).is_some(), "the core refuses it");
+    }
+
+    #[test]
+    fn a_failure_names_the_regions_that_did_not_answer() {
+        let mut failure = crate::testing::failure("Could not load this.", true);
+        assert!(matches!(
+            failure_text(&failure),
+            Cow::Borrowed("Could not load this.")
+        ));
+        failure.degraded_regions = vec!["eu".to_owned(), "apac".to_owned()];
+        assert_eq!(
+            failure_text(&failure),
+            "Could not load this.\nAffected regions: EU, APAC"
+        );
     }
 
     #[test]

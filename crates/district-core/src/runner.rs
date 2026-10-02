@@ -647,6 +647,9 @@ pub trait Auth: Send + Sync {
     fn sign_out(&self, revision: Ticket) -> impl Future<Output = SignOutReport> + Send;
     /// Presents the refresh tokens a past sign-out could not get revoked.
     fn drain_revoke_outbox(&self) -> impl Future<Output = DrainReport> + Send;
+    /// Saves a session a refresh could not save, if there is one: the app is
+    /// quitting. Nothing can be shown by then, so nothing is reported.
+    fn save_session(&self) -> impl Future<Output = ()> + Send;
 }
 
 /// Where small preferences are kept between runs.
@@ -794,6 +797,10 @@ where
         let event = match effect {
             Effect::DrainRevokeOutbox => {
                 self.auth.drain_revoke_outbox().await;
+                return None;
+            }
+            Effect::SaveSession => {
+                self.auth.save_session().await;
                 return None;
             }
             Effect::RestoreSession { ticket } => Event::SessionRestored {

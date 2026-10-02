@@ -13,7 +13,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::calls::call_row;
-use crate::pages::shared::now;
+use crate::pages::shared::{RowIds, draw_line, failure_text, metric_tile, now};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -52,7 +52,7 @@ pub(crate) fn shown(signed_in: &SignedIn) -> Shown<'_> {
             OverviewScreen::Loading => Shown::Loading,
             OverviewScreen::Failed(failure) => Shown::Status {
                 title: FAILED_TITLE,
-                body: failure.message.clone(),
+                body: failure_text(failure).into_owned(),
                 retry: failure.retryable,
             },
             OverviewScreen::Loaded(content) => Shown::Content {
@@ -117,7 +117,7 @@ mod imp {
         /// The calls the list was last built from.
         pub recent: RefCell<Option<Vec<CallSummary>>>,
         /// Each recent call's row and id, to open the call it shows.
-        pub rows: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        pub rows: RowIds,
     }
 
     #[glib::object_subclass]
@@ -146,37 +146,15 @@ mod imp {
             on_click(&self.retry_button, &*page, || Event::Refresh);
             let weak = page.downgrade();
             self.recent_list.connect_row_activated(move |_, row| {
-                let Some(page) = weak.upgrade() else {
-                    return;
-                };
-                let id = page
-                    .imp()
-                    .rows
-                    .borrow()
-                    .iter()
-                    .find_map(|(listed, id)| (listed == row).then(|| id.clone()));
-                if let Some(call_id) = id {
+                if let Some(page) = weak.upgrade()
+                    && let Some(call_id) = page.imp().rows.key_of(row)
+                {
                     page.send(Event::Navigate(Route::CallDetail { call_id }));
                 }
             });
             let mut values = self.values.borrow_mut();
             for _ in 0..4 {
-                let value = gtk::Label::builder()
-                    .xalign(0.0)
-                    .css_classes(["title-1", "value"])
-                    .build();
-                let caption = gtk::Label::builder()
-                    .xalign(0.0)
-                    .wrap(true)
-                    .css_classes(["dim-label"])
-                    .build();
-                let tile = gtk::Box::builder()
-                    .orientation(gtk::Orientation::Vertical)
-                    .spacing(4)
-                    .css_classes(["card", "metric"])
-                    .build();
-                tile.append(&value);
-                tile.append(&caption);
+                let (tile, value, caption) = metric_tile("title-1");
                 self.metrics.append(&tile);
                 values.push((value, caption));
             }
@@ -235,8 +213,7 @@ impl OverviewPage {
         let imp = self.imp();
         imp.workspace_title.set_label(name);
         let badge = content.read_only_badge();
-        imp.read_only_label.set_visible(badge.is_some());
-        imp.read_only_label.set_label(badge.unwrap_or_default());
+        draw_line(&imp.read_only_label, badge);
         imp.setup_card.set_visible(content.show_finish_setup);
         for ((value, caption), (figure, words)) in imp.values.borrow().iter().zip(metrics(content))
         {

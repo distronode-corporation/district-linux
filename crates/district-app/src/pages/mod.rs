@@ -63,6 +63,7 @@ pub(crate) use rooms::RoomsPage;
 pub(crate) use scheduling::SchedulingPage;
 pub(crate) use session::SessionPage;
 pub(crate) use settings::{SettingsPage, in_section as in_settings};
+pub(crate) use shared::{draw_line, draw_spinner};
 pub(crate) use support::{SupportPage, in_section as in_support};
 pub(crate) use workflows::WorkflowsPage;
 

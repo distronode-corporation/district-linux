@@ -49,15 +49,17 @@ contracts/                What this client is checked against: the server's reco
                           (sync-palette.py).
 packaging/flatpak/        The Flatpak manifest and cargo-sources.json, the crates it
                           builds from (see Packaging below).
-scripts/                  check-version.py, check-public-hygiene.py,
-                          check-coverage.py and check-screenshots.py, run by
-                          CI; fetch-libwebrtc.sh, run by
-                          voice.yml, the packages and by hand for a build with
-                          calls; build-deb.sh and flatpak-cargo-sources.sh, run by
-                          the packaging workflows, CI and by hand;
-                          build-libwebrtc.sh, run by libwebrtc.yml and by hand;
-                          sync-contracts.py, sync-endpoints.py, sync-palette.py and
-                          make-ringtone.py, run by hand.
+scripts/                  check-version.py, check-pins.py,
+                          check-public-hygiene.py, check-coverage.py and
+                          check-screenshots.py, run by CI; fetch-libwebrtc.sh,
+                          run by voice.yml, the packages and by hand for a build
+                          with calls; build-deb.sh, third-party-licenses.sh and
+                          flatpak-cargo-sources.sh, run by the packaging
+                          workflows, CI and by hand; build-libwebrtc.sh, run by
+                          libwebrtc.yml and by hand; sync-contracts.py,
+                          sync-endpoints.py, sync-palette.py (which share
+                          _common.py) and make-ringtone.py, run by hand, and
+                          sync-endpoints.py weekly by endpoints.yml.
 coverage-floors.toml      Each crate's line coverage floor (see Coverage below).
 ```
 
@@ -130,7 +132,8 @@ libwebrtc" below), so it needs a little more than the default build:
 - clang and clang++ 21.1 or newer. The prebuilt library is built against
   Chromium's own libc++, which needs it, and the build refuses GCC, which would
   compile but miscall it. Ubuntu 26.04's `clang` is 21; on Ubuntu 24.04 install
-  `clang-21` from the LLVM project's apt repository (voice.yml has the lines) and
+  `clang-21` from the LLVM project's apt repository
+  (`.github/actions/install-clang-21` has the lines) and
   set `CXX=clang++-21`.
 - The headers it compiles against: `libglib2.0-dev libx11-dev libxext-dev
   libxfixes-dev libxdamage-dev libxrandr-dev libxcomposite-dev libgl1-mesa-dev
@@ -208,7 +211,9 @@ start `.github/workflows/voice.yml` by hand with the libwebrtc run's id as
 repository named `libwebrtc-<webrtc tag>-audio-<n>` (the number counts builds
 for the same LiveKit tag), with the digest from the run beside it, and move
 `RELEASE` and `SHA256` in `scripts/fetch-libwebrtc.sh`, the `url` and `sha256`
-in the Flatpak manifest, and the digest in NOTICE, in one change. Compare the published asset's digest with the
+in the Flatpak manifest, and the release and digest in NOTICE, in one change;
+`scripts/check-pins.py` fails CI while any copy differs from
+`scripts/fetch-libwebrtc.sh`. Compare the published asset's digest with the
 run's before pinning it. To build it locally instead, on Linux x86_64 with git, curl,
 python3 and setuptools, ninja, pkg-config, cpio and zip:
 
@@ -234,11 +239,12 @@ There are two packages, both x86_64 and both built with calls: a .deb for Ubuntu
 desktop entry, the AppStream metadata, the two icons and the D-Bus service from
 `crates/district-app/data/`, and the licence texts: LICENSE, NOTICE, and
 libwebrtc's LICENSE.md, which NOTICE says must travel with a build that links
-it. The .deb also carries THIRD-PARTY-LICENSES.txt, the licence texts of every
-crate the binary links, which `scripts/build-deb.sh` writes with
+it, and THIRD-PARTY-LICENSES.txt, the licence texts of every crate the binary
+links, which `scripts/third-party-licenses.sh` writes for both packages with
 [cargo-about](https://github.com/EmbarkStudios/cargo-about) from `about.toml`
 and `about.hbs` (`about.toml`'s accepted licences are deny.toml's allow list,
-and a change to one changes the other). The D-Bus service is a template,
+a change to one changes the other, and `scripts/check-pins.py` fails CI while
+they differ). The D-Bus service is a template,
 `com.distronode.DistrictAI.service.in`,
 whose `@bindir@` each package fills in with its own binary's directory, because
 the desktop starts what its `Exec` names without searching `PATH`.
@@ -265,8 +271,8 @@ sudo apt install ./target/debian/district-ai_*_amd64.deb
 ```
 
 The script writes the D-Bus service for `/usr/bin`, copies libwebrtc's licence
-texts and writes the crates' licence texts into `target/release`, where the
-asset list names them, then runs `cargo deb`.
+texts and writes the crates' licence texts (with `scripts/third-party-licenses.sh`)
+into `target/release`, where the asset list names them, then runs `cargo deb`.
 
 Depends is what the binary links (dpkg-shlibdeps) and what it loads while
 running, which dpkg-shlibdeps cannot see: the PulseAudio client library, which
@@ -303,11 +309,20 @@ scripts/flatpak-cargo-sources.sh
 It runs a pinned, checksummed flatpak-cargo-generator in a throwaway virtual
 environment (it needs `python3-venv`), and CI's `repo` job runs it with
 `--check`. Moving libwebrtc's pin in `scripts/fetch-libwebrtc.sh` moves the
-manifest's `url` and `sha256` with it; if they disagree, the build fails,
-because the script finds an archive that does not match and has no network to
-fetch another.
+manifest's `url` and `sha256` with it; `scripts/check-pins.py` fails CI while
+they disagree, and so would the build, because the script finds an archive that
+does not match and has no network to fetch another.
 
-To build and install it for your user, with Flatpak and flatpak-builder:
+cargo-about is not in the SDK either, so THIRD-PARTY-LICENSES.txt is written
+before the build, into `target/flatpak/`, where the manifest takes it from:
+with cargo-about installed (see "The .deb") and the crates fetched,
+
+```
+cargo fetch --locked
+scripts/third-party-licenses.sh target/flatpak/THIRD-PARTY-LICENSES.txt
+```
+
+Then, to build and install it for your user, with Flatpak and flatpak-builder:
 
 ```
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -329,7 +344,8 @@ the portals, so a new permission needs a test that shows the app cannot work
 without it.
 
 `.github/workflows/flatpak.yml` builds the bundle in Flathub's GNOME 51 build
-image, installs it, and runs `district-ai --version` inside the sandbox. The app
+image, installs it, checks it holds every licence text NOTICE names, and runs
+`district-ai --version` inside the sandbox. The app
 ships as that bundle and the .deb, on this repository's releases only; it is not
 published on Flathub.
 
@@ -352,8 +368,11 @@ request:
 3. Make the newest `<release>` in the AppStream metadata that version, stable
    (no `type`), with the same date, and move its screenshot links to the new
    tag, `vX.Y.Z` (see "Store screenshots").
+4. Name the new version wherever README.md and SECURITY.md name the current
+   release: the status line, the install section's package names and commands,
+   and the supported series.
 
-`python3 scripts/check-version.py` checks the three agree, and with the tag as
+`python3 scripts/check-version.py` checks the four agree, and with the tag as
 its argument checks them against the tag, as the release does. Once the pull
 request is merged, tag the merge commit and push the tag.
 
@@ -477,6 +496,8 @@ cargo clippy --workspace --all-targets --locked --features district-app/gtk-test
 cargo test --workspace --locked --exclude district-app
 # then the app's tests, the smoke test and the store screenshots included, as "The smoke test" says
 python3 scripts/check-version.py
+python3 scripts/check-pins.py --self-test
+python3 scripts/check-pins.py
 python3 scripts/check-public-hygiene.py --self-test
 python3 scripts/check-public-hygiene.py
 python3 scripts/check-coverage.py --self-test
@@ -634,9 +655,11 @@ the snapshot is read from its
 directory (with the auth API and the core model beside it). Anyone can refresh it
 from a checkout of that repository with
 `python3 scripts/sync-endpoints.py --android <checkout>` and commit the result
-together with whatever change to the table it calls for. The snapshot is committed
-and CI never regenerates it, so a change in the Android app shows up here only
-after that re-run.
+together with whatever change to the table it calls for; like the other sync
+scripts it refuses a checkout with changes its commit does not hold, unless
+`--allow-dirty`. The snapshot is committed and CI never regenerates it, but
+`.github/workflows/endpoints.yml` checks it against the Android app's main branch
+every week, with `--check`, and fails when it is stale.
 
 ## Commits and pull requests
 

@@ -30,6 +30,9 @@ ignore = []
 # dynamically from the system (or the Flatpak runtime), not compiled into the
 # binary. This list governs the Rust crates, whose bindings are MIT.
 #
+# about.toml's `accepted` is this list, so the packages' THIRD-PARTY-LICENSES.txt
+# accepts what this check allows; scripts/check-pins.py fails CI while they differ.
+#
 # The list is the same one the organisation's other Rust projects use. A few
 # entries match nothing in today's tree, and cargo-deny prints a
 # `license-not-encountered` warning for each (a warning, not a failure); they stay

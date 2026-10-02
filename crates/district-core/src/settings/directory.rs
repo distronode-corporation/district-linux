@@ -18,8 +18,7 @@
 use district_api::ApiError;
 use district_model::{DirectoryEntry, WorkspaceConfig, WorkspaceConfigResponse};
 
-use super::{ConfigLoad, SaveState, read_config, settle};
-use crate::failure::FailureText;
+use super::{ConfigLoad, SaveState, after_save, read_config, settle};
 use crate::model::{Effect, Slot, Tickets};
 use crate::signed_in::{Next, SignedIn};
 
@@ -251,13 +250,13 @@ impl DirectorySection {
         workspace_id: String,
         tickets: &mut Tickets,
     ) -> Vec<Effect> {
-        match result {
-            Ok(()) => vec![read_config(Slot::DirectoryConfig, workspace_id, tickets)],
-            Err(error) => {
-                self.save = SaveState::Failed(FailureText::from_api_error(&error));
-                Vec::new()
-            }
-        }
+        after_save(
+            &mut self.save,
+            result,
+            Slot::DirectoryConfig,
+            workspace_id,
+            tickets,
+        )
     }
 }
 

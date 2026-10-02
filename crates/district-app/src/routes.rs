@@ -203,21 +203,7 @@ mod tests {
             Route::Account,
             Route::Devices,
         ];
-        routes.extend(
-            [
-                WorkspaceSection::Hub,
-                WorkspaceSection::Persona,
-                WorkspaceSection::Tools,
-                WorkspaceSection::Directory,
-                WorkspaceSection::Routing,
-                WorkspaceSection::CallHandling,
-                WorkspaceSection::Knowledge,
-                WorkspaceSection::Messaging,
-                WorkspaceSection::Members,
-                WorkspaceSection::Numbers,
-            ]
-            .map(Route::Workspace),
-        );
+        routes.extend(WorkspaceSection::ALL.map(Route::Workspace));
         routes
     }
 

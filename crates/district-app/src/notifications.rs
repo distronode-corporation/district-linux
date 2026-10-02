@@ -4,8 +4,16 @@
 //! can activate the app with it after a restart), so what it does when pressed
 //! is carried in the notification itself, as the parameter of an application
 //! action: ids only, never the content of a message or who is calling.
+//!
+//! Calls ring, and messages are notified, from every workspace where the
+//! member takes calls, not only the one open. One from another workspace names
+//! it in its heading, so it is not taken for the open one's; opening it opens
+//! that workspace.
 
-use district_core::{Notification, NotificationAction, NotificationTarget, Urgency};
+use district_core::{
+    Notification, NotificationAction, NotificationTarget, SignedIn, Urgency, Workspaces,
+    WorkspacesState,
+};
 
 use crate::gtk::gio;
 use crate::gtk::glib::prelude::ToVariant;
@@ -18,9 +26,55 @@ pub(crate) const OPEN_ACTION: &str = "open-notification";
 /// [`action_variant`].
 pub(crate) const BUTTON_ACTION: &str = "notification-button";
 
-/// `notification` as the desktop's notification.
-pub(crate) fn to_gio(notification: &Notification) -> gio::Notification {
-    let shown = gio::Notification::new(&notification.title);
+/// The workspace a notification is about.
+pub(crate) fn workspace_of(target: &NotificationTarget) -> &str {
+    match target {
+        NotificationTarget::Message { workspace_id, .. }
+        | NotificationTarget::IncomingCall { workspace_id, .. }
+        | NotificationTarget::Call { workspace_id, .. } => workspace_id,
+    }
+}
+
+/// The workspace list, once it is read.
+fn workspaces(signed_in: &SignedIn) -> Option<&Workspaces> {
+    match &signed_in.workspaces {
+        WorkspacesState::Ready(workspaces) => Some(workspaces),
+        _ => None,
+    }
+}
+
+/// The id of the workspace open, once the workspace list is read.
+pub(crate) fn open_workspace_id(signed_in: &SignedIn) -> Option<&str> {
+    workspaces(signed_in).map(|workspaces| workspaces.active().id.as_str())
+}
+
+/// The name of the workspace `workspace_id`, when it is not the one open in
+/// `signed_in`. `None` for the open one, and for one the list no longer holds.
+pub(crate) fn elsewhere<'a>(signed_in: &'a SignedIn, workspace_id: &str) -> Option<&'a str> {
+    let workspaces = workspaces(signed_in)?;
+    if workspaces.active().id == workspace_id {
+        return None;
+    }
+    workspaces
+        .list
+        .iter()
+        .find(|entry| entry.id == workspace_id)
+        .map(|entry| entry.name.as_str())
+}
+
+/// `heading`, naming the workspace it is from when that is `elsewhere`:
+/// "Incoming call in Bravo Client".
+pub(crate) fn heading(heading: &str, elsewhere: Option<&str>) -> String {
+    match elsewhere {
+        Some(workspace) => format!("{heading} in {workspace}"),
+        None => heading.to_owned(),
+    }
+}
+
+/// `notification` as the desktop's notification, naming its workspace when
+/// that is `elsewhere` (see [`elsewhere`]).
+pub(crate) fn to_gio(notification: &Notification, elsewhere: Option<&str>) -> gio::Notification {
+    let shown = gio::Notification::new(&heading(&notification.title, elsewhere));
     shown.set_body(Some(&notification.body));
     shown.set_priority(match notification.urgency {
         Urgency::Normal => gio::NotificationPriority::Normal,
@@ -185,11 +239,47 @@ mod tests {
         };
         // GNotification keeps what it was given to itself; building one for
         // each urgency is the check that nothing refuses what the core sends.
-        to_gio(&ringing);
-        to_gio(&Notification {
-            urgency: Urgency::Normal,
-            actions: Vec::new(),
-            ..ringing
-        });
+        to_gio(&ringing, None);
+        to_gio(
+            &Notification {
+                urgency: Urgency::Normal,
+                actions: Vec::new(),
+                ..ringing
+            },
+            Some("Bravo Client"),
+        );
+    }
+
+    /// A ring, a missed call or a message from a workspace other than the
+    /// one open names it; the open one's, and one no longer listed, do not.
+    #[test]
+    fn a_notification_from_another_workspace_names_it() {
+        use crate::testing::{fixture, listed, signed_in};
+        // The list's default workspace opens: Alpha Client.
+        let (model, _) = listed(Ok(fixture("district-workspace-list.json")));
+        let signed_in = signed_in(&model);
+        assert_eq!(open_workspace_id(signed_in), Some("ws-contract-viewer"));
+        assert_eq!(elsewhere(signed_in, "ws-contract-viewer"), None);
+        assert_eq!(
+            elsewhere(signed_in, "ws-contract-client"),
+            Some("Bravo Client")
+        );
+        assert_eq!(elsewhere(signed_in, "ws-gone"), None);
+        assert_eq!(
+            heading("Missed call", Some("Bravo Client")),
+            "Missed call in Bravo Client"
+        );
+        assert_eq!(heading("Missed call", None), "Missed call");
+        for target in targets() {
+            let (NotificationTarget::Message { workspace_id, .. }
+            | NotificationTarget::IncomingCall { workspace_id, .. }
+            | NotificationTarget::Call { workspace_id, .. }) = &target;
+            assert_eq!(workspace_of(&target), workspace_id);
+        }
+        // Before the list is read there is nothing to name.
+        let (model, _) = crate::testing::restored();
+        let reading = crate::testing::signed_in(&model);
+        assert_eq!(open_workspace_id(reading), None);
+        assert_eq!(elsewhere(reading, "ws-1"), None);
     }
 }

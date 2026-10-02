@@ -84,10 +84,12 @@ modules:
         mkdir -p "$FLATPAK_DEST/share/dbus-1/services"
         sed "s|@bindir@|$FLATPAK_DEST/bin|" "$data/$FLATPAK_ID.service.in" \
           > "$FLATPAK_DEST/share/dbus-1/services/$FLATPAK_ID.service"
-        # The licence and NOTICE, and libwebrtc's licence texts, which NOTICE
-        # says must travel with a build that links it.
+        # The licence and NOTICE, libwebrtc's licence texts, which NOTICE
+        # says must travel with a build that links it, and the licence texts
+        # of every crate the binary links (THIRD-PARTY-LICENSES.txt, a source
+        # below), as the .deb ships them.
         licences="$FLATPAK_DEST/share/licenses/$FLATPAK_ID"
-        install -Dm644 LICENSE NOTICE -t "$licences"
+        install -Dm644 LICENSE NOTICE THIRD-PARTY-LICENSES.txt -t "$licences"
         install -Dm644 "$webrtc/LICENSE.md" "$licences/libwebrtc-LICENSE.md"
     sources:
       # The checkout this manifest sits in, without what a build leaves in it.
@@ -103,7 +105,15 @@ modules:
           - flatpak_app
           - repo
       - cargo-sources.json
-      # The pin in scripts/fetch-libwebrtc.sh. Moving it moves both.
+      # The licence texts of every crate the binary links, written from
+      # Cargo.lock by scripts/third-party-licenses.sh before the build, because
+      # cargo-about is not in the SDK and the build has no network to fetch it.
+      # .github/workflows/flatpak.yml runs that script first; so must a local
+      # build (CONTRIBUTING.md, "The Flatpak").
+      - type: file
+        path: ../../target/flatpak/THIRD-PARTY-LICENSES.txt
+      # The pin in scripts/fetch-libwebrtc.sh. Moving it moves both, and
+      # scripts/check-pins.py fails CI while they differ.
       - type: file
         url: https://github.com/distronode-corporation/district-linux/releases/download/libwebrtc-89d790b-audio-1/webrtc-linux-x64-release.zip
         sha256: 2355bc8c6cdaf9613c471da944ac901bb293f346dda5e94cdbe6249a36914317

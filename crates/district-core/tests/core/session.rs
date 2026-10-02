@@ -471,6 +471,37 @@ fn a_failed_exchange_returns_to_where_it_started() {
     assert_eq!(signed_out(&model).sign_in_error, None);
 }
 
+/// A link that does not answer this attempt (another program's, or one with
+/// someone else's `state`) does not end the sign-in: it goes on waiting for
+/// the browser, and the genuine answer still completes it.
+#[test]
+fn a_stray_link_leaves_the_sign_in_waiting() {
+    for error in [LoginError::NotOurRedirect, LoginError::StateMismatch] {
+        let mut model = fresh();
+        model.update(Event::SignIn);
+        let effects = model.update(Event::SignInCallback(CALLBACK.to_owned()));
+        assert!(
+            model
+                .update(Event::SignInCompleted {
+                    ticket: last_ticket(&effects),
+                    result: Err(SignInError::Callback(error.clone())),
+                })
+                .is_empty()
+        );
+        let SessionState::SigningIn(signing_in) = model.session() else {
+            panic!("{error:?}: {:?}", model.session());
+        };
+        assert_eq!(signing_in.phase, SignInPhase::WaitingForBrowser);
+        assert!(signing_in.can_cancel());
+        let effects = model.update(Event::SignInCallback(CALLBACK.to_owned()));
+        model.update(Event::SignInCompleted {
+            ticket: last_ticket(&effects),
+            result: Ok(session(Persistence::Saved)),
+        });
+        assert!(matches!(model.session(), SessionState::SignedIn(_)));
+    }
+}
+
 #[test]
 fn a_sign_in_that_could_not_be_saved_says_so() {
     let mut model = fresh();
@@ -590,7 +621,7 @@ fn every_sign_in_failure_has_its_words() {
         ),
         (
             SignInError::Exchange(ExchangeFailure::RateLimited),
-            "Too many attempts. Wait a moment and try again.",
+            "Too many requests. Wait a moment and try again.",
         ),
         (
             SignInError::Exchange(ExchangeFailure::Unreachable),

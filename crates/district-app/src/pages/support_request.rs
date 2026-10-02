@@ -2,7 +2,7 @@
 //! the reply, and marking it resolved, which asks first and is offered only
 //! when the service says it can be done.
 
-use std::cell::{Cell, OnceCell, RefCell};
+use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
 use district_core::{
@@ -15,7 +15,10 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::reply_box::{ReplyBox, ReplyEvents, ReplyState};
-use crate::pages::shared::{Ask, Asking, clear_box, conversation_message, short_text};
+use crate::pages::shared::{
+    Ask, Asking, Landing, clear_box, conversation_message, draw_line, draw_spinner, failure_text,
+    short_text,
+};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -64,8 +67,8 @@ mod imp {
         pub sink: OnceCell<EventSink>,
         /// The request the page was last built from.
         pub drawn: RefCell<Option<SupportRequestDetail>>,
-        /// Whether a reply was on its way when last drawn.
-        pub sending: Cell<bool>,
+        /// Whether a reply was on its way when last drawn, and for which.
+        pub sending: Landing<()>,
         /// The question before closing, while it is asked.
         pub asking: Asking,
     }
@@ -141,7 +144,8 @@ impl SupportRequestView {
             SupportRequestRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
             }
             SupportRequestRead::Ready(detail) => {
@@ -154,25 +158,24 @@ impl SupportRequestView {
         imp.close_button
             .set_visible(screen.can_close() || screen.closing);
         imp.close_button.set_sensitive(screen.can_close());
-        imp.close_spinner.set_visible(screen.closing);
-        imp.close_spinner.set_spinning(screen.closing);
+        draw_spinner(&imp.close_spinner, screen.closing);
         for (label, failure) in [
             (&*imp.close_failure, &screen.close_failure),
             (&*imp.refresh_failure, &screen.refresh_failure),
         ] {
-            let failure = failure.as_ref().map(|f| f.message.as_str());
-            label.set_visible(failure.is_some());
-            label.set_label(failure.unwrap_or_default());
+            let failure = failure.as_ref().map(failure_text);
+            draw_line(label, failure);
         }
         let closed = screen
             .closed_as
             .as_deref()
             .map(SupportRequestScreen::closed_message);
+        let failure = screen.send_failure.as_ref().map(failure_text);
         imp.reply_box.update(ReplyState {
             text: &screen.reply,
             sending: screen.sending,
             can_send: screen.can_reply(),
-            failure: screen.send_failure.as_ref().map(|f| f.message.as_str()),
+            failure: failure.as_deref(),
             note: closed.as_deref(),
         });
         let weak = self.downgrade();
@@ -180,6 +183,7 @@ impl SupportRequestView {
             self,
             screen.confirming_close.then(|| Ask {
                 key: "close".to_owned(),
+                heading: None,
                 question: SupportRequestScreen::CLOSE_QUESTION,
                 action: SupportRequestScreen::CLOSE_ACTION,
                 destructive: false,
@@ -194,8 +198,12 @@ impl SupportRequestView {
                 }
             },
         );
-        let was_sending = imp.sending.replace(screen.sending);
-        (was_sending && !screen.sending && screen.send_failure.is_none()).then_some("Reply sent.")
+        let landed = imp
+            .sending
+            .landed(&screen.key, screen.sending.then_some(()));
+        landed
+            .filter(|()| screen.send_failure.is_none())
+            .map(|()| "Reply sent.")
     }
 
     fn draw(&self, detail: &SupportRequestDetail) {
@@ -221,7 +229,7 @@ impl SupportRequestView {
         imp.asking.close();
         imp.reply_box.reset();
         imp.drawn.replace(None);
-        imp.sending.set(false);
+        imp.sending.forget();
     }
 }
 

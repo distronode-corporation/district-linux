@@ -212,8 +212,8 @@ pub enum Event {
     Members(MembersEvent),
     /// Dismiss the notice over the signed-in screens.
     DismissNotice,
-    /// The main window was shown (`true`) or hidden (`false`). The app starts
-    /// visible.
+    /// Whether the user can be looking at the main window: shown, focused and
+    /// not minimised (`true`), or not (`false`). The app starts visible.
     WindowVisible(bool),
     /// The user activated a notification the app showed.
     OpenNotification(NotificationTarget),
@@ -1155,6 +1155,11 @@ pub enum Effect {
     /// Present the refresh tokens a past sign-out could not get revoked. Once
     /// per start, signed in or not. Reports nothing back.
     DrainRevokeOutbox,
+    /// Save a session a refresh could not save (the keyring was locked, say),
+    /// as the app quits: held only in memory it would be lost, and the next
+    /// start would find its spent predecessor and sign the member out. Reports
+    /// nothing back.
+    SaveSession,
     /// Look for a stored session and read who it belongs to.
     RestoreSession {
         /// Returned in [`Event::SessionRestored`].
@@ -2022,6 +2027,129 @@ pub enum Effect {
     },
 }
 
+impl Effect {
+    /// The ticket the event reporting this effect's result carries, or `None`
+    /// for an effect that reports nothing back, or whose reports name its
+    /// session (the call engine's) or arrive on their own (the live sockets').
+    ///
+    /// Every effect is named here, with no catch-all, so a new one does not
+    /// compile until it is placed.
+    pub fn ticket(&self) -> Option<Ticket> {
+        match self {
+            Self::RestoreSession { ticket }
+            | Self::RetryAfter { ticket, .. }
+            | Self::Wait { ticket, .. }
+            | Self::BeginSignIn { ticket }
+            | Self::CompleteSignIn { ticket, .. }
+            | Self::SignOut { ticket }
+            | Self::LoadWorkspaces { ticket }
+            | Self::LoadOverview { ticket, .. }
+            | Self::LoadSetupStatus { ticket, .. }
+            | Self::LoadDevices { ticket }
+            | Self::RevokeDevice { ticket, .. }
+            | Self::RevokeAllDevices { ticket }
+            | Self::LoadConversations { ticket, .. }
+            | Self::LoadUnreadCount { ticket, .. }
+            | Self::LoadDraftKeys { ticket, .. }
+            | Self::SearchMessages { ticket, .. }
+            | Self::LoadTimeline { ticket, .. }
+            | Self::LoadDraft { ticket, .. }
+            | Self::SaveDraft { ticket, .. }
+            | Self::DeleteDraft { ticket, .. }
+            | Self::SendMessage { ticket, .. }
+            | Self::UploadMedia { ticket, .. }
+            | Self::GenerateAiDraft { ticket, .. }
+            | Self::MarkRead { ticket, .. }
+            | Self::FindMessageThread { ticket, .. }
+            | Self::LoadCalls { ticket, .. }
+            | Self::LoadCall { ticket, .. }
+            | Self::LoadTranscript { ticket, .. }
+            | Self::LoadContacts { ticket, .. }
+            | Self::LoadContact { ticket, .. }
+            | Self::CreateContact { ticket, .. }
+            | Self::WriteContact { ticket, .. }
+            | Self::LoadBlocked { ticket, .. }
+            | Self::AskHq { ticket, .. }
+            | Self::ConfirmHq { ticket, .. }
+            | Self::LoadAnalytics { ticket, .. }
+            | Self::LoadUsage { ticket, .. }
+            | Self::LoadUsageHistory { ticket, .. }
+            | Self::SearchNumbers { ticket, .. }
+            | Self::LoadOwnedNumbers { ticket, .. }
+            | Self::LoadWorkspaceBilling { ticket, .. }
+            | Self::LoadAccountBilling { ticket }
+            | Self::LoadWorkflows { ticket, .. }
+            | Self::LoadWorkflowRuns { ticket, .. }
+            | Self::SetWorkflowActive { ticket, .. }
+            | Self::LoadCampaign { ticket, .. }
+            | Self::SetCampaignEnabled { ticket, .. }
+            | Self::LoadSchedulingStatus { ticket, .. }
+            | Self::EnableScheduling { ticket, .. }
+            | Self::RequestSchedulingHandOff { ticket, .. }
+            | Self::LoadDeskSettings { ticket, .. }
+            | Self::SaveDeskSettings { ticket, .. }
+            | Self::UploadDeskLogo { ticket, .. }
+            | Self::DeleteDeskLogo { ticket, .. }
+            | Self::LoadDeskTickets { ticket, .. }
+            | Self::CreateDeskTicket { ticket, .. }
+            | Self::LoadDeskTicket { ticket, .. }
+            | Self::ReplyToDeskTicket { ticket, .. }
+            | Self::SetDeskTicketStatus { ticket, .. }
+            | Self::LoadSupportRequests { ticket, .. }
+            | Self::CreateSupportRequest { ticket, .. }
+            | Self::LoadSupportRequest { ticket, .. }
+            | Self::ReplyToSupportRequest { ticket, .. }
+            | Self::CloseSupportRequest { ticket, .. }
+            | Self::LoadMeetings { ticket, .. }
+            | Self::LoadMeeting { ticket, .. }
+            | Self::RequestRoomToken { ticket, .. }
+            | Self::LoadWorkspaceConfig { ticket, .. }
+            | Self::SaveTools { ticket, .. }
+            | Self::SaveDirectory { ticket, .. }
+            | Self::SaveRoutingRules { ticket, .. }
+            | Self::SavePersona { ticket, .. }
+            | Self::LoadPersonaOptions { ticket, .. }
+            | Self::RequestPersonaPreview { ticket, .. }
+            | Self::LoadKnowledge { ticket, .. }
+            | Self::AddKnowledgeDocument { ticket, .. }
+            | Self::DeleteKnowledgeDocument { ticket, .. }
+            | Self::LoadKnowledgeMode { ticket, .. }
+            | Self::SetKnowledgeMode { ticket, .. }
+            | Self::LoadMessaging { ticket, .. }
+            | Self::WriteMessaging { ticket, .. }
+            | Self::TestMessagingCredentials { ticket, .. }
+            | Self::LoadCallHandling { ticket, .. }
+            | Self::SaveCallHandling { ticket, .. }
+            | Self::LoadAvailability { ticket, .. }
+            | Self::SetAvailability { ticket, .. }
+            | Self::LoadMembers { ticket, .. }
+            | Self::WriteMember { ticket, .. }
+            | Self::RenameWorkspace { ticket, .. }
+            | Self::ReadRingSetting { ticket }
+            | Self::SetPresence { ticket, .. }
+            | Self::Dial { ticket, .. }
+            | Self::AnswerCall { ticket, .. } => Some(*ticket),
+            Self::DrainRevokeOutbox
+            | Self::SaveSession
+            | Self::CancelSignIn
+            | Self::RememberWorkspace { .. }
+            | Self::OpenUrl { .. }
+            | Self::WatchLive { .. }
+            | Self::Notify(_)
+            | Self::OpenOneTimeUrl { .. }
+            | Self::SaveRingSetting { .. }
+            | Self::HangUpCall { .. }
+            | Self::ConnectMedia { .. }
+            | Self::SetMicrophone { .. }
+            | Self::DisconnectMedia { .. }
+            | Self::StartRingtone
+            | Self::StopRingtone
+            | Self::PresentWindow
+            | Self::WithdrawNotification { .. } => None,
+        }
+    }
+}
+
 /// The slots a result can be waited for in. One ticket per slot at a time,
 /// except in the keyed slots, which wait for one per key.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2140,8 +2268,10 @@ const SLOTS: usize = Slot::RingDeadline as usize + 1;
 
 /// The slots that belong to the open workspace's screens, forgotten when it
 /// closes. The settings sections' are [`SETTINGS_SLOTS`](crate::settings),
-/// forgotten with the sections.
-pub(crate) const WORKSPACE_SLOTS: [Slot; 64] = [
+/// forgotten with the sections. The draft write is not among them: a reply
+/// saved as the workspace closes still lands, and the writes waiting behind it
+/// go after it.
+pub(crate) const WORKSPACE_SLOTS: [Slot; 63] = [
     Slot::Unread,
     Slot::Conversations,
     Slot::DraftKeys,
@@ -2151,7 +2281,6 @@ pub(crate) const WORKSPACE_SLOTS: [Slot; 64] = [
     Slot::TimelineOlder,
     Slot::DraftLoad,
     Slot::DraftTimer,
-    Slot::DraftWrite,
     Slot::Send,
     Slot::Upload,
     Slot::AiDraft,
@@ -2490,8 +2619,12 @@ impl Model {
             Event::SetRingOnThisComputer(on) => {
                 self.signed_in(|s, tickets, _| s.set_ring_here(on, tickets))
             }
-            Event::Suspending | Event::Quitting => {
-                self.signed_in(|s, tickets, _| s.suspend(tickets))
+            Event::Suspending => self.signed_in(|s, tickets, _| s.suspend(tickets)),
+            Event::Quitting => {
+                let mut effects = self.signed_in(|s, tickets, _| s.suspend(tickets));
+                let signed_in = matches!(self.session, SessionState::SignedIn(_));
+                effects.extend(signed_in.then_some(Effect::SaveSession));
+                effects
             }
             Event::Resumed => self.signed_in(|s, tickets, _| s.resume(tickets)),
             Event::RingSettingRead { ticket, ring_here } => {
@@ -2550,7 +2683,7 @@ impl Model {
                 self.signed_in(|s, tickets, _| s.draft_loaded(ticket, result, tickets))
             }
             Event::DraftWritten { ticket, .. } => {
-                self.signed_in(|_, tickets, _| draft_written(ticket, tickets))
+                self.signed_in(|s, tickets, _| s.draft_written(ticket, tickets))
             }
             Event::MessageSent { ticket, result } => {
                 self.signed_in(|s, tickets, _| s.message_sent(ticket, result, tickets))
@@ -2907,9 +3040,9 @@ impl Model {
         ticket: Ticket,
         result: Result<SignedInSession, SignInError>,
     ) -> Vec<Effect> {
-        let why = match &self.session {
+        let signing_in = match &mut self.session {
             SessionState::SigningIn(signing_in) if self.tickets.accept(Slot::SignIn, ticket) => {
-                signing_in.back.clone()
+                signing_in
             }
             _ => return Vec::new(),
         };
@@ -2918,7 +3051,14 @@ impl Model {
                 let notice = Notice::for_persistence(&session.persistence);
                 self.start_signed_in(session.claims.into(), notice)
             }
+            // A link that does not answer this attempt (another program's, or
+            // a forged one) leaves the sign-in waiting for its own.
+            Err(SignInError::Callback(LoginError::NotOurRedirect | LoginError::StateMismatch)) => {
+                signing_in.phase = SignInPhase::WaitingForBrowser;
+                Vec::new()
+            }
             Err(error) => {
+                let why = signing_in.back.clone();
                 self.session = SessionState::SignedOut(SignedOut {
                     why,
                     sign_in_error: Some(error),
@@ -3020,13 +3160,6 @@ impl Model {
             _ => Vec::new(),
         }
     }
-}
-
-/// A saved reply was written. Nothing waits on the answer: a failed save is
-/// superseded by the next one, and the text is still in the composer.
-fn draft_written(ticket: Ticket, tickets: &mut Tickets) -> Next {
-    tickets.accept(Slot::DraftWrite, ticket);
-    Next::Stay(Vec::new())
 }
 
 /// The signed-in state, when someone is signed in.

@@ -64,13 +64,17 @@ fn launch() -> Result<glib::ExitCode, String> {
         .map_err(|error| format!("the runtime could not start: {error}"))?;
 
     // No secret store is no refresh token on disk: the session stays in
-    // memory, and the window says so over every screen.
+    // memory, and the window says so over every screen. Why is written to
+    // standard error, the one place a person can find it afterwards.
     let (store, startup_notice) = match runtime.block_on(Oo7SessionStore::connect(marker)) {
         Ok(store) => (AppStore::Keyring(store), None),
-        Err(_) => (
-            AppStore::Memory(MemorySessionStore::new()),
-            Some(MEMORY_ONLY.to_owned()),
-        ),
+        Err(error) => {
+            eprintln!("district-ai: the keyring could not be opened: {error}");
+            (
+                AppStore::Memory(MemorySessionStore::new()),
+                Some(MEMORY_ONLY.to_owned()),
+            )
+        }
     };
 
     let (events, receiver) = async_channel::unbounded();
@@ -96,8 +100,13 @@ fn launch() -> Result<glib::ExitCode, String> {
         let client = || ApiClient::new(api_config.clone(), coordinator.clone());
         let api = client().map_err(config_error)?;
         let presence = DesktopPresence::new(Arc::new(client().map_err(config_error)?));
-        let live_config =
-            LiveConfig::network().map_err(|error| format!("live updates: {error}"))?;
+        // The live updates' credential states its expiry by the service's
+        // clock, so it is compared with the service's time as the sign-in has
+        // learned it, not with this machine's, which may run fast or slow.
+        let live_config = LiveConfig {
+            clock: Arc::new(coordinator.server_clock()),
+            ..LiveConfig::network().map_err(|error| format!("live updates: {error}"))?
+        };
         let (live, updates) = LiveHub::new(Arc::new(client().map_err(config_error)?), live_config);
         let auth = NativeAuth::new(
             &api_config,

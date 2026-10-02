@@ -3,11 +3,12 @@
 //! joined through the call engine; this screen shows where that stands and
 //! who is there, and never the room's credential.
 
+use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    DisconnectReason, Event, MediaConnection, MediaSession, MeetingList, MicrophoneState,
-    RoomsEvent, RoomsScreen, SignedIn, format_duration, is_in_progress,
+    CoreConfig, DisconnectReason, Event, MediaConnection, MediaSession, MeetingList,
+    MicrophoneState, RoomsEvent, RoomsScreen, SignedIn, format_duration, is_in_progress,
 };
 use district_model::{MeetRoomName, MeetingSummary};
 
@@ -16,9 +17,13 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::meeting_record::{MeetingRecordDialog, meeting_title};
-use crate::pages::shared::{Echo, clear_list, when_text};
+use crate::pages::shared::{Echo, RowIds, clear_list, draw_spinner, failure_text, when_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
+use crate::window::DistrictWindow;
+
+/// What the toast says once the guest link is on the clipboard.
+pub(crate) const GUEST_LINK_COPIED: &str = "Guest link copied.";
 
 /// The line under a meeting: when it started, how long it was and how many
 /// were there, and its minutes' start, or that they come when it ends.
@@ -112,6 +117,8 @@ mod imp {
         #[template_child]
         pub mute_button: TemplateChild<gtk::Button>,
         #[template_child]
+        pub copy_link_button: TemplateChild<gtk::Button>,
+        #[template_child]
         pub leave_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub meetings_spinner: TemplateChild<gtk::Spinner>,
@@ -132,10 +139,12 @@ mod imp {
         pub writing: Cell<bool>,
         /// Whether the microphone is on, as last drawn: what the button does.
         pub microphone_on: Cell<bool>,
+        /// The room's guest link, as last drawn: what the button copies.
+        pub guest_link: RefCell<Option<String>>,
         /// The meetings the list was last built from, and whether a room could
         /// be joined then.
         pub listed: RefCell<Option<(Vec<MeetingSummary>, bool)>>,
-        pub rows: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        pub rows: RowIds,
         /// The record open over the lobby.
         pub record: RefCell<Option<MeetingRecordDialog>>,
     }
@@ -174,6 +183,12 @@ mod imp {
             self.mute_button.connect_clicked(move |_| {
                 if let Some(page) = weak.upgrade() {
                     page.send(Event::Microphone(!page.imp().microphone_on.get()));
+                }
+            });
+            let weak = page.downgrade();
+            self.copy_link_button.connect_clicked(move |_| {
+                if let Some(page) = weak.upgrade() {
+                    page.copy_guest_link();
                 }
             });
             let weak = page.downgrade();
@@ -236,19 +251,14 @@ impl RoomsPage {
 
     /// Opens the record of the meeting `row` shows.
     fn open_row(&self, row: &gtk::ListBoxRow) {
-        let id = self
-            .imp()
-            .rows
-            .borrow()
-            .iter()
-            .find_map(|(listed, id)| (listed == row).then(|| id.clone()));
-        if let Some(meeting_id) = id {
+        if let Some(meeting_id) = self.imp().rows.key_of(row) {
             self.send(Event::Rooms(RoomsEvent::OpenRecord { meeting_id }));
         }
     }
 
-    /// Draws the lobby of `signed_in`'s workspace.
-    pub(crate) fn update(&self, signed_in: &SignedIn) {
+    /// Draws the lobby of `signed_in`'s workspace, in this build of the app
+    /// (`config`), which says where a guest link leads.
+    pub(crate) fn update(&self, signed_in: &SignedIn, config: &CoreConfig) {
         let imp = self.imp();
         let rooms = &signed_in.rooms;
         let speaker = signed_in.capabilities().can_publish_in_rooms;
@@ -276,24 +286,28 @@ impl RoomsPage {
         });
         imp.busy_note
             .set_visible(busy && rooms.joining.is_none() && rooms.room.is_none());
-        imp.join_spinner.set_visible(rooms.joining.is_some());
-        imp.join_spinner.set_spinning(rooms.joining.is_some());
-        let failure = rooms
-            .join_failure
-            .as_ref()
-            .map(|failure| failure.message.as_str())
-            .or(rooms.ended.and_then(DisconnectReason::message));
+        draw_spinner(&imp.join_spinner, rooms.joining.is_some());
+        let failure = rooms.join_failure.as_ref().map(failure_text).or(rooms
+            .ended
+            .and_then(DisconnectReason::message)
+            .map(Cow::Borrowed));
         imp.failure_box.set_visible(failure.is_some());
-        imp.failure_label.set_label(failure.unwrap_or_default());
-        self.draw_room(signed_in, speaker);
+        imp.failure_label
+            .set_label(failure.as_deref().unwrap_or_default());
+        self.draw_room(signed_in, speaker, config);
         self.draw_meetings(&rooms.meetings, !busy);
         self.draw_record(rooms);
     }
 
-    fn draw_room(&self, signed_in: &SignedIn, speaker: bool) {
+    fn draw_room(&self, signed_in: &SignedIn, speaker: bool, config: &CoreConfig) {
         let imp = self.imp();
         let room = signed_in.rooms.room.as_ref();
         imp.room_card.set_visible(room.is_some());
+        // The service sends a guest link only to a member who may speak in
+        // the room: there is nothing to copy otherwise.
+        let link = room.and_then(|room| room.guest_link(config));
+        imp.copy_link_button.set_visible(link.is_some());
+        imp.guest_link.replace(link);
         let Some(room) = room else {
             return;
         };
@@ -327,6 +341,17 @@ impl RoomsPage {
             .set_label(if on { "Mute" } else { "Unmute" });
     }
 
+    /// Copies the room's guest link to the clipboard, and says so. The
+    /// button shows only while there is a link.
+    fn copy_guest_link(&self) {
+        if let Some(link) = self.imp().guest_link.borrow().as_deref() {
+            self.clipboard().set_text(link);
+        }
+        if let Some(window) = self.root().and_downcast::<DistrictWindow>() {
+            window.toast(GUEST_LINK_COPIED);
+        }
+    }
+
     fn draw_meetings(&self, meetings: &MeetingList, can_join: bool) {
         let imp = self.imp();
         imp.meetings_loading.set_spinning(matches!(
@@ -340,8 +365,7 @@ impl RoomsPage {
                 ..
             }
         );
-        imp.meetings_spinner.set_visible(refreshing);
-        imp.meetings_spinner.set_spinning(refreshing);
+        draw_spinner(&imp.meetings_spinner, refreshing);
         let status = |title: &str, body: &str, retry: bool| {
             imp.meetings_stack.set_visible_child_name("status");
             imp.meetings_status.set_title(title);
@@ -355,7 +379,7 @@ impl RoomsPage {
             MeetingList::Failed(failure) => {
                 status(
                     MeetingList::FAILED_TITLE,
-                    &failure.message,
+                    &failure_text(failure),
                     failure.retryable,
                 );
             }
@@ -371,8 +395,13 @@ impl RoomsPage {
 
     fn draw_rows(&self, meetings: &[MeetingSummary], can_join: bool) {
         let imp = self.imp();
-        let wanted = (meetings.to_vec(), can_join);
-        if imp.listed.borrow().as_ref() == Some(&wanted) {
+        // Compared where it is kept, and copied only when it changed.
+        let drawn = imp
+            .listed
+            .borrow()
+            .as_ref()
+            .is_some_and(|(listed, could)| listed.as_slice() == meetings && *could == can_join);
+        if drawn {
             return;
         }
         clear_list(&imp.meeting_list);
@@ -412,7 +441,7 @@ impl RoomsPage {
             rows.push((row.upcast(), meeting.id.clone()));
         }
         imp.rows.replace(rows);
-        imp.listed.replace(Some(wanted));
+        imp.listed.replace(Some((meetings.to_vec(), can_join)));
     }
 
     fn draw_record(&self, rooms: &RoomsScreen) {

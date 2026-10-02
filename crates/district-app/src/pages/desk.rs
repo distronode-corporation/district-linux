@@ -15,10 +15,13 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::notifications::open_workspace_id;
 use crate::pages::desk_settings::DeskSettingsView;
 use crate::pages::desk_ticket::DeskTicketView;
-use crate::pages::shared::{clear_list, humanize, now, short_time};
-use crate::pages::ticket_form::TicketFormDialog;
+use crate::pages::shared::{
+    RowIds, back_on_fold, clear_list, draw_line, failure_text, humanize, now, short_time,
+};
+use crate::pages::ticket_form::{FormState, TicketFormDialog};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -147,7 +150,7 @@ mod imp {
         pub filters: RefCell<Vec<String>>,
         /// The tickets the list was last built from, and each row's id.
         pub listed: RefCell<Option<Vec<DeskTicketSummary>>>,
-        pub rows: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        pub rows: RowIds,
         /// Whether a ticket or the settings are open, as last drawn.
         pub open: Cell<bool>,
         /// The form raising a ticket, while it is open.
@@ -204,15 +207,7 @@ mod imp {
                     page.open_row(row);
                 }
             });
-            let weak = page.downgrade();
-            self.split_view.connect_show_content_notify(move |split| {
-                if let Some(page) = weak.upgrade()
-                    && !split.shows_content()
-                    && page.imp().open.get()
-                {
-                    page.send(Event::Back);
-                }
-            });
+            back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }
     }
 
@@ -244,13 +239,7 @@ impl DeskPage {
 
     /// Opens the ticket `row` shows.
     fn open_row(&self, row: &gtk::ListBoxRow) {
-        let id = self
-            .imp()
-            .rows
-            .borrow()
-            .iter()
-            .find_map(|(listed, id)| (listed == row).then(|| id.clone()));
-        if let Some(ticket_id) = id {
+        if let Some(ticket_id) = self.imp().rows.key_of(row) {
             self.send(Event::Navigate(Route::DeskTicket { ticket_id }));
         }
     }
@@ -277,14 +266,8 @@ impl DeskPage {
             .set_label(submitted.as_deref().unwrap_or_default());
         self.draw_compose(desk);
         let open = signed_in.desk_ticket.as_ref();
-        let selected = open.map(|screen| screen.ticket_id.as_str());
-        let row = imp
-            .rows
-            .borrow()
-            .iter()
-            .find(|(_, id)| Some(id.as_str()) == selected)
-            .map(|(row, _)| row.clone());
-        imp.ticket_list.select_row(row.as_ref());
+        imp.rows
+            .select(&imp.ticket_list, open.map(|screen| &screen.ticket_id));
         let mut toast = None;
         match (open, signed_in.desk_settings.as_ref()) {
             (Some(screen), _) => {
@@ -295,7 +278,9 @@ impl DeskPage {
             }
             (None, Some(settings)) => {
                 imp.detail_stack.set_visible_child_name("settings");
-                toast = imp.settings_view.update(settings);
+                toast = imp
+                    .settings_view
+                    .update(settings, open_workspace_id(signed_in));
                 imp.ticket_view.leave();
             }
             (None, None) => {
@@ -340,9 +325,8 @@ impl DeskPage {
             .enable_failure
             .as_ref()
             .filter(|_| off)
-            .map(|f| f.message.as_str());
-        imp.enable_failure.set_visible(failure.is_some());
-        imp.enable_failure.set_label(failure.unwrap_or_default());
+            .map(failure_text);
+        draw_line(&imp.enable_failure, failure);
         let status = |title: &str, body: &str, retry: bool| {
             imp.list_stack.set_visible_child_name("status");
             imp.list_status.set_title(title);
@@ -355,7 +339,11 @@ impl DeskPage {
             }
             DeskQueue::Off => status(DeskQueue::OFF_TITLE, DeskQueue::OFF_BODY, false),
             DeskQueue::Failed(failure) => {
-                status(DeskQueue::FAILED_TITLE, &failure.message, failure.retryable);
+                status(
+                    DeskQueue::FAILED_TITLE,
+                    &failure_text(failure),
+                    failure.retryable,
+                );
             }
             DeskQueue::Ready(queue) if queue.tickets.is_empty() => {
                 status(DeskQueue::EMPTY_TITLE, DeskQueue::EMPTY_BODY, false);
@@ -417,27 +405,15 @@ impl DeskPage {
     }
 
     fn draw_compose(&self, desk: &DeskScreen) {
-        let imp = self.imp();
-        let Some(compose) = desk.compose.as_ref() else {
-            if let Some(open) = imp.compose.take() {
-                open.force_close();
-            }
-            return;
-        };
-        let mut open = imp.compose.borrow_mut();
-        let dialog = open.get_or_insert_with(|| {
-            let dialog = TicketFormDialog::desk(
-                &compose.form,
-                self.sink().expect("the window handed over its sink"),
-            );
-            dialog.present(Some(self));
-            dialog
+        let wanted = desk.compose.as_ref().map(|compose| {
+            let state = FormState {
+                can_submit: compose.form.can_submit(),
+                submitting: compose.submitting,
+                failure: compose.failure.as_ref(),
+            };
+            (state, |sink| TicketFormDialog::desk(&compose.form, sink))
         });
-        dialog.update(
-            compose.form.can_submit(),
-            compose.submitting,
-            compose.failure.as_ref().map(|f| f.message.as_str()),
-        );
+        TicketFormDialog::sync(&self.imp().compose, self, wanted);
     }
 
     /// The help desk is no longer showing: every dialog it opened closes.

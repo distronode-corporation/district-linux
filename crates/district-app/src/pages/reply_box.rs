@@ -12,7 +12,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::Sends;
-use crate::pages::shared::Echo;
+use crate::pages::shared::{Echo, draw_line, draw_spinner};
 use crate::sink::EventSink;
 
 /// The events a reply box sends: the text changed, send it, and dismiss the
@@ -158,13 +158,11 @@ impl ReplyBox {
         }
         imp.text.set_editable(!state.sending);
         imp.send_button.set_sensitive(state.can_send);
-        imp.spinner.set_visible(state.sending);
-        imp.spinner.set_spinning(state.sending);
+        draw_spinner(&imp.spinner, state.sending);
         imp.failure_box.set_visible(state.failure.is_some());
         imp.failure_label
             .set_label(state.failure.unwrap_or_default());
-        imp.note_label.set_visible(state.note.is_some());
-        imp.note_label.set_label(state.note.unwrap_or_default());
+        draw_line(&imp.note_label, state.note);
     }
 
     /// Starts again, for another ticket or request.

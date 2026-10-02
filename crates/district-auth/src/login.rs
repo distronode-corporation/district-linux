@@ -30,6 +30,12 @@ pub const REDIRECT_SCHEME: &str = "districtai";
 /// The service's page that runs the sign-in in the browser.
 pub const AUTHORIZE_PATH: &str = "/auth/native";
 
+/// How the `code_challenge` was made from the verifier: SHA-256, the only
+/// method this client uses. Named in the authorize URL rather than left to the
+/// service's default, so a service that ever defaulted to `plain` could not
+/// take the challenge for the verifier itself.
+pub const CODE_CHALLENGE_METHOD: &str = "S256";
+
 /// The longest `error` value from a callback that is passed on. The service
 /// sends short OAuth-style codes; anything longer is cut.
 const MAX_ERROR_LEN: usize = 64;
@@ -42,9 +48,11 @@ const MAX_ERROR_LEN: usize = 64;
 /// costs the user a click; persisting the verifier would put a live
 /// code-exchange secret on disk to save that click.
 ///
-/// Starting a new attempt abandons the previous one, and
-/// [`complete`](Self::complete) uses an attempt up whatever its outcome, so a
-/// verifier is never used twice.
+/// Starting a new attempt abandons the previous one, and a callback that
+/// answers the attempt uses it up whatever else it says, so a verifier is never
+/// used twice. One that does not answer it (not the app's address, or another
+/// `state`) leaves it waiting: a stray or forged link cannot cancel a sign-in
+/// under way.
 pub struct LoginFlow {
     authorize_url: Url,
     attempt: Option<Attempt>,
@@ -82,7 +90,8 @@ impl LoginFlow {
     /// or `gtk::UriLauncher`), never in a web view inside the app.
     ///
     /// The URL carries exactly the parameters the service reads, in this order:
-    /// `code_challenge`, `state` and `redirect_uri`. The verifier stays here.
+    /// `code_challenge`, `code_challenge_method` (always `S256`), `state` and
+    /// `redirect_uri`. The verifier stays here.
     pub fn authorize_url(&mut self) -> Url {
         let attempt = Attempt {
             pkce: Pkce::generate(),
@@ -91,6 +100,7 @@ impl LoginFlow {
         let mut url = self.authorize_url.clone();
         url.query_pairs_mut()
             .append_pair("code_challenge", attempt.pkce.challenge())
+            .append_pair("code_challenge_method", CODE_CHALLENGE_METHOD)
             .append_pair("state", &attempt.state)
             .append_pair("redirect_uri", REDIRECT_URI);
         self.attempt = Some(attempt);
@@ -111,9 +121,7 @@ impl LoginFlow {
     /// Checks the browser's callback and, if it answers the attempt in progress,
     /// returns the code to exchange together with the attempt's verifier.
     ///
-    /// The attempt is used up by this call whatever the outcome, so the same
-    /// callback, or any other, cannot be completed twice. Checked in this order,
-    /// and nothing is sent anywhere:
+    /// Checked in this order, and nothing is sent anywhere:
     ///
     /// 1. an attempt is in progress;
     /// 2. the URL is `districtai://auth` (no port, user or path);
@@ -125,26 +133,14 @@ impl LoginFlow {
     /// The `state` check comes before everything the callback says, because a
     /// callback this app did not ask for (an injected code, or an old one from
     /// the browser's history) must be refused outright: exchanging it would sign
-    /// the app in to an account someone else chose.
+    /// the app in to an account someone else chose. Such a callback leaves the
+    /// attempt waiting for its own. One that passes it answers the attempt and
+    /// uses it up, whatever the rest says, so it cannot be completed twice.
     pub fn complete(&mut self, callback: &Url) -> Result<AuthorizationGrant, LoginError> {
         let attempt = self.attempt.take().ok_or(LoginError::NoAttemptInProgress)?;
-
-        let ours = callback.scheme() == REDIRECT_SCHEME
-            && callback.host_str() == Some("auth")
-            && callback.port().is_none()
-            && callback.username().is_empty()
-            && callback.password().is_none()
-            && matches!(callback.path(), "" | "/");
-        if !ours {
-            return Err(LoginError::NotOurRedirect);
-        }
-
-        let state = match single_param(callback, "state") {
-            Param::One(state) => state,
-            Param::Absent | Param::Many => return Err(LoginError::StateMismatch),
-        };
-        if !bool::from(state.as_bytes().ct_eq(attempt.state.as_bytes())) {
-            return Err(LoginError::StateMismatch);
+        if let Err(error) = answers(&attempt, callback) {
+            self.attempt = Some(attempt);
+            return Err(error);
         }
 
         match single_param(callback, "error") {
@@ -175,6 +171,28 @@ impl fmt::Debug for LoginFlow {
             .field("pending", &self.is_pending())
             .finish()
     }
+}
+
+/// Whether `callback` answers `attempt`: the app's own address, carrying the
+/// attempt's `state`.
+fn answers(attempt: &Attempt, callback: &Url) -> Result<(), LoginError> {
+    let ours = callback.scheme() == REDIRECT_SCHEME
+        && callback.host_str() == Some("auth")
+        && callback.port().is_none()
+        && callback.username().is_empty()
+        && callback.password().is_none()
+        && matches!(callback.path(), "" | "/");
+    if !ours {
+        return Err(LoginError::NotOurRedirect);
+    }
+    let state = match single_param(callback, "state") {
+        Param::One(state) => state,
+        Param::Absent | Param::Many => return Err(LoginError::StateMismatch),
+    };
+    if !bool::from(state.as_bytes().ct_eq(attempt.state.as_bytes())) {
+        return Err(LoginError::StateMismatch);
+    }
+    Ok(())
 }
 
 enum Param {

@@ -67,6 +67,53 @@ async fn the_common_refusals_map_to_their_own_variants() {
 }
 
 /// A status-specific variant still carries the code, so the app can translate it.
+/// A route that writes its sentence in `message`, beside a machine code in
+/// both `error` and `code`, is shown in its sentence: "rate limited:
+/// rate_limited" tells a person nothing. With no sentence, an `error` that is
+/// only the code is no message either, and the fallback is shown.
+#[tokio::test]
+async fn the_services_sentence_is_kept_over_a_code() {
+    let body = json!({
+        "error": "rate_limited",
+        "code": "rate_limited",
+        "message": "Too many requests. Please try again shortly.",
+    });
+    let error = call(ResponseTemplate::new(429).set_body_json(&body))
+        .await
+        .unwrap_err();
+    let ApiError::RateLimited { detail: said, .. } = &error else {
+        panic!("{error:?}");
+    };
+    assert_eq!(
+        *said,
+        detail(
+            Some("Too many requests. Please try again shortly."),
+            Some("rate_limited")
+        )
+    );
+    assert_eq!(
+        error.to_string(),
+        "rate limited: Too many requests. Please try again shortly."
+    );
+
+    let body = json!({"error": "server_error", "code": "server_error"});
+    let error = call(ResponseTemplate::new(500).set_body_json(&body))
+        .await
+        .unwrap_err();
+    assert_eq!(
+        error,
+        ApiError::Envelope {
+            status: 500,
+            code: "server_error".to_owned(),
+            detail: detail(None, Some("server_error")),
+        }
+    );
+    assert_eq!(
+        error.to_string(),
+        format!("HTTP 500, server_error: {FALLBACK_MESSAGE}")
+    );
+}
+
 #[tokio::test]
 async fn a_forbidden_keeps_the_code_from_the_header() {
     let error = call(
@@ -99,7 +146,6 @@ async fn a_rate_limit_reads_retry_after_in_seconds() {
             detail: detail(Some("Too many requests."), Some("rate_limited")),
         }
     );
-    assert!(!error.requires_sign_in());
 }
 
 #[tokio::test]
@@ -599,13 +645,6 @@ fn every_error_describes_itself_without_secrets() {
         assert_eq!(error.code(), code, "{display}");
         assert_eq!(error.clone(), error);
     }
-    assert!(
-        ApiError::Unauthorized(UnauthorizedReason::SignInRequired(
-            district_api::ReauthReason::NoSession
-        ))
-        .requires_sign_in()
-    );
-    assert!(!ApiError::InvalidRequest(String::new()).requires_sign_in());
     let converted: ApiError = TransportError {
         kind: TransportKind::Connect,
         message: "down".to_owned(),

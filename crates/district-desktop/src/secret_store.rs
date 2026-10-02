@@ -163,6 +163,15 @@ impl SessionStore for Oo7SessionStore {
                 "the saved sign-in is in an unknown format",
             )
         })?;
+        // A record with no token can never refresh: the service refuses an empty
+        // one before it looks at it, and that refusal reads as "try again
+        // later", so the app would look signed in and load nothing, for good.
+        if stored.refresh_token.is_empty() {
+            return Err(StoreError::new(
+                StoreErrorKind::Corrupt,
+                "the saved sign-in has no refresh token",
+            ));
+        }
         Ok(Some(PersistedSession {
             refresh_token: RefreshToken::new(stored.refresh_token),
             refresh_token_expires_at_ms: stored.refresh_token_expires_at,
@@ -226,21 +235,29 @@ impl SessionStore for Oo7SessionStore {
             .map_err(store_error)
     }
 
-    async fn revoke_outbox(&self) -> Result<Vec<RefreshToken>, StoreError> {
+    async fn revoke_outbox(&self) -> Result<Vec<Result<RefreshToken, StoreError>>, StoreError> {
         let items = self
             .unlocked()
             .await?
             .search_items(&outbox_attributes())
             .await
             .map_err(store_error)?;
-        let mut tokens = Vec::with_capacity(items.len());
+        let mut entries = Vec::with_capacity(items.len());
         for item in items {
-            let secret = item.secret().await.map_err(store_error)?;
-            // An entry that is not text holds no token this build wrote, and
-            // cannot be presented to the service; it is left alone.
-            tokens.extend(std::str::from_utf8(&secret).ok().map(RefreshToken::new));
+            // One entry that cannot be read is reported and left where it is;
+            // it does not stop the others from being read.
+            let secret = item.secret().await.map_err(store_error);
+            entries.push(secret.and_then(|secret| {
+                // An entry that is not text holds no token this build wrote, and
+                // cannot be presented to the service.
+                std::str::from_utf8(&secret)
+                    .map(RefreshToken::new)
+                    .map_err(|_| {
+                        StoreError::new(StoreErrorKind::Corrupt, "an outbox entry is not text")
+                    })
+            }));
         }
-        Ok(tokens)
+        Ok(entries)
     }
 
     async fn remove_revoke(&self, token: &RefreshToken) -> Result<(), StoreError> {

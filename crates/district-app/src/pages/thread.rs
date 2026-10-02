@@ -9,17 +9,18 @@
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    Capabilities, Composer, Event, MAX_ATTACHMENT_BYTES, PickedAttachment, ThreadEvent,
-    ThreadEvents, ThreadHistory, ThreadScreen, format_call_duration, format_phone_number,
+    Capabilities, Composer, Event, ThreadEvent, ThreadEvents, ThreadHistory, ThreadScreen,
+    format_call_duration, format_phone_number,
 };
 use district_model::{CHANNEL_SMS, ReplyTarget, TimelineEvent};
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
-use crate::gtk::{self, CompositeTemplate, gdk, gio, glib};
+use crate::gtk::{self, CompositeTemplate, gdk, glib};
 use crate::pages::shared::{
-    Echo, clear_box, day_heading, icon_button, instant_in, now, plain_label,
+    Echo, ImagePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
+    icon_button, instant_in, now, plain_label,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -130,20 +131,6 @@ pub(crate) fn busy(composer: &Composer) -> Option<&'static str> {
     }
 }
 
-/// `bytes`, read from the file `name`, as the attachment the core checks.
-/// The type is the one the desktop's content sniffing gives it, from the
-/// name and the bytes together.
-pub(crate) fn attachment(name: &str, bytes: Vec<u8>) -> PickedAttachment {
-    let (content_type, _) = gio::content_type_guess(Some(name), bytes.as_slice());
-    let mime_type = gio::content_type_get_mime_type(&content_type)
-        .map_or_else(|| "application/octet-stream".to_owned(), String::from);
-    PickedAttachment {
-        file_name: name.to_owned(),
-        mime_type,
-        bytes,
-    }
-}
-
 /// Where the history's scroll position goes when what is drawn changes.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum Scroll {
@@ -233,8 +220,8 @@ mod imp {
         pub from_end: Cell<f64>,
         /// What the next change in the history's height does.
         pub scroll: Cell<Scroll>,
-        /// The file chooser open, so leaving the thread can close it.
-        pub picking: RefCell<Option<gio::Cancellable>>,
+        /// The file chooser, so leaving the thread can close it.
+        pub picking: ImagePicker,
     }
 
     #[glib::object_subclass]
@@ -393,7 +380,8 @@ impl ThreadView {
             ThreadHistory::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
             }
             ThreadHistory::Ready(events) => {
@@ -410,8 +398,7 @@ impl ThreadView {
         };
         imp.subtitle.set_visible(!line.is_empty());
         imp.subtitle.set_label(&line);
-        imp.read_only_label.set_visible(note.is_some());
-        imp.read_only_label.set_label(note.unwrap_or_default());
+        draw_line(&imp.read_only_label, note);
         imp.composer.set_visible(note.is_none());
         if note.is_none() {
             self.draw_composer(screen, capabilities);
@@ -421,12 +408,9 @@ impl ThreadView {
     fn draw_history(&self, events: &ThreadEvents) {
         let imp = self.imp();
         imp.older_button.set_visible(events.can_load_older());
-        imp.older_spinner.set_visible(events.loading_older);
-        imp.older_spinner.set_spinning(events.loading_older);
-        let older_failure = events.older_failure.as_ref().map(|f| f.message.as_str());
-        imp.older_failure.set_visible(older_failure.is_some());
-        imp.older_failure
-            .set_label(older_failure.unwrap_or_default());
+        draw_spinner(&imp.older_spinner, events.loading_older);
+        let older_failure = events.older_failure.as_ref().map(failure_text);
+        draw_line(&imp.older_failure, older_failure.as_ref());
         imp.older_box.set_visible(
             events.can_load_older() || events.loading_older || older_failure.is_some(),
         );
@@ -436,10 +420,8 @@ impl ThreadView {
         } else {
             "The start of this conversation"
         });
-        let refresh_failure = events.refresh_failure.as_ref().map(|f| f.message.as_str());
-        imp.refresh_failure.set_visible(refresh_failure.is_some());
-        imp.refresh_failure
-            .set_label(refresh_failure.unwrap_or_default());
+        let refresh_failure = events.refresh_failure.as_ref().map(failure_text);
+        draw_line(&imp.refresh_failure, refresh_failure);
         if imp.drawn.borrow().as_deref() == Some(events.events.as_slice()) {
             return;
         }
@@ -502,14 +484,13 @@ impl ThreadView {
         imp.attach_button.set_sensitive(controls.can_attach);
         imp.send_button.set_sensitive(controls.can_send);
         imp.draft_button.set_sensitive(controls.can_draft_reply);
-        let failure = composer.failure.as_ref().map(|f| f.message.as_str());
+        let failure = composer.failure.as_ref().map(failure_text);
         imp.failure_box.set_visible(failure.is_some());
-        imp.failure_label.set_label(failure.unwrap_or_default());
+        imp.failure_label
+            .set_label(failure.as_deref().unwrap_or_default());
         let waiting = busy(composer);
-        imp.busy_spinner.set_visible(waiting.is_some());
-        imp.busy_spinner.set_spinning(waiting.is_some());
-        imp.busy_label.set_visible(waiting.is_some());
-        imp.busy_label.set_label(waiting.unwrap_or_default());
+        draw_spinner(&imp.busy_spinner, waiting.is_some());
+        draw_line(&imp.busy_label, waiting);
         let buffer = imp.text.buffer();
         let shown = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false);
         if imp.echo.borrow_mut().write(&composer.text, &shown) {
@@ -549,56 +530,23 @@ impl ThreadView {
     }
 
     /// Opens the desktop's file chooser for an image, and attaches the one
-    /// picked to the thread it was picked for.
+    /// picked to the thread it was picked for, if that thread is still the
+    /// one open once the file is read.
     fn pick_image(&self) {
         let Some(thread_key) = self.imp().thread_key.borrow().clone() else {
             return;
         };
-        let filter = gtk::FileFilter::new();
-        filter.set_name(Some("Images"));
-        for mime_type in district_core::ATTACHMENT_TYPES {
-            filter.add_mime_type(mime_type);
-        }
-        let filters = gio::ListStore::new::<gtk::FileFilter>();
-        filters.append(&filter);
-        let dialog = gtk::FileDialog::builder()
-            .title("Attach an image")
-            .modal(true)
-            .filters(&filters)
-            .default_filter(&filter)
-            .build();
-        let cancellable = gio::Cancellable::new();
-        if let Some(earlier) = self.imp().picking.replace(Some(cancellable.clone())) {
-            earlier.cancel();
-        }
-        let window = self.root().and_downcast::<gtk::Window>();
-        let weak = self.downgrade();
-        dialog.open(window.as_ref(), Some(&cancellable), move |picked| {
-            // Dismissed or cancelled: nothing was picked.
-            if let (Some(view), Ok(file)) = (weak.upgrade(), picked) {
-                view.read_image(file, thread_key);
-            }
-        });
-    }
-
-    /// Reads the picked `file`, no further than one byte past the largest
-    /// image the service takes, and hands it to the core for the thread
-    /// `thread_key`, if that thread is still the one open.
-    fn read_image(&self, file: gio::File, thread_key: String) {
-        let weak = self.downgrade();
-        glib::spawn_future_local(async move {
-            let read = read_capped(&file, MAX_ATTACHMENT_BYTES + 1).await;
-            let Some(view) = weak.upgrade() else {
-                return;
-            };
+        let pick = Pick {
+            title: "Attach an image",
+            types: &district_core::ATTACHMENT_TYPES,
+            unnamed: "image",
+        };
+        self.imp().picking.open(self, pick, move |view, read| {
             if view.imp().thread_key.borrow().as_deref() != Some(thread_key.as_str()) {
                 return;
             }
-            let name = file
-                .basename()
-                .map_or_else(|| "image".to_owned(), |name| name.to_string_lossy().into());
             view.send(Event::Thread(match read {
-                Ok(bytes) => ThreadEvent::Attach(attachment(&name, bytes)),
+                Ok(image) => ThreadEvent::Attach(image),
                 Err(_) => ThreadEvent::AttachFailed,
             }));
         });
@@ -608,32 +556,9 @@ impl ThreadView {
     /// and opening a thread again starts afresh, at its newest message.
     pub(crate) fn leave(&self) {
         let imp = self.imp();
-        if let Some(picking) = imp.picking.take() {
-            picking.cancel();
-        }
+        imp.picking.close();
         imp.thread_key.replace(None);
     }
-}
-
-/// How much of a picked file is read at a time.
-const READ_CHUNK: usize = 64 * 1024;
-
-/// Reads `file` until its end or until `cap` bytes are read, whichever is
-/// first: never more than `cap`.
-pub(crate) async fn read_capped(file: &gio::File, cap: usize) -> Result<Vec<u8>, glib::Error> {
-    let stream = file.read_future(glib::Priority::DEFAULT).await?;
-    let mut bytes = Vec::new();
-    while bytes.len() < cap {
-        let want = (cap - bytes.len()).min(READ_CHUNK);
-        let chunk = stream
-            .read_bytes_future(want, glib::Priority::DEFAULT)
-            .await?;
-        if chunk.is_empty() {
-            break;
-        }
-        bytes.extend_from_slice(&chunk);
-    }
-    Ok(bytes)
 }
 
 /// A message: its text in a bubble on its side, and the time and delivery
@@ -853,41 +778,5 @@ mod tests {
         };
         assert_eq!(reply_line(Some(&email)), "Email to ada@example.com");
         assert_eq!(reply_line(None), "");
-    }
-
-    #[test]
-    fn a_picked_file_is_read_no_further_than_asked() {
-        let path =
-            std::env::temp_dir().join(format!("district-read-capped-{}.bin", std::process::id()));
-        std::fs::write(&path, vec![7_u8; 3 * READ_CHUNK + 5]).unwrap();
-        let file = gio::File::for_path(&path);
-        let context = glib::MainContext::new();
-        let read = |cap| context.block_on(read_capped(&file, cap)).unwrap();
-        assert_eq!(
-            read(READ_CHUNK + 1).len(),
-            READ_CHUNK + 1,
-            "one past a chunk"
-        );
-        assert_eq!(
-            read(10 * READ_CHUNK).len(),
-            3 * READ_CHUNK + 5,
-            "the whole file"
-        );
-        std::fs::remove_file(&path).unwrap();
-        assert!(context.block_on(read_capped(&file, 1)).is_err(), "gone");
-    }
-
-    #[test]
-    fn a_picked_file_is_typed_by_its_content() {
-        let png = [
-            0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n', 0, 0, 0, 13,
-        ];
-        let picked = attachment("roof.png", png.to_vec());
-        assert_eq!(picked.file_name, "roof.png");
-        assert_eq!(picked.mime_type, "image/png");
-        assert_eq!(picked.bytes, png);
-        let text = attachment("notes.txt", b"hello".to_vec());
-        assert_eq!(text.mime_type, "text/plain");
-        assert!(text.problem(0).is_some(), "the core refuses it");
     }
 }

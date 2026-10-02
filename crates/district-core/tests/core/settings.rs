@@ -49,18 +49,6 @@ pub fn unchanged(model: &mut Model, event: Event) {
     assert!(*signed_in(model) == before, "{shown}");
 }
 
-const ALL: [WorkspaceSection; 9] = [
-    WorkspaceSection::Persona,
-    WorkspaceSection::Tools,
-    WorkspaceSection::Directory,
-    WorkspaceSection::Routing,
-    WorkspaceSection::CallHandling,
-    WorkspaceSection::Knowledge,
-    WorkspaceSection::Messaging,
-    WorkspaceSection::Members,
-    WorkspaceSection::Numbers,
-];
-
 fn sections(capabilities: &Capabilities) -> Vec<WorkspaceSection> {
     settings_rows(capabilities)
         .into_iter()
@@ -75,7 +63,11 @@ fn sections(capabilities: &Capabilities) -> Vec<WorkspaceSection> {
 fn the_hub_lists_what_the_role_may_open() {
     for role in ["agency", "client"] {
         let capabilities = Capabilities::for_role(Some(role));
-        assert_eq!(sections(&capabilities), ALL, "{role}");
+        assert_eq!(
+            sections(&capabilities),
+            WorkspaceSection::ALL[1..],
+            "{role}"
+        );
         assert_eq!(settings_note(&capabilities), SETTINGS_MORE_ON_WEB);
     }
     let viewer = Capabilities::for_role(Some("viewer"));

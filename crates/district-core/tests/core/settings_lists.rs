@@ -799,3 +799,44 @@ fn no_rules_are_editable_without_a_read_this_app_can_carry() {
         assert!(!text.is_empty() && !text.contains(['\u{2013}', '\u{2014}']));
     }
 }
+
+/// The two parts are saved apart, and saving one leaves the other's unsaved
+/// edit as it was rather than dropping it without a word.
+#[test]
+fn saving_one_part_of_the_capabilities_keeps_the_others_edit() {
+    let mut model = read(WorkspaceSection::Tools, Ok(settings_row()));
+    toggle(&mut model, "send_sms", true);
+    model.update(Event::Tools(ToolsEvent::SetEnrichment(false)));
+    let effects = model.update(Event::Tools(ToolsEvent::SaveTools));
+    let reread = model.update(Event::SettingsWritten {
+        ticket: last_ticket(&effects),
+        result: Ok(()),
+    });
+    let mut stored = settings_row();
+    stored.config.tool_config.as_mut().unwrap().allowed_tools = tools(&model).pending_tools();
+    model.update(Event::WorkspaceConfigLoaded {
+        ticket: last_ticket(&reread),
+        result: Ok(stored.clone()),
+    });
+    let section = tools(&model);
+    assert!(!section.tools_dirty());
+    assert!(section.enrichment_dirty() && !section.enrichment_enabled());
+
+    toggle(&mut model, "send_sms", false);
+    let effects = model.update(Event::Tools(ToolsEvent::SaveEnrichment));
+    let reread = model.update(Event::SettingsWritten {
+        ticket: last_ticket(&effects),
+        result: Ok(()),
+    });
+    stored.config.ai_persona.as_mut().unwrap().dgi_enabled = Some(false);
+    model.update(Event::WorkspaceConfigLoaded {
+        ticket: last_ticket(&reread),
+        result: Ok(stored),
+    });
+    let section = tools(&model);
+    assert!(!section.enrichment_dirty());
+    assert!(
+        section.tools_dirty(),
+        "the switch moved since is still there"
+    );
+}

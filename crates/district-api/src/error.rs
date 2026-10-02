@@ -36,12 +36,15 @@ pub const FALLBACK_MESSAGE: &str = "Something went wrong. Please try again.";
 /// What the service said about a failure, read leniently.
 ///
 /// Error bodies come in several shapes depending on which layer of the service
-/// answered (`{error}`, `{success: false, error}`, `{error, code}`), and some are
-/// not JSON at all (a proxy's HTML page). Every field is therefore optional, and a
+/// answered (`{error}`, `{success: false, error}`, `{error, code}`,
+/// `{error, code, message}`), and some are not JSON at all (a proxy's HTML
+/// page). Every field is therefore optional, and a
 /// body that cannot be read yields an empty detail rather than a second error.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ErrorDetail {
-    /// The service's message, in English, written to be shown to a user.
+    /// The service's message, in English, written to be shown to a user: the
+    /// body's `message` when it has one, else its `error` unless that only
+    /// repeats the code.
     pub message: Option<String>,
     /// The machine-readable code, from the body's `code` or, when the body has
     /// none, the [`ERROR_CODE_HEADER`] header. The body wins when both are
@@ -85,9 +88,14 @@ impl ErrorDetail {
                     .collect()
             })
             .unwrap_or_default();
+        let code = text("code").or(header_code);
+        // Some routes put a person's sentence in `message` and a machine code in
+        // `error` too. The sentence is the one to show; an `error` that only
+        // repeats the code is no sentence at all.
+        let error = text("error").filter(|error| Some(error) != code.as_ref());
         Self {
-            message: text("error"),
-            code: text("code").or(header_code),
+            message: text("message").or(error),
+            code,
             degraded_regions,
         }
     }
@@ -275,16 +283,6 @@ pub enum ApiError {
 }
 
 impl ApiError {
-    /// Whether the user has to sign in again before anything else will work.
-    pub fn requires_sign_in(&self) -> bool {
-        matches!(
-            self,
-            Self::Unauthorized(
-                UnauthorizedReason::SignInRequired(_) | UnauthorizedReason::SessionEnded
-            )
-        )
-    }
-
     /// The machine-readable code the service sent, if any.
     pub fn code(&self) -> Option<&str> {
         match self {

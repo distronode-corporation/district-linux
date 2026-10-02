@@ -122,6 +122,6 @@ impl AccountPage {
         imp.ring_here_row
             .set_active(presence.ring_here.unwrap_or_default());
         let message = presence.message();
-        crate::pages::settings_kit::draw_line(&imp.presence_note, message.as_deref());
+        crate::pages::shared::draw_line(&imp.presence_note, message.as_deref());
     }
 }

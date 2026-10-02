@@ -7,7 +7,7 @@ receptionist from Distronode.
 
 ![The call log, with a call's summary and transcript](crates/district-app/data/screenshots/call-log.png)
 
-> **Status: 0.1.0 is the current release**, as a .deb and a Flatpak bundle for
+> **Status: 1.0.0 is the current release**, as a .deb and a Flatpak bundle for
 > x86_64, both with calls, on the
 > [Releases](https://github.com/distronode-corporation/district-linux/releases/latest)
 > page (see [Install](#install)). Calls on the desktop need a build with the
@@ -64,16 +64,16 @@ so does not depend on the distribution's versions.
 ## Install
 
 The current release is
-[0.1.0](https://github.com/distronode-corporation/district-linux/releases/latest).
+[1.0.0](https://github.com/distronode-corporation/district-linux/releases/latest).
 It carries two packages for x86_64, both with calls. Both link this project's
 own build of libwebrtc for calls, which leaves out the H.264 and H.265 codecs
 and FFmpeg (see [NOTICE](NOTICE)).
 
-- **`district-ai_0.1.0-1_amd64.deb`**, for Ubuntu 24.04, Debian 13 and newer.
+- **`district-ai_1.0.0-1_amd64.deb`**, for Ubuntu 24.04, Debian 13 and newer.
   Install it with apt, which also installs what it depends on:
 
   ```
-  sudo apt install ./district-ai_0.1.0-1_amd64.deb
+  sudo apt install ./district-ai_1.0.0-1_amd64.deb
   ```
 
   It depends on GTK 4, libadwaita, GTK's media backend and the GStreamer
@@ -82,12 +82,12 @@ and FFmpeg (see [NOTICE](NOTICE)).
   to keep your sign-in, the desktop portals, and a PulseAudio server (PipeWire's
   `pipewire-pulse`, which most desktops already run) for calls.
 
-- **`district-ai_0.1.0_x86_64.flatpak`**, for any distribution with Flatpak.
+- **`district-ai_1.0.0_x86_64.flatpak`**, for any distribution with Flatpak.
   It needs the Flathub remote, from which Flatpak fetches its runtime:
 
   ```
   flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-  flatpak install --user ./district-ai_0.1.0_x86_64.flatpak
+  flatpak install --user ./district-ai_1.0.0_x86_64.flatpak
   ```
 
   It runs sandboxed, with the network, your display, the GPU, PulseAudio and
@@ -99,7 +99,7 @@ Each package comes with a signed attestation of the build that made it, which
 you can check with the GitHub CLI:
 
 ```
-gh attestation verify district-ai_0.1.0-1_amd64.deb --repo distronode-corporation/district-linux
+gh attestation verify district-ai_1.0.0-1_amd64.deb --repo distronode-corporation/district-linux
 ```
 
 ## Build from source

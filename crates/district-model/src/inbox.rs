@@ -163,12 +163,6 @@ impl ConversationSummary {
         self.unread_count > 0
     }
 
-    /// The thread, for the requests that read or act on it. `None` when the
-    /// service sent a thread key of a form this client does not know.
-    pub fn thread_ref(&self) -> Option<ThreadRef> {
-        ThreadRef::from_thread_key(&self.thread_key)
-    }
-
     /// Where a reply goes, and on which channel, or `None` when the thread has
     /// nothing to reply on (offer no reply box then).
     ///
@@ -552,7 +546,7 @@ mod tests {
             Some(ReplyTarget::new("+12125550143", CHANNEL_SMS))
         );
         assert_eq!(
-            both.thread_ref(),
+            ThreadRef::from_thread_key(&both.thread_key),
             Some(ThreadRef::Contact("c_1".to_owned()))
         );
         assert_eq!(

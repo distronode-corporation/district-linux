@@ -6,6 +6,7 @@ use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 
+use district_core::MicrophoneState;
 use futures_util::StreamExt;
 use livekit::options::TrackPublishOptions;
 use livekit::prelude::{
@@ -226,8 +227,10 @@ impl Microphone {
                 on: true,
             }),
             Err(_) => {
-                if let (Capture::Devices, Some(devices)) = (&capture, devices) {
-                    devices.stop_recording().ok();
+                // Reported unavailable, not off, whether or not the device is let
+                // go: nobody hears the member either way.
+                if matches!(capture, Capture::Devices) {
+                    let_go(devices);
                 }
                 None
             }
@@ -240,19 +243,21 @@ impl Microphone {
     }
 
     /// Turns it off: muted, so nothing more is sent, and the capture stopped,
-    /// so the device is let go. Safe to repeat, which is how a reconnection
-    /// that published it again is made to let go of the device again.
-    pub(super) fn off(&mut self, devices: Option<&PlatformAudio>) {
+    /// so the device is let go. Answers whether it was let go: a capture that
+    /// would not stop still holds the device, though nothing is sent, and
+    /// [`after_off`] reports that as on rather than off. Safe to repeat, which
+    /// is how turning it off again tries again, and how a reconnection that
+    /// published it again is made to let go of the device again.
+    pub(super) fn off(&mut self, devices: Option<&PlatformAudio>) -> bool {
         self.publication.mute();
-        match &mut self.capture {
-            Capture::Devices => {
-                if let Some(devices) = devices {
-                    devices.stop_recording().ok();
-                }
-            }
-            Capture::Frames { making, .. } => *making = None,
-        }
         self.on = false;
+        match &mut self.capture {
+            Capture::Devices => let_go(devices),
+            Capture::Frames { making, .. } => {
+                *making = None;
+                true
+            }
+        }
     }
 
     /// Turns it on again: the capture started, then unmuted. False, and still
@@ -278,6 +283,39 @@ impl Microphone {
         self.publication.unmute();
         self.on = true;
         true
+    }
+}
+
+/// Stopping the desktop's capture: [`PlatformAudio`]'s, or a stand-in in the
+/// tests.
+trait Recording {
+    /// Stops the capture, and answers whether it stopped.
+    fn stop(&self) -> bool;
+}
+
+impl Recording for PlatformAudio {
+    fn stop(&self) -> bool {
+        self.stop_recording().is_ok()
+    }
+}
+
+/// Lets go of the desktop's microphone: stops the capture, asking a second
+/// time before giving up. Whether it is let go; with no devices open, nothing
+/// holds it.
+fn let_go(devices: Option<&impl Recording>) -> bool {
+    devices.is_none_or(|devices| devices.stop() || devices.stop())
+}
+
+/// What a microphone just turned off is reported as, given whether the device
+/// was let go ([`Microphone::off`]). Off once it is. One whose capture would not
+/// stop still holds the device, so it is not reported off: it is reported on,
+/// as the desktop's own indicator shows it, though it is muted and sends
+/// nothing, and turning it off again tries again.
+pub(super) fn after_off(let_go: bool) -> MicrophoneState {
+    if let_go {
+        MicrophoneState::Off
+    } else {
+        MicrophoneState::On
     }
 }
 
@@ -317,9 +355,52 @@ pub(super) fn hear(audio: &Audio, track: &RemoteAudioTrack) -> Option<Task> {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
     use std::sync::atomic::AtomicU8;
 
-    use super::{Kind, claim_in};
+    use district_core::MicrophoneState;
+
+    use super::{Kind, Recording, after_off, claim_in, let_go};
+
+    /// A capture that refuses to stop the first `refusals` times it is asked.
+    struct Stubborn {
+        refusals: Cell<u32>,
+        asked: Cell<u32>,
+    }
+
+    impl Stubborn {
+        fn refusing(refusals: u32) -> Self {
+            Self {
+                refusals: Cell::new(refusals),
+                asked: Cell::new(0),
+            }
+        }
+    }
+
+    impl Recording for Stubborn {
+        fn stop(&self) -> bool {
+            self.asked.set(self.asked.get() + 1);
+            let refusals = self.refusals.get();
+            self.refusals.set(refusals.saturating_sub(1));
+            refusals == 0
+        }
+    }
+
+    /// A microphone whose capture will not stop is never reported off: the
+    /// device is still held. A second try is made first, and nothing open is
+    /// nothing held.
+    #[test]
+    fn a_capture_that_will_not_stop_is_not_reported_off() {
+        assert!(let_go(None::<&Stubborn>));
+        let once = Stubborn::refusing(1);
+        assert!(let_go(Some(&once)), "the second try stops it");
+        assert_eq!(once.asked.get(), 2);
+        let stuck = Stubborn::refusing(u32::MAX);
+        assert!(!let_go(Some(&stuck)));
+        assert_eq!(stuck.asked.get(), 2, "two tries, then it is reported");
+        assert_eq!(after_off(true), MicrophoneState::Off);
+        assert_eq!(after_off(false), MicrophoneState::On);
+    }
 
     #[test]
     fn a_process_keeps_the_first_kind_of_microphone_it_asks_for() {

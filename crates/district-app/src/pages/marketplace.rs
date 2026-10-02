@@ -14,7 +14,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{Echo, clear_list, humanize};
+use crate::pages::shared::{Echo, clear_list, draw_line, failure_text, humanize};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -347,7 +347,7 @@ impl MarketplacePage {
             }
             OwnedNumbersList::Failed(failure) => status(
                 OwnedNumbersList::FAILED_TITLE,
-                &failure.message,
+                &failure_text(failure),
                 failure.retryable,
             ),
             OwnedNumbersList::Ready(held) if held.numbers.is_empty() => status(
@@ -360,9 +360,7 @@ impl MarketplacePage {
             OwnedNumbersList::Ready(held) => {
                 imp.owned_stack.set_visible_child_name("list");
                 let note = held.partial_note();
-                imp.partial_note.set_visible(note.is_some());
-                imp.partial_note
-                    .set_label(note.as_deref().unwrap_or_default());
+                draw_line(&imp.partial_note, note.as_deref());
                 if imp.owned.borrow().as_ref() != Some(&held.numbers) {
                     clear_list(&imp.owned_list);
                     for number in &held.numbers {
@@ -417,7 +415,7 @@ impl MarketplacePage {
             }
             NumberSearchState::Failed(failure) => status(
                 NumberSearchState::FAILED_TITLE,
-                &failure.message,
+                &failure_text(failure),
                 failure.retryable,
             ),
         }

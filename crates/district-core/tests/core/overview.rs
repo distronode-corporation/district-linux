@@ -6,9 +6,9 @@ use district_api::{
     UnauthorizedReason,
 };
 use district_core::{
-    Capabilities, Effect, Event, FINISH_SETUP_ACTION, FINISH_SETUP_BODY, FINISH_SETUP_TITLE,
-    FailureText, Model, Notice, OverviewScreen, Route, SessionEnd, SessionState, SignedOutWhy,
-    WorkspaceRole, WorkspaceSection, WorkspacesState,
+    CallLog, Capabilities, ContactList, Effect, Event, FINISH_SETUP_ACTION, FINISH_SETUP_BODY,
+    FINISH_SETUP_TITLE, FailureText, Model, Notice, NotificationTarget, OverviewScreen, Route,
+    SessionEnd, SessionState, SignedOutWhy, WorkspaceRole, WorkspaceSection, WorkspacesState,
 };
 use district_model::WorkspaceListResponse;
 
@@ -77,7 +77,8 @@ fn the_remembered_workspace_opens_first() {
     else {
         panic!("{effects:?}");
     };
-    assert_eq!(workspace_ids, &[CLIENT.to_owned()]);
+    // With every other workspace where the member takes calls: the agency one.
+    assert_eq!(workspace_ids, &[AGENCY.to_owned(), CLIENT.to_owned()]);
     assert_eq!(workspace_id, CLIENT);
     assert_eq!(load_overview(&effects).1, CLIENT);
     assert_eq!(signed_in(&model).overview, OverviewScreen::Loading);
@@ -763,6 +764,145 @@ fn back_walks_up_and_stops_at_a_tab() {
     assert_eq!(signed_in(&model).route, Route::Overview);
     assert!(model.update(Event::Back).is_empty());
     assert_eq!(signed_in(&model).route, Route::Overview);
+}
+
+/// A list a detail was opened over without it is read on the way back,
+/// rather than left spinning; one already read is shown as it was.
+#[test]
+fn back_reads_a_list_that_was_never_read() {
+    /// A detail, the list it goes back to, and that list's read.
+    type Case = (Route, Route, fn(&Effect) -> bool);
+    let cases: [Case; 5] = [
+        (
+            Route::Thread {
+                thread_key: crate::inbox::ADA.to_owned(),
+            },
+            Route::Inbox,
+            |e| matches!(e, Effect::LoadConversations { .. }),
+        ),
+        (
+            Route::CallDetail {
+                call_id: "call_contract_answered".to_owned(),
+            },
+            Route::Calls,
+            |e| matches!(e, Effect::LoadCalls { offset: 0, .. }),
+        ),
+        (
+            Route::ContactDetail {
+                contact_id: "contact_contract_1".to_owned(),
+            },
+            Route::Contacts,
+            |e| matches!(e, Effect::LoadContacts { offset: 0, .. }),
+        ),
+        (
+            Route::DeskTicket {
+                ticket_id: "ticket_1".to_owned(),
+            },
+            Route::Desk,
+            |e| matches!(e, Effect::LoadDeskSettings { .. }),
+        ),
+        (
+            Route::SupportRequest {
+                key: "DA-42".to_owned(),
+            },
+            Route::Support,
+            |e| matches!(e, Effect::LoadSupportRequests { .. }),
+        ),
+    ];
+    for (detail, list, reads) in cases {
+        let (mut model, _) = loaded(AGENCY, "agency");
+        model.update(Event::Navigate(detail.clone()));
+        assert_eq!(signed_in(&model).route, detail);
+        let effects = model.update(Event::Back);
+        assert_eq!(signed_in(&model).route, list);
+        assert!(effects.iter().any(reads), "{list:?}: {effects:?}");
+        // Read now, so the next visit by way of a detail reads nothing more.
+        model.update(Event::Navigate(detail));
+        assert!(!model.update(Event::Back).iter().any(reads), "{list:?}");
+    }
+}
+
+/// A missed call's notification opens the call straight away, so going back
+/// is the first look at the call log.
+#[test]
+fn back_from_a_notified_call_reads_the_call_log() {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    model.update(Event::OpenNotification(NotificationTarget::Call {
+        workspace_id: CLIENT.to_owned(),
+        call_id: "call_contract_answered".to_owned(),
+    }));
+    assert_eq!(signed_in(&model).calls, CallLog::NotLoaded);
+    let effects = model.update(Event::Back);
+    assert_eq!(signed_in(&model).route, Route::Calls);
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::LoadCalls { offset: 0, .. }]
+    ));
+    assert_eq!(signed_in(&model).calls, CallLog::Loading);
+}
+
+/// A workspace switch under the blocked callers drops the contacts list, which
+/// going back then reads for the new workspace.
+#[test]
+fn back_after_a_switch_reads_the_new_workspaces_list() {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    let effects = model.update(Event::Navigate(Route::Contacts));
+    model.update(Event::ContactsLoaded {
+        ticket: last_ticket(&effects),
+        result: Ok(crate::support::fixture("district-contacts.json")),
+    });
+    model.update(Event::Navigate(Route::BlockedContacts));
+    model.update(Event::SelectWorkspace(CLIENT.to_owned()));
+    assert_eq!(signed_in(&model).route, Route::BlockedContacts);
+    let effects = model.update(Event::Back);
+    let [Effect::LoadContacts { workspace_id, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(workspace_id, CLIENT);
+    assert_eq!(signed_in(&model).contacts.list, ContactList::Loading);
+}
+
+/// A refresh of the workspace list that fails (offline, say) keeps the open
+/// workspace: its screens, its HQ conversation and its live updates stay, and
+/// the overview says why the refresh failed.
+#[test]
+fn a_failed_refresh_keeps_the_open_workspace() {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    let before = signed_in(&model).live.clone();
+    let effects = model.update(Event::Refresh);
+    let effects = model.update(Event::WorkspacesLoaded {
+        ticket: last_ticket(&effects),
+        remembered: Some(AGENCY.to_owned()),
+        result: Err(offline()),
+    });
+    assert!(effects.is_empty(), "{effects:?}");
+    assert_eq!(workspaces(&model).active().id, AGENCY);
+    assert_eq!(signed_in(&model).live, before);
+    assert_eq!(
+        signed_in(&model).overview,
+        OverviewScreen::Failed(FailureText::from_api_error(&offline()))
+    );
+    // Trying again reads the list again, and its answer brings the overview back.
+    let effects = model.update(Event::Refresh);
+    let effects = model.update(Event::WorkspacesLoaded {
+        ticket: last_ticket(&effects),
+        remembered: Some(AGENCY.to_owned()),
+        result: Ok(workspace_list()),
+    });
+    assert!(matches!(effects.as_slice(), [Effect::LoadOverview { .. }]));
+
+    // An answer that the account has no workspace any more closes it.
+    let effects = model.update(Event::Refresh);
+    let effects = model.update(Event::WorkspacesLoaded {
+        ticket: last_ticket(&effects),
+        remembered: Some(AGENCY.to_owned()),
+        result: Err(ApiError::NotFound(ErrorDetail::default())),
+    });
+    assert_eq!(signed_in(&model).workspaces, WorkspacesState::NoWorkspaces);
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::WatchLive { workspace_ids, .. }] if workspace_ids.is_empty()
+    ));
 }
 
 #[test]

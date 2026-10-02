@@ -7,6 +7,7 @@
 //! section has no form to show then, and its own page says the save landed and
 //! offers a read, never a save.
 
+use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 
 use district_core::{Event, SaveState};
@@ -16,6 +17,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::Sends;
+use crate::pages::shared::failure_text;
 use crate::sink::EventSink;
 
 mod imp {
@@ -87,11 +89,17 @@ impl Sends for SaveNotice {
 
 /// What the notice says about `state`, its icon and its style, or `None` when
 /// there is nothing to say.
-pub(crate) fn notice_words(state: &SaveState) -> Option<(&str, &'static str, &'static str)> {
+pub(crate) fn notice_words(
+    state: &SaveState,
+) -> Option<(Cow<'_, str>, &'static str, &'static str)> {
     match state {
-        SaveState::Saved => Some((SaveState::SAVED, "object-select-symbolic", "saved-card")),
+        SaveState::Saved => Some((
+            Cow::Borrowed(SaveState::SAVED),
+            "object-select-symbolic",
+            "saved-card",
+        )),
         SaveState::Failed(failure) => Some((
-            failure.message.as_str(),
+            failure_text(failure),
             "dialog-warning-symbolic",
             "composer-failure",
         )),
@@ -115,7 +123,7 @@ impl SaveNotice {
         let Some((text, icon, class)) = words else {
             return;
         };
-        imp.notice_label.set_label(text);
+        imp.notice_label.set_label(&text);
         imp.notice_icon.set_icon_name(Some(icon));
         imp.notice_card.set_css_classes(&["card", class]);
     }
@@ -136,12 +144,12 @@ mod tests {
     fn a_save_is_said_to_have_landed_or_why_it_did_not() {
         assert_eq!(
             notice_words(&SaveState::Saved),
-            Some(("Saved.", "object-select-symbolic", "saved-card"))
+            Some(("Saved.".into(), "object-select-symbolic", "saved-card"))
         );
         let failed = SaveState::Failed(failure("The service refused it.", true));
         assert_eq!(
             notice_words(&failed).map(|(text, _, class)| (text, class)),
-            Some(("The service refused it.", "composer-failure"))
+            Some(("The service refused it.".into(), "composer-failure"))
         );
         for quiet in [
             SaveState::Idle,

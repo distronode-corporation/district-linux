@@ -3,6 +3,7 @@
 
     python3 scripts/sync-endpoints.py --android <path>          # rewrite the snapshot
     python3 scripts/sync-endpoints.py --android <path> --check  # fail if it is stale
+    python3 scripts/sync-endpoints.py --android <path> --allow-dirty
 
 The Android client is the reference implementation this client mirrors, and it is
 not in this repository. It is public, at
@@ -10,7 +11,9 @@ https://github.com/distronode-corporation/district-android, and <path> is a chec
 of it. This script reads its Kotlin sources and writes the endpoint list they add up to into
 contracts/endpoints.snapshot.json: one entry per (method, path), with how the
 request authenticates and where it names its workspace. The source commit is
-recorded too, so the snapshot says what it was taken from.
+recorded too, so the snapshot says what it was taken from, and the script refuses
+while the sources it reads have changes that commit does not hold (unless
+--allow-dirty, which the snapshot then records as `uncommitted_changes`).
 
 `crates/district-api/tests/endpoint_parity.rs` compares that snapshot with this
 client's endpoint table. The two must be equal once the table's named exclusions
@@ -54,6 +57,8 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from _common import head, refusal, uncommitted
 
 ROOT = Path(__file__).resolve().parent.parent
 SNAPSHOT = ROOT / "contracts" / "endpoints.snapshot.json"
@@ -531,13 +536,12 @@ def read_tree(directory: Path, pattern: str) -> dict[str, str]:
     return {str(f.relative_to(directory)): strip_comments(f.read_text(encoding="utf-8")) for f in files}
 
 
-def git(checkout: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", *args], cwd=checkout, check=True, capture_output=True, text=True
-    ).stdout.strip()
-
-
-def build(android: Path) -> dict:
+def build(android: Path, allow_dirty: bool) -> dict:
+    # Only the paths read below: a Gradle build leaves ignored output beside
+    # them, under build/, which this script never reads.
+    dirty = uncommitted(android, str(NETWORK_DIR), str(AUTH_FILE), str(MODEL_DIR))
+    if dirty and not allow_dirty:
+        raise SyncError(refusal("the district-android checkout", dirty))
     network = read_tree(android / NETWORK_DIR, "*.kt")
     models = read_tree(android / MODEL_DIR, "**/*.kt")
     auth_path = android / AUTH_FILE
@@ -553,10 +557,9 @@ def build(android: Path) -> dict:
     if len(endpoints) < 50:
         raise SyncError(f"only {len(endpoints)} endpoints found; the extraction has stopped matching")
 
-    dirty = git(android, "status", "--porcelain", "--", str(CORE)) != ""
     return {
         "generated_by": "scripts/sync-endpoints.py",
-        "source": {"commit": git(android, "rev-parse", "HEAD"), "uncommitted_changes": dirty},
+        "source": {"commit": head(android), "uncommitted_changes": bool(dirty)},
         "endpoints": [
             {"method": e.method, "path": e.path, "auth": e.auth, "workspace": e.workspace}
             for e in endpoints
@@ -572,10 +575,12 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--android", required=True, type=Path, help="a checkout of district-android")
     parser.add_argument("--check", action="store_true", help="fail if the committed snapshot differs")
+    parser.add_argument("--allow-dirty", action="store_true",
+                        help="read sources with uncommitted changes, recording uncommitted_changes = true")
     args = parser.parse_args(argv[1:])
 
     try:
-        snapshot = build(args.android.resolve())
+        snapshot = build(args.android.resolve(), args.allow_dirty)
     except (SyncError, subprocess.CalledProcessError, OSError) as e:
         print(f"sync-endpoints: {e}", file=sys.stderr)
         return 1
@@ -590,9 +595,6 @@ def main(argv: list[str]) -> int:
         print(f"{SNAPSHOT.relative_to(ROOT)} is stale; run without --check to rewrite it", file=sys.stderr)
         return 1
 
-    if snapshot["source"]["uncommitted_changes"]:
-        print("warning: the Android sources have uncommitted changes; the commit alone does not describe them",
-              file=sys.stderr)
     SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
     SNAPSHOT.write_text(text, encoding="utf-8")
     print(f"wrote {len(snapshot['endpoints'])} endpoints to {SNAPSHOT.relative_to(ROOT)}")

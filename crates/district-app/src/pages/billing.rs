@@ -17,7 +17,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{clear_list, humanize, unix_date};
+use crate::pages::shared::{clear_list, draw_line, failure_text, humanize, unix_date};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -37,11 +37,24 @@ pub(crate) fn status_class(status: &PlanStatus) -> &'static str {
 pub(crate) fn minutes_text(used: Option<f64>, included: Option<i64>) -> String {
     match (used, included) {
         (Some(used), Some(included)) => {
-            format!("{} of {included} minutes", format_amount(used))
+            format!("{} of {}", format_amount(used), minutes(included))
         }
-        (Some(used), None) => format!("{} minutes", format_amount(used)),
+        (Some(used), None) => {
+            let used = format_amount(used);
+            let noun = if used == "1" { "minute" } else { "minutes" };
+            format!("{used} {noun}")
+        }
+        (None, Some(1)) => format!("{NOT_RECORDED}. 1 minute is included."),
         (None, Some(included)) => format!("{NOT_RECORDED}. {included} minutes are included."),
         (None, None) => NOT_RECORDED.to_owned(),
+    }
+}
+
+/// A whole number of minutes: `1 minute`, `30 minutes`.
+fn minutes(count: i64) -> String {
+    match count {
+        1 => "1 minute".to_owned(),
+        count => format!("{count} minutes"),
     }
 }
 
@@ -72,7 +85,7 @@ pub(crate) fn subscription_line(subscription: &BillingSubscription) -> String {
         Renewal::of(subscription).and_then(renewal_text),
         subscription
             .included_minutes
-            .map(|minutes| format!("{minutes} minutes included")),
+            .map(|included| format!("{} included", minutes(included))),
         discount,
     ];
     let said: Vec<String> = parts.into_iter().flatten().collect();
@@ -220,7 +233,8 @@ impl BillingPage {
             PlanCard::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(PlanCard::FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
             }
             PlanCard::Ready { billing, .. } => {
@@ -253,8 +267,7 @@ impl BillingPage {
         imp.status_caption
             .set_label(status.caption().unwrap_or_default());
         let overage = overage_note(billing);
-        imp.overage_label.set_visible(overage.is_some());
-        imp.overage_label.set_label(overage.unwrap_or_default());
+        draw_line(&imp.overage_label, overage);
         imp.overage_label
             .set_css_classes(if billing.overage_cap_exceeded {
                 &["warning"]
@@ -311,7 +324,7 @@ impl BillingPage {
             ),
             AccountSection::Failed(failure) => note(
                 AccountSection::FAILED_TITLE,
-                &failure.message,
+                &failure_text(failure),
                 failure.retryable,
             ),
             AccountSection::Ready(billing) => {
@@ -382,8 +395,7 @@ impl BillingPage {
                 .filter(|more| *more)
                 .map(|_| AccountSection::INVOICES_TRUNCATED)
         };
-        imp.invoices_note.set_visible(note.is_some());
-        imp.invoices_note.set_label(note.unwrap_or_default());
+        draw_line(&imp.invoices_note, note);
     }
 }
 
@@ -414,6 +426,15 @@ mod tests {
             "Not recorded. 1000 minutes are included."
         );
         assert_eq!(minutes_text(None, None), "Not recorded");
+        // One minute is one minute, however it is reached.
+        assert_eq!(minutes_text(Some(1.0), None), "1 minute");
+        assert_eq!(minutes_text(Some(1.004), None), "1 minute");
+        assert_eq!(minutes_text(Some(1.5), None), "1.5 minutes");
+        assert_eq!(minutes_text(Some(0.5), Some(1)), "0.5 of 1 minute");
+        assert_eq!(
+            minutes_text(None, Some(1)),
+            "Not recorded. 1 minute is included."
+        );
     }
 
     #[test]
@@ -444,6 +465,10 @@ mod tests {
             amount_off: None,
         });
         assert!(subscription_line(&subscription).ends_with("Named"));
+        subscription.included_minutes = Some(1);
+        assert!(subscription_line(&subscription).contains("\u{b7} 1 minute included \u{b7}"));
+        subscription.included_minutes = Some(500);
+        assert!(subscription_line(&subscription).contains("500 minutes included"));
         assert!(
             renewal_text(Renewal::Renews(1_790_000_000))
                 .unwrap()

@@ -38,7 +38,7 @@ fn the_ring_setting_is_kept_but_never_registers_this_desktop() {
         );
         assert!(model.update(Event::Suspending).is_empty());
         assert!(model.update(Event::Resumed).is_empty());
-        assert!(model.update(Event::Quitting).is_empty());
+        assert_eq!(model.update(Event::Quitting), [Effect::SaveSession]);
         assert_eq!(
             model.update(Event::SetRingOnThisComputer(false)),
             [Effect::SaveRingSetting { ring_here: false }],

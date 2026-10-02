@@ -12,7 +12,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{add_value_row, clear_group, humanize, when_text};
+use crate::pages::shared::{add_value_row, clear_group, failure_text, humanize, when_text};
 use crate::pages::{Sends, escape};
 use crate::sink::EventSink;
 
@@ -192,7 +192,8 @@ impl MeetingRecordDialog {
             MeetingRecord::Loading => imp.stack.set_visible_child_name("loading"),
             MeetingRecord::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
             }
             MeetingRecord::Ready(meeting) => {
                 imp.stack.set_visible_child_name("record");

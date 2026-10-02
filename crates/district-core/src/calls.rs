@@ -14,6 +14,7 @@ use district_model::{CallDetailResponse, CallSummary, CallTranscriptResponse};
 
 use crate::failure::FailureText;
 use crate::model::{Effect, Slot, Ticket, Tickets};
+use crate::paging::Paging;
 use crate::signed_in::{Next, SignedIn, stay};
 
 /// How many calls one page of the log asks for.
@@ -48,35 +49,21 @@ impl CallLog {
 pub struct CallRows {
     /// The calls, newest first.
     pub calls: Vec<CallSummary>,
-    /// Whether the last page read was short, so there is nothing older.
-    pub end_reached: bool,
-    /// Whether the next page is on its way.
-    pub loading_more: bool,
-    /// Why the next page failed, shown at the end of the list.
-    pub more_failure: Option<FailureText>,
-    /// Whether the newest page is being read again, with these still showing.
-    pub refreshing: bool,
-    /// Why the last read of the newest page failed, shown beside the list.
-    pub refresh_failure: Option<FailureText>,
-    next_offset: u32,
+    /// The next page, and the newest page read again. The end is a page
+    /// shorter than asked for, so there is nothing older.
+    pub paging: Paging,
 }
 
 impl CallRows {
-    /// Whether to ask for the next page now (when the user nears the end).
-    pub fn can_load_more(&self) -> bool {
-        !self.end_reached && !self.loading_more
-    }
-
     fn first(page: Vec<CallSummary>) -> Self {
         let received = page.len();
         Self {
             calls: unique(page),
-            end_reached: short(received),
-            loading_more: false,
-            more_failure: None,
-            refreshing: false,
-            refresh_failure: None,
-            next_offset: received as u32,
+            paging: Paging {
+                end_reached: short(received),
+                next_offset: received as u32,
+                ..Paging::default()
+            },
         }
     }
 }
@@ -137,7 +124,7 @@ impl SignedIn {
     /// Opens the call log, or reads its newest page again.
     pub(crate) fn enter_calls(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         match &mut self.calls {
-            CallLog::Ready(rows) => rows.refreshing = true,
+            CallLog::Ready(rows) => rows.paging.refreshing = true,
             other => *other = CallLog::Loading,
         }
         vec![first_page(
@@ -164,14 +151,12 @@ impl SignedIn {
         let CallsEvent::LoadMore = event;
         let workspace_id = self.workspace_id();
         match &mut self.calls {
-            CallLog::Ready(rows) if rows.can_load_more() => {
-                rows.loading_more = true;
-                rows.more_failure = None;
+            CallLog::Ready(rows) if rows.paging.can_load_more() => {
                 Next::Stay(vec![Effect::LoadCalls {
                     ticket: tickets.issue(Slot::CallLogMore),
                     workspace_id,
                     limit: CALL_PAGE_SIZE,
-                    offset: rows.next_offset,
+                    offset: rows.paging.start_more(),
                 }])
             }
             _ => stay(),
@@ -401,10 +386,7 @@ fn first_page_loaded(
     match (result, log) {
         (Ok(page), CallLog::Ready(rows)) => merge_first_page(rows, page, tickets),
         (Ok(page), log) => *log = CallLog::Ready(CallRows::first(page)),
-        (Err(error), CallLog::Ready(rows)) => {
-            rows.refreshing = false;
-            rows.refresh_failure = Some(FailureText::from_api_error(&error));
-        }
+        (Err(error), CallLog::Ready(rows)) => rows.paging.refresh_failed(&error),
         (Err(error), log) => *log = CallLog::Failed(FailureText::from_api_error(&error)),
     }
 }
@@ -414,8 +396,8 @@ fn first_page_loaded(
 /// with what is held means more calls came in than a page holds, so the log
 /// starts again from it rather than leave a gap in the middle.
 fn merge_first_page(rows: &mut CallRows, page: Vec<CallSummary>, tickets: &mut Tickets) {
-    rows.refreshing = false;
-    rows.refresh_failure = None;
+    rows.paging.refreshing = false;
+    rows.paging.refresh_failure = None;
     let fresh: BTreeSet<String> = page.iter().map(|call| call.id.clone()).collect();
     if !rows.calls.iter().any(|call| fresh.contains(&call.id)) {
         tickets.cancel(Slot::CallLogMore);
@@ -427,17 +409,17 @@ fn merge_first_page(rows: &mut CallRows, page: Vec<CallSummary>, tickets: &mut T
         .into_iter()
         .filter(|call| !fresh.contains(&call.id));
     rows.calls = unique(page.into_iter().chain(older).collect());
-    rows.next_offset = rows.next_offset.max(received as u32);
-    rows.end_reached = rows.end_reached && short(received);
+    rows.paging.next_offset = rows.paging.next_offset.max(received as u32);
+    rows.paging.end_reached = rows.paging.end_reached && short(received);
 }
 
 fn more_loaded(rows: &mut CallRows, result: Result<Vec<CallSummary>, ApiError>) {
-    rows.loading_more = false;
     match result {
         Ok(page) => {
             let received = page.len();
-            rows.next_offset += received as u32;
-            rows.end_reached = short(received);
+            rows.paging.loading_more = false;
+            rows.paging.next_offset += received as u32;
+            rows.paging.end_reached = short(received);
             rows.calls = unique(
                 std::mem::take(&mut rows.calls)
                     .into_iter()
@@ -445,6 +427,6 @@ fn more_loaded(rows: &mut CallRows, result: Result<Vec<CallSummary>, ApiError>) 
                     .collect(),
             );
         }
-        Err(error) => rows.more_failure = Some(FailureText::from_api_error(&error)),
+        Err(error) => rows.paging.more_failed(&error),
     }
 }

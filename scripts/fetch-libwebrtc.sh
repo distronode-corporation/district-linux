@@ -27,8 +27,9 @@
 # version, because a different webrtc-sys against this libwebrtc fails to link at
 # best. To move it, rebuild the library for the new SDK and publish it as a new
 # release (CONTRIBUTING.md, "Rebuilding libwebrtc"), then change the version,
-# WEBRTC_TAG, RELEASE and SHA256 here, and the url and sha256 in the Flatpak
-# manifest, together.
+# WEBRTC_TAG, RELEASE and SHA256 here, the url and sha256 in the Flatpak
+# manifest, the pins in scripts/build-libwebrtc.sh and the release and digest in
+# NOTICE, together. scripts/check-pins.py fails CI while any copy differs.
 #
 # Linux x86_64 only, the one target a release ships.
 set -euo pipefail

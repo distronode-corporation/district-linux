@@ -1097,6 +1097,10 @@ impl Auth for FakeAuth {
         self.0.push("drain outbox");
         DrainReport::default()
     }
+
+    async fn save_session(&self) {
+        self.0.push("save session");
+    }
 }
 
 struct FakeSettings(Mutex<Option<String>>, Log, Mutex<bool>);
@@ -1192,6 +1196,7 @@ async fn each_effect_calls_its_dependency_and_reports_back() {
     let ticket = a_ticket();
 
     assert_eq!(runner.run(Effect::DrainRevokeOutbox).await, None);
+    assert_eq!(runner.run(Effect::SaveSession).await, None);
     assert_eq!(
         runner.run(Effect::RestoreSession { ticket }).await,
         Some(Event::SessionRestored {
@@ -1298,6 +1303,7 @@ async fn each_effect_calls_its_dependency_and_reports_back() {
         log.take(),
         [
             "drain outbox",
+            "save session",
             "restore",
             "workspace list",
             "remember Some(\"ws-contract-active\")",
@@ -1408,7 +1414,7 @@ async fn the_loop_runs_from_start_up_to_the_overview() {
             "overview ws-contract-active",
             "setup ws-contract-active",
             "unread ws-contract-active",
-            "watch [\"ws-contract-active\"]",
+            "watch [\"ws-contract-active\", \"ws-contract-client\"]",
             "drain outbox",
         ]
     );
@@ -1677,6 +1683,8 @@ async fn each_screen_effect_calls_its_endpoint_and_reports_back() {
         ),
     ];
     for (effect, event) in cases {
+        // The ticket an effect names is the one its event comes back with.
+        assert_eq!(effect.ticket(), Some(ticket), "{effect:?}");
         assert_eq!(runner.run(effect.clone()).await, Some(event), "{effect:?}");
     }
 
@@ -1780,6 +1788,25 @@ async fn watching_and_notifying_report_nothing_back() {
             "notify message:msg_1 New message: Open District AI to read it.",
         ]
     );
+}
+
+/// An effect whose result comes back as an event names the ticket the event
+/// carries; one that reports nothing back, or reports through the call engine
+/// or the live sockets, names none.
+#[test]
+fn an_effect_names_the_ticket_its_result_carries() {
+    let ticket = a_ticket();
+    assert_eq!(Effect::LoadWorkspaces { ticket }.ticket(), Some(ticket));
+    for effect in [
+        Effect::WatchLive {
+            revision: ticket,
+            workspace_ids: Vec::new(),
+        },
+        Effect::DisconnectMedia { session: ticket },
+        Effect::PresentWindow,
+    ] {
+        assert_eq!(effect.ticket(), None, "{effect:?}");
+    }
 }
 
 /// The search debounce, through the model and the runner on a paused clock:
@@ -2229,6 +2256,8 @@ async fn each_section_effect_calls_its_endpoint_and_reports_back() {
         ),
     ];
     for (effect, event) in cases {
+        // The ticket an effect names is the one its event comes back with.
+        assert_eq!(effect.ticket(), Some(ticket), "{effect:?}");
         assert_eq!(runner.run(effect.clone()).await, Some(event), "{effect:?}");
     }
     assert_eq!(
@@ -2616,6 +2645,8 @@ async fn each_settings_effect_calls_its_endpoint_and_reports_back() {
         ),
     ];
     for (effect, event) in cases {
+        // The ticket an effect names is the one its event comes back with.
+        assert_eq!(effect.ticket(), Some(ticket), "{effect:?}");
         assert_eq!(runner.run(effect.clone()).await, Some(event), "{effect:?}");
     }
     assert_eq!(
@@ -2676,6 +2707,15 @@ fn call_connect() -> (Model, Effect) {
 async fn each_voice_effect_calls_its_dependency_and_reports_back() {
     let (runner, log) = fakes(None, true);
     let ticket = a_ticket();
+    assert_eq!(Effect::ReadRingSetting { ticket }.ticket(), Some(ticket));
+    assert_eq!(
+        Effect::SetPresence {
+            ticket,
+            registered: true
+        }
+        .ticket(),
+        Some(ticket)
+    );
     assert_eq!(
         runner.run(Effect::ReadRingSetting { ticket }).await,
         Some(Event::RingSettingRead {

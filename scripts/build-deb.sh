@@ -20,7 +20,8 @@
 # - libwebrtc's licence texts (the LICENSE.md beside the library
 #   LK_CUSTOM_WEBRTC names), which NOTICE says must travel with the binary;
 # - THIRD-PARTY-LICENSES.txt, the licence texts of every crate the binary links,
-#   written by cargo-about from Cargo.lock with about.toml and about.hbs.
+#   written by scripts/third-party-licenses.sh (cargo-about, from Cargo.lock with
+#   about.toml and about.hbs), which writes the Flatpak's copy too.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -45,14 +46,6 @@ if grep -q '@' "$service"; then
 fi
 cp "$LK_CUSTOM_WEBRTC/LICENSE.md" "$target/release/libwebrtc-LICENSE.md"
 
-# The package's features (`voice`), so the file covers the crates a build with
-# calls links; --fail, so a crate under a licence about.toml does not accept
-# stops the build rather than going unlisted; and --frozen (--locked and
-# --offline), so every text comes from the crates' own sources that cargo has
-# already fetched, never from the network.
-cargo about generate --frozen --fail \
-  --manifest-path crates/district-app/Cargo.toml --features voice \
-  --config about.toml --output-file "$target/release/THIRD-PARTY-LICENSES.txt" \
-  about.hbs
+scripts/third-party-licenses.sh "$target/release/THIRD-PARTY-LICENSES.txt" > /dev/null
 
 exec cargo deb -p district-app --locked "$@"

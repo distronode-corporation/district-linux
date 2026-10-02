@@ -19,8 +19,7 @@ use std::collections::BTreeMap;
 use district_api::ApiError;
 use district_model::{PersonaPatch, WorkspaceConfigResponse};
 
-use super::{ConfigLoad, SaveState, read_config, settle};
-use crate::failure::FailureText;
+use super::{ConfigLoad, SaveState, after_save, read_config, settle};
 use crate::model::{Effect, Slot, Tickets};
 use crate::signed_in::{Next, SignedIn};
 
@@ -259,6 +258,16 @@ impl ToolsSection {
         }
     }
 
+    /// The settings arrived: after a save, the part just saved starts again
+    /// from them, and the other part keeps its edit.
+    fn read(&mut self, result: Result<WorkspaceConfigResponse, ApiError>) {
+        let tools_saved = self.tools_save.is_busy();
+        let research_saved = self.enrichment_save.is_busy();
+        self.toggles.retain(|_, _| !tools_saved);
+        self.enrichment = self.enrichment.filter(|_| !research_saved);
+        self.config = settle(self.busy_save(), result);
+    }
+
     fn update(
         &mut self,
         event: ToolsEvent,
@@ -310,13 +319,13 @@ impl ToolsSection {
         workspace_id: String,
         tickets: &mut Tickets,
     ) -> Vec<Effect> {
-        match result {
-            Ok(()) => vec![read_config(Slot::ToolsConfig, workspace_id, tickets)],
-            Err(error) => {
-                *self.busy_save() = SaveState::Failed(FailureText::from_api_error(&error));
-                Vec::new()
-            }
-        }
+        after_save(
+            self.busy_save(),
+            result,
+            Slot::ToolsConfig,
+            workspace_id,
+            tickets,
+        )
     }
 }
 
@@ -365,16 +374,14 @@ impl SignedIn {
         )
     }
 
-    /// The settings arrived: the switches start again from them. After a save,
-    /// they say how it ended.
+    /// The settings arrived. After a save they say how it ended, and the part
+    /// just saved starts again from them; the other part keeps its edit.
     pub(crate) fn tools_config_loaded(
         &mut self,
         result: Result<WorkspaceConfigResponse, ApiError>,
     ) {
         if let Some(section) = self.tools.as_mut() {
-            section.config = settle(section.busy_save(), result);
-            section.toggles.clear();
-            section.enrichment = None;
+            section.read(result);
         }
     }
 

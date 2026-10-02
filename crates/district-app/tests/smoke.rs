@@ -24,6 +24,8 @@
 //! With `DISTRICT_SMOKE_SHOTS` set to a directory, each screen is also saved
 //! there as a PNG.
 
+mod common;
+
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::fs;
@@ -32,6 +34,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use adw::prelude::*;
+use common::{descendants, ticket};
 use district_api::{ApiError, ErrorDetail, ReauthReason, RetryReason, TokenError};
 use district_app::{Effects, Parts, UiBridge, application};
 use district_auth::{
@@ -55,7 +58,7 @@ use district_model::{
     HqPromptResponse, KnowledgeListResponse, KnowledgeModeResponse, MarkReadResponse,
     MeetingSummary, MessageSearchHit, MessageSearchResponse, MessageThreadResponse,
     MessagingResponse, NativeDevice, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse,
-    PersonaOptionsResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
+    PersonaOptionsResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
     SchedulingStatusResponse, SendMessageResponse, SupportRequestsResponse, TelemetryEnvelope,
     TimelineResponse, UnreadCountResponse, UsageHistoryResponse, WorkflowListResponse, WorkflowRun,
     WorkflowRunsResponse, WorkspaceBillingResponse, WorkspaceConfigResponse, WorkspaceListResponse,
@@ -126,116 +129,11 @@ fn desktop_fixture<T: DeserializeOwned>(name: &str) -> T {
     serde_json::from_str(&text).unwrap_or_else(|error| panic!("{name}: {error}"))
 }
 
-/// The ticket an effect carries, for the ones the script answers.
-fn ticket(effect: &Effect) -> Ticket {
-    match effect {
-        Effect::Wait { ticket, .. }
-        | Effect::LoadConversations { ticket, .. }
-        | Effect::LoadUnreadCount { ticket, .. }
-        | Effect::LoadDraftKeys { ticket, .. }
-        | Effect::SearchMessages { ticket, .. }
-        | Effect::LoadTimeline { ticket, .. }
-        | Effect::LoadDraft { ticket, .. }
-        | Effect::SaveDraft { ticket, .. }
-        | Effect::DeleteDraft { ticket, .. }
-        | Effect::SendMessage { ticket, .. }
-        | Effect::UploadMedia { ticket, .. }
-        | Effect::GenerateAiDraft { ticket, .. }
-        | Effect::MarkRead { ticket, .. }
-        | Effect::FindMessageThread { ticket, .. }
-        | Effect::LoadCalls { ticket, .. }
-        | Effect::LoadCall { ticket, .. }
-        | Effect::LoadTranscript { ticket, .. }
-        | Effect::LoadContacts { ticket, .. }
-        | Effect::LoadContact { ticket, .. }
-        | Effect::CreateContact { ticket, .. }
-        | Effect::WriteContact { ticket, .. }
-        | Effect::LoadBlocked { ticket, .. }
-        | Effect::AskHq { ticket, .. }
-        | Effect::ConfirmHq { ticket, .. }
-        | Effect::LoadAnalytics { ticket, .. }
-        | Effect::LoadUsage { ticket, .. }
-        | Effect::LoadUsageHistory { ticket, .. }
-        | Effect::SearchNumbers { ticket, .. }
-        | Effect::LoadOwnedNumbers { ticket, .. }
-        | Effect::LoadWorkspaceBilling { ticket, .. }
-        | Effect::LoadAccountBilling { ticket }
-        | Effect::LoadWorkflows { ticket, .. }
-        | Effect::LoadWorkflowRuns { ticket, .. }
-        | Effect::SetWorkflowActive { ticket, .. }
-        | Effect::LoadCampaign { ticket, .. }
-        | Effect::SetCampaignEnabled { ticket, .. }
-        | Effect::LoadSchedulingStatus { ticket, .. }
-        | Effect::EnableScheduling { ticket, .. }
-        | Effect::RequestSchedulingHandOff { ticket, .. }
-        | Effect::LoadDeskSettings { ticket, .. }
-        | Effect::SaveDeskSettings { ticket, .. }
-        | Effect::UploadDeskLogo { ticket, .. }
-        | Effect::DeleteDeskLogo { ticket, .. }
-        | Effect::LoadDeskTickets { ticket, .. }
-        | Effect::CreateDeskTicket { ticket, .. }
-        | Effect::LoadDeskTicket { ticket, .. }
-        | Effect::ReplyToDeskTicket { ticket, .. }
-        | Effect::SetDeskTicketStatus { ticket, .. }
-        | Effect::LoadSupportRequests { ticket, .. }
-        | Effect::CreateSupportRequest { ticket, .. }
-        | Effect::LoadSupportRequest { ticket, .. }
-        | Effect::ReplyToSupportRequest { ticket, .. }
-        | Effect::CloseSupportRequest { ticket, .. }
-        | Effect::LoadMeetings { ticket, .. }
-        | Effect::LoadMeeting { ticket, .. }
-        | Effect::RequestRoomToken { ticket, .. }
-        | Effect::LoadWorkspaceConfig { ticket, .. }
-        | Effect::SaveTools { ticket, .. }
-        | Effect::SaveDirectory { ticket, .. }
-        | Effect::SaveRoutingRules { ticket, .. }
-        | Effect::SavePersona { ticket, .. }
-        | Effect::LoadPersonaOptions { ticket, .. }
-        | Effect::LoadKnowledge { ticket, .. }
-        | Effect::AddKnowledgeDocument { ticket, .. }
-        | Effect::DeleteKnowledgeDocument { ticket, .. }
-        | Effect::LoadKnowledgeMode { ticket, .. }
-        | Effect::SetKnowledgeMode { ticket, .. }
-        | Effect::LoadMessaging { ticket, .. }
-        | Effect::WriteMessaging { ticket, .. }
-        | Effect::TestMessagingCredentials { ticket, .. }
-        | Effect::LoadCallHandling { ticket, .. }
-        | Effect::SaveCallHandling { ticket, .. }
-        | Effect::LoadAvailability { ticket, .. }
-        | Effect::SetAvailability { ticket, .. }
-        | Effect::LoadMembers { ticket, .. }
-        | Effect::WriteMember { ticket, .. }
-        | Effect::RenameWorkspace { ticket, .. }
-        | Effect::ReadRingSetting { ticket }
-        | Effect::SetPresence { ticket, .. }
-        | Effect::Dial { ticket, .. }
-        | Effect::AnswerCall { ticket, .. }
-        | Effect::RequestPersonaPreview { ticket, .. } => *ticket,
-        other => panic!("no ticket the script answers in {other:?}"),
-    }
-}
-
-/// Every widget under `root`, depth first.
-fn descendants(root: &gtk::Widget) -> Vec<gtk::Widget> {
-    let mut found = vec![root.clone()];
-    let mut child = root.first_child();
-    while let Some(widget) = child {
-        found.extend(descendants(&widget));
-        child = widget.next_sibling();
-    }
-    found
-}
-
 impl Smoke {
     /// Runs the main loop until it has nothing left to do, a few times over,
     /// so a frame is laid out and drawn.
     fn pump(&self) {
-        let context = glib::MainContext::default();
-        for _ in 0..4 {
-            while context.iteration(false) {}
-            std::thread::sleep(Duration::from_millis(15));
-        }
-        while context.iteration(false) {}
+        common::pump();
     }
 
     /// Sends `event` as if the runner had, and lets the app draw it.
@@ -641,6 +539,19 @@ fn server_error() -> ApiError {
     }
 }
 
+/// A read the service could not answer because regions did not.
+fn regions_degraded() -> ApiError {
+    ApiError::Envelope {
+        status: 503,
+        code: district_api::CODE_REGIONS_DEGRADED.to_owned(),
+        detail: ErrorDetail {
+            code: Some(district_api::CODE_REGIONS_DEGRADED.to_owned()),
+            degraded_regions: vec!["eu".to_owned(), "apac".to_owned()],
+            ..ErrorDetail::default()
+        },
+    }
+}
+
 fn claims() -> AccessClaims {
     AccessClaims {
         user_id: USER.to_owned(),
@@ -997,7 +908,8 @@ fn account_and_devices(smoke: &Smoke) {
 
     smoke.click("sign-out-device");
     let question = smoke.first::<adw::AlertDialog>().expect("asked again");
-    question.emit_by_name::<()>("response", &[&"sign-out"]);
+    assert_eq!(question.heading().as_deref(), Some("Sign out?"));
+    question.emit_by_name::<()>("response", &[&"confirm"]);
     smoke.pump();
     let Effect::RevokeDevice { ticket, device_id } = smoke.take("RevokeDevice") else {
         unreachable!()
@@ -1596,9 +1508,13 @@ fn contacts_screens(smoke: &Smoke) {
     let tk = smoke.ticket("LoadContacts");
     smoke.answer(Event::ContactsLoaded {
         ticket: tk,
-        result: Err(server_error()),
+        result: Err(regions_degraded()),
     });
     assert_eq!(smoke.status_title("list_status"), "Could not load contacts");
+    assert!(
+        smoke.shows_part("Affected regions: EU, APAC"),
+        "the regions that did not answer are named"
+    );
     smoke.click("list_retry");
     let tk = smoke.ticket("LoadContacts");
     smoke.answer(Event::ContactsLoaded {
@@ -1801,6 +1717,22 @@ fn contacts_screens(smoke: &Smoke) {
     });
     assert!(smoke.shown("blocked_label"));
     assert!(smoke.toasted("Caller blocked."));
+    // Another contact opened while a change is on its way: the change was
+    // the first contact's, and the second does not report it.
+    smoke.click("block_button");
+    smoke.respond("confirm");
+    assert!(smoke.pending("WriteContact"));
+    smoke.activate_nth("contact-row", 1);
+    assert!(!smoke.toasted("Caller unblocked."), "not this contact's");
+    smoke.script.pending.borrow_mut().clear();
+    smoke.activate_nth("contact-row", 0);
+    let tk = smoke.ticket("LoadContact {");
+    smoke.answer(Event::ContactLoaded {
+        ticket: tk,
+        result: Ok(contact_detail()),
+    });
+    assert!(!smoke.toasted("Caller unblocked."));
+    smoke.script.pending.borrow_mut().clear();
 
     // Deleting asks first; no is nothing, yes deletes and leaves the screen.
     smoke.click("delete_button");
@@ -2874,6 +2806,8 @@ fn desk_screens(smoke: &Smoke) {
     let saved = smoke.take("SaveDeskSettings");
     assert!(format!("{saved:?}").contains("Analytical Engines"));
     assert!(smoke.shown("save_spinner"));
+    // The logo waits for the save: each answer carries the whole settings.
+    assert!(!smoke.sensitive("choose_button") && !smoke.sensitive("remove_button"));
     smoke.answer(Event::DeskSettingsSaved {
         ticket: ticket(&saved),
         result: Err(server_error()),
@@ -2900,6 +2834,10 @@ fn desk_screens(smoke: &Smoke) {
     let uploaded = smoke.take("UploadDeskLogo");
     assert!(format!("{uploaded:?}").contains("image/png"));
     assert!(smoke.shown("logo_spinner"));
+    assert!(
+        !smoke.sensitive("save_button"),
+        "the save waits for the logo"
+    );
     smoke.answer(Event::DeskLogoUploaded {
         ticket: ticket(&uploaded),
         result: Err(ApiError::Rejected {
@@ -2911,6 +2849,7 @@ fn desk_screens(smoke: &Smoke) {
         }),
     });
     assert!(smoke.shows_text("Logos must be 512 KB or smaller."));
+    assert!(smoke.sensitive("save_button") && smoke.sensitive("choose_button"));
     smoke.shot("73-desk-logo-refused");
     smoke.click("logo_dismiss");
     assert!(!smoke.shown("logo_note_box"));
@@ -3293,6 +3232,21 @@ fn rooms_screen(smoke: &Smoke) {
     assert!(smoke.shows_text("Mute"));
     assert!(!smoke.sensitive("join_button"), "one room at a time");
     smoke.shot("83-rooms-joined");
+    // The guest link the service minted, on the clipboard.
+    let token: RoomTokenResponse = fixture("district-room-token.json");
+    let link = format!(
+        "https://www.distronode.com{}",
+        token.guest_path.as_deref().expect("a guest link")
+    );
+    smoke.click("copy_link_button");
+    let copied = smoke
+        .window()
+        .clipboard()
+        .content()
+        .and_then(|content| content.value(glib::Type::STRING).ok())
+        .and_then(|value| value.get::<String>().ok());
+    assert_eq!(copied.as_deref(), Some(link.as_str()));
+    assert!(smoke.toasted("Guest link copied."));
     smoke.click("mute_button");
     let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
         unreachable!()
@@ -3310,14 +3264,19 @@ fn rooms_screen(smoke: &Smoke) {
     smoke.shot("84-rooms-unavailable");
     smoke.click("failure_dismiss");
 
-    // A meeting still running is rejoined, and left.
+    // A meeting still running is rejoined, and left. With no guest link from
+    // the service there is none to copy.
     smoke.click("rejoin-button");
+    let mut no_link: RoomTokenResponse = fixture("district-room-token.json");
+    no_link.guest_invite = None;
+    no_link.guest_path = None;
     smoke.reply("RequestRoomToken", |ticket| Event::RoomTokenIssued {
         ticket,
-        result: Ok(fixture("district-room-token.json")),
+        result: Ok(no_link),
     });
     assert!(smoke.shown("room_card"));
     assert!(smoke.shows_part("standup"));
+    assert!(!smoke.shown("copy_link_button"));
     smoke.forget();
     smoke.click("leave_button");
     assert!(smoke.pending("DisconnectMedia"), "the room is left");
@@ -3722,12 +3681,17 @@ fn shortcut(smoke: &Smoke, action: &str) -> String {
 /// A `call_ringing` event for `call_id` in the open workspace, naming this
 /// member.
 fn ring(smoke: &Smoke, call_id: &str) {
+    ring_in(smoke, AGENCY, call_id);
+}
+
+/// The call `call_id` ringing this user in `workspace_id`, on its socket.
+fn ring_in(smoke: &Smoke, workspace_id: &str, call_id: &str) {
     let mut envelope: TelemetryEnvelope = desktop_fixture("telemetry-event-call-ringing.json");
-    envelope.workspace_id = AGENCY.to_owned();
+    envelope.workspace_id = workspace_id.to_owned();
     envelope.call_id = call_id.to_owned();
     envelope.data = serde_json::json!({ "callId": call_id, "userIds": [USER] });
     smoke.answer(Event::Live(WorkspaceUpdate {
-        workspace_id: AGENCY.to_owned(),
+        workspace_id: workspace_id.to_owned(),
         update: LiveUpdate::Event(envelope),
     }));
 }
@@ -3793,6 +3757,19 @@ fn ringing(smoke: &Smoke) {
     assert!(!smoke.shown("ring_strip"));
     smoke.bridge.stop_ringtone();
     smoke.bridge.withdraw(&notification.id);
+    smoke.forget();
+    // A call in another workspace where the member takes calls rings here
+    // too, and says which workspace it is in.
+    ring_in(smoke, "ws-contract-client", "call_ring_elsewhere");
+    assert!(smoke.shown("ring_strip"));
+    assert_eq!(smoke.label("ring_title"), "Incoming call in Bravo Client");
+    let Effect::Notify(elsewhere) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    smoke.bridge.notify(&elsewhere);
+    smoke.pump();
+    smoke.click("decline_button");
+    assert!(!smoke.shown("ring_strip"));
     smoke.forget();
 
     // Nobody answers before the service would stop holding the caller.
@@ -4326,6 +4303,18 @@ fn desktop_calls(smoke: &Smoke) {
     smoke.app.activate_action("about", None);
     smoke.pump();
     let about = smoke.first::<adw::AboutDialog>().expect("the About dialog");
+    // Built from the AppStream metadata, with this build's version.
+    assert_eq!(about.application_name(), "District AI");
+    assert_eq!(about.application_icon(), district_app::APP_ID);
+    assert_eq!(about.developer_name(), "Distronode Corporation");
+    assert_eq!(about.version(), "0.1.0", "the version the app was given");
+    assert_eq!(about.website(), "https://www.distronode.com");
+    assert_eq!(
+        about.issue_url(),
+        "https://github.com/distronode-corporation/district-linux/issues"
+    );
+    assert_eq!(about.license_type(), gtk::License::Apache20);
+    assert_eq!(about.copyright(), "Copyright 2026 Distronode Corporation");
     smoke.shot("12-about");
     about.force_close();
     smoke.pump();

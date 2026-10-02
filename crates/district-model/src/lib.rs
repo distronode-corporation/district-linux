@@ -91,7 +91,8 @@ pub use compose::{
 pub use contacts::{
     BlockTarget, BlockedContact, BlockedContactsResponse, ClearIntelResponse, Contact,
     ContactBlockResponse, ContactCompany, ContactDetailResponse, ContactListResponse,
-    ContactMutationResponse, CreateContactRequest, EnrichResponse, UpdateContactRequest,
+    ContactMutationResponse, CreateContactRequest, DGI_COMPLETE, DGI_CRAWLING, DGI_FAILED,
+    DGI_PENDING, DGI_SYNTHESIZING, EnrichResponse, UNKNOWN_CALLER_NAME, UpdateContactRequest,
 };
 pub use desk::{
     DeskBrandName, DeskLogoRemovalResponse, DeskMessage, DeskReplyResponse, DeskSettings,

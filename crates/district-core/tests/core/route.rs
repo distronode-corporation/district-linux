@@ -22,23 +22,17 @@ fn contact() -> Route {
 }
 
 #[test]
-fn the_tabs_are_the_five_top_level_destinations_in_order() {
-    let tabs: Vec<(&str, Route)> = Tab::ALL
-        .iter()
-        .map(|tab| (tab.label(), tab.route()))
-        .collect();
-    assert_eq!(
-        tabs,
-        [
-            ("Overview", Route::Overview),
-            ("Inbox", Route::Inbox),
-            ("Calls", Route::Calls),
-            ("Contacts", Route::Contacts),
-            ("Account", Route::Account),
-        ]
-    );
-    for tab in Tab::ALL {
-        assert_eq!(tab.route().tab(), tab);
+fn each_tab_opens_its_top_level_destination() {
+    let tabs = [
+        (Tab::Overview, Route::Overview),
+        (Tab::Inbox, Route::Inbox),
+        (Tab::Calls, Route::Calls),
+        (Tab::Contacts, Route::Contacts),
+        (Tab::Account, Route::Account),
+    ];
+    for (tab, route) in tabs {
+        assert_eq!(tab.route(), route);
+        assert_eq!(route.tab(), tab);
     }
 }
 
@@ -206,4 +200,26 @@ fn the_dialler_is_below_the_call_log_and_waits_out_a_workspace_switch() {
     assert_eq!(Route::Dialer.parent(), Some(Route::Calls));
     assert!(Route::Dialer.is_workspace_scoped());
     assert_eq!(Route::Dialer.after_workspace_switch(), Route::Overview);
+}
+
+/// The list holds every section once, in the order the match below gives
+/// them, and the match does not compile once a section is added without a
+/// place in it.
+#[test]
+fn every_workspace_section_is_listed_once() {
+    let place = |section: WorkspaceSection| match section {
+        WorkspaceSection::Hub => 0,
+        WorkspaceSection::Persona => 1,
+        WorkspaceSection::Tools => 2,
+        WorkspaceSection::Directory => 3,
+        WorkspaceSection::Routing => 4,
+        WorkspaceSection::CallHandling => 5,
+        WorkspaceSection::Knowledge => 6,
+        WorkspaceSection::Messaging => 7,
+        WorkspaceSection::Members => 8,
+        WorkspaceSection::Numbers => 9,
+    };
+    for (index, section) in WorkspaceSection::ALL.into_iter().enumerate() {
+        assert_eq!(place(section), index, "{section:?}");
+    }
 }

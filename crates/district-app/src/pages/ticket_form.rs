@@ -5,11 +5,11 @@
 //! core decides when it can be sent. Closing the dialog asks the core, which
 //! refuses while the form is on its way, so its answer always lands on a form.
 
-use std::cell::{Cell, OnceCell};
+use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    DESK_SUBJECT_MAX, DESK_SUBJECT_MIN, DeskEvent, DeskTicketForm, Event, SUPPORT_SUBJECT_MAX,
-    SUPPORT_SUBJECT_MIN, SupportEvent, SupportForm,
+    DESK_SUBJECT_MAX, DESK_SUBJECT_MIN, DeskEvent, DeskTicketForm, Event, FailureText,
+    SUPPORT_SUBJECT_MAX, SUPPORT_SUBJECT_MIN, SupportEvent, SupportForm,
 };
 
 use crate::adw;
@@ -17,7 +17,19 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::Sends;
+use crate::pages::shared::{draw_line, draw_spinner, failure_text};
 use crate::sink::EventSink;
+
+/// Where the form stands, as the core has it.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct FormState<'a> {
+    /// Whether it can be sent.
+    pub(crate) can_submit: bool,
+    /// Whether it is on its way.
+    pub(crate) submitting: bool,
+    /// Why the last attempt failed.
+    pub(crate) failure: Option<&'a FailureText>,
+}
 
 /// Which form the dialog is.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -271,9 +283,37 @@ impl TicketFormDialog {
         }
     }
 
+    /// Keeps the form in `open` in step with the core's: opened over
+    /// `parent`, built by `build`, when the core opens one; drawn as the
+    /// core's state says while it is open; closed once the core has closed it.
+    pub(crate) fn sync<P: Sends + IsA<gtk::Widget>>(
+        open: &RefCell<Option<Self>>,
+        parent: &P,
+        wanted: Option<(FormState<'_>, impl FnOnce(EventSink) -> Self)>,
+    ) {
+        let Some((state, build)) = wanted else {
+            if let Some(open) = open.take() {
+                open.force_close();
+            }
+            return;
+        };
+        let mut open = open.borrow_mut();
+        let dialog = open.get_or_insert_with(|| {
+            let dialog = build(parent.sink().expect("the window handed over its sink"));
+            dialog.present(Some(parent));
+            dialog
+        });
+        dialog.update(state);
+    }
+
     /// Draws the form's state: whether it can be sent, whether it is on its
     /// way, and why the last attempt failed.
-    pub(crate) fn update(&self, can_submit: bool, submitting: bool, failure: Option<&str>) {
+    fn update(&self, state: FormState<'_>) {
+        let FormState {
+            can_submit,
+            submitting,
+            failure,
+        } = state;
         let imp = self.imp();
         imp.submit_button.set_sensitive(can_submit && !submitting);
         imp.cancel_button.set_sensitive(!submitting);
@@ -287,10 +327,8 @@ impl TicketFormDialog {
         }
         imp.kind_row.set_sensitive(!submitting);
         imp.message.set_editable(!submitting);
-        imp.spinner.set_visible(submitting);
-        imp.spinner.set_spinning(submitting);
-        imp.failure_label.set_visible(failure.is_some());
-        imp.failure_label.set_label(failure.unwrap_or_default());
+        draw_spinner(&imp.spinner, submitting);
+        draw_line(&imp.failure_label, failure.map(failure_text).as_deref());
     }
 }
 

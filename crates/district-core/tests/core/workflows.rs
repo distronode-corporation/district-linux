@@ -1,6 +1,6 @@
-//! Workflows: the list, each workflow's runs read once and paged by what is
-//! held, the switch shown at once and put back on a refusal, and the campaign's
-//! pause and resume, each asked first.
+//! Workflows: the list, each workflow's runs read once and paged by what the
+//! service sent, the switch shown at once and put back on a refusal, and the
+//! campaign's pause and resume, each asked first.
 
 use district_core::{
     CampaignCard, CampaignConfirm, Effect, Event, Model, RUNS_PAGE_SIZE, Route, RunHistory, Ticket,
@@ -137,7 +137,7 @@ fn entering_reads_the_campaign_and_the_list_each_on_its_own() {
 /// A workflow's runs are read the first time it is opened and kept; the next
 /// page starts after the runs held, whatever page size the service applied.
 #[test]
-fn runs_are_read_once_and_paged_by_what_is_held() {
+fn runs_are_read_once_and_paged_by_what_was_sent() {
     let mut model = on_workflows(AGENCY, "agency");
     let (first, limit, offset) = runs_read(&expand(&mut model, ACTIVE));
     assert_eq!((limit, offset), (RUNS_PAGE_SIZE, 0));
@@ -193,6 +193,7 @@ fn runs_are_read_once_and_paged_by_what_is_held() {
     let mut last = runs_page();
     last.has_more = false;
     last.runs.truncate(1);
+    last.runs[0].id = "run_older".to_owned();
     model.update(Event::WorkflowRunsLoaded {
         ticket,
         result: Ok(last),
@@ -426,10 +427,92 @@ fn triggers_and_outcomes_read_as_they_are_or_as_the_service_spells_them() {
     assert_eq!(Tone::of_run("partial"), Tone::Warning);
     assert_eq!(Tone::of_run("failed"), Tone::Danger);
     assert_eq!(Tone::of_run("skipped"), Tone::Neutral);
-    assert_eq!(Tone::of_outcome("ok"), Tone::Success);
-    assert_eq!(Tone::of_outcome("failed"), Tone::Danger);
-    assert_eq!(Tone::of_outcome("skipped"), Tone::Neutral);
     assert!(!RunHistory::default().can_load_more());
     let list: WorkflowListResponse = fixture("district-workflows.json");
     assert_eq!(list.workflows.len(), 2);
+}
+
+/// A run written between two pages pushes the older ones down a place, so the
+/// next page starts with one already held: it is dropped, and the page after
+/// starts past it.
+#[test]
+fn a_run_on_two_pages_is_listed_once() {
+    let mut model = on_workflows(AGENCY, "agency");
+    let (first, ..) = runs_read(&expand(&mut model, ACTIVE));
+    let page = runs_page();
+    model.update(Event::WorkflowRunsLoaded {
+        ticket: first,
+        result: Ok(page.clone()),
+    });
+    let (more, _, offset) = runs_read(&workflows(
+        &mut model,
+        WorkflowsEvent::LoadMoreRuns {
+            workflow_id: ACTIVE.to_owned(),
+        },
+    ));
+    assert_eq!(offset, 4);
+    let mut shifted = page.clone();
+    let mut older = page.runs[0].clone();
+    older.id = "run_older".to_owned();
+    shifted.runs = vec![page.runs[3].clone(), older];
+    model.update(Event::WorkflowRunsLoaded {
+        ticket: more,
+        result: Ok(shifted),
+    });
+    let ids: Vec<&str> = screen(&model).runs[ACTIVE]
+        .runs
+        .iter()
+        .map(|run| run.id.as_str())
+        .collect();
+    assert_eq!(ids.len(), 5, "{ids:?}");
+    assert_eq!(ids.last(), Some(&"run_older"));
+    let (_, _, offset) = runs_read(&workflows(
+        &mut model,
+        WorkflowsEvent::LoadMoreRuns {
+            workflow_id: ACTIVE.to_owned(),
+        },
+    ));
+    assert_eq!(offset, 6, "past both rows sent");
+}
+
+/// A switch moved while the list is being read again stays as moved when the
+/// read lands with the old value, and the success keeps it; a refusal then
+/// puts back the value that read brought.
+#[test]
+fn a_switch_moved_during_a_read_is_not_undone_by_it() {
+    let mut model = on_workflows(AGENCY, "agency");
+    let refresh = model.update(Event::Refresh);
+    let toggle = set_active(&mut model, ACTIVE, false);
+    model.update(Event::WorkflowsLoaded {
+        ticket: pick(&refresh, |e| matches!(e, Effect::LoadWorkflows { .. })),
+        result: Ok(fixture("district-workflows.json")),
+    });
+    assert!(
+        !active_of(&model, ACTIVE),
+        "the read does not undo the switch"
+    );
+    model.update(Event::WorkflowActiveSet {
+        ticket: last_ticket(&toggle),
+        result: toggled(),
+    });
+    assert!(!active_of(&model, ACTIVE));
+    assert!(!screen(&model).is_toggling(ACTIVE));
+
+    // Refused after a read that found it off: off is what is put back.
+    let refresh = model.update(Event::Refresh);
+    let toggle = set_active(&mut model, PAUSED, true);
+    let mut read: WorkflowListResponse = fixture("district-workflows.json");
+    for workflow in &mut read.workflows {
+        workflow.active = false;
+    }
+    model.update(Event::WorkflowsLoaded {
+        ticket: pick(&refresh, |e| matches!(e, Effect::LoadWorkflows { .. })),
+        result: Ok(read),
+    });
+    assert!(active_of(&model, PAUSED));
+    model.update(Event::WorkflowActiveSet {
+        ticket: last_ticket(&toggle),
+        result: Err(server_error()),
+    });
+    assert!(!active_of(&model, PAUSED));
 }

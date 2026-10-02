@@ -14,7 +14,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{Ask, Asking, clear_list, long_time, now};
+use crate::pages::shared::{Ask, Asking, clear_list, failure_text, long_time, now};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -148,7 +148,7 @@ impl BlockedView {
             BlockedList::Failed(failure) => {
                 self.status(
                     BlockedList::FAILED_TITLE,
-                    &failure.message,
+                    &failure_text(failure),
                     failure.retryable,
                 );
             }
@@ -160,14 +160,16 @@ impl BlockedView {
                 self.draw(rows, &screen.unblocking, capabilities.can_change);
             }
         }
-        let failure = screen.failure.as_ref().map(|f| f.message.as_str());
+        let failure = screen.failure.as_ref().map(failure_text);
         imp.failure_box.set_visible(failure.is_some());
-        imp.failure_label.set_label(failure.unwrap_or_default());
+        imp.failure_label
+            .set_label(failure.as_deref().unwrap_or_default());
         let weak = self.downgrade();
         imp.asking.sync(
             self,
             screen.confirming.as_ref().map(|caller| Ask {
                 key: caller.contact_id.clone(),
+                heading: None,
                 question: screen.question(),
                 action: ContactConfirmation::Unblock.action(),
                 destructive: false,
@@ -197,8 +199,15 @@ impl BlockedView {
 
     fn draw(&self, rows: &[BlockedContact], unblocking: &BTreeSet<String>, can_change: bool) {
         let imp = self.imp();
-        let wanted = (rows.to_vec(), unblocking.clone(), can_change);
-        if imp.drawn.borrow().as_ref() == Some(&wanted) {
+        // Compared where it is kept, and copied only when it changed.
+        let drawn = imp
+            .drawn
+            .borrow()
+            .as_ref()
+            .is_some_and(|(listed, busy, could)| {
+                listed.as_slice() == rows && busy == unblocking && *could == can_change
+            });
+        if drawn {
             return;
         }
         clear_list(&imp.blocked_list);
@@ -229,7 +238,8 @@ impl BlockedView {
             }
             imp.blocked_list.append(&row);
         }
-        imp.drawn.replace(Some(wanted));
+        imp.drawn
+            .replace(Some((rows.to_vec(), unblocking.clone(), can_change)));
     }
 
     /// The list is no longer showing: its question closes.

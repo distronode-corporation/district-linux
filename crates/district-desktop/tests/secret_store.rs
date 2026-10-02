@@ -186,7 +186,7 @@ async fn clearing_removes_the_session_before_the_marker_and_keeps_the_outbox() {
     assert_eq!(store.refresh_pending().await, Ok(None));
     assert_eq!(
         store.revoke_outbox().await,
-        Ok(vec![RefreshToken::new("rt-old")])
+        Ok(vec![Ok(RefreshToken::new("rt-old"))])
     );
 
     // When the marker cannot be removed, the session is already gone: never a
@@ -210,7 +210,7 @@ async fn the_outbox_holds_one_entry_per_token() {
         .await
         .unwrap()
         .into_iter()
-        .map(|t| t.as_str().to_owned())
+        .map(|t| t.unwrap().as_str().to_owned())
         .collect();
     outbox.sort();
     assert_eq!(outbox, ["rt-a", "rt-b"]);
@@ -234,11 +234,12 @@ async fn the_outbox_holds_one_entry_per_token() {
         .unwrap();
     assert_eq!(
         store.revoke_outbox().await,
-        Ok(vec![RefreshToken::new("rt-b")])
+        Ok(vec![Ok(RefreshToken::new("rt-b"))])
     );
 
     // An entry this build did not write, with a secret that is not text, is
-    // skipped rather than failing the whole outbox.
+    // reported on its own rather than failing the whole outbox, and kept: it
+    // is still there, and still reported, the next time.
     store
         .keyring()
         .create_item(
@@ -251,10 +252,27 @@ async fn the_outbox_holds_one_entry_per_token() {
         )
         .await
         .unwrap();
-    assert_eq!(
-        store.revoke_outbox().await,
-        Ok(vec![RefreshToken::new("rt-b")])
-    );
+    for _ in 0..2 {
+        let entries = store.revoke_outbox().await.unwrap();
+        let (readable, unreadable): (Vec<_>, Vec<_>) = entries.into_iter().partition(Result::is_ok);
+        assert_eq!(readable, [Ok(RefreshToken::new("rt-b"))]);
+        let [Err(error)] = unreadable.as_slice() else {
+            panic!("{unreadable:?}");
+        };
+        assert_eq!(error.kind, StoreErrorKind::Corrupt);
+    }
+    assert_eq!(items(&store).await.len(), 2);
+}
+
+/// A saved sign-in with no refresh token can never refresh, so it is no
+/// session: corrupt, which ends it, rather than one that looks signed in and
+/// loads nothing.
+#[tokio::test]
+async fn a_saved_sign_in_with_no_token_is_corrupt() {
+    let (_dir, store) = store().await;
+    store.save_session(&session("")).await.unwrap();
+    let error = store.load_session().await.unwrap_err();
+    assert_eq!(error.kind, StoreErrorKind::Corrupt);
 }
 
 /// A refresh API that notes what the marker file held when the request went

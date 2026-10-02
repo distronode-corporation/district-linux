@@ -21,6 +21,8 @@ url = { workspace = true }
 [dev-dependencies]
 # `test-util` lets a test stop and step the clock instead of sleeping for real.
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "test-util"] }
+# Reads the workspace's members list for the forbidden-literals scan.
+toml = { workspace = true }
 wiremock = { workspace = true }
 
 [lints]

@@ -17,8 +17,8 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
-use crate::pages::settings_kit::{Choices, Echoed, Frame, draw_busy, draw_config, unlisted};
-use crate::pages::shared::{Ask, Asking, icon_button};
+use crate::pages::settings_kit::{Choices, Echoed, Frame, draw_config, unlisted};
+use crate::pages::shared::{Ask, Asking, draw_busy, icon_button};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -242,6 +242,7 @@ impl RoutingView {
             self,
             asked.as_ref().map(|(confirm, question)| Ask {
                 key: format!("rules-{}", confirm.rules),
+                heading: None,
                 question,
                 action: confirm.action(),
                 destructive: confirm.rules == 0,

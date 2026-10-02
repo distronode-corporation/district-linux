@@ -43,17 +43,20 @@ ROOT = Path(__file__).resolve().parent.parent
 
 DASHES = {"\u2014": "U+2014 EM DASH", "\u2013": "U+2013 EN DASH"}
 
-# A plus sign, a country code and 7 to 15 digits in all, with single spaces,
-# hyphens, dots or parentheses allowed between digits. Not preceded by a word
+# A plus sign, a country code and 7 to 15 digits in all, with single spaces
+# (no-break spaces included, U+00A0 and U+202F, which word processors and some
+# locales put in numbers), hyphens, dots or parentheses allowed between digits. Not preceded by a word
 # character or another plus, so semver build metadata (`1.0.0+20260101`) and
 # `C++` do not match, and not followed by a digit, so an over-long digit run is
 # not read as a phone number.
-PHONE = re.compile(r"(?<![\w+])\+[1-9](?:[ .()\-]{0,2}\d){6,14}(?!\d)")
+PHONE = re.compile(r"(?<![\w+])\+[1-9](?:[ \u00a0\u202f.()\-]{0,2}\d){6,14}(?!\d)")
 
-# One or more labels, then distronode.com or distronode.ca. The bare domains have
-# no label in front and so never match, which is what allows them.
+# One or more labels, then distronode.com or distronode.ca. A label may hold an
+# underscore, which DNS allows outside host names proper (service records, and
+# names some tools write). The bare domains have no label in front and so never
+# match, which is what allows them.
 HOST = re.compile(
-    r"(?<![\w.\-])((?:[a-z0-9\-]+\.)+distronode\.(?:com|ca))(?![\w\-])",
+    r"(?<![\w.\-])((?:[a-z0-9_\-]+\.)+distronode\.(?:com|ca))(?![\w\-])",
     re.IGNORECASE,
 )
 ALLOWED_HOSTS = {
@@ -169,6 +172,7 @@ def scan_tree(root: Path) -> tuple[int, list[Finding]]:
 
 def self_test() -> int:
     em, en, plus, at = "\u2014", "\u2013", "+", "@"
+    nbsp, narrow = "\u00a0", "\u202f"
     zone = "distronode" + ".com"
 
     # Everything here is allowed, including the look-alikes each rule has to leave
@@ -177,6 +181,7 @@ def self_test() -> int:
         [
             "Plain ASCII with a hyphen-minus - and a --flag.",
             "Fictional: +1 212 555 0100, +1 (416) 555-0199, +12125550142.",
+            f"Fictional with no-break spaces: +1{nbsp}212{nbsp}555{nbsp}0142, +1{narrow}416{narrow}555{narrow}0199.",
             "Versions: 1.0.0+20260926, oo7@0.6.0, actions/checkout@3d3c42e5aac5.",
             "C++ and a+b and 1+2=3.",
             "https://www.distronode.com/pricing and https://www.distronode.ca/fr",
@@ -197,9 +202,13 @@ def self_test() -> int:
         ("NANP 555 number above the range", f"{plus}1 212 555 0200", {"phone"}),
         ("NANP 555 number below the range", f"{plus}1-212-555-0099", {"phone"}),
         ("NANP number outside 555", f"{plus}1 (212) 734-0142", {"phone"}),
+        ("number spaced with no-break spaces", f"{plus}1{nbsp}416{nbsp}734{nbsp}0142", {"phone"}),
+        ("number spaced with narrow no-break spaces", f"{plus}44{narrow}20{narrow}7946{narrow}0958", {"phone"}),
         ("subdomain of the .com", f"https://api.{zone}/v1", {"host"}),
         ("subdomain of the .ca", "see origin." + "distronode.ca", {"host"}),
         ("host name in capitals", "API." + zone.upper(), {"host"}),
+        ("host name with an underscore", f"svc_internal.{zone}", {"host"}),
+        ("underscore in a deeper label", f"a.b_c.{zone}", {"host"}),
         ("personal address", f"someone{at}example.org", {"email"}),
         ("other address at the domain", f"security{at}{zone}", {"email"}),
         ("address at a subdomain", f"ops{at}mail.{zone}", {"email", "host"}),

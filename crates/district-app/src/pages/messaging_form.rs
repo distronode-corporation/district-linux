@@ -22,7 +22,8 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::settings_kit::{Choices, Echoed, draw_line};
+use crate::pages::settings_kit::{Choices, Echoed};
+use crate::pages::shared::{draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -63,7 +64,7 @@ pub(crate) fn test_words(test: &CredentialTest) -> Option<(String, &'static str)
         CredentialTest::Unreachable(failure) => Some((
             format!(
                 "The carrier could not be asked, so nothing is known about these keys. {}",
-                failure.message
+                failure_text(failure)
             ),
             "error",
         )),
@@ -283,8 +284,7 @@ impl MessagingFormDialog {
         let testing = form.test == CredentialTest::Running;
         imp.test_button
             .set_sensitive(form.can_test() && section.can_edit_now());
-        imp.test_spinner.set_visible(testing);
-        imp.test_spinner.set_spinning(testing);
+        draw_spinner(&imp.test_spinner, testing);
         imp.test_hint.set_visible(!form.can_test());
         let result = test_words(&form.test);
         draw_line(
@@ -308,11 +308,10 @@ impl MessagingFormDialog {
         imp.save_button
             .set_sensitive(form.can_save() && section.can_edit_now());
         imp.cancel_button.set_sensitive(!saving);
-        imp.spinner.set_visible(saving);
-        imp.spinner.set_spinning(saving);
+        draw_spinner(&imp.spinner, saving);
         let failure = match (&section.write, section.last_write) {
             (SaveState::Failed(failure), Some(MessagingAction::Account)) => {
-                Some(failure.message.as_str())
+                Some(failure_text(failure))
             }
             _ => None,
         };

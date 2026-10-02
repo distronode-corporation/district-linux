@@ -18,7 +18,8 @@ use serde_json::json;
 use crate::inbox::{ADA, conversations, on_inbox};
 use crate::support::{
     AGENCY, CLIENT, VIEWER, claims, config, desktop_fixture, fixture, has, last_ticket, listed,
-    loaded, overview, pick, server_error, signed_in, signed_out_error, ticket, workspace_list,
+    loaded, overview, pick, server_error, signed_in, signed_out_error, ticket, without_calls,
+    workspace_list,
 };
 
 fn live(workspace_id: &str, update: LiveUpdate) -> Event {
@@ -112,7 +113,9 @@ fn the_open_workspace_is_watched_and_its_socket_reported() {
     let [Effect::WatchLive { workspace_ids, .. }, ..] = effects.as_slice() else {
         panic!("{effects:?}");
     };
-    assert_eq!(workspace_ids, &[AGENCY.to_owned()]);
+    // And the client workspace, where the member takes calls too; not the one
+    // where they are a viewer.
+    assert_eq!(workspace_ids, &[AGENCY.to_owned(), CLIENT.to_owned()]);
     let mut model = settled(AGENCY, "agency");
     assert_eq!(*status(&model), LiveStatus::Connecting);
     assert_eq!(status(&model).message(), None);
@@ -666,7 +669,8 @@ fn a_notification_for_another_workspace_opens_that_workspace() {
     );
     assert!(has(&effects, |e| matches!(
         e,
-        Effect::WatchLive { workspace_ids, .. } if workspace_ids == &[CLIENT.to_owned()]
+        Effect::WatchLive { workspace_ids, .. }
+            if workspace_ids == &[AGENCY.to_owned(), CLIENT.to_owned()]
     )));
     assert!(has(&effects, |e| matches!(
         e,
@@ -946,6 +950,152 @@ fn a_thread_read_again_during_a_burst_is_read_once_more() {
                 ticket: last_ticket(&again),
                 result: Ok(fixture("district-timeline.json")),
             })
+            .is_empty()
+    );
+}
+
+// Workspaces where the member takes calls.
+
+/// The open workspace with every other workspace where the member's role may
+/// answer a call; not the one where they are a viewer, and none but the open
+/// one in a build without calls, which cannot answer.
+#[test]
+fn every_workspace_where_the_member_takes_calls_is_watched() {
+    let watched = |effects: &[Effect]| match effects {
+        [Effect::WatchLive { workspace_ids, .. }, ..] => workspace_ids.clone(),
+        other => panic!("{other:?}"),
+    };
+    let (_, effects) = listed(Some(VIEWER));
+    assert_eq!(watched(&effects), [AGENCY, CLIENT, VIEWER]);
+    let (_, effects) = without_calls(|| listed(Some(AGENCY)));
+    assert_eq!(watched(&effects), [AGENCY]);
+}
+
+/// Another call workspace's socket reports only what this desktop does with
+/// it: a new message is notified, tagged with its workspace, and nothing is
+/// read again, because nothing of that workspace is on screen. Its status is
+/// its own, not the status line's.
+#[test]
+fn another_workspaces_socket_only_notifies() {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    let client = |event_type, id: &str| {
+        live(
+            CLIENT,
+            LiveUpdate::Event(TelemetryEnvelope {
+                workspace_id: CLIENT.to_owned(),
+                ..envelope(event_type, id)
+            }),
+        )
+    };
+    assert!(model.update(live(CLIENT, LiveUpdate::Connected)).is_empty());
+    assert!(model.update(live(CLIENT, LiveUpdate::Connected)).is_empty());
+    let effects = model.update(client(TelemetryEventType::MessageReceived, "m1"));
+    let [Effect::Notify(shown)] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(
+        shown.target,
+        NotificationTarget::Message {
+            workspace_id: CLIENT.to_owned(),
+            message_id: "m1".to_owned(),
+        }
+    );
+    for event_type in [
+        TelemetryEventType::MessageSent,
+        TelemetryEventType::CallStarted,
+        TelemetryEventType::CallUpdated,
+        TelemetryEventType::ToolOutcome,
+    ] {
+        assert!(model.update(client(event_type, "c1")).is_empty());
+    }
+    model.update(live(CLIENT, LiveUpdate::Ended(None)));
+    assert_eq!(*status(&model), LiveStatus::Connecting);
+}
+
+/// Switching between two workspaces where the member takes calls leaves both
+/// sockets running: the set stays the same, and the one now open keeps where
+/// its socket stood, so its next opening is known to follow a gap.
+#[test]
+fn switching_between_call_workspaces_keeps_both_sockets() {
+    let mut model = connected(settled(AGENCY, "agency"));
+    model.update(live(CLIENT, LiveUpdate::Connected));
+    let effects = model.update(Event::SelectWorkspace(CLIENT.to_owned()));
+    assert!(has(&effects, |e| matches!(
+        e,
+        Effect::WatchLive { workspace_ids, .. }
+            if workspace_ids == &[AGENCY.to_owned(), CLIENT.to_owned()]
+    )));
+    assert_eq!(*status(&model), LiveStatus::Connected);
+    model.update(Event::UnreadCountLoaded {
+        ticket: pick(&effects, |e| matches!(e, Effect::LoadUnreadCount { .. })),
+        result: Ok(crate::inbox::unread(CLIENT, 0)),
+    });
+    // The agency socket goes on in the background.
+    model.update(live(
+        AGENCY,
+        LiveUpdate::Reconnecting {
+            delay: std::time::Duration::from_secs(1),
+            cause: Disconnect::Silent,
+        },
+    ));
+    assert_eq!(*status(&model), LiveStatus::Connected);
+    // The client one reopening is a gap: the badge is read again.
+    assert!(has(
+        &model.update(live(CLIENT, LiveUpdate::Connected)),
+        |e| matches!(e, Effect::LoadUnreadCount { .. })
+    ));
+    // And back: the agency socket was reconnecting, and still is.
+    model.update(Event::SelectWorkspace(AGENCY.to_owned()));
+    assert_eq!(*status(&model), LiveStatus::Reconnecting);
+}
+
+/// A socket of another call workspace that stopped for good is tried again
+/// at the next refresh, as the open one's is.
+#[test]
+fn another_workspaces_socket_that_stopped_is_tried_again_at_a_refresh() {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    model.update(live(CLIENT, LiveUpdate::Ended(Some(LiveError::Protocol))));
+    model.update(Event::Navigate(Route::Calls));
+    let effects = model.update(Event::Refresh);
+    assert!(matches!(
+        effects.first(),
+        Some(Effect::WatchLive { workspace_ids, .. })
+            if workspace_ids == &[AGENCY.to_owned(), CLIENT.to_owned()]
+    ));
+    // Asked for again, so a second refresh asks for nothing more.
+    let effects = model.update(Event::Refresh);
+    assert!(!has(&effects, |e| matches!(e, Effect::WatchLive { .. })));
+}
+
+/// The list read again can change where the member takes calls: the watched
+/// set follows it, and an unchanged list asks for nothing.
+#[test]
+fn the_watched_set_follows_the_roles_in_the_list() {
+    let (mut model, _) = loaded(AGENCY, "agency");
+    let effects = model.update(Event::Refresh);
+    let mut list = workspace_list();
+    for entry in &mut list.workspaces {
+        if entry.id == CLIENT {
+            "viewer".clone_into(&mut entry.role);
+        }
+    }
+    let effects = model.update(Event::WorkspacesLoaded {
+        ticket: last_ticket(&effects),
+        remembered: Some(AGENCY.to_owned()),
+        result: Ok(list),
+    });
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::WatchLive { workspace_ids, .. }, Effect::LoadOverview { .. }]
+            if workspace_ids == &[AGENCY.to_owned()]
+    ));
+    // The client workspace's socket reports nothing any more.
+    assert!(
+        model
+            .update(live(
+                CLIENT,
+                LiveUpdate::Event(envelope(TelemetryEventType::MessageReceived, "m1"))
+            ))
             .is_empty()
     );
 }

@@ -3,6 +3,7 @@
 
     python3 scripts/sync-palette.py --monorepo <path>          # rewrite the snapshot
     python3 scripts/sync-palette.py --monorepo <path> --check  # fail if it is stale
+    python3 scripts/sync-palette.py --monorepo <path> --allow-dirty
 
 The Distronode design tokens live in the private repository that holds the
 website (SERVER_REPO_TOKENS below): one table of custom properties for the
@@ -17,7 +18,8 @@ crates/district-core/tests/core/palette.rs fails when the two disagree, so a
 change of brand colour arrives here as a failing test after the next sync,
 never as a constant nobody re-derived.
 
-The script refuses while tokens.css has changes its commit does not hold, and
+The script refuses while tokens.css has changes its commit does not hold (unless
+--allow-dirty, which the snapshot then records as `uncommitted_changes`), and
 fails, rather than guessing, when a token is missing from either theme.
 
 Python 3.11 or newer, standard library only.
@@ -32,6 +34,8 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+from _common import head, refusal, uncommitted
 
 ROOT = Path(__file__).resolve().parent.parent
 SNAPSHOT = ROOT / "contracts" / "palette.snapshot.json"
@@ -83,19 +87,15 @@ def theme(css: str, selector: str) -> dict[str, str]:
     return colours
 
 
-def git(monorepo: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", "-C", str(monorepo), *args], check=True, capture_output=True, text=True
-    ).stdout.strip()
-
-
-def snapshot(monorepo: Path) -> dict:
-    if git(monorepo, "status", "--porcelain", "--", str(SOURCE)):
-        raise SyncError(f"{SOURCE} has uncommitted changes; commit them or stash them first")
+def snapshot(monorepo: Path, allow_dirty: bool) -> dict:
+    dirty = uncommitted(monorepo, str(SOURCE))
+    if dirty and not allow_dirty:
+        raise SyncError(refusal(str(SOURCE), dirty))
     css = (monorepo / SOURCE).read_text(encoding="utf-8")
     return {
         "source": SOURCE_LABEL,
-        "commit": git(monorepo, "log", "-1", "--format=%H", "--", str(SOURCE)),
+        "commit": head(monorepo, str(SOURCE)),
+        "uncommitted_changes": bool(dirty),
         "recorded": datetime.date.today().isoformat(),
         "tokens": list(TOKENS),
         **{name: theme(css, selector) for name, selector in THEMES.items()},
@@ -106,9 +106,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--monorepo", type=Path, required=True)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="read tokens.css with uncommitted changes, recording uncommitted_changes = true",
+    )
     args = parser.parse_args()
     try:
-        fresh = snapshot(args.monorepo)
+        fresh = snapshot(args.monorepo, args.allow_dirty)
     except (SyncError, subprocess.CalledProcessError, OSError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1

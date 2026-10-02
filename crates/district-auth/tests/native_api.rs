@@ -375,7 +375,15 @@ async fn revoke_answers_map_to_outcomes() {
         // The service answered, and the same token would get the same answer.
         (ResponseTemplate::new(400), RevokeOutcome::Done),
         (ResponseTemplate::new(404), RevokeOutcome::Done),
-        (ResponseTemplate::new(429), RevokeOutcome::Done),
+        // Rate limited, or the request timed out on the way: nothing was
+        // revoked, and the same token later would be. Kept, not dropped.
+        (
+            ResponseTemplate::new(429)
+                .insert_header("Retry-After", "60")
+                .set_body_json(json!({"error": "rate_limited"})),
+            RevokeOutcome::RetryLater,
+        ),
+        (ResponseTemplate::new(408), RevokeOutcome::RetryLater),
         // The service's own "could not revoke right now": keep the token.
         (
             ResponseTemplate::new(503)

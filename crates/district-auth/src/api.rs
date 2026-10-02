@@ -122,7 +122,8 @@ pub enum RefreshOutcome {
 /// | answer | outcome |
 /// | --- | --- |
 /// | 2xx with `{"success": true}` | `Done` |
-/// | 4xx | `Done` |
+/// | 429 (rate limited) and 408 (timed out) | `RetryLater` |
+/// | any other 4xx | `Done` |
 /// | 2xx with any other body, 1xx, 3xx, 5xx (the service's own 503 included), no answer | `RetryLater` |
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RevokeOutcome {
@@ -242,6 +243,15 @@ impl NativeAuthApi {
             return RevokeOutcome::RetryLater;
         };
         let status = response.status();
+        // Refused for now, not for good: the token was not revoked, and the
+        // same request later would revoke it. Dropping it here would sign the
+        // user out locally and leave the token alive on the service.
+        if matches!(
+            status,
+            StatusCode::TOO_MANY_REQUESTS | StatusCode::REQUEST_TIMEOUT
+        ) {
+            return RevokeOutcome::RetryLater;
+        }
         if status.is_client_error() {
             // The service answered, and retrying the same token will not change
             // its answer; keeping it would be an outbox entry that never drains.

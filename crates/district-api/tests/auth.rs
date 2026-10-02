@@ -80,7 +80,6 @@ async fn a_second_refusal_ends_the_session_without_a_third_attempt() {
         error,
         ApiError::Unauthorized(UnauthorizedReason::SessionEnded)
     );
-    assert!(error.requires_sign_in());
     assert_eq!(authorizations(&server).await, ["Bearer t1", "Bearer t2"]);
     assert_eq!(client.token_source().invalidated(), ["t1", "t2"]);
 }
@@ -105,10 +104,6 @@ async fn a_write_is_never_repeated_but_its_refused_token_is_dropped() {
     assert_eq!(
         error,
         ApiError::Unauthorized(UnauthorizedReason::RefusedNotRetried)
-    );
-    assert!(
-        !error.requires_sign_in(),
-        "a refused write is not a sign-out"
     );
     assert_eq!(authorizations(&server).await, ["Bearer t1"]);
     assert_eq!(client.token_source().invalidated(), ["t1"]);
@@ -186,7 +181,6 @@ async fn no_session_means_no_request() {
             ReauthReason::RefreshRejected
         ))
     );
-    assert!(error.requires_sign_in());
     assert!(server.received_requests().await.unwrap().is_empty());
 }
 
@@ -216,7 +210,6 @@ async fn no_token_right_now_keeps_the_session_and_says_why() {
             .unwrap_err();
 
         assert_eq!(error, ApiError::TokenUnavailable(reason));
-        assert!(!error.requires_sign_in(), "{reason:?}");
         assert_eq!(error.code(), None);
     }
     assert!(

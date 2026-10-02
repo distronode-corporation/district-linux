@@ -60,7 +60,7 @@ impl<S: TokenSource> ApiClient<S> {
     /// ([`TimelinePageInfo::older_page`](district_model::TimelinePageInfo::older_page)).
     ///
     /// This is also a contact's history: pass
-    /// [`Contact::thread_ref`](district_model::Contact::thread_ref).
+    /// [`ThreadRef::Contact`] with the contact's id.
     pub async fn timeline(
         &self,
         workspace_id: &str,

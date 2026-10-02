@@ -4,7 +4,9 @@
 use std::fmt;
 use std::io;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
+
+pub use district_api::{Clock, SystemClock};
 
 use crate::transport::{NetworkTransport, Transport};
 
@@ -88,26 +90,6 @@ pub fn backoff_delay(failures: u32, jitter: f64) -> Duration {
 /// [`LiveConfig::jitter`]. The middle of the range if none is available.
 pub fn random_jitter() -> f64 {
     getrandom::u32().map_or(0.5, |bits| f64::from(bits) / f64::from(u32::MAX))
-}
-
-/// Where a connection reads the time: Unix epoch milliseconds, the unit the
-/// service states a credential's expiry in. A trait so tests can move time.
-pub trait Clock: Send + Sync + 'static {
-    /// The current time, in epoch milliseconds.
-    fn now_ms(&self) -> i64;
-}
-
-/// The system's wall clock.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct SystemClock;
-
-impl Clock for SystemClock {
-    fn now_ms(&self) -> i64 {
-        let since_epoch = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default();
-        i64::try_from(since_epoch.as_millis()).unwrap_or(i64::MAX)
-    }
 }
 
 /// What a connection is built from. Cheap to clone: a hub hands a copy to each

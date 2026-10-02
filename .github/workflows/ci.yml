@@ -92,23 +92,9 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace --all-targets --locked --features district-app/gtk-tests -- -D warnings
 
-      # The upstream release, checked against a pinned SHA-256, installed the same
-      # way as the `cargo-deny` job installs cargo-deny. The version and digest are
-      # step env, not job env, because rust-cache hashes every CARGO* variable in
-      # the job into its cache key, and a tool bump should not throw the cache away.
-      - name: Install cargo-llvm-cov
-        env:
-          CARGO_LLVM_COV_VERSION: 0.9.1
-          CARGO_LLVM_COV_SHA256: 3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522
-        run: |
-          set -euo pipefail
-          name="cargo-llvm-cov-x86_64-unknown-linux-musl"
-          curl -fsSL -o "$RUNNER_TEMP/llvm-cov.tgz" \
-            "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v${CARGO_LLVM_COV_VERSION}/${name}.tar.gz"
-          echo "${CARGO_LLVM_COV_SHA256}  $RUNNER_TEMP/llvm-cov.tgz" | sha256sum -c -
-          tar xzf "$RUNNER_TEMP/llvm-cov.tgz" -C "$RUNNER_TEMP"
-          install -m 0755 "$RUNNER_TEMP/cargo-llvm-cov" "$HOME/.cargo/bin/cargo-llvm-cov"
-          cargo llvm-cov --version
+      # The upstream release, checked against a pinned SHA-256. The action holds
+      # the version and digest for this job and voice.yml's.
+      - uses: $/.github/actions/install-cargo-llvm-cov
 
       # `--workspace`, not a list of packages: a crate never named here runs zero
       # tests and looks identical to a crate whose tests all pass. The app is the
@@ -231,8 +217,17 @@ jobs:
 
       # The AppStream metadata's release, and the tag its screenshot links
       # name, included.
-      - name: The version agrees across the workspace, CHANGELOG.md and the AppStream metadata
+      - name: The version agrees across the workspace, CHANGELOG.md, the AppStream metadata, README.md and SECURITY.md
         run: python3 scripts/check-version.py
+
+      # libwebrtc's pin, written in fetch-libwebrtc.sh, build-libwebrtc.sh, the
+      # Flatpak manifest and NOTICE, and the licence allow-list, written in
+      # deny.toml and about.toml. Each copy must agree with its source.
+      - name: The pin check still catches what it claims to
+        run: python3 scripts/check-pins.py --self-test
+
+      - name: Every copy of a pin agrees with its source
+        run: python3 scripts/check-pins.py
 
       # The Flatpak build's crates are listed in cargo-sources.json, written
       # from Cargo.lock, so a change to the lock file (a Dependabot bump
@@ -278,29 +273,17 @@ jobs:
   # release, checked against a pinned SHA-256 rather than a third-party install
   # action, so the list of actions this repository trusts stays short.
   #
-  # The install step is a deliberate copy of audit.yml's. A cargo-deny bump changes
-  # the version and the digest in BOTH files.
+  # The install is the same local action audit.yml uses, so both jobs test with
+  # the same binary.
   cargo-deny:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      CARGO_DENY_VERSION: 0.20.2
-      CARGO_DENY_SHA256: 9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install cargo-deny
-        run: |
-          set -euo pipefail
-          name="cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl"
-          curl -fsSL -o "$RUNNER_TEMP/deny.tgz" \
-            "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/${name}.tar.gz"
-          echo "${CARGO_DENY_SHA256}  $RUNNER_TEMP/deny.tgz" | sha256sum -c -
-          tar xzf "$RUNNER_TEMP/deny.tgz" -C "$RUNNER_TEMP"
-          install -m 0755 "$RUNNER_TEMP/${name}/cargo-deny" "$HOME/.cargo/bin/cargo-deny"
-          cargo deny --version
+      - uses: $/.github/actions/install-cargo-deny
 
       - name: cargo deny check
         run: cargo deny --locked check

@@ -20,7 +20,7 @@
 //!
 //! Two inputs are not the result of an effect. Live updates: the app reads the
 //! receiver [`LiveHub::new`] hands it and forwards each update to the model as
-//! [`Event::Live`]; the model decides which workspace is watched
+//! [`Event::Live`]; the model decides which workspaces are watched
 //! ([`Effect::WatchLive`]) and what each update reads again. And the call
 //! engine's reports, which the app forwards as [`Event::Media`], each naming
 //! the session it is about.
@@ -107,6 +107,7 @@ mod marketplace;
 mod media;
 mod model;
 mod overview;
+mod paging;
 pub mod palette;
 mod presence;
 mod ringing;
@@ -180,6 +181,7 @@ pub use overview::{
     FINISH_SETUP_ACTION, FINISH_SETUP_BODY, FINISH_SETUP_TITLE, OverviewContent, OverviewScreen,
     SETUP_WEB_PATH,
 };
+pub use paging::Paging;
 pub use palette::Palette;
 pub use presence::{
     DesktopPresence, PRESENCE_HEARTBEAT, PRESENCE_RETRY, Presence, PresenceApi, PresenceState,

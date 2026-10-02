@@ -42,7 +42,7 @@ use district_model::{
     PersonaPreviewForm, PersonaPreviewTokenResponse, PersonaVoiceGroup, WorkspaceConfigResponse,
 };
 
-use super::{ConfigLoad, SaveState, read_config, settle};
+use super::{ConfigLoad, SaveState, after_save, read_config, settle};
 use crate::failure::{FailureText, PREVIEW_UNENCRYPTED};
 use crate::media::{DisconnectReason, MediaCredential, MediaOwner};
 use crate::model::{Effect, Slot, Ticket, Tickets};
@@ -677,13 +677,13 @@ impl PersonaSection {
         workspace_id: String,
         tickets: &mut Tickets,
     ) -> Vec<Effect> {
-        match result {
-            Ok(()) => vec![read_config(Slot::PersonaConfig, workspace_id, tickets)],
-            Err(error) => {
-                self.save = SaveState::Failed(FailureText::from_api_error(&error));
-                Vec::new()
-            }
-        }
+        after_save(
+            &mut self.save,
+            result,
+            Slot::PersonaConfig,
+            workspace_id,
+            tickets,
+        )
     }
 }
 

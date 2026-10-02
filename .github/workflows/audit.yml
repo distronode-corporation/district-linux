@@ -31,30 +31,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The install step is a deliberate copy of ci.yml's `cargo-deny` job. A
-  # cargo-deny bump changes the version and the digest in BOTH files, or the two
-  # jobs test with different binaries.
+  # The install is the local action ci.yml's `cargo-deny` job uses too, so the
+  # two jobs test with the same binary.
   cargo-deny:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      CARGO_DENY_VERSION: 0.20.2
-      CARGO_DENY_SHA256: 9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install cargo-deny
-        run: |
-          set -euo pipefail
-          name="cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl"
-          curl -fsSL -o "$RUNNER_TEMP/deny.tgz" \
-            "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/${name}.tar.gz"
-          echo "${CARGO_DENY_SHA256}  $RUNNER_TEMP/deny.tgz" | sha256sum -c -
-          tar xzf "$RUNNER_TEMP/deny.tgz" -C "$RUNNER_TEMP"
-          install -m 0755 "$RUNNER_TEMP/${name}/cargo-deny" "$HOME/.cargo/bin/cargo-deny"
-          cargo deny --version
+      - uses: $/.github/actions/install-cargo-deny
 
       # `--locked`: the answer is about the tree that is committed, so a run that
       # quietly resolved a different Cargo.lock would be answering another question.

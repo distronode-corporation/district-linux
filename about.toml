@@ -1,12 +1,14 @@
-# cargo-about configuration: the third-party licence file the .deb ships as
-# /usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt, written at build time by
-# scripts/build-deb.sh from about.hbs. It holds the licence text of every crate
+# cargo-about configuration: the third-party licence file both packages ship as
+# THIRD-PARTY-LICENSES.txt beside NOTICE, written at build time by
+# scripts/third-party-licenses.sh from about.hbs. It holds the licence text of every crate
 # the binary links, with the crates each text covers, because MIT, BSD, ISC and
 # MPL-2.0 ask for their notices to travel with a binary.
 #
 # `accepted` is exactly deny.toml's `[licenses] allow`. cargo-deny is the gate
 # that decides which licences may enter the tree; this list only has to agree
-# with it, so a change to one changes the other in the same pull request.
+# with it, so a change to one changes the other in the same pull request, and
+# scripts/check-pins.py fails CI while they differ. `targets` is deny.toml's
+# [graph] targets, held the same way.
 accepted = [
   "Apache-2.0",
   "Apache-2.0 WITH LLVM-exception",

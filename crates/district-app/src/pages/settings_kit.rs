@@ -14,7 +14,7 @@ use crate::adw::prelude::*;
 use crate::gtk;
 use crate::pages::Sends;
 use crate::pages::escape;
-use crate::pages::shared::Echo;
+use crate::pages::shared::{Echo, failure_text};
 
 /// The heading of a section whose save landed and whose settings could not be
 /// read back. Not a failure: the save is done.
@@ -60,7 +60,7 @@ impl Frame<'_> {
         self.status(
             "dialog-warning-symbolic",
             title,
-            &failure.message,
+            &failure_text(failure),
             failure.retryable.then_some("Try again"),
         );
     }
@@ -313,20 +313,6 @@ pub(crate) fn unlisted(value: &str) -> String {
     } else {
         value.to_owned()
     }
-}
-
-/// A button's sensitivity, a spinner's, and a label's line, drawn together:
-/// `busy` spins the spinner and makes the button wait.
-pub(crate) fn draw_busy(button: &gtk::Button, spinner: &gtk::Spinner, works: bool, busy: bool) {
-    button.set_sensitive(works && !busy);
-    spinner.set_visible(busy);
-    spinner.set_spinning(busy);
-}
-
-/// Shows `text` on `label`, or hides it when there is none.
-pub(crate) fn draw_line(label: &gtk::Label, text: Option<&str>) {
-    label.set_visible(text.is_some());
-    label.set_label(text.unwrap_or_default());
 }
 
 #[cfg(test)]

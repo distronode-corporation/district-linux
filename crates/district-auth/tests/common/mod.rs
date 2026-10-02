@@ -96,6 +96,8 @@ struct StoreState {
     names: HashMap<TokenFingerprint, String>,
     failing: HashMap<&'static str, StoreErrorKind>,
     save_gate: Option<Arc<Gate>>,
+    /// Outbox entries that cannot be read, listed after the others.
+    unreadable: Vec<StoreErrorKind>,
 }
 
 /// A [`SessionStore`] in memory that logs every change, in order, into a log it
@@ -123,6 +125,7 @@ impl RecordingStore {
                 names: HashMap::new(),
                 failing: HashMap::new(),
                 save_gate: None,
+                unreadable: Vec::new(),
             })),
             log,
         };
@@ -146,6 +149,7 @@ impl RecordingStore {
                 names: state.names.clone(),
                 failing: HashMap::new(),
                 save_gate: None,
+                unreadable: Vec::new(),
             })),
             log: Log::default(),
         }
@@ -168,6 +172,16 @@ impl RecordingStore {
     /// Holds every save at `gate` until the test releases it.
     pub fn hold_saves(&self, gate: Arc<Gate>) {
         self.state().save_gate = Some(gate);
+    }
+
+    /// Adds an outbox entry that cannot be read, failing with `kind`.
+    pub fn plant_unreadable(&self, kind: StoreErrorKind) {
+        self.state().unreadable.push(kind);
+    }
+
+    /// How many unreadable outbox entries are left.
+    pub fn unreadable(&self) -> usize {
+        self.state().unreadable.len()
     }
 
     pub fn session(&self) -> Option<PersistedSession> {
@@ -288,9 +302,15 @@ impl SessionStore for RecordingStore {
         Ok(())
     }
 
-    async fn revoke_outbox(&self) -> Result<Vec<RefreshToken>, StoreError> {
+    async fn revoke_outbox(&self) -> Result<Vec<Result<RefreshToken, StoreError>>, StoreError> {
         self.check("outbox", None)?;
-        Ok(self.state().durable.outbox.clone())
+        let state = self.state();
+        let readable = state.durable.outbox.iter().cloned().map(Ok);
+        let unreadable = state
+            .unreadable
+            .iter()
+            .map(|kind| Err(StoreError::new(*kind, "an outbox entry cannot be read")));
+        Ok(readable.chain(unreadable).collect())
     }
 
     async fn remove_revoke(&self, token: &RefreshToken) -> Result<(), StoreError> {

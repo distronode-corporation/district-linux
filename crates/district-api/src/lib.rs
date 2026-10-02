@@ -99,6 +99,7 @@ mod billing;
 mod call_handling;
 mod calls;
 mod client;
+mod clock;
 mod config;
 mod contacts;
 mod desk;
@@ -123,6 +124,7 @@ mod token;
 mod workflows;
 
 pub use client::{ApiClient, Request};
+pub use clock::{Clock, SystemClock};
 pub use config::{ApiConfig, ConfigError, DEFAULT_BASE_URL, USER_AGENT};
 pub use endpoints::{
     ALL_ENDPOINTS, Auth, BodyKind, Endpoint, EndpointSpec, HttpMethod, RetryPolicy, WorkspaceIn,

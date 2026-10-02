@@ -6,18 +6,16 @@
 //! than one byte past five megabytes, and handed to the core, which sends it
 //! for the service to check.
 
+use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 
-use district_core::{
-    DeskEvent, DeskSettingsForm, DeskSettingsView as DeskSettingsRead, Event, MAX_ATTACHMENT_BYTES,
-};
+use district_core::{DeskEvent, DeskSettingsForm, DeskSettingsView as DeskSettingsRead, Event};
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
-use crate::gtk::{self, CompositeTemplate, gio, glib};
-use crate::pages::shared::Echo;
-use crate::pages::thread::{attachment, read_capped};
+use crate::gtk::{self, CompositeTemplate, glib};
+use crate::pages::shared::{Echo, ImagePicker, Pick, draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -35,13 +33,10 @@ pub(crate) fn logo_line(form: &DeskSettingsForm) -> &'static str {
 
 /// The note under the logo: why its last change failed, or that its file may
 /// still be reachable.
-pub(crate) fn logo_note(form: &DeskSettingsForm) -> Option<&str> {
-    form.logo_failure
-        .as_ref()
-        .map(|failure| failure.message.as_str())
-        .or(form
-            .logo_file_kept
-            .then_some(DeskSettingsForm::LOGO_FILE_KEPT))
+pub(crate) fn logo_note(form: &DeskSettingsForm) -> Option<Cow<'_, str>> {
+    form.logo_failure.as_ref().map(failure_text).or(form
+        .logo_file_kept
+        .then_some(Cow::Borrowed(DeskSettingsForm::LOGO_FILE_KEPT)))
 }
 
 mod imp {
@@ -93,8 +88,10 @@ mod imp {
         /// drawn.
         pub saving: Cell<bool>,
         pub logo_busy: Cell<bool>,
-        /// The file chooser open, so leaving the settings can close it.
-        pub picking: RefCell<Option<gio::Cancellable>>,
+        /// The file chooser, so leaving the settings can close it.
+        pub picking: ImagePicker,
+        /// The workspace whose settings show, as last drawn.
+        pub workspace_id: RefCell<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -178,10 +175,15 @@ impl DeskSettingsView {
         self.imp().sink.set(sink).ok();
     }
 
-    /// Draws `view`, and returns what to report in a toast, if a change just
-    /// landed.
-    pub(crate) fn update(&self, view: &DeskSettingsRead) -> Option<&'static str> {
+    /// Draws `view`, the settings of the workspace `workspace_id`, and returns
+    /// what to report in a toast, if a change just landed.
+    pub(crate) fn update(
+        &self,
+        view: &DeskSettingsRead,
+        workspace_id: Option<&str>,
+    ) -> Option<&'static str> {
         let imp = self.imp();
+        imp.workspace_id.replace(workspace_id.map(str::to_owned));
         imp.loading_spinner
             .set_spinning(*view == DeskSettingsRead::Loading);
         let form = match view {
@@ -192,7 +194,8 @@ impl DeskSettingsView {
             DeskSettingsRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(DeskSettingsRead::FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
                 None
             }
@@ -233,69 +236,42 @@ impl DeskSettingsView {
         ] {
             row.set_sensitive(!form.saving);
         }
-        imp.save_button
-            .set_sensitive(form.is_dirty() && !form.saving);
-        imp.save_spinner.set_visible(form.saving);
-        imp.save_spinner.set_spinning(form.saving);
-        let failure = form.save_failure.as_ref().map(|f| f.message.as_str());
-        imp.save_failure.set_visible(failure.is_some());
-        imp.save_failure.set_label(failure.unwrap_or_default());
+        // A save and a logo change each answer with the whole settings as
+        // stored, so neither starts while the other is on its way.
+        let writing = form.saving || form.logo_busy;
+        imp.save_button.set_sensitive(form.is_dirty() && !writing);
+        draw_spinner(&imp.save_spinner, form.saving);
+        let failure = form.save_failure.as_ref().map(failure_text);
+        draw_line(&imp.save_failure, failure);
         imp.logo_row.set_subtitle(logo_line(form));
         imp.remove_button
             .set_visible(form.stored.public_logo_url.is_some());
-        imp.remove_button.set_sensitive(!form.logo_busy);
-        imp.choose_button.set_sensitive(!form.logo_busy);
-        imp.logo_spinner.set_visible(form.logo_busy);
-        imp.logo_spinner.set_spinning(form.logo_busy);
+        imp.remove_button.set_sensitive(!writing);
+        imp.choose_button.set_sensitive(!writing);
+        draw_spinner(&imp.logo_spinner, form.logo_busy);
         let note = logo_note(form);
         imp.logo_note_box.set_visible(note.is_some());
-        imp.logo_note.set_label(note.unwrap_or_default());
+        imp.logo_note.set_label(note.as_deref().unwrap_or_default());
     }
 
     /// Opens the desktop's file chooser for an image, and hands the one picked
-    /// to the core as the logo.
+    /// to the core as the logo of the workspace it was picked in, if that
+    /// workspace's settings are still the ones showing once the file is read.
     fn pick_logo(&self) {
-        let filter = gtk::FileFilter::new();
-        filter.set_name(Some("Images"));
-        for mime_type in LOGO_TYPES {
-            filter.add_mime_type(mime_type);
-        }
-        let filters = gio::ListStore::new::<gtk::FileFilter>();
-        filters.append(&filter);
-        let dialog = gtk::FileDialog::builder()
-            .title("Choose a logo")
-            .modal(true)
-            .filters(&filters)
-            .default_filter(&filter)
-            .build();
-        let cancellable = gio::Cancellable::new();
-        if let Some(earlier) = self.imp().picking.replace(Some(cancellable.clone())) {
-            earlier.cancel();
-        }
-        let window = self.root().and_downcast::<gtk::Window>();
-        let weak = self.downgrade();
-        dialog.open(window.as_ref(), Some(&cancellable), move |picked| {
-            // Dismissed or cancelled: nothing was picked.
-            if let (Some(view), Ok(file)) = (weak.upgrade(), picked) {
-                view.read_logo(file);
+        let workspace_id = self.imp().workspace_id.borrow().clone();
+        let pick = Pick {
+            title: "Choose a logo",
+            types: &LOGO_TYPES,
+            unnamed: "logo",
+        };
+        self.imp().picking.open(self, pick, move |view, read| {
+            if *view.imp().workspace_id.borrow() != workspace_id {
+                return;
             }
-        });
-    }
-
-    /// Reads the picked `file` and hands it to the core.
-    fn read_logo(&self, file: gio::File) {
-        let weak = self.downgrade();
-        glib::spawn_future_local(async move {
-            let read = read_capped(&file, MAX_ATTACHMENT_BYTES + 1).await;
-            let name = file
-                .basename()
-                .map_or_else(|| "logo".to_owned(), |name| name.to_string_lossy().into());
-            if let Some(view) = weak.upgrade() {
-                view.send(Event::Desk(match read {
-                    Ok(bytes) => DeskEvent::UploadLogo(attachment(&name, bytes)),
-                    Err(_) => DeskEvent::LogoUnreadable,
-                }));
-            }
+            view.send(Event::Desk(match read {
+                Ok(logo) => DeskEvent::UploadLogo(logo),
+                Err(_) => DeskEvent::LogoUnreadable,
+            }));
         });
     }
 
@@ -303,9 +279,8 @@ impl DeskSettingsView {
     /// and the next visit starts from what is read then.
     pub(crate) fn leave(&self) {
         let imp = self.imp();
-        if let Some(picking) = imp.picking.take() {
-            picking.cancel();
-        }
+        imp.picking.close();
+        imp.workspace_id.replace(None);
         imp.echo.borrow_mut().reset();
         imp.saving.set(false);
         imp.logo_busy.set(false);

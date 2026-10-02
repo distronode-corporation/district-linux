@@ -19,8 +19,8 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
-use crate::pages::settings_kit::{Echoed, Frame, draw_busy, draw_config, draw_line};
-use crate::pages::shared::{Ask, Asking, icon_button};
+use crate::pages::settings_kit::{Echoed, Frame, draw_config};
+use crate::pages::shared::{Ask, Asking, draw_busy, draw_line, icon_button};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -205,6 +205,7 @@ impl DirectoryView {
             self,
             asked.as_ref().map(|(confirm, question)| Ask {
                 key: format!("directory-{}", confirm.entries),
+                heading: None,
                 question,
                 action: confirm.action(),
                 destructive: confirm.entries == 0,
