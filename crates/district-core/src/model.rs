@@ -30,7 +30,9 @@
 use std::time::Duration;
 
 use district_api::{ApiError, ReauthReason, RetryReason, TokenError};
-use district_auth::{AccessClaims, LoginError, SignOutReport};
+use district_auth::{
+    AccessClaims, HAND_OFF_HOST, HandOffNonce, LoginError, REDIRECT_SCHEME, SignOutReport,
+};
 use district_live::WorkspaceUpdate;
 use district_model::{
     AccountBillingResponse, AiDraftResponse, AnalyticsRange, AnalyticsResponse,
@@ -56,6 +58,7 @@ use district_model::{
     WorkflowToggleResponse, WorkspaceBillingResponse, WorkspaceConfigResponse,
     WorkspaceListResponse,
 };
+use url::Url;
 
 use crate::account::AccountView;
 use crate::analytics::AnalyticsEvent;
@@ -125,6 +128,26 @@ impl CoreConfig {
     }
 }
 
+impl Event {
+    /// The event for a link in the app's own scheme that the desktop handed
+    /// over, as it arrived: the browser's answer to a hand-off
+    /// (`districtai://handoff`), or else to a sign-in. `None` for anything not
+    /// in the `districtai` scheme, which is not for this app. The core checks
+    /// everything else about the link against what it is waiting for.
+    pub fn from_link(uri: &str) -> Option<Self> {
+        let (scheme, _) = uri.split_once(':')?;
+        if !scheme.eq_ignore_ascii_case(REDIRECT_SCHEME) {
+            return None;
+        }
+        let hand_off = Url::parse(uri).is_ok_and(|link| link.host_str() == Some(HAND_OFF_HOST));
+        Some(if hand_off {
+            Self::HandOffCallback(OneTimeUrl::new(uri))
+        } else {
+            Self::SignInCallback(uri.to_owned())
+        })
+    }
+}
+
 /// Pairs an effect with the event that reports its result. See the module
 /// documentation.
 ///
@@ -145,6 +168,11 @@ pub enum Event {
     CancelSignIn,
     /// The desktop handed the app a `districtai://auth` link, as it arrived.
     SignInCallback(String),
+    /// The desktop handed the app a `districtai://handoff` link, as it arrived:
+    /// the browser's answer to a hand-off to the web. It carries the nonce
+    /// that binds the hand-off to that browser, so its `Debug` output is
+    /// redacted. See [`Event::from_link`].
+    HandOffCallback(OneTimeUrl),
     /// Try again to resume the stored session, from the start-up screen.
     RetryRestore,
     /// Sign out again, after a sign-out that could not remove the session from
@@ -1595,6 +1623,10 @@ pub enum Effect {
         ticket: Ticket,
         /// The workspace.
         workspace_id: String,
+        /// The nonce from the browser's answer, binding the link to that
+        /// browser; `None` when the browser did not answer in time and the
+        /// link is asked for unbound. Redacted in `Debug`.
+        nonce: Option<HandOffNonce>,
     },
     /// Read the help desk's settings.
     LoadDeskSettings {
@@ -2213,6 +2245,7 @@ pub(crate) enum Slot {
     SchedulingStatus,
     SchedulingEnable,
     SchedulingHandOff,
+    SchedulingHandOffWait,
     DeskQueueSettings,
     DeskTickets,
     DeskEnable,
@@ -2271,7 +2304,7 @@ const SLOTS: usize = Slot::RingDeadline as usize + 1;
 /// forgotten with the sections. The draft write is not among them: a reply
 /// saved as the workspace closes still lands, and the writes waiting behind it
 /// go after it.
-pub(crate) const WORKSPACE_SLOTS: [Slot; 63] = [
+pub(crate) const WORKSPACE_SLOTS: [Slot; 64] = [
     Slot::Unread,
     Slot::Conversations,
     Slot::DraftKeys,
@@ -2317,6 +2350,7 @@ pub(crate) const WORKSPACE_SLOTS: [Slot; 63] = [
     Slot::SchedulingStatus,
     Slot::SchedulingEnable,
     Slot::SchedulingHandOff,
+    Slot::SchedulingHandOffWait,
     Slot::DeskQueueSettings,
     Slot::DeskTickets,
     Slot::DeskEnable,
@@ -2536,6 +2570,9 @@ impl Model {
             Event::SignIn => self.sign_in(),
             Event::SignInBrowser { ticket, opened } => self.browser_opened(ticket, opened),
             Event::SignInCallback(callback) => self.callback(callback),
+            Event::HandOffCallback(link) => {
+                self.signed_in(|s, tickets, _| s.hand_off_callback(&link, tickets))
+            }
             Event::CancelSignIn => self.cancel_sign_in(),
             Event::SignInCompleted { ticket, result } => self.sign_in_completed(ticket, result),
             Event::RetrySignOut => self.retry_sign_out(),
@@ -2572,7 +2609,7 @@ impl Model {
                 self.signed_in(|s, tickets, _| s.workflows_event(event, tickets))
             }
             Event::Scheduling(event) => {
-                self.signed_in(|s, tickets, _| s.scheduling_event(event, tickets))
+                self.signed_in(|s, tickets, config| s.scheduling_event(event, tickets, config))
             }
             Event::Desk(event) => self.signed_in(|s, tickets, _| s.desk_event(event, tickets)),
             Event::Support(event) => {
@@ -2602,7 +2639,7 @@ impl Model {
                 self.signed_in(|s, tickets, _| s.members_event(event, tickets))
             }
             Event::DismissNotice => self.signed_in(|s, _, _| s.dismiss_notice()),
-            Event::UrlOpenFailed => self.signed_in(|s, _, _| s.url_open_failed()),
+            Event::UrlOpenFailed => self.signed_in(|s, tickets, _| s.url_open_failed(tickets)),
             Event::OpenNotification(target) => {
                 self.signed_in(|s, tickets, _| s.open_notification(target, tickets))
             }

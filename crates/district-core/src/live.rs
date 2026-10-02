@@ -703,6 +703,8 @@ impl SignedIn {
             self.ring_deadline()
         } else if tickets.accept(Slot::PresenceHeartbeat, ticket) {
             self.presence_due(tickets)
+        } else if tickets.accept(Slot::SchedulingHandOffWait, ticket) {
+            self.hand_off_unanswered(tickets)
         } else {
             Vec::new()
         };

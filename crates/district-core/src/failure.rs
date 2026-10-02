@@ -66,6 +66,16 @@ pub(crate) const HAND_OFF_TOO_MANY: &str =
 /// sign-in, so it is not opened.
 pub(crate) const HAND_OFF_ELSEWHERE: &str = "District AI sent a sign-in link for another \
     address, so it was not opened. Updating the app may fix it.";
+/// The service asks for a hand-off bound to the browser, and this one was
+/// asked for without: the browser did not answer the app in time, or the app
+/// is too old to bind one. Pressing again binds it if the browser answers.
+pub(crate) const HAND_OFF_UPDATE_NEEDED: &str = "District AI now needs your browser to answer \
+    the app before it opens the web, and it did not. Try again, and let the browser open \
+    District AI if it asks. If this keeps happening, update the app.";
+/// The service refused the nonce the browser's answer carried. A fresh
+/// hand-off gets a fresh one.
+pub(crate) const HAND_OFF_NONCE_REFUSED: &str = "District AI could not confirm the browser \
+    that was opened for the web. Please try again.";
 /// An audition credential with no encryption passphrase, or for a room that is
 /// not an audition room. It is not joined.
 pub(crate) const PREVIEW_UNENCRYPTED: &str = "District AI sent an audition that could not be \

@@ -14,17 +14,28 @@
 //! It is asked for when the member asks to go, checked to be on the service's
 //! own address, opened at once, and then gone. It is never kept in the state,
 //! never logged, and never printed in `Debug` ([`OneTimeUrl`]).
+//!
+//! The link is bound to the browser that will open it ([`HandOffLeg`]). The
+//! press first opens the service's start page in the browser with a fresh
+//! `state`; the browser answers through `districtai://handoff` with a nonce the
+//! service also left in that browser, and the link is asked for with that
+//! nonce, so only that browser can redeem it. A service that does not yet have
+//! the start page never answers, so after [`HAND_OFF_CALLBACK_WAIT`] the link is
+//! asked for unbound, as before; an answer that arrives after that is dropped.
 
 use std::fmt;
+use std::time::Duration;
 
 use district_api::ApiError;
+use district_auth::{HAND_OFF_START_PATH, HandOffNonce, HandOffState};
 use district_model::{
-    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse, SchedulingTenant,
+    CODE_INVALID_NONCE, CODE_NONCE_REQUIRED, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SchedulingTenant,
 };
 
 use crate::failure::{
-    FailureText, HAND_OFF_ELSEWHERE, HAND_OFF_REFUSED, HAND_OFF_TOO_MANY, SCHEDULING_NOT_OFFERED,
-    SCHEDULING_SETUP_FAILED, SCHEDULING_TOO_MANY,
+    FailureText, HAND_OFF_ELSEWHERE, HAND_OFF_NONCE_REFUSED, HAND_OFF_REFUSED, HAND_OFF_TOO_MANY,
+    HAND_OFF_UPDATE_NEEDED, SCHEDULING_NOT_OFFERED, SCHEDULING_SETUP_FAILED, SCHEDULING_TOO_MANY,
 };
 use crate::model::{CoreConfig, Effect, Slot, Ticket, Tickets};
 use crate::signed_in::{Next, SignedIn, stay};
@@ -34,9 +45,14 @@ use crate::signed_in::{Next, SignedIn, stay};
 /// so a mistake here costs the deep link and nothing else.
 pub const SCHEDULING_WEB_PATH: &str = "/dashboard/district/scheduling";
 
-/// A link that carries a sign-in of its own. It is opened at once and never
-/// kept, and its `Debug` output is redacted, so no `{:?}` of an effect, an event
-/// or the model can put it in a log.
+/// How long the browser has to answer the start page before the link is asked
+/// for unbound.
+pub const HAND_OFF_CALLBACK_WAIT: Duration = Duration::from_secs(10);
+
+/// A link that carries a sign-in of its own, or a value that binds one (the
+/// start page's `state`, the browser's nonce). It is opened or checked at once
+/// and never kept, and its `Debug` output is redacted, so no `{:?}` of an
+/// effect, an event or the model can put it in a log.
 #[derive(Clone, PartialEq, Eq)]
 pub struct OneTimeUrl(String);
 
@@ -65,11 +81,40 @@ pub struct SchedulingScreen {
     pub status: SchedulingStatus,
     /// Whether turning them on is on its way. One press at a time.
     pub enabling: bool,
-    /// Whether the hand-off to the web is being asked for.
-    pub opening: bool,
+    /// Where the hand-off to the web stands.
+    pub hand_off: HandOffLeg,
     /// What the last press came to, when it needs saying: a setup that failed,
     /// or a refusal. Shown beside the card, never instead of it.
     pub notice: Option<FailureText>,
+}
+
+impl SchedulingScreen {
+    /// Whether a hand-off to the web is under way, in either leg.
+    pub fn opening(&self) -> bool {
+        self.hand_off != HandOffLeg::Idle
+    }
+
+    /// Whether the hand-off link is being asked for. Pressing again then does
+    /// nothing; while the browser is awaited, a press starts over.
+    pub fn minting(&self) -> bool {
+        self.hand_off == HandOffLeg::Minting
+    }
+}
+
+/// Where a hand-off to the web stands. One at a time: a press while the
+/// browser is awaited starts a new one, and the old one's answer no longer
+/// matches.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum HandOffLeg {
+    /// None under way.
+    #[default]
+    Idle,
+    /// The start page was opened in the browser with this `state`, and the
+    /// browser's answer is awaited, for [`HAND_OFF_CALLBACK_WAIT`] at most.
+    /// Redacted in `Debug`.
+    Browser(HandOffState),
+    /// The link is being asked for.
+    Minting,
 }
 
 /// Where the booking pages stand, as read.
@@ -226,6 +271,7 @@ impl SignedIn {
         &mut self,
         event: SchedulingEvent,
         tickets: &mut Tickets,
+        config: &CoreConfig,
     ) -> Next {
         let workspace_id = self.workspace_id();
         let screen = &mut self.scheduling;
@@ -241,14 +287,25 @@ impl SignedIn {
                 }]
             }
             (SchedulingEvent::ManageOnWeb, SchedulingStatus::Ready { status, .. })
-                if !screen.opening && SchedulingPresentation::of(status).offers_web() =>
+                if !screen.minting() && SchedulingPresentation::of(status).offers_web() =>
             {
-                screen.opening = true;
+                // A fresh `state` for every press, so a press while the browser
+                // is awaited replaces that hand-off: its answer no longer
+                // matches, and its wait's ticket is no longer awaited.
+                let state = HandOffState::generate();
+                let start =
+                    config.web_url(&format!("{HAND_OFF_START_PATH}?state={}", state.as_str()));
+                screen.hand_off = HandOffLeg::Browser(state);
                 screen.notice = None;
-                vec![Effect::RequestSchedulingHandOff {
-                    ticket: tickets.issue(Slot::SchedulingHandOff),
-                    workspace_id,
-                }]
+                vec![
+                    Effect::OpenOneTimeUrl {
+                        url: OneTimeUrl::new(start),
+                    },
+                    Effect::Wait {
+                        ticket: tickets.issue(Slot::SchedulingHandOffWait),
+                        delay: HAND_OFF_CALLBACK_WAIT,
+                    },
+                ]
             }
             (SchedulingEvent::DismissNotice, _) => {
                 screen.notice = None;
@@ -304,8 +361,53 @@ impl SignedIn {
         Next::Stay(self.enter_scheduling(tickets))
     }
 
+    /// The desktop handed over a `districtai://handoff` link. If it answers the
+    /// hand-off awaiting the browser, the link is asked for, bound by its nonce.
+    /// Anything else is dropped and leaves that hand-off waiting for its own
+    /// answer: a link with nothing awaiting it, one for another hand-off (an old
+    /// one, or one an answer arrived after the wait gave up on), or one that is
+    /// not well formed. A stray or forged link cannot cancel a hand-off.
+    pub(crate) fn hand_off_callback(&mut self, link: &OneTimeUrl, tickets: &mut Tickets) -> Next {
+        let HandOffLeg::Browser(state) = &self.scheduling.hand_off else {
+            return stay();
+        };
+        let Ok(nonce) = state.check(link.expose()) else {
+            return stay();
+        };
+        tickets.cancel(Slot::SchedulingHandOffWait);
+        Next::Stay(self.mint_hand_off(Some(nonce), tickets))
+    }
+
+    /// The browser did not answer in time: the service may not have the start
+    /// page yet, so the link is asked for unbound, as before it had. The wait's
+    /// ticket is awaited only while the browser is: an answer cancels it, and
+    /// leaving the workspace forgets it.
+    pub(crate) fn hand_off_unanswered(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
+        self.mint_hand_off(None, tickets)
+    }
+
+    /// No browser took a page. One that was to answer a hand-off never will, so
+    /// that hand-off is given up rather than asked for unbound, which would
+    /// open no browser either.
+    pub(crate) fn hand_off_unopened(&mut self, tickets: &mut Tickets) {
+        if matches!(self.scheduling.hand_off, HandOffLeg::Browser(_)) {
+            tickets.cancel(Slot::SchedulingHandOffWait);
+            self.scheduling.hand_off = HandOffLeg::Idle;
+        }
+    }
+
+    fn mint_hand_off(&mut self, nonce: Option<HandOffNonce>, tickets: &mut Tickets) -> Vec<Effect> {
+        self.scheduling.hand_off = HandOffLeg::Minting;
+        vec![Effect::RequestSchedulingHandOff {
+            ticket: tickets.issue(Slot::SchedulingHandOff),
+            workspace_id: self.workspace_id(),
+            nonce,
+        }]
+    }
+
     /// The hand-off link arrived: open it at once, if it is on the service's own
-    /// address, and keep nothing.
+    /// address, and keep nothing. It is opened as it came, in the same browser
+    /// as the start page, which holds the cookie a bound link is redeemed with.
     pub(crate) fn scheduling_hand_off(
         &mut self,
         ticket: Ticket,
@@ -317,7 +419,7 @@ impl SignedIn {
             return stay();
         }
         let screen = &mut self.scheduling;
-        screen.opening = false;
+        screen.hand_off = HandOffLeg::Idle;
         match result {
             Ok(answer) if on_origin(&answer.url, config) => {
                 return Next::Stay(vec![Effect::OpenOneTimeUrl {
@@ -332,6 +434,15 @@ impl SignedIn {
             }
             Err(ApiError::RateLimited { .. }) => {
                 screen.notice = Some(FailureText::retryable(HAND_OFF_TOO_MANY));
+            }
+            // The service wants a bound hand-off and this one was not, because
+            // the browser did not answer in time. Pressing again binds it if
+            // the browser answers.
+            Err(error) if error.code() == Some(CODE_NONCE_REQUIRED) => {
+                screen.notice = Some(FailureText::retryable(HAND_OFF_UPDATE_NEEDED));
+            }
+            Err(error) if error.code() == Some(CODE_INVALID_NONCE) => {
+                screen.notice = Some(FailureText::retryable(HAND_OFF_NONCE_REFUSED));
             }
             Err(error) => screen.notice = Some(FailureText::from_api_error(&error)),
         }

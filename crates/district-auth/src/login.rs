@@ -176,13 +176,7 @@ impl fmt::Debug for LoginFlow {
 /// Whether `callback` answers `attempt`: the app's own address, carrying the
 /// attempt's `state`.
 fn answers(attempt: &Attempt, callback: &Url) -> Result<(), LoginError> {
-    let ours = callback.scheme() == REDIRECT_SCHEME
-        && callback.host_str() == Some("auth")
-        && callback.port().is_none()
-        && callback.username().is_empty()
-        && callback.password().is_none()
-        && matches!(callback.path(), "" | "/");
-    if !ours {
+    if !is_app_link(callback, "auth") {
         return Err(LoginError::NotOurRedirect);
     }
     let state = match single_param(callback, "state") {
@@ -195,7 +189,19 @@ fn answers(attempt: &Attempt, callback: &Url) -> Result<(), LoginError> {
     Ok(())
 }
 
-enum Param {
+/// Whether `link` is this app's own `districtai://<host>` link, with no port,
+/// user or path. The desktop may hand it over with a `/` for a path, which is
+/// the same link.
+pub(crate) fn is_app_link(link: &Url, host: &str) -> bool {
+    link.scheme() == REDIRECT_SCHEME
+        && link.host_str() == Some(host)
+        && link.port().is_none()
+        && link.username().is_empty()
+        && link.password().is_none()
+        && matches!(link.path(), "" | "/")
+}
+
+pub(crate) enum Param {
     Absent,
     One(String),
     Many,
@@ -203,7 +209,7 @@ enum Param {
 
 /// A query parameter that must appear at most once. Two values are ambiguous,
 /// and an ambiguous callback is refused rather than guessed at.
-fn single_param(url: &Url, name: &str) -> Param {
+pub(crate) fn single_param(url: &Url, name: &str) -> Param {
     let mut values = url
         .query_pairs()
         .filter(|(key, _)| key == name)

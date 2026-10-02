@@ -37,17 +37,27 @@
 //! order. A revoke the service could not take is kept in an outbox, and
 //! [`SignOut::drain_revoke_outbox`] retries it at the next start.
 //!
+//! # Handing off to the web
+//!
+//! A hand-off link signs the browser in to the web dashboard. [`HandOffState`]
+//! binds it to the browser the app opened: the app opens the service's start
+//! page there with a fresh `state`, the browser answers through
+//! `districtai://handoff` with a nonce the service also left in that browser as
+//! a cookie, and the link is asked for with that nonce, so it is redeemed only
+//! where the cookie is.
+//!
 //! # Secrets and logs
 //!
 //! Every credential here (refresh token, access token, authorization code, PKCE
-//! verifier) is wrapped in a type whose `Debug` output is redacted, and no error
-//! carries one.
+//! verifier, a hand-off's `state` and nonce) is wrapped in a type whose `Debug`
+//! output is redacted, and no error carries one.
 
 #![forbid(unsafe_code)]
 
 mod api;
 mod claims;
 mod coordinator;
+mod handoff;
 mod login;
 mod pkce;
 mod sign_out;
@@ -62,6 +72,10 @@ pub use claims::{AccessClaims, ClaimsError};
 pub use coordinator::{EARLY_REFRESH_MARGIN_MS, Persistence, ServerClock, TokenRefreshCoordinator};
 pub use district_api::{
     AccessToken, Clock, ReauthReason, RetryReason, SystemClock, TokenError, TokenSource,
+};
+pub use handoff::{
+    HAND_OFF_HOST, HAND_OFF_NONCE_LEN, HAND_OFF_START_PATH, HandOffError, HandOffNonce,
+    HandOffState, is_valid_hand_off_nonce, is_valid_hand_off_state,
 };
 pub use login::{
     AUTHORIZE_PATH, AuthorizationCode, AuthorizationGrant, CODE_CHALLENGE_METHOD, LoginError,

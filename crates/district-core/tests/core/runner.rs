@@ -5,13 +5,13 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use district_api::{ApiError, ErrorDetail};
-use district_auth::{AccessClaims, DrainReport, RevokeStatus, SignOutReport};
+use district_auth::{AccessClaims, DrainReport, HandOffState, RevokeStatus, SignOutReport};
 use district_core::{
     Auth, CallEngine, ContactWrite, ContactWritten, DistrictApi, Effect, EffectRunner, Event,
-    ExchangeFailure, InboxEvent, LiveUpdates, MediaCredential, Model, Notification, Notifier,
-    OneTimeUrl, OverviewScreen, PickedAttachment, Presence, RestoreError, RingSurface, Route,
-    SEARCH_DEBOUNCE, Settings, SignInError, SignedInSession, Ticket, TokioClock, Urgency,
-    UrlOpener,
+    ExchangeFailure, HAND_OFF_CALLBACK_WAIT, InboxEvent, LiveUpdates, MediaCredential, Model,
+    Notification, Notifier, OneTimeUrl, OverviewScreen, PickedAttachment, Presence, RestoreError,
+    RingSurface, Route, SEARCH_DEBOUNCE, SchedulingEvent, Settings, SignInError, SignedInSession,
+    Ticket, TokioClock, Urgency, UrlOpener,
 };
 use district_core::{
     CallEnd, CallEvent, CallPhase, DialerEvent, MediaEvent, MediaUpdate, MemberWrite,
@@ -496,8 +496,10 @@ impl DistrictApi for FakeApi {
         &self,
         workspace_id: &str,
         next: Option<&str>,
+        nonce: Option<&str>,
     ) -> Result<SchedulingHandOffResponse, ApiError> {
-        self.0.push(format!("hand-off {workspace_id} {next:?}"));
+        self.0
+            .push(format!("hand-off {workspace_id} {next:?} {nonce:?}"));
         Ok(desktop_fixture("district-scheduling-handoff.json"))
     }
 
@@ -2061,6 +2063,7 @@ async fn each_section_effect_calls_its_endpoint_and_reports_back() {
             Effect::RequestSchedulingHandOff {
                 ticket,
                 workspace_id: ws(),
+                nonce: None,
             },
             Event::SchedulingHandOffReady {
                 ticket,
@@ -2279,7 +2282,7 @@ async fn each_section_effect_calls_its_endpoint_and_reports_back() {
             "campaign ws-contract-active false",
             "scheduling ws-contract-active",
             "enable scheduling ws-contract-active",
-            "hand-off ws-contract-active Some(\"/dashboard/district/scheduling\")",
+            "hand-off ws-contract-active Some(\"/dashboard/district/scheduling\") None",
             "desk settings ws-contract-active",
             "save desk settings ws-contract-active Some(false)",
             "desk logo ws-contract-active logo.png image/png 4",
@@ -2297,6 +2300,105 @@ async fn each_section_effect_calls_its_endpoint_and_reports_back() {
             "meetings ws-contract-active",
             "meeting ws-contract-active meeting_contract_completed",
             "room token meet_ws-contract-active_standup",
+        ]
+    );
+}
+
+/// A hand-off the browser answered is asked for with the answer's nonce; one
+/// it did not, without. Either way the effect's `Debug` output leaves the
+/// nonce out.
+#[tokio::test]
+async fn a_hand_off_is_asked_for_with_the_nonce_the_browser_answered_with() {
+    const NONCE: &str = "n0nce-n0nce_n0nce-n0nce_n0nce-n0nce_n0nce-n";
+    let state = HandOffState::generate();
+    let nonce = state
+        .check(&format!(
+            "districtai://handoff?state={}&nonce={NONCE}",
+            state.as_str()
+        ))
+        .unwrap();
+    let ticket = a_ticket();
+    let bound = Effect::RequestSchedulingHandOff {
+        ticket,
+        workspace_id: AGENCY.to_owned(),
+        nonce: Some(nonce),
+    };
+    assert!(!format!("{bound:?}").contains(NONCE));
+    let (runner, log) = fakes(None, true);
+    let Some(Event::SchedulingHandOffReady { result: Ok(_), .. }) = runner.run(bound).await else {
+        panic!("the link");
+    };
+    assert_eq!(
+        log.take(),
+        [format!(
+            "hand-off ws-contract-active Some(\"/dashboard/district/scheduling\") Some(\"{NONCE}\")"
+        )]
+    );
+}
+
+/// On the clock: the browser never answers the start page (a service without
+/// one), so after the wait, and not before, the link is asked for unbound and
+/// opened.
+#[tokio::test(start_paused = true)]
+async fn an_unanswered_start_page_falls_back_after_the_wait() {
+    let (runner, log) = fakes(None, true);
+    let (mut model, _) = loaded(AGENCY, "agency");
+    let effects = model.update(Event::Navigate(Route::Scheduling));
+    let ticket = crate::support::last_ticket(&effects);
+    model.update(Event::SchedulingStatusLoaded {
+        ticket,
+        result: Ok(fixture("district-scheduling-status-ready.json")),
+    });
+    let effects = model.update(Event::Scheduling(SchedulingEvent::ManageOnWeb));
+    let [
+        open @ Effect::OpenOneTimeUrl { .. },
+        wait @ Effect::Wait { .. },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(runner.run(open.clone()).await, None);
+    let [opened] = <[String; 1]>::try_from(log.take()).unwrap();
+    assert!(
+        opened.starts_with("open https://www.distronode.com/dashboard/handoff/start?state="),
+        "{opened}"
+    );
+
+    let start = tokio::time::Instant::now();
+    let waiting = runner.run(wait.clone());
+    tokio::pin!(waiting);
+    assert!(
+        tokio::time::timeout(
+            HAND_OFF_CALLBACK_WAIT - Duration::from_millis(1),
+            &mut waiting
+        )
+        .await
+        .is_err(),
+        "not before the wait is over"
+    );
+    let over = waiting.await.unwrap();
+    assert_eq!(start.elapsed(), HAND_OFF_CALLBACK_WAIT);
+    assert_eq!(HAND_OFF_CALLBACK_WAIT, Duration::from_secs(10));
+
+    let effects = model.update(over);
+    let [request @ Effect::RequestSchedulingHandOff { nonce: None, .. }] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    let ready = runner.run(request.clone()).await.unwrap();
+    assert_eq!(
+        log.take(),
+        ["hand-off ws-contract-active Some(\"/dashboard/district/scheduling\") None"]
+    );
+    let effects = model.update(ready);
+    let [link @ Effect::OpenOneTimeUrl { .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(runner.run(link.clone()).await, None);
+    assert_eq!(
+        log.take(),
+        [
+            "open https://www.distronode.com/dashboard/handoff?code=contract-handoff-code&next=%2Fdashboard%2Fdistrict%2Fscheduling"
         ]
     );
 }

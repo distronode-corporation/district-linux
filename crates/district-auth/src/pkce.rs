@@ -134,7 +134,7 @@ pub(crate) fn new_state() -> String {
     random_base64url(STATE_BYTES)
 }
 
-fn random_base64url(len: usize) -> String {
+pub(crate) fn random_base64url(len: usize) -> String {
     let mut bytes = vec![0u8; len];
     getrandom::fill(&mut bytes).expect("the operating system's random source is available");
     URL_SAFE_NO_PAD.encode(bytes)

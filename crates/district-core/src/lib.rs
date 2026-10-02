@@ -196,8 +196,8 @@ pub use runner::{
     TokioClock, UrlOpener,
 };
 pub use scheduling::{
-    OneTimeUrl, SCHEDULING_WEB_PATH, SchedulingEvent, SchedulingPresentation, SchedulingScreen,
-    SchedulingStatus,
+    HAND_OFF_CALLBACK_WAIT, HandOffLeg, OneTimeUrl, SCHEDULING_WEB_PATH, SchedulingEvent,
+    SchedulingPresentation, SchedulingScreen, SchedulingStatus,
 };
 pub use session::{
     ExchangeFailure, Identity, Notice, RestoreError, Restoring, ServiceSignOut, SessionEnd,

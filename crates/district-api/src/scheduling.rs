@@ -50,6 +50,16 @@ impl<S: TokenSource> ApiClient<S> {
     /// booking pages, landing on `next` (a path under `/dashboard`; the service
     /// replaces any other with the booking pages' own).
     ///
+    /// `nonce` binds the link to one browser: the nonce that browser's answer
+    /// from the hand-off start page carried (see `district_auth::HandOffState`).
+    /// The service then redeems the link only in the browser holding the
+    /// matching cookie. Without one the key is left out of the body entirely,
+    /// never sent as `null`, and the link signs in whichever browser opens it,
+    /// for as long as the service still allows that; once it does not, the
+    /// answer is a 400 with [`CODE_NONCE_REQUIRED`](district_model::CODE_NONCE_REQUIRED).
+    /// A nonce of the wrong shape is a 400 with
+    /// [`CODE_INVALID_NONCE`](district_model::CODE_INVALID_NONCE).
+    ///
     /// The link is a one-time credential, good for one sign-in within a minute:
     /// ask for it when the member asks to go, open it at once, and never log,
     /// store or cache it. Its `Debug` output is redacted. Sent once, never
@@ -58,10 +68,12 @@ impl<S: TokenSource> ApiClient<S> {
         &self,
         workspace_id: &str,
         next: Option<&str>,
+        nonce: Option<&str>,
     ) -> Result<SchedulingHandOffResponse, ApiError> {
         self.request(Endpoint::SchedulingHandOff)
             .workspace(workspace_id)
             .optional_field("next", next)
+            .optional_field("nonce", nonce)
             .send()
             .await
     }

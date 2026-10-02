@@ -8,6 +8,14 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+/// The code of the 400 for a hand-off asked for with a nonce that is not of the
+/// shape the service sends. A fresh hand-off, from the start, gets a fresh one.
+pub const CODE_INVALID_NONCE: &str = "invalid_nonce";
+
+/// The code of the 400 for a hand-off asked for without a nonce, once the
+/// service requires one: the app predates binding the hand-off to the browser.
+pub const CODE_NONCE_REQUIRED: &str = "nonce_required";
+
 /// `GET /api/district/scheduling/status`: whether the workspace may have booking
 /// pages, whether this member may turn them on, and where they stand.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -4,7 +4,6 @@
 use std::rc::Rc;
 use std::sync::Once;
 
-use district_auth::REDIRECT_SCHEME;
 use district_core::{CoreConfig, Event};
 
 use crate::adw;
@@ -42,8 +41,9 @@ pub struct Parts {
 /// The application, built from `parts`. Run it with `run`, or, in a test,
 /// register it and activate it by hand.
 ///
-/// It handles `open`: a `districtai://auth` link, from the browser through the
-/// desktop, reaches the running instance, which holds the sign-in attempt.
+/// It handles `open`: a `districtai://auth` or `districtai://handoff` link, from
+/// the browser through the desktop, reaches the running instance, which holds
+/// the sign-in attempt or the hand-off to the web.
 pub fn application(parts: Parts) -> adw::Application {
     register_resources();
     let app = adw::Application::builder()
@@ -61,13 +61,6 @@ pub fn application(parts: Parts) -> adw::Application {
     app
 }
 
-/// Whether `uri` is the browser's answer to a sign-in: a link in the
-/// `districtai` scheme. The core checks everything else about it.
-pub(crate) fn is_sign_in_callback(uri: &str) -> bool {
-    uri.split_once(':')
-        .is_some_and(|(scheme, _)| scheme.eq_ignore_ascii_case(REDIRECT_SCHEME))
-}
-
 /// Puts the resources built into the binary where GTK looks: the templates,
 /// the stylesheet, the ringtone and the icons. Once per process.
 fn register_resources() {
@@ -80,6 +73,8 @@ fn register_resources() {
 
 #[cfg(test)]
 mod tests {
+    use district_auth::REDIRECT_SCHEME;
+
     use super::*;
 
     /// GLib refuses to register an application whose id it considers invalid,
@@ -134,14 +129,5 @@ mod tests {
             "<color type=\"primary\" scheme_preference=\"dark\">{}</color>",
             LIGHT.accent
         )));
-    }
-
-    #[test]
-    fn only_the_sign_in_scheme_is_a_sign_in_callback() {
-        assert!(is_sign_in_callback("districtai://auth?code=c&state=s"));
-        assert!(is_sign_in_callback("DistrictAI://auth"));
-        assert!(!is_sign_in_callback("https://www.distronode.com/"));
-        assert!(!is_sign_in_callback("file:///home/ada/districtai:x"));
-        assert!(!is_sign_in_callback("districtai"));
     }
 }

@@ -793,7 +793,12 @@ async fn the_api_client_serves_the_workspaces_other_sections() {
             .ok
     );
     assert_eq!(
-        DistrictApi::scheduling_hand_off(&client, ws, Some("/dashboard/district/scheduling"))
+        DistrictApi::scheduling_hand_off(
+            &client,
+            ws,
+            Some("/dashboard/district/scheduling"),
+            None,
+        )
             .await
             .unwrap()
             .expires_in,

@@ -142,7 +142,8 @@ pub use rooms::{
     GuestInvite, MeetRoomName, MeetingDetail, MeetingSummary, RoomE2ee, RoomTokenResponse,
 };
 pub use scheduling::{
-    SchedulingEnableResponse, SchedulingHandOffResponse, SchedulingStatusResponse, SchedulingTenant,
+    CODE_INVALID_NONCE, CODE_NONCE_REQUIRED, SchedulingEnableResponse, SchedulingHandOffResponse,
+    SchedulingStatusResponse, SchedulingTenant,
 };
 pub use setup::{
     SETUP_STEP_DONE, SETUP_STEP_SKIPPED, SETUP_STEP_TODO, SetupProgress, SetupResponse, SetupSteps,

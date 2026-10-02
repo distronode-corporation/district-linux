@@ -916,7 +916,7 @@ pub fn cases() -> Vec<Case> {
             endpoint: Endpoint::SchedulingHandOff,
             retried: false,
             answer: desktop_fixture("district-scheduling-handoff.json"),
-            call: call!(c => c.scheduling_hand_off(WS, Some("/dashboard/district/scheduling"))),
+            call: call!(c => c.scheduling_hand_off(WS, Some("/dashboard/district/scheduling"), None)),
             method: "POST",
             path: "/api/district/scheduling/handoff",
             query: vec![],

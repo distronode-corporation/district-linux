@@ -13,6 +13,19 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Security
+
+- "Manage on the web" binds the sign-in it hands to the browser to the browser the app
+  opened. The app first opens the service's hand-off start page with a fresh `state`; the
+  browser answers through a `districtai://handoff` link carrying a one-time nonce that the
+  service also keeps in that browser as a short-lived cookie, and the sign-in link is
+  asked for with that nonce, so it signs in only the browser holding the cookie. A link
+  sent to someone else's browser no longer signs that browser in to your account. A
+  `districtai://handoff` link that does not answer the hand-off under way is dropped and
+  leaves it waiting. While the service does not have the start page yet, the browser does
+  not answer, and after ten seconds the app asks for the link as before. The `state` and
+  the nonce are never logged.
+
 ## [1.0.0] - 2026-10-02
 
 ### Added

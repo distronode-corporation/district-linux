@@ -3,12 +3,12 @@
 
 use district_api::{ApiError, Endpoint};
 use district_model::{
-    AVAILABILITY_REASON_NO_MEMBER_ROW, BlockTarget, CODE_LAST_AGENCY_MEMBER, CODE_MEMBER_EXISTS,
-    CallHandlingPatch, DeskBrandName, DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus,
-    HqPendingWrite, MemberRole, MessagingAccountSave, MessagingCredentialSource,
-    MessagingCredentials, NumberSearch, PersonaPatch, RoutingRule, RoutingRuleField,
-    SinchCredentials, SupportRequestDraft, SupportRequestFiling, SupportRequestKind, ThreadRef,
-    TimelinePageInfo, TimelineResponse,
+    AVAILABILITY_REASON_NO_MEMBER_ROW, BlockTarget, CODE_INVALID_NONCE, CODE_LAST_AGENCY_MEMBER,
+    CODE_MEMBER_EXISTS, CODE_NONCE_REQUIRED, CallHandlingPatch, DeskBrandName, DeskSettingsPatch,
+    DeskTicketDraft, DeskTicketStatus, HqPendingWrite, MemberRole, MessagingAccountSave,
+    MessagingCredentialSource, MessagingCredentials, NumberSearch, PersonaPatch, RoutingRule,
+    RoutingRuleField, SinchCredentials, SupportRequestDraft, SupportRequestFiling,
+    SupportRequestKind, ThreadRef, TimelinePageInfo, TimelineResponse,
 };
 use serde_json::{Value, json};
 use wiremock::matchers::any;
@@ -333,7 +333,10 @@ async fn booking_pages_that_failed_to_set_up_are_an_answer_with_the_reason() {
 async fn a_hand_off_without_a_landing_page_sends_only_the_workspace() {
     let server = answering(200, desktop_fixture("district-scheduling-handoff.json")).await;
 
-    let link = client(&server).scheduling_hand_off(WS, None).await.unwrap();
+    let link = client(&server)
+        .scheduling_hand_off(WS, None, None)
+        .await
+        .unwrap();
 
     assert!(link.url.contains("code="));
     assert!(!format!("{link:?}").contains("contract-handoff-code"));
@@ -341,6 +344,65 @@ async fn a_hand_off_without_a_landing_page_sends_only_the_workspace() {
         body(&only_request(&server).await),
         json!({"workspaceId": WS})
     );
+}
+
+/// A hand-off bound to the browser sends the nonce beside the rest, and the
+/// answer is the same link as ever. Unbound, the key is not sent at all: never
+/// a `null` the service would read as a malformed nonce.
+#[tokio::test]
+async fn a_bound_hand_off_sends_its_nonce_and_an_unbound_one_leaves_the_key_out() {
+    const NONCE: &str = "n0nce-n0nce_n0nce-n0nce_n0nce-n0nce_n0nce-n";
+    let next = Some("/dashboard/district/scheduling");
+
+    let server = answering(200, desktop_fixture("district-scheduling-handoff.json")).await;
+    let link = client(&server)
+        .scheduling_hand_off(WS, next, Some(NONCE))
+        .await
+        .unwrap();
+    assert_eq!(link.expires_in, 60);
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({"workspaceId": WS, "next": "/dashboard/district/scheduling", "nonce": NONCE})
+    );
+
+    let server = answering(200, desktop_fixture("district-scheduling-handoff.json")).await;
+    client(&server)
+        .scheduling_hand_off(WS, next, None)
+        .await
+        .unwrap();
+    let sent = body(&only_request(&server).await);
+    assert!(sent.get("nonce").is_none(), "{sent}");
+    assert_eq!(
+        sent,
+        json!({"workspaceId": WS, "next": "/dashboard/district/scheduling"})
+    );
+}
+
+/// The two refusals of the nonce come back with their codes, as the service
+/// words them, for the screen to tell apart.
+#[tokio::test]
+async fn a_refused_nonce_comes_back_with_its_code() {
+    for (body, code) in [
+        (
+            json!({"error": "nonce is malformed", "code": "invalid_nonce"}),
+            CODE_INVALID_NONCE,
+        ),
+        (
+            json!({"error": "Update the app to open the website from it.", "code": "nonce_required"}),
+            CODE_NONCE_REQUIRED,
+        ),
+    ] {
+        let server = answering(400, body).await;
+        let error = client(&server)
+            .scheduling_hand_off(WS, None, Some("short"))
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(&error, ApiError::Envelope { status: 400, code: sent, .. } if sent == code),
+            "{error:?}"
+        );
+        assert_eq!(error.code(), Some(code));
+    }
 }
 
 #[tokio::test]

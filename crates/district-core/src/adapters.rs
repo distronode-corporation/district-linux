@@ -418,8 +418,9 @@ impl<S: TokenSource> DistrictApi for ApiClient<S> {
         &self,
         workspace_id: &str,
         next: Option<&str>,
+        nonce: Option<&str>,
     ) -> impl Future<Output = Result<SchedulingHandOffResponse, ApiError>> + Send {
-        ApiClient::scheduling_hand_off(self, workspace_id, next)
+        ApiClient::scheduling_hand_off(self, workspace_id, next, nonce)
     }
 
     fn desk_settings(

@@ -73,6 +73,8 @@ const THIS_DEVICE: &str = "device-contract-linux-1";
 const AGENCY: &str = "ws-contract-active";
 const VIEWER: &str = "ws-contract-viewer";
 const CALLBACK: &str = "districtai://auth?code=smoke-code&state=smoke-state";
+/// A hand-off's nonce, of the shape the service sends.
+const NONCE: &str = "n0nce-n0nce_n0nce-n0nce_n0nce-n0nce_n0nce-n";
 const DEVICE_NAME: &str = "Ubuntu 26.04 LTS";
 
 /// The scripted stand-in for the effect runner: every effect is kept for the
@@ -710,7 +712,7 @@ fn signing_in(smoke: &Smoke) {
     let Effect::CompleteSignIn { ticket, callback } = smoke.take("CompleteSignIn") else {
         unreachable!()
     };
-    assert_eq!(callback, CALLBACK, "handed to the core as it arrived");
+    assert_eq!(callback.replacen("auth/?", "auth?", 1), CALLBACK, "handed to the core as it arrived");
     assert!(
         !smoke.pending("CompleteSignIn"),
         "the file was not a sign-in"
@@ -2515,10 +2517,44 @@ fn scheduling_screen(smoke: &Smoke) {
     assert!(smoke.shown("web_button"));
     smoke.shot("65-booking-live");
 
-    // The hand-off: asked for on the press, opened at once, never shown.
+    // The hand-off: the press opens the start page in the browser, whose
+    // answer the desktop hands over as a link; the link to the web is then
+    // asked for, bound to that browser, opened at once, and never shown.
     smoke.click("web_button");
-    let asked = smoke.take("RequestSchedulingHandOff");
+    let start = smoke.take("OpenOneTimeUrl");
+    let Effect::OpenOneTimeUrl { url } = &start else {
+        unreachable!()
+    };
+    let (page, state) = url.expose().split_once("?state=").expect("a state");
+    assert_eq!(page, "https://www.distronode.com/dashboard/handoff/start");
+    assert!(!format!("{start:?}").contains(state), "never printed");
+    let state = state.to_owned();
+    smoke.take("Wait");
     assert!(smoke.shown("busy_spinner"));
+    assert!(
+        smoke.sensitive("web_button"),
+        "pressable while the browser is awaited"
+    );
+    smoke.app.open(
+        &[gio::File::for_uri(&format!(
+            "districtai://handoff?state={state}&nonce={NONCE}"
+        ))],
+        "",
+    );
+    smoke.pump();
+    let asked = smoke.take("RequestSchedulingHandOff");
+    let Effect::RequestSchedulingHandOff {
+        nonce: Some(nonce), ..
+    } = &asked
+    else {
+        unreachable!()
+    };
+    assert_eq!(nonce.as_str(), NONCE);
+    assert!(!format!("{asked:?}").contains(NONCE), "never printed");
+    assert!(
+        !smoke.sensitive("web_button"),
+        "not while the link is asked for"
+    );
     let hand_off: SchedulingHandOffResponse = desktop_fixture("district-scheduling-handoff.json");
     let secret = hand_off.url.clone();
     smoke.answer(Event::SchedulingHandOffReady {
@@ -2532,7 +2568,15 @@ fn scheduling_screen(smoke: &Smoke) {
     assert_eq!(url.expose(), secret);
     assert!(!format!("{opened:?}").contains(&secret), "never printed");
     assert!(!smoke.shows_part(&secret), "never shown");
+    // A browser that never answers: after the wait the link is asked for
+    // unbound, and here refused.
     smoke.click("web_button");
+    smoke.take("OpenOneTimeUrl");
+    smoke.reply("Wait", |ticket| Event::WaitOver { ticket });
+    assert!(matches!(
+        smoke.script.pending.borrow().back(),
+        Some(Effect::RequestSchedulingHandOff { nonce: None, .. })
+    ));
     smoke.reply("RequestSchedulingHandOff", |ticket| {
         Event::SchedulingHandOffReady {
             ticket,

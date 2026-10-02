@@ -205,13 +205,15 @@ impl SchedulingPage {
         imp.notice_box.set_visible(notice.is_some());
         imp.notice_label
             .set_label(notice.as_deref().unwrap_or_default());
-        let busy = screen.enabling || screen.opening;
+        let busy = screen.enabling || screen.opening();
         draw_spinner(&imp.busy_spinner, busy);
         imp.enable_button.set_visible(shown.offers_enable(status));
         imp.enable_button.set_sensitive(!screen.enabling);
         imp.check_button.set_visible(shown.offers_refresh());
         imp.web_button.set_visible(shown.offers_web());
-        imp.web_button.set_sensitive(!screen.opening);
+        // Pressable while the browser is awaited, to start over if it never
+        // asked; not while the link is being asked for.
+        imp.web_button.set_sensitive(!screen.minting());
         imp.web_caption.set_visible(shown.offers_web());
     }
 }
