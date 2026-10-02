@@ -425,14 +425,29 @@ def enclosing_function(text: str, offset: int) -> str:
     return text[start if start >= 0 else 0 : offset]
 
 
-def file_helpers(text: str) -> dict[str, str]:
-    """File-level helper functions and their bodies, e.g. `workspaceQuery(...)`."""
+def file_helpers(text: str, *, private: bool = True) -> dict[str, str]:
+    """Top-level helper functions and their bodies, e.g. `workspaceQuery(...)`.
+
+    With `private=False`, only the ones other files in the package can call
+    (not `private`), which `package_helpers` gathers.
+    """
     helpers = {}
-    for m in re.finditer(r"^(?:private\s+)?fun\s+(\w+)\s*\(", text, re.M):
+    for m in re.finditer(r"^(private\s+|internal\s+)?fun\s+(\w+)\s*\(", text, re.M):
+        if not private and m.group(1) and m.group(1).startswith("private"):
+            continue
         close = matching(text, m.end() - 1)
         eq = text.find("=", close)
         end = text.find("\n\n", eq)
-        helpers[m.group(1)] = text[eq : end if end >= 0 else len(text)]
+        helpers[m.group(2)] = text[eq : end if end >= 0 else len(text)]
+    return helpers
+
+
+def package_helpers(sources: dict[str, str]) -> dict[str, str]:
+    """The top-level helpers any file in the network package can call: a helper
+    such as `workspaceQuery` may live in one file and be used in another."""
+    helpers: dict[str, str] = {}
+    for _, text in sorted(sources.items()):
+        helpers.update(file_helpers(text, private=False))
     return helpers
 
 
@@ -467,8 +482,9 @@ def body_names_workspace(
 
 def network_endpoints(sources: dict[str, str], evaluator: PathEvaluator, dtos: dict[str, bool]) -> list[Endpoint]:
     found = []
+    shared = package_helpers(sources)
     for name, text in sorted(sources.items()):
-        helpers = file_helpers(text)
+        helpers = {**shared, **file_helpers(text)}
         for m in CLIENT_CALL.finditer(text):
             open_at = m.end() - 1
             args = named_arguments(text[open_at + 1 : matching(text, open_at)])

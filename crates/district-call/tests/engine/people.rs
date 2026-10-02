@@ -56,9 +56,9 @@ fn everyone_in_the_room_is_reported_with_the_services_flagged() {
             })
             .await;
         assert!(present["receptionist"].is_agent, "the library's own kind");
-        let companion = &present["ai-companion-minutes"];
-        assert!(!companion.is_agent, "joined as a standard participant");
-        assert!(companion.is_service(), "the retired identity, by the core's rule");
+        let retired = &present["ai-companion-minutes"];
+        assert!(!retired.is_agent, "joined as a standard participant");
+        assert!(retired.is_service(), "the retired identity, by the core's rule");
         for update in seen {
             alice_member.report(update);
         }

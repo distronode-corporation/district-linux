@@ -1,7 +1,7 @@
 {
   "generated_by": "scripts/sync-endpoints.py",
   "source": {
-    "commit": "c6ec95fb331ae31bd0820a904092fbc5c9d494fb",
+    "commit": "077ebbc883fc13c654c4f267b9776c39e47549e7",
     "uncommitted_changes": false
   },
   "endpoints": [
@@ -104,18 +104,6 @@
     {
       "method": "GET",
       "path": "/api/district/contacts",
-      "auth": "bearer",
-      "workspace": "query"
-    },
-    {
-      "method": "POST",
-      "path": "/api/district/contacts/block",
-      "auth": "bearer",
-      "workspace": "body"
-    },
-    {
-      "method": "GET",
-      "path": "/api/district/contacts/blocked",
       "auth": "bearer",
       "workspace": "query"
     },
