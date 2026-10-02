@@ -55,9 +55,9 @@ pub struct WorkflowsScreen {
     pub expanded: Option<String>,
     /// Each opened workflow's runs, by workflow id.
     pub runs: BTreeMap<String, RunHistory>,
-    /// The workflows being turned on or off now, each with the value last read,
-    /// to put back if the service refuses.
-    toggling: BTreeMap<String, bool>,
+    /// The workflows being turned on or off now, each with the value asked
+    /// for and the value last read, to put back if the service refuses.
+    toggling: BTreeMap<String, Toggle>,
     /// Why the last change of a workflow failed, shown above the list.
     pub toggle_failure: Option<FailureText>,
 }
@@ -82,6 +82,15 @@ impl WorkflowsScreen {
             can_resume: can_change_campaign && campaign == Some(false),
         }
     }
+}
+
+/// A workflow being turned on or off.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Toggle {
+    /// The value asked for, shown until the service answers.
+    wanted: bool,
+    /// The value last read, put back if the service refuses.
+    read: bool,
 }
 
 /// What the workflows screen may offer.
@@ -211,6 +220,10 @@ pub struct RunHistory {
     pub loading: bool,
     /// Why the last page failed, beside the runs already read.
     pub failure: Option<FailureText>,
+    /// Where the next page starts: the runs the service has sent, not the runs
+    /// kept. A run written between two pages pushes the older ones down, so
+    /// the next page repeats one already held, which is dropped.
+    next_offset: u32,
 }
 
 impl RunHistory {
@@ -242,7 +255,7 @@ pub fn trigger_label(trigger: &str) -> Option<&'static str> {
     })
 }
 
-/// How a run's status, or an action's outcome, reads.
+/// How a run's status reads.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Tone {
     /// It worked.
@@ -262,15 +275,6 @@ impl Tone {
         match status {
             "success" => Self::Success,
             "partial" => Self::Warning,
-            "failed" => Self::Danger,
-            _ => Self::Neutral,
-        }
-    }
-
-    /// The tone of one action's outcome.
-    pub fn of_outcome(outcome: &str) -> Self {
-        match outcome {
-            "ok" => Self::Success,
             "failed" => Self::Danger,
             _ => Self::Neutral,
         }
@@ -429,10 +433,22 @@ impl SignedIn {
         tickets: &mut Tickets,
     ) -> Next {
         if tickets.accept(Slot::Workflows, ticket) {
-            self.workflows.list = match result {
+            let screen = &mut self.workflows;
+            screen.list = match result {
                 Ok(answer) => WorkflowList::Ready(answer.workflows),
                 Err(error) => WorkflowList::Failed(FailureText::from_api_error(&error)),
             };
+            // A change still on its way stays shown over the read, which may
+            // have been answered before it was made; what was read is what a
+            // refusal puts back.
+            if let WorkflowList::Ready(workflows) = &mut screen.list {
+                for (workflow_id, toggle) in &mut screen.toggling {
+                    if let Some(read) = row(workflows, workflow_id) {
+                        toggle.read = read;
+                        set_row(workflows, workflow_id, toggle.wanted);
+                    }
+                }
+            }
         }
         stay()
     }
@@ -450,7 +466,12 @@ impl SignedIn {
                 // Appended: a later page adds to the ones before, and the first
                 // page arrives on an empty history.
                 Ok(page) => {
-                    history.runs.extend(page.runs);
+                    history.next_offset += page.runs.len() as u32;
+                    for run in page.runs {
+                        if !history.runs.iter().any(|held| held.id == run.id) {
+                            history.runs.push(run);
+                        }
+                    }
                     history.total = page.total;
                     history.has_more = page.has_more;
                     history.failure = None;
@@ -469,14 +490,16 @@ impl SignedIn {
     ) -> Next {
         if let Some(workflow_id) = tickets.accept_keyed(Slot::WorkflowToggle, ticket) {
             let screen = &mut self.workflows;
-            let previous = screen.toggling.remove(&workflow_id);
-            if let Err(error) = result {
-                screen.toggle_failure = Some(FailureText::from_api_error(&error));
-                if let (Some(previous), WorkflowList::Ready(workflows)) =
-                    (previous, &mut screen.list)
-                {
-                    set_row(workflows, &workflow_id, previous);
+            let toggle = screen.toggling.remove(&workflow_id);
+            let shown = match result {
+                Ok(_) => toggle.map(|toggle| toggle.wanted),
+                Err(error) => {
+                    screen.toggle_failure = Some(FailureText::from_api_error(&error));
+                    toggle.map(|toggle| toggle.read)
                 }
+            };
+            if let (Some(shown), WorkflowList::Ready(workflows)) = (shown, &mut screen.list) {
+                set_row(workflows, &workflow_id, shown);
             }
         }
         stay()
@@ -502,7 +525,7 @@ fn toggle_expanded(
 }
 
 /// Reads the next page of a workflow's runs, when there is one and none is on
-/// its way. The offset is the runs held, not a page count: the service may apply
+/// its way. The offset counts the runs sent, not pages: the service may apply
 /// another page size than the one asked for.
 fn load_more_runs(
     screen: &mut WorkflowsScreen,
@@ -512,7 +535,7 @@ fn load_more_runs(
 ) -> Vec<Effect> {
     match screen.runs.get(&workflow_id) {
         Some(history) if history.can_load_more() => {
-            let offset = history.runs.len() as u32;
+            let offset = history.next_offset;
             read_runs(screen, workflow_id, offset, workspace_id, tickets)
         }
         _ => Vec::new(),
@@ -550,18 +573,20 @@ fn set_active(
     let WorkflowList::Ready(workflows) = &mut screen.list else {
         return Vec::new();
     };
-    let Some(previous) = workflows
-        .iter()
-        .find(|workflow| workflow.id == workflow_id)
-        .map(|workflow| workflow.active)
-    else {
+    let Some(read) = row(workflows, &workflow_id) else {
         return Vec::new();
     };
-    if previous == active || screen.toggling.contains_key(&workflow_id) {
+    if read == active || screen.toggling.contains_key(&workflow_id) {
         return Vec::new();
     }
     set_row(workflows, &workflow_id, active);
-    screen.toggling.insert(workflow_id.clone(), previous);
+    screen.toggling.insert(
+        workflow_id.clone(),
+        Toggle {
+            wanted: active,
+            read,
+        },
+    );
     screen.toggle_failure = None;
     vec![Effect::SetWorkflowActive {
         ticket: tickets.issue_keyed(Slot::WorkflowToggle, &workflow_id),
@@ -569,6 +594,14 @@ fn set_active(
         workflow_id,
         active,
     }]
+}
+
+/// One listed workflow's switch, or `None` when it is not listed.
+fn row(workflows: &[WorkflowSummary], workflow_id: &str) -> Option<bool> {
+    workflows
+        .iter()
+        .find(|workflow| workflow.id == workflow_id)
+        .map(|workflow| workflow.active)
 }
 
 /// Sets one listed workflow's switch, leaving every other row alone.

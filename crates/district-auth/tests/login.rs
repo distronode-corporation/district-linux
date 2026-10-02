@@ -8,8 +8,8 @@
 
 use district_api::ApiConfig;
 use district_auth::{
-    AUTHORIZE_PATH, LoginError, LoginFlow, REDIRECT_SCHEME, REDIRECT_URI, challenge_for,
-    is_valid_challenge,
+    AUTHORIZE_PATH, CODE_CHALLENGE_METHOD, LoginError, LoginFlow, REDIRECT_SCHEME, REDIRECT_URI,
+    challenge_for, is_valid_challenge,
 };
 use url::Url;
 
@@ -42,8 +42,19 @@ fn the_authorize_url_carries_exactly_what_the_service_reads() {
     assert_eq!(url.host_str(), Some("www.distronode.com"));
     assert_eq!(url.path(), AUTHORIZE_PATH);
     let names: Vec<_> = url.query_pairs().map(|(k, _)| k.into_owned()).collect();
-    assert_eq!(names, ["code_challenge", "state", "redirect_uri"]);
+    assert_eq!(
+        names,
+        [
+            "code_challenge",
+            "code_challenge_method",
+            "state",
+            "redirect_uri"
+        ]
+    );
     assert!(is_valid_challenge(&param(&url, "code_challenge")));
+    // Named, so the challenge is never taken for the verifier itself.
+    assert_eq!(param(&url, "code_challenge_method"), "S256");
+    assert_eq!(CODE_CHALLENGE_METHOD, "S256");
     assert_eq!(param(&url, "state").len(), 43);
     // Byte for byte: the service compares the redirect URI by exact equality.
     assert_eq!(param(&url, "redirect_uri"), "districtai://auth");
@@ -149,7 +160,11 @@ fn only_the_apps_own_address_is_accepted() {
             LoginError::NotOurRedirect,
             "{address}"
         );
-        assert!(!flow.is_pending(), "the attempt is used up: {address}");
+        // Another program's link is no answer: the sign-in under way goes on,
+        // and its own callback completes it.
+        assert!(flow.is_pending(), "the attempt waits on: {address}");
+        let answer = callback(&format!("code=c&state={state}"));
+        assert!(flow.complete(&answer).is_ok(), "{address}");
     }
 }
 
@@ -174,12 +189,15 @@ fn a_state_that_is_not_this_attempts_is_refused_before_anything_else() {
         assert_eq!(outcome.unwrap_err(), LoginError::StateMismatch, "{query}");
     }
 
-    // And the refusal uses the attempt up: the genuine callback cannot follow.
+    // The refusal leaves the attempt waiting, so a forged link cannot cancel a
+    // sign-in under way, and the genuine callback still completes it, once.
     let (mut flow, state) = started();
     assert!(flow.complete(&callback("code=c&state=wrong")).is_err());
+    assert!(flow.is_pending());
+    let genuine = callback(&format!("code=c&state={state}"));
+    assert!(flow.complete(&genuine).is_ok());
     assert_eq!(
-        flow.complete(&callback(&format!("code=c&state={state}")))
-            .unwrap_err(),
+        flow.complete(&genuine).unwrap_err(),
         LoginError::NoAttemptInProgress
     );
 }
@@ -196,6 +214,8 @@ fn an_error_from_the_sign_in_page_is_passed_on() {
             reason: "access_denied".to_owned()
         }
     );
+    // It answered the attempt, with its state, so the attempt is over.
+    assert!(!flow.is_pending());
 
     let (mut flow, state) = started();
     let outcome = flow.complete(&callback(&format!("error=a&error=b&state={state}")));

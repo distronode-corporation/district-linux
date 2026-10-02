@@ -79,8 +79,8 @@ fn a_short_first_page_is_the_whole_log() {
     let model = on_log(fixture("district-calls.json"));
     assert_eq!(ids(&model).len(), 5);
     let rows = rows(&model);
-    assert!(rows.end_reached && !rows.can_load_more());
-    assert!(!rows.refreshing);
+    assert!(rows.paging.end_reached && !rows.paging.can_load_more());
+    assert!(!rows.paging.refreshing);
     let mut model = model;
     assert!(load_more(&mut model).is_empty());
     assert_eq!(CallLog::EMPTY_TITLE, "No calls yet");
@@ -93,10 +93,10 @@ fn a_short_first_page_is_the_whole_log() {
 #[test]
 fn pages_are_read_one_at_a_time_and_merged_by_id() {
     let mut model = on_log(calls("c", 25));
-    assert!(rows(&model).can_load_more());
+    assert!(rows(&model).paging.can_load_more());
     let effects = load_more(&mut model);
     assert_eq!(offset(&effects), (CALL_PAGE_SIZE, 25));
-    assert!(rows(&model).loading_more);
+    assert!(rows(&model).paging.loading_more);
     assert!(load_more(&mut model).is_empty(), "one page at a time");
 
     let mut next = vec![call("c24")];
@@ -106,7 +106,7 @@ fn pages_are_read_one_at_a_time_and_merged_by_id() {
         result: Ok(next),
     });
     assert_eq!(ids(&model).len(), 49);
-    assert!(!rows(&model).loading_more && !rows(&model).end_reached);
+    assert!(!rows(&model).paging.loading_more && !rows(&model).paging.end_reached);
     let effects = load_more(&mut model);
     assert_eq!(offset(&effects), (CALL_PAGE_SIZE, 50));
     model.update(Event::CallsLoaded {
@@ -114,7 +114,7 @@ fn pages_are_read_one_at_a_time_and_merged_by_id() {
         result: Ok(calls("e", 3)),
     });
     assert_eq!(ids(&model).len(), 52);
-    assert!(rows(&model).end_reached);
+    assert!(rows(&model).paging.end_reached);
 }
 
 #[test]
@@ -128,12 +128,12 @@ fn a_page_that_fails_keeps_the_log_and_can_be_asked_for_again() {
     let rows = rows(&model);
     assert_eq!(rows.calls.len(), 25);
     assert_eq!(
-        rows.more_failure,
+        rows.paging.more_failure,
         Some(FailureText::from_api_error(&server_error()))
     );
-    assert!(rows.can_load_more());
+    assert!(rows.paging.can_load_more());
     load_more(&mut model);
-    assert_eq!(self::rows(&model).more_failure, None);
+    assert_eq!(self::rows(&model).paging.more_failure, None);
 }
 
 /// A failure is never an empty log: the first read's failure is the screen,
@@ -157,15 +157,15 @@ fn a_failed_read_says_so_and_a_failed_refresh_keeps_the_log() {
         result: Ok(fixture("district-calls.json")),
     });
     let effects = model.update(Event::Refresh);
-    assert!(rows(&model).refreshing);
+    assert!(rows(&model).paging.refreshing);
     model.update(Event::CallsLoaded {
         ticket: last_ticket(&effects),
         result: Err(server_error()),
     });
     let rows = rows(&model);
     assert_eq!(rows.calls.len(), 5);
-    assert!(!rows.refreshing);
-    assert!(rows.refresh_failure.is_some());
+    assert!(!rows.paging.refreshing);
+    assert!(rows.paging.refresh_failure.is_some());
 }
 
 /// Reading the newest page again puts new calls on top and the service's fresh
@@ -178,7 +178,7 @@ fn the_newest_page_again_merges_on_top() {
         ticket: last_ticket(&effects),
         result: Ok(calls("d", 10)),
     });
-    assert!(rows(&model).end_reached);
+    assert!(rows(&model).paging.end_reached);
 
     // Visiting again reads the newest page.
     model.update(Event::Navigate(Route::Inbox));
@@ -198,8 +198,8 @@ fn the_newest_page_again_merges_on_top() {
     assert!(ids(&model).contains(&"d9"));
     assert_eq!(rows.calls[1].status, "completed");
     // A full newest page means the end is no longer known.
-    assert!(!rows.end_reached);
-    assert_eq!(rows.refresh_failure, None);
+    assert!(!rows.paging.end_reached);
+    assert_eq!(rows.paging.refresh_failure, None);
 }
 
 /// More calls came in than a page holds: the log starts again from the newest
@@ -215,7 +215,7 @@ fn a_newest_page_sharing_nothing_starts_the_log_again() {
     });
     assert_eq!(ids(&model).len(), 25);
     assert_eq!(ids(&model)[0], "z0");
-    assert!(!rows(&model).loading_more);
+    assert!(!rows(&model).paging.loading_more);
     assert!(
         model
             .update(Event::CallsLoaded {

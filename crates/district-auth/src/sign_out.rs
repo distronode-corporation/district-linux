@@ -73,7 +73,9 @@ pub struct DrainReport {
     pub revoked: usize,
     /// Tokens left in the outbox for a later attempt.
     pub deferred: usize,
-    /// The store failure that stopped part of the drain, if any.
+    /// The last store failure met on the way, if any: the outbox could not be
+    /// listed, an entry of it could not be read (it is counted as deferred), or
+    /// an entry revoked could not be removed.
     pub error: Option<StoreError>,
 }
 
@@ -142,7 +144,18 @@ impl<S: SessionStore, A: RefreshApi, R: RevokeApi> SignOut<S, A, R> {
             }
         };
         let mut pending = pending.into_iter();
-        for token in pending.by_ref() {
+        for entry in pending.by_ref() {
+            // An entry that cannot be read stays where it is, for a later drain,
+            // and does not stop the others: one bad entry must not keep every
+            // other token alive on the service.
+            let token = match entry {
+                Ok(token) => token,
+                Err(error) => {
+                    report.deferred += 1;
+                    report.error = Some(error);
+                    continue;
+                }
+            };
             if self.revoke.revoke(&token).await == RevokeOutcome::RetryLater {
                 report.deferred += 1;
                 break;

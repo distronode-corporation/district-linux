@@ -7,6 +7,7 @@
 //! change is shown by the service's own summary of it, and is made only when
 //! the member presses Confirm.
 
+use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
@@ -18,7 +19,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::markdown::to_markup;
-use crate::pages::shared::{clear_box, plain_label};
+use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -29,11 +30,18 @@ pub(crate) fn status_line(phase: &HqPhase, controls: &HqControls) -> Option<(Str
     match phase {
         HqPhase::Thinking => Some((HqScreen::THINKING.to_owned(), false)),
         HqPhase::Failed(failure) => Some((
-            failure.message.clone(),
+            failure_text(failure).into_owned(),
             controls.can_retry && failure.retryable,
         )),
         _ => None,
     }
+}
+
+/// Where the messages of `transcript` not drawn yet start, when it is what
+/// was `drawn` with more after it; `None` when it is anything else (another
+/// workspace's, or emptied), which is drawn afresh.
+pub(crate) fn appended(drawn: &[HqMessage], transcript: &[HqMessage]) -> Option<usize> {
+    transcript.starts_with(drawn).then_some(drawn.len())
 }
 
 /// The note under a proposed change for a member whose role cannot make it.
@@ -211,14 +219,11 @@ impl HqPage {
             } else {
                 "transcript"
             });
-        if *imp.drawn.borrow() != hq.transcript {
-            self.draw_messages(&hq.transcript);
-        }
+        self.draw_messages(&hq.transcript);
         let status = status_line(&hq.phase, &controls);
         imp.status_box.set_visible(status.is_some());
         let thinking = hq.phase == HqPhase::Thinking;
-        imp.thinking_spinner.set_visible(thinking);
-        imp.thinking_spinner.set_spinning(thinking);
+        draw_spinner(&imp.thinking_spinner, thinking);
         imp.status_label
             .set_css_classes(if thinking { &["dim-label"] } else { &["error"] });
         let (line, retry) = status.unwrap_or_default();
@@ -234,28 +239,39 @@ impl HqPage {
         // Once confirmed, the change may have been made: only a proposal is
         // said to have changed nothing.
         let note = card_note(&hq.phase, &controls);
-        imp.card_note.set_visible(note.is_some());
-        imp.card_note.set_label(note.unwrap_or_default());
+        draw_line(&imp.card_note, note);
         let applying = matches!(hq.phase, HqPhase::Applying(_));
-        imp.card_spinner.set_spinning(applying);
-        imp.card_spinner.set_visible(applying);
+        draw_spinner(&imp.card_spinner, applying);
         let failure = match &hq.phase {
-            HqPhase::ConfirmFailed { failure, .. } => Some(failure.message.as_str()),
-            HqPhase::Applying(_) => Some(HqScreen::APPLYING),
+            HqPhase::ConfirmFailed { failure, .. } => Some(failure_text(failure)),
+            HqPhase::Applying(_) => Some(Cow::Borrowed(HqScreen::APPLYING)),
             _ => None,
         };
-        imp.card_failure.set_visible(failure.is_some());
-        imp.card_failure.set_label(failure.unwrap_or_default());
+        draw_line(&imp.card_failure, failure);
         imp.card_failure
             .set_css_classes(if applying { &["dim-label"] } else { &["error"] });
         imp.confirm_button.set_sensitive(controls.can_confirm);
         imp.dismiss_button.set_sensitive(controls.can_dismiss);
     }
 
+    /// Draws the conversation. It only grows while the workspace is open, so
+    /// the messages drawn stay, and only the new ones are added: drawing every
+    /// answer's Markdown again for each new one would cost more the longer
+    /// the conversation, and lose what the member had selected in it.
     fn draw_messages(&self, transcript: &[HqMessage]) {
         let imp = self.imp();
-        clear_box(&imp.messages);
-        for message in transcript {
+        let start = {
+            let drawn = imp.drawn.borrow();
+            match appended(&drawn, transcript) {
+                Some(start) if start == transcript.len() => return,
+                Some(start) => start,
+                None => {
+                    clear_box(&imp.messages);
+                    0
+                }
+            }
+        };
+        for message in &transcript[start..] {
             imp.messages.append(&self.message(message));
         }
         imp.drawn.replace(transcript.to_vec());
@@ -337,5 +353,21 @@ mod tests {
         assert_eq!(note_class(HqNote::Applied), "success");
         assert_eq!(note_class(HqNote::Mismatched), "warning");
         assert_eq!(note_class(HqNote::NotApplied), "warning");
+    }
+
+    #[test]
+    fn only_messages_after_those_drawn_are_added() {
+        let said = |text: &str| HqMessage {
+            author: HqAuthor::Member,
+            text: HqText::Said(text.to_owned()),
+        };
+        let all = [said("a"), said("b"), said("c")];
+        assert_eq!(appended(&[], &[]), Some(0), "nothing to draw");
+        assert_eq!(appended(&[], &all[..1]), Some(0));
+        assert_eq!(appended(&all[..1], &all[..1]), Some(1), "drawn");
+        assert_eq!(appended(&all[..1], &all), Some(1));
+        assert_eq!(appended(&all[..2], &all[..1]), None);
+        assert_eq!(appended(&all[..1], &all[1..]), None, "another workspace's");
+        assert_eq!(appended(&all[..1], &[]), None, "emptied");
     }
 }

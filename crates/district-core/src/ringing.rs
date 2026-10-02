@@ -84,7 +84,8 @@ pub struct RingController {
 /// One call rung here.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IncomingRing {
-    /// The workspace the call is in: the one open when it rang.
+    /// The workspace the call is in. Not always the one open: every workspace
+    /// where the member takes calls can ring here.
     pub workspace_id: String,
     /// The call, as the call log and the live updates name it.
     pub call_id: String,
@@ -230,7 +231,8 @@ fn is_over(envelope: &TelemetryEnvelope) -> bool {
 }
 
 impl SignedIn {
-    /// A `call_ringing` event arrived for the open workspace.
+    /// A `call_ringing` event arrived, for the open workspace or another where
+    /// the member takes calls.
     pub(crate) fn call_ringing(
         &mut self,
         envelope: &TelemetryEnvelope,
@@ -238,7 +240,7 @@ impl SignedIn {
     ) -> Vec<Effect> {
         let rings_here = names(envelope, &self.identity.user_id)
             && self.presence.rings_here()
-            && self.capabilities().can_dial
+            && self.takes_calls_in(&envelope.workspace_id)
             && !self.ring.ring.as_ref().is_some_and(IncomingRing::is_live);
         if !rings_here {
             return Vec::new();
@@ -282,7 +284,12 @@ impl SignedIn {
     }
 
     fn answer(&mut self, call_id: &str, tickets: &mut Tickets) -> Vec<Effect> {
-        let allowed = self.capabilities().can_dial && !self.media_busy();
+        let takes_calls = self
+            .ring
+            .ring
+            .as_ref()
+            .is_some_and(|ring| self.takes_calls_in(&ring.workspace_id));
+        let allowed = takes_calls && !self.media_busy();
         let Some(ring) = self
             .ring
             .live(call_id)
@@ -376,7 +383,7 @@ impl SignedIn {
         effects
     }
 
-    /// A call event for the open workspace: the ring for that call ends when
+    /// A call event from any workspace watched: the ring for that call ends when
     /// the call can no longer be answered, and an answered call here ends when
     /// the call does.
     pub(crate) fn ringing_call_changed(

@@ -12,7 +12,8 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
-use crate::pages::settings_kit::{Frame, draw_busy, draw_config};
+use crate::pages::settings_kit::{Frame, draw_config};
+use crate::pages::shared::draw_busy;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 

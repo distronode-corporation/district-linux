@@ -4,6 +4,7 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use district_api::AccessToken;
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 
 /// The self-identity claims in an access token's payload: the user id (`sub`),
 /// the device id (`did`) and the expiry (`exp`).
@@ -29,12 +30,7 @@ impl AccessClaims {
     /// separated by dots, the middle one a JSON object with a non-empty `sub`,
     /// a non-empty `did` and a numeric `exp`.
     pub fn read(token: &AccessToken) -> Result<Self, ClaimsError> {
-        let parts: Vec<&str> = token.as_str().split('.').collect();
-        let [_header, payload, _signature] = parts.as_slice() else {
-            return Err(ClaimsError);
-        };
-        let json = URL_SAFE_NO_PAD.decode(payload).map_err(|_| ClaimsError)?;
-        let raw: RawClaims = serde_json::from_slice(&json).map_err(|_| ClaimsError)?;
+        let raw: RawClaims = payload(token).ok_or(ClaimsError)?;
         let complete = !raw.sub.is_empty() && !raw.did.is_empty();
         complete
             .then_some(Self {
@@ -49,6 +45,29 @@ impl AccessClaims {
     pub fn expires_at_ms(&self) -> i64 {
         self.expires_at_secs.saturating_mul(1000)
     }
+}
+
+/// When `token` was issued (`iat`), in epoch milliseconds by the service's
+/// clock, or `None` for a token that does not say. Read without verifying the
+/// signature, like [`AccessClaims`], and used only to tell how far this
+/// machine's clock is from the service's.
+pub(crate) fn issued_at_ms(token: &AccessToken) -> Option<i64> {
+    payload::<IssuedAt>(token).map(|claims| claims.iat.saturating_mul(1000))
+}
+
+/// The payload of `token`, a compact JWT, read as `T`.
+fn payload<T: DeserializeOwned>(token: &AccessToken) -> Option<T> {
+    let parts: Vec<&str> = token.as_str().split('.').collect();
+    let [_header, payload, _signature] = parts.as_slice() else {
+        return None;
+    };
+    let json = URL_SAFE_NO_PAD.decode(payload).ok()?;
+    serde_json::from_slice(&json).ok()
+}
+
+#[derive(Deserialize)]
+struct IssuedAt {
+    iat: i64,
 }
 
 #[derive(Deserialize)]

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Everything the binary carries, compiled by build.rs. The prefix is the
      application's resource base path, so libadwaita loads style.css from it
-     and GTK finds the icons under icons/ without installing them. -->
+     and GTK finds the icons under icons/ without installing them. The
+     AppStream metadata is what the About dialog is built from. -->
 <gresources>
   <gresource prefix="/com/distronode/DistrictAI">
     <file>ui/window.ui</file>
@@ -48,6 +49,7 @@
     <file>ui/dialer-page.ui</file>
     <file>style.css</file>
     <file>sounds/ringtone.wav</file>
+    <file>com.distronode.DistrictAI.metainfo.xml</file>
     <file alias="icons/scalable/apps/com.distronode.DistrictAI.svg">icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg</file>
     <file alias="icons/symbolic/apps/com.distronode.DistrictAI-symbolic.svg">icons/hicolor/symbolic/apps/com.distronode.DistrictAI-symbolic.svg</file>
   </gresource>

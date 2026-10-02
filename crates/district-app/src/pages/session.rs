@@ -9,6 +9,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::pages::shared::{draw_line, draw_spinner};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -200,15 +201,12 @@ impl SessionPage {
         let imp = self.imp();
         imp.status.set_title(shown.title);
         imp.status.set_description(Some(&escape(&shown.body)));
-        imp.spinner.set_visible(shown.busy);
-        imp.spinner.set_spinning(shown.busy);
+        draw_spinner(&imp.spinner, shown.busy);
         imp.sign_in_button.set_visible(shown.sign_in);
         imp.retry_button.set_visible(shown.retry);
         imp.retry_sign_out_button.set_visible(shown.retry_sign_out);
         imp.cancel_button.set_visible(shown.cancel);
-        imp.error_label.set_visible(shown.error.is_some());
-        imp.error_label
-            .set_label(shown.error.as_deref().unwrap_or_default());
+        draw_line(&imp.error_label, shown.error.as_deref());
     }
 }
 

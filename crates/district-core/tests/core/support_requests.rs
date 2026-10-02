@@ -7,8 +7,8 @@ use district_core::{
     support_request_key,
 };
 use district_model::{
-    SupportRequestCreateResponse, SupportRequestDraft, SupportRequestFiling, SupportRequestKind,
-    SupportRequestResponse, SupportRequestSummary, SupportRequestsResponse,
+    SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDraft, SupportRequestFiling,
+    SupportRequestKind, SupportRequestResponse, SupportRequestSummary, SupportRequestsResponse,
 };
 
 use crate::support::{
@@ -464,4 +464,37 @@ fn a_read_refused_for_an_ended_session_ends_it() {
         result: Err(signed_out_error()),
     });
     assert!(matches!(model.session(), SessionState::SignedOut(_)));
+}
+
+/// A read again that lands while the reply is on its way may hold the reply
+/// already: its answer does not add it a second time.
+#[test]
+fn a_reply_already_read_back_is_shown_once() {
+    let mut model = on_request(AGENCY, "agency");
+    event(
+        &mut model,
+        SupportEvent::EditReply("Still failing.".to_owned()),
+    );
+    let sent = event(&mut model, SupportEvent::SendReply);
+    let reply: SupportReplyResponse = fixture("district-support-reply.json");
+    let refresh = model.update(Event::Refresh);
+    let mut read: SupportRequestResponse = fixture("district-support-request.json");
+    read.request.messages.push(reply.message.clone());
+    model.update(Event::SupportRequestLoaded {
+        ticket: last_ticket(&refresh),
+        result: Ok(read),
+    });
+    model.update(Event::SupportReplied {
+        ticket: last_ticket(&sent),
+        result: Ok(reply.clone()),
+    });
+    let shown = request_screen(&model)
+        .detail()
+        .unwrap()
+        .messages
+        .iter()
+        .filter(|message| message.id == reply.message.id)
+        .count();
+    assert_eq!(shown, 1);
+    assert_eq!(request_screen(&model).reply, "");
 }

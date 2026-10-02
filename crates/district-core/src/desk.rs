@@ -350,11 +350,13 @@ pub struct DeskSettingsForm {
     /// Whether the name box was touched, which is what tells an emptied box
     /// (clear the name) from an untouched empty one (leave it alone).
     brand_name_edited: bool,
-    /// Whether a save is on its way. The form is read only meanwhile.
+    /// Whether a save is on its way. The form is read only meanwhile, and the
+    /// logo cannot be changed.
     pub saving: bool,
     /// Why the last save failed.
     pub save_failure: Option<FailureText>,
-    /// Whether a logo upload or removal is on its way.
+    /// Whether a logo upload or removal is on its way. The form can still be
+    /// edited, and keeps what is typed when the answer lands, but not saved.
     pub logo_busy: bool,
     /// Why the last logo change failed, in the service's words where it gave
     /// them (too large, a type it will not host, bad dimensions).
@@ -382,6 +384,25 @@ impl DeskSettingsForm {
             logo_failure: None,
             logo_file_kept: false,
         }
+    }
+
+    /// A save's answer: the form starts again from the settings as stored, with
+    /// the name box untouched, and keeps what it says about the logo.
+    fn saved(&mut self, settings: DeskSettings) {
+        *self = Self {
+            logo_failure: self.logo_failure.take(),
+            logo_file_kept: self.logo_file_kept,
+            ..Self::from_settings(settings)
+        };
+    }
+
+    /// A logo change's answer: the settings as stored now carry the new logo,
+    /// and what is typed in the form stays as it is.
+    fn logo_changed(&mut self, settings: DeskSettings) {
+        self.stored = settings;
+        self.logo_busy = false;
+        self.logo_failure = None;
+        self.logo_file_kept = false;
     }
 
     /// What a save would send: only the fields that differ from the stored
@@ -618,7 +639,7 @@ impl SignedIn {
             match result {
                 // The settings as stored are the answer: the form starts again
                 // from them, and the name box counts as untouched.
-                Ok(answer) => **form = DeskSettingsForm::from_settings(answer.settings),
+                Ok(answer) => form.saved(answer.settings),
                 Err(error) => {
                     form.saving = false;
                     form.save_failure = Some(FailureText::from_api_error(&error));
@@ -638,7 +659,7 @@ impl SignedIn {
             && let Some(DeskSettingsView::Ready(form)) = self.desk_settings.as_mut()
         {
             match result {
-                Ok(answer) => **form = DeskSettingsForm::from_settings(answer.settings),
+                Ok(answer) => form.logo_changed(answer.settings),
                 Err(error) => logo_failed(form, &error),
             }
         }
@@ -658,7 +679,7 @@ impl SignedIn {
                 // Off the page first, then the file: a success that could not
                 // delete the file says so, because the image may still be served.
                 Ok(answer) => {
-                    **form = DeskSettingsForm::from_settings(answer.settings);
+                    form.logo_changed(answer.settings);
                     form.logo_file_kept = !answer.object_removed;
                 }
                 Err(error) => logo_failed(form, &error),
@@ -916,12 +937,16 @@ fn ticket_event(
     Vec::new()
 }
 
+/// A change to the settings form. A save and a logo change are never on
+/// their way together: each answer carries the whole settings as stored, and
+/// one written before the other would put back what the other changed.
 fn settings_event(
     form: &mut DeskSettingsForm,
     event: DeskEvent,
     workspace_id: String,
     tickets: &mut Tickets,
 ) -> Vec<Effect> {
+    let writing = form.saving || form.logo_busy;
     match event {
         DeskEvent::SetEnabled(on) if !form.saving => form.enabled = on,
         DeskEvent::SetNotify(on) if !form.saving => form.notify_customers_by_email = on,
@@ -929,7 +954,7 @@ fn settings_event(
             form.brand_name = name;
             form.brand_name_edited = true;
         }
-        DeskEvent::SaveSettings if !form.saving && form.is_dirty() => {
+        DeskEvent::SaveSettings if !writing && form.is_dirty() => {
             form.saving = true;
             form.save_failure = None;
             return vec![Effect::SaveDeskSettings {
@@ -938,7 +963,7 @@ fn settings_event(
                 patch: form.patch(),
             }];
         }
-        DeskEvent::UploadLogo(logo) if !form.logo_busy => {
+        DeskEvent::UploadLogo(logo) if !writing => {
             form.logo_busy = true;
             form.logo_failure = None;
             form.logo_file_kept = false;
@@ -951,7 +976,7 @@ fn settings_event(
         DeskEvent::LogoUnreadable if !form.logo_busy => {
             form.logo_failure = Some(FailureText::final_(UNREADABLE_ATTACHMENT));
         }
-        DeskEvent::DeleteLogo if !form.logo_busy && form.stored.public_logo_url.is_some() => {
+        DeskEvent::DeleteLogo if !writing && form.stored.public_logo_url.is_some() => {
             form.logo_busy = true;
             form.logo_failure = None;
             form.logo_file_kept = false;

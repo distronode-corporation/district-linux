@@ -14,6 +14,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::Sends;
+use crate::pages::shared::{draw_line, draw_spinner};
 use crate::sink::EventSink;
 
 /// Which form the dialog is.
@@ -200,13 +201,10 @@ impl ContactFormDialog {
             row.set_sensitive(!saving);
         }
         imp.cancel_button.set_sensitive(!saving);
-        imp.spinner.set_visible(saving);
-        imp.spinner.set_spinning(saving);
+        draw_spinner(&imp.spinner, saving);
         let hint = form.hint();
-        imp.hint_label.set_visible(hint.is_some());
-        imp.hint_label.set_label(hint.unwrap_or_default());
-        imp.failure_label.set_visible(failure.is_some());
-        imp.failure_label.set_label(failure.unwrap_or_default());
+        draw_line(&imp.hint_label, hint);
+        draw_line(&imp.failure_label, failure);
     }
 }
 

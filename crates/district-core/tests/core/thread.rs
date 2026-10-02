@@ -36,9 +36,7 @@ fn events(model: &Model) -> &ThreadEvents {
 }
 
 fn controls(model: &Model) -> ThreadControls {
-    signed_in(model)
-        .thread_controls()
-        .expect("a thread is open")
+    screen(model).controls(&signed_in(model).capabilities())
 }
 
 fn ids(model: &Model) -> Vec<&str> {
@@ -755,7 +753,9 @@ fn text_typed_during_a_send_is_kept() {
 fn a_refused_send_keeps_the_reply_and_saves_it_again() {
     let mut model = opened("agency");
     thread_event(&mut model, ThreadEvent::Compose("On our way".to_owned()));
-    let sent = last_ticket(&thread_event(&mut model, ThreadEvent::Send)[..1]);
+    let effects = thread_event(&mut model, ThreadEvent::Send);
+    let sent = last_ticket(&effects[..1]);
+    let deleted = pick(&effects, |e| matches!(e, Effect::DeleteDraft { .. }));
     let error = refusal("This workspace has sent too many messages this minute.");
     let effects = model.update(Event::MessageSent {
         ticket: sent,
@@ -773,7 +773,13 @@ fn a_refused_send_keeps_the_reply_and_saves_it_again() {
     assert_eq!(composer.text, "On our way");
     assert_eq!(composer.failure, Some(FailureText::from_api_error(&error)));
     assert_eq!(ids(&model).len(), 5);
-    let saved = model.update(Event::WaitOver { ticket: *wait });
+    // The draft is saved again, once the delete sent with the message has
+    // landed: one write at a time, so the two cannot land the wrong way round.
+    assert!(model.update(Event::WaitOver { ticket: *wait }).is_empty());
+    let saved = model.update(Event::DraftWritten {
+        ticket: deleted,
+        result: Ok(()),
+    });
     assert!(matches!(saved.as_slice(), [Effect::SaveDraft { .. }]));
     thread_event(&mut model, ThreadEvent::DismissFailure);
     assert_eq!(screen(&model).composer.failure, None);
@@ -1051,5 +1057,44 @@ fn a_thread_marked_read_before_the_list_is_read_changes_no_badge() {
 fn no_thread_open_no_thread_events() {
     let (mut model, _) = loaded(AGENCY, "agency");
     assert!(thread_event(&mut model, ThreadEvent::Compose("x".to_owned())).is_empty());
-    assert_eq!(signed_in(&model).thread_controls(), None);
+    assert_eq!(signed_in(&model).thread, None);
+}
+
+/// Draft writes go one at a time, so a save on its way when the message is
+/// sent cannot land after the delete and bring the draft back. The delete
+/// waits for it, and of two writes waiting for one thread only the last goes.
+#[test]
+fn a_draft_is_written_one_write_at_a_time() {
+    let mut model = opened("agency");
+    let typed = thread_event(&mut model, ThreadEvent::Compose("On our way".to_owned()));
+    let save = model.update(Event::WaitOver {
+        ticket: last_ticket(&typed),
+    });
+    let [Effect::SaveDraft { ticket: saving, .. }] = save.as_slice() else {
+        panic!("{save:?}");
+    };
+    let sent = thread_event(&mut model, ThreadEvent::Send);
+    assert!(matches!(sent.as_slice(), [Effect::SendMessage { .. }]));
+    // A later write for the same thread replaces the delete waiting.
+    thread_event(&mut model, ThreadEvent::Compose("Typed after".to_owned()));
+    model.update(Event::Back);
+    let after_save = model.update(Event::DraftWritten {
+        ticket: *saving,
+        result: Ok(()),
+    });
+    let [Effect::SaveDraft { ticket, draft, .. }] = after_save.as_slice() else {
+        panic!("{after_save:?}");
+    };
+    assert_eq!(draft.body, "Typed after");
+    for _ in 0..2 {
+        // Nothing waits behind it, and a second answer is no one's.
+        assert!(
+            model
+                .update(Event::DraftWritten {
+                    ticket: *ticket,
+                    result: Err(server_error()),
+                })
+                .is_empty()
+        );
+    }
 }

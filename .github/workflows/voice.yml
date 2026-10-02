@@ -22,7 +22,10 @@ name: Voice
 # Run by hand, weekly (a new libwebrtc or livekit-server behaviour shows up
 # without a change here), and on changes to what the engine is made of. Minutes
 # are metered while the repository is private, so it is one job, and its paths
-# are the engine's.
+# are the engine's: district-call, and what its tests drive through it (the core
+# model and session, the data types, sign-in, and the contract fixtures they
+# read). The list is written once, under `pull_request`, and `push` reuses it
+# with a YAML anchor, which GitHub Actions has accepted since September 2025.
 on:
   workflow_dispatch:
     inputs:
@@ -34,9 +37,12 @@ on:
   schedule:
     - cron: "23 6 * * 1"
   pull_request:
-    paths:
+    paths: &engine-paths
       - "crates/district-call/**"
-      - "crates/district-core/src/media.rs"
+      - "crates/district-core/**"
+      - "crates/district-model/**"
+      - "crates/district-auth/**"
+      - "contracts/**"
       - "crates/district-app/Cargo.toml"
       - "crates/district-app/src/startup.rs"
       - "Cargo.toml"
@@ -44,20 +50,12 @@ on:
       - "coverage-floors.toml"
       - "scripts/check-coverage.py"
       - "scripts/fetch-libwebrtc.sh"
+      - ".github/actions/install-clang-21/**"
+      - ".github/actions/install-cargo-llvm-cov/**"
       - ".github/workflows/voice.yml"
   push:
     branches: [main]
-    paths:
-      - "crates/district-call/**"
-      - "crates/district-core/src/media.rs"
-      - "crates/district-app/Cargo.toml"
-      - "crates/district-app/src/startup.rs"
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - "coverage-floors.toml"
-      - "scripts/check-coverage.py"
-      - "scripts/fetch-libwebrtc.sh"
-      - ".github/workflows/voice.yml"
+    paths: *engine-paths
 
 permissions:
   contents: read
@@ -87,40 +85,12 @@ jobs:
           rustup toolchain install stable --profile minimal -c clippy -c llvm-tools-preview
           rustc --version
 
-      # clang 21, because the prebuilt libwebrtc is built against Chromium's own
-      # libc++, which needs clang 21.1 or newer (webrtc-sys's build script checks,
-      # and refuses GCC outright). Ubuntu 24.04 ships clang 18. LiveKit's own CI
-      # downloads the whole LLVM release (2 GB); the LLVM project's apt
-      # repository for this release has clang 21 alone, signed with the key
-      # whose fingerprint is pinned here, and apt refuses anything it did not
-      # sign.
-      #
-      # The rest: GTK 4 and libadwaita for the app; the headers webrtc-sys
-      # compiles against (it loads the X11, DRM and VA libraries at run time and
-      # links none of them); PulseAudio and its tools for the device test.
-      - name: Install clang 21 and the system libraries
-        env:
-          LLVM_KEY_FINGERPRINT: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
-        run: |
-          set -euo pipefail
-          curl -fsSL -o "$RUNNER_TEMP/llvm.key" https://apt.llvm.org/llvm-snapshot.gpg.key
-          have="$(gpg --show-keys --with-colons "$RUNNER_TEMP/llvm.key" | awk -F: '/^fpr/ { print $10; exit }')"
-          if [ "$have" != "$LLVM_KEY_FINGERPRINT" ]; then
-            echo "::error::apt.llvm.org's key is $have, not the pinned $LLVM_KEY_FINGERPRINT"
-            exit 1
-          fi
-          gpg --dearmor < "$RUNNER_TEMP/llvm.key" | sudo tee /usr/share/keyrings/llvm.gpg > /dev/null
-          echo "deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm-21.list > /dev/null
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            clang-21 \
-            pkg-config libgtk-4-dev libadwaita-1-dev \
-            libglib2.0-dev libx11-dev libxext-dev libxfixes-dev libxdamage-dev libxrandr-dev \
-            libxcomposite-dev libgl1-mesa-dev libdrm-dev libgbm-dev libva-dev libpulse-dev \
-            pulseaudio pulseaudio-utils
-          echo "CXX=clang++-21" >> "$GITHUB_ENV"
-          clang++-21 --version
+      # clang 21 from the LLVM project's apt repository, against a pinned key,
+      # GTK 4 and libadwaita, and the headers webrtc-sys compiles against (the
+      # action says why each), with PulseAudio and its tools for the device test.
+      - uses: $/.github/actions/install-clang-21
+        with:
+          packages: pulseaudio pulseaudio-utils
 
       # The archive is checked against its pinned SHA-256 on every run, cached or
       # not, so the cache saves the download and vouches for nothing.
@@ -198,20 +168,8 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       # The same install as ci.yml's: the upstream release against a pinned
-      # SHA-256. A bump changes both files.
-      - name: Install cargo-llvm-cov
-        env:
-          CARGO_LLVM_COV_VERSION: 0.9.1
-          CARGO_LLVM_COV_SHA256: 3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522
-        run: |
-          set -euo pipefail
-          name="cargo-llvm-cov-x86_64-unknown-linux-musl"
-          curl -fsSL -o "$RUNNER_TEMP/llvm-cov.tgz" \
-            "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v${CARGO_LLVM_COV_VERSION}/${name}.tar.gz"
-          echo "${CARGO_LLVM_COV_SHA256}  $RUNNER_TEMP/llvm-cov.tgz" | sha256sum -c -
-          tar xzf "$RUNNER_TEMP/llvm-cov.tgz" -C "$RUNNER_TEMP"
-          install -m 0755 "$RUNNER_TEMP/cargo-llvm-cov" "$HOME/.cargo/bin/cargo-llvm-cov"
-          cargo llvm-cov --version
+      # SHA-256, from one action.
+      - uses: $/.github/actions/install-cargo-llvm-cov
 
       # The app with `voice` (its smoke test included, so it is linted too) and
       # the engine's own tests.

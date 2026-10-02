@@ -6,6 +6,7 @@
 //! audition's credential and leaves its room. A build without a call engine
 //! asks for nothing and says why when Start is pressed.
 
+use std::borrow::Cow;
 use std::cell::OnceCell;
 
 use district_core::{
@@ -16,7 +17,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::settings_kit::draw_line;
+use crate::pages::shared::{draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -28,7 +29,7 @@ pub(crate) struct AuditionShown<'a> {
     /// Whether it is being started or joined.
     pub(crate) waiting: bool,
     /// Why it could not start or was not joined.
-    pub(crate) failure: Option<&'a str>,
+    pub(crate) failure: Option<Cow<'a, str>>,
     /// Whether Start is offered, and Stop.
     pub(crate) start: bool,
     pub(crate) stop: bool,
@@ -74,7 +75,7 @@ pub(crate) fn audition_shown(
             ..idle
         },
         PersonaPreview::Failed(failure) => AuditionShown {
-            failure: Some(&failure.message),
+            failure: Some(failure_text(failure)),
             ..idle
         },
         PersonaPreview::Ended => AuditionShown {
@@ -185,8 +186,7 @@ impl AuditionDialog {
         let imp = self.imp();
         let shown = audition_shown(preview, session.map(|session| session.connection));
         draw_line(&imp.state_label, shown.state);
-        imp.spinner.set_visible(shown.waiting);
-        imp.spinner.set_spinning(shown.waiting);
+        draw_spinner(&imp.spinner, shown.waiting);
         draw_line(&imp.failure_label, shown.failure);
         imp.start_button.set_visible(shown.start);
         imp.start_button.set_sensitive(section.can_start_preview());
@@ -216,7 +216,7 @@ mod tests {
         let shown = audition_shown(&failed, None);
         assert!(shown.start && !shown.stop);
         assert_eq!(
-            shown.failure,
+            shown.failure.as_deref(),
             Some(district_core::DisconnectReason::UNAVAILABLE)
         );
 

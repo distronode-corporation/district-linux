@@ -1,8 +1,7 @@
 //! The installations signed in to the account, and signing them out, each
 //! after a question.
 
-use std::cell::{Cell, OnceCell, RefCell};
-use std::rc::Rc;
+use std::cell::{OnceCell, RefCell};
 
 use district_core::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen, Event};
 
@@ -10,6 +9,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -42,18 +42,11 @@ pub(crate) fn subtitle(row: &DeviceRow) -> String {
 /// failed, or that it had nothing to do.
 pub(crate) fn notice(screen: &DevicesScreen) -> Option<String> {
     match &screen.failure {
-        Some(failure) => Some(failure.message.clone()),
+        Some(failure) => Some(failure_text(failure).into_owned()),
         None => screen
             .nothing_revoked
             .then(|| DevicesScreen::NOTHING_REVOKED.to_owned()),
     }
-}
-
-/// A question on screen, and whether it has been answered and closed.
-#[derive(Debug)]
-pub struct Asking {
-    dialog: adw::AlertDialog,
-    closed: Rc<Cell<bool>>,
 }
 
 mod imp {
@@ -88,7 +81,7 @@ mod imp {
         /// Each row's sign-out button, to make them all insensitive at once.
         pub buttons: RefCell<Vec<gtk::Button>>,
         /// The question on screen, if one is.
-        pub asking: RefCell<Option<Asking>>,
+        pub asking: Asking,
     }
 
     #[glib::object_subclass]
@@ -153,7 +146,7 @@ impl DevicesPage {
             DevicesList::Failed(failure) => {
                 self.status(
                     DevicesList::FAILED_TITLE,
-                    &failure.message,
+                    &failure_text(failure),
                     failure.retryable,
                 );
             }
@@ -169,8 +162,7 @@ impl DevicesPage {
         imp.notice_group.set_visible(notice.is_some());
         imp.notice_label
             .set_label(notice.as_deref().unwrap_or_default());
-        imp.busy_spinner.set_visible(screen.busy);
-        imp.busy_spinner.set_spinning(screen.busy);
+        draw_spinner(&imp.busy_spinner, screen.busy);
         imp.everywhere_button.set_sensitive(!screen.busy);
         for button in imp.buttons.borrow().iter() {
             button.set_sensitive(!screen.busy);
@@ -237,43 +229,25 @@ impl DevicesPage {
     /// asking. The window calls this with `None` whenever the page is not
     /// showing, so a question never outlives its screen.
     pub(crate) fn ask(&self, confirming: Option<&Confirmation>) {
-        let imp = self.imp();
-        let mut asking = imp.asking.borrow_mut();
-        match (confirming, asking.as_ref()) {
-            (Some(confirmation), None) => {
-                *asking = Some(self.question(confirmation));
-            }
-            (None, Some(open)) => {
-                if !open.closed.get() {
-                    open.dialog.force_close();
-                }
-                *asking = None;
-            }
-            _ => {}
-        }
-    }
-
-    fn question(&self, confirmation: &Confirmation) -> Asking {
-        let dialog = adw::AlertDialog::new(Some(QUESTION_TITLE), Some(confirmation.question()));
-        dialog.add_response("cancel", "Cancel");
-        dialog.add_response("sign-out", confirmation.action());
-        dialog.set_response_appearance("sign-out", adw::ResponseAppearance::Destructive);
-        dialog.set_default_response(Some("cancel"));
-        dialog.set_close_response("cancel");
         let page = self.downgrade();
-        dialog.connect_response(None, move |_, response| {
-            if let Some(page) = page.upgrade() {
-                page.send(Event::Devices(if response == "sign-out" {
-                    DevicesEvent::Confirm
-                } else {
-                    DevicesEvent::Cancel
-                }));
-            }
-        });
-        let closed = Rc::new(Cell::new(false));
-        let marked = Rc::clone(&closed);
-        dialog.connect_closed(move |_| marked.set(true));
-        dialog.present(Some(self));
-        Asking { dialog, closed }
+        self.imp().asking.sync(
+            self,
+            confirming.map(|confirmation| Ask {
+                key: format!("{confirmation:?}"),
+                heading: Some(QUESTION_TITLE),
+                question: confirmation.question(),
+                action: confirmation.action(),
+                destructive: true,
+            }),
+            move |yes| {
+                if let Some(page) = page.upgrade() {
+                    page.send(Event::Devices(if yes {
+                        DevicesEvent::Confirm
+                    } else {
+                        DevicesEvent::Cancel
+                    }));
+                }
+            },
+        );
     }
 }

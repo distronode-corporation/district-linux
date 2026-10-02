@@ -409,10 +409,7 @@ impl Session {
                     MicrophoneState::Unavailable
                 }
             }
-            Some(microphone) => {
-                microphone.off(devices.as_ref());
-                MicrophoneState::Off
-            }
+            Some(microphone) => audio::after_off(microphone.off(devices.as_ref())),
         };
         shared.report(self, MediaEvent::Microphone(state));
     }

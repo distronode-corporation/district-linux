@@ -64,7 +64,7 @@ impl SessionStore for AppStore {
         each!(self, store => store.push_revoke(token))
     }
 
-    async fn revoke_outbox(&self) -> Result<Vec<RefreshToken>, StoreError> {
+    async fn revoke_outbox(&self) -> Result<Vec<Result<RefreshToken, StoreError>>, StoreError> {
         each!(self, store => store.revoke_outbox())
     }
 
@@ -102,10 +102,7 @@ mod tests {
         store.clear_refresh_pending().await.unwrap();
         assert_eq!(store.refresh_pending().await.unwrap(), None);
         store.push_revoke(&token).await.unwrap();
-        assert_eq!(
-            store.revoke_outbox().await.unwrap(),
-            std::slice::from_ref(&token)
-        );
+        assert_eq!(store.revoke_outbox().await.unwrap(), [Ok(token.clone())]);
         store.remove_revoke(&token).await.unwrap();
         assert!(store.revoke_outbox().await.unwrap().is_empty());
         store.clear_session().await.unwrap();

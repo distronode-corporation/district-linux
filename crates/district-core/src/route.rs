@@ -25,26 +25,6 @@ pub enum Tab {
 }
 
 impl Tab {
-    /// Every tab, in the order the navigation shows them.
-    pub const ALL: [Tab; 5] = [
-        Tab::Overview,
-        Tab::Inbox,
-        Tab::Calls,
-        Tab::Contacts,
-        Tab::Account,
-    ];
-
-    /// The tab's label.
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Overview => "Overview",
-            Self::Inbox => "Inbox",
-            Self::Calls => "Calls",
-            Self::Contacts => "Contacts",
-            Self::Account => "Account",
-        }
-    }
-
     /// The route the tab opens.
     pub fn route(self) -> Route {
         match self {
@@ -157,6 +137,22 @@ pub enum WorkspaceSection {
     Members,
     /// The workspace's phone numbers.
     Numbers,
+}
+
+impl WorkspaceSection {
+    /// Every section, the hub first and then the others in the hub's order.
+    pub const ALL: [WorkspaceSection; 10] = [
+        WorkspaceSection::Hub,
+        WorkspaceSection::Persona,
+        WorkspaceSection::Tools,
+        WorkspaceSection::Directory,
+        WorkspaceSection::Routing,
+        WorkspaceSection::CallHandling,
+        WorkspaceSection::Knowledge,
+        WorkspaceSection::Messaging,
+        WorkspaceSection::Members,
+        WorkspaceSection::Numbers,
+    ];
 }
 
 impl Route {

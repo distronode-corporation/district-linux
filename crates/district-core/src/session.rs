@@ -8,7 +8,7 @@ use district_auth::{
     AccessClaims, LoginError, Persistence, RevokeStatus, SignOutReport, StoreErrorKind,
 };
 
-use crate::failure::FailureText;
+use crate::failure::{FailureText, OFFLINE, RATE_LIMITED};
 use crate::signed_in::SignedIn;
 
 /// Where the session is.
@@ -209,12 +209,8 @@ impl SignInError {
             Self::Exchange(ExchangeFailure::Rejected) => {
                 "Sign-in expired. Please try again.".to_owned()
             }
-            Self::Exchange(ExchangeFailure::RateLimited) => {
-                "Too many attempts. Wait a moment and try again.".to_owned()
-            }
-            Self::Exchange(ExchangeFailure::Unreachable) => {
-                "Could not reach District AI. Check your connection.".to_owned()
-            }
+            Self::Exchange(ExchangeFailure::RateLimited) => RATE_LIMITED.to_owned(),
+            Self::Exchange(ExchangeFailure::Unreachable) => OFFLINE.to_owned(),
             Self::UnreadableToken => "District AI sent a sign-in this version of the app does \
                 not understand. Updating the app should fix it."
                 .to_owned(),

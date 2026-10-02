@@ -30,6 +30,8 @@
 //!   --test store_screenshots
 //! ```
 
+mod common;
+
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::fs;
@@ -38,6 +40,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use adw::prelude::*;
+use common::{descendants, ticket};
 use district_app::{Effects, Parts, UiBridge, application};
 use district_auth::AccessClaims;
 use district_core::{
@@ -90,42 +93,6 @@ struct Store {
     shots: Option<PathBuf>,
 }
 
-/// The ticket an effect carries, for the ones the script answers.
-fn ticket(effect: &Effect) -> Ticket {
-    match effect {
-        Effect::RestoreSession { ticket }
-        | Effect::LoadWorkspaces { ticket }
-        | Effect::LoadOverview { ticket, .. }
-        | Effect::LoadSetupStatus { ticket, .. }
-        | Effect::LoadUnreadCount { ticket, .. }
-        | Effect::LoadConversations { ticket, .. }
-        | Effect::LoadDraftKeys { ticket, .. }
-        | Effect::LoadDraft { ticket, .. }
-        | Effect::LoadTimeline { ticket, .. }
-        | Effect::MarkRead { ticket, .. }
-        | Effect::LoadCalls { ticket, .. }
-        | Effect::LoadCall { ticket, .. }
-        | Effect::LoadTranscript { ticket, .. }
-        | Effect::LoadContacts { ticket, .. }
-        | Effect::LoadContact { ticket, .. }
-        | Effect::ReadRingSetting { ticket }
-        | Effect::Dial { ticket, .. }
-        | Effect::Wait { ticket, .. } => *ticket,
-        other => panic!("no ticket the script answers in {other:?}"),
-    }
-}
-
-/// Every widget under `root`, depth first.
-fn descendants(root: &gtk::Widget) -> Vec<gtk::Widget> {
-    let mut found = vec![root.clone()];
-    let mut child = root.first_child();
-    while let Some(widget) = child {
-        found.extend(descendants(&widget));
-        child = widget.next_sibling();
-    }
-    found
-}
-
 /// `node` without the clip a widget paintable puts around a widget's own
 /// box, keeping every transform above it.
 fn unclipped(node: gsk::RenderNode) -> gsk::RenderNode {
@@ -143,12 +110,7 @@ impl Store {
     /// Runs the main loop until it has nothing left to do, a few times over,
     /// so a frame is laid out and drawn.
     fn pump(&self) {
-        let context = glib::MainContext::default();
-        for _ in 0..4 {
-            while context.iteration(false) {}
-            std::thread::sleep(Duration::from_millis(15));
-        }
-        while context.iteration(false) {}
+        common::pump();
     }
 
     /// Sends `event` as if the runner had, and lets the app draw it.

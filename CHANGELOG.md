@@ -13,6 +13,79 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-02
+
+### Added
+
+- "Copy guest link" in a meeting room you have joined, when the service sends a link
+  for guests: it puts the link on the clipboard, for someone without an account to
+  join the room.
+- A failure caused by regions that did not answer names them under its message
+  ("Affected regions: EU, APAC").
+
+### Changed
+
+- Calls ring on this computer in every workspace where you take calls, not only in the
+  one open on screen. A ring, a missed call and a new message from another workspace
+  name it, and opening one opens that workspace.
+- Sign-in: a link that does not answer the sign-in under way (another program's, or one
+  carrying someone else's `state`) no longer cancels it, and the sign-in page is told the
+  PKCE method (`S256`) rather than left to assume it.
+- Error messages show the service's own sentence where it sends one, rather than a code
+  such as `rate_limited`.
+- The About dialog is built from the app's AppStream metadata, so it shows what a
+  software centre shows.
+- When the keyring cannot be opened, the reason is written to standard error before the
+  app falls back to keeping the sign-in in memory.
+- `scripts/sync-endpoints.py` and `scripts/sync-palette.py` refuse a source checkout
+  with uncommitted changes unless given `--allow-dirty`, as `scripts/sync-contracts.py`
+  already did, and record in the snapshot when they were given it.
+
+### Fixed
+
+- The Flatpak bundle now carries THIRD-PARTY-LICENSES.txt, the licence text of every
+  crate the binary links, as the .deb already did; 0.1.0's bundle shipped without it.
+  It is installed as `/app/share/licenses/com.distronode.DistrictAI/THIRD-PARTY-LICENSES.txt`,
+  beside NOTICE.
+- A refresh of the workspace list that fails (offline, say) no longer closes the open
+  workspace, dropping its screens and stopping calls from ringing; the overview says
+  why instead.
+- Going back to a list that was never read (the call log under a missed call's
+  notification, the contacts after switching workspace) reads it rather than showing a
+  spinner for good.
+- A computer clock running fast no longer refreshes the sign-in on every request until
+  the service refuses it, nor makes the live updates' credential look expired.
+- Signing out while the service is rate limiting no longer forgets the sign-in without
+  revoking it: it is kept and revoked later. One sign-out waiting in the keyring that
+  cannot be read no longer stops the others from being revoked.
+- A sign-in the keyring refused to save after a refresh is saved again when the app
+  quits, rather than lost, which signed you out at the next start.
+- A saved sign-in with no token is treated as unreadable (sign in again) rather than
+  looking signed in and loading nothing.
+- A message's saved draft can no longer come back after the message was sent.
+- Contacts can load more again after a refresh that failed; a workflow's switch no
+  longer shows its old value after a successful change; a workflow's run and a support
+  request's reply are no longer listed twice.
+- On the help desk's settings, a logo upload no longer undoes a name being typed, and a
+  save waits for a logo change (and the other way round): Save, and the logo's buttons,
+  are greyed out while the other is under way. A logo read from slow storage is no
+  longer uploaded to another workspace's desk when the workspace was switched meanwhile.
+- A message arriving in the conversation open on screen while the window is minimised
+  or behind another window is notified, rather than marked read unseen.
+- Opening another contact, help desk ticket or support request while a change to the
+  first was under way no longer reports that change as done ("Caller blocked.",
+  "Reply sent.") on the second.
+- Billing reads "1 minute", not "1 minutes".
+- With the desktop set to a 12-hour clock, a language that has no words for AM and PM
+  shows times on a 24-hour clock, rather than without saying which half of the day.
+- A long District HQ conversation no longer draws every answer again for each new one,
+  which grew slower as it went and lost text selected in earlier answers.
+- Captions on the analytics figures wrap rather than being cut off.
+- Saving one part of the receptionist's capabilities no longer drops an unsaved change
+  to the other.
+- In a build with calls, a microphone whose capture would not stop is no longer shown
+  as off.
+
 ### Removed
 
 - The Flathub packaging (`packaging/flathub/`, `scripts/flathub-manifest.py`, and the
@@ -52,5 +125,6 @@ The history of how it was built is in the repository's commits.
 - Calls link this project's own build of LiveKit's libwebrtc, which leaves out the
   H.264 and H.265 codecs and FFmpeg (NOTICE lists what it contains).
 
-[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/distronode-corporation/district-linux/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/distronode-corporation/district-linux/releases/tag/v0.1.0

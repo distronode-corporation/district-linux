@@ -643,7 +643,12 @@ fn leaving_a_ticket_drops_its_answers() {
     let (ticket, ..) = reply_sent(&event(&mut model, DeskEvent::SendReply));
     let effects = model.update(Event::Back);
     assert_eq!(signed_in(&model).route, Route::Desk);
-    assert!(effects.is_empty());
+    // The ticket was opened straight away, so the queue it leads back to is
+    // read now.
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::LoadDeskSettings { .. }]
+    ));
     assert_eq!(signed_in(&model).desk_ticket, None);
     assert_eq!(signed_in(&model).desk_ticket_controls(), None);
     model.update(Event::DeskReplied {
@@ -929,4 +934,56 @@ fn a_role_narrowed_to_viewer_leaves_an_open_ticket_behind() {
     };
     assert_eq!(signed_in(&model).route, Route::Overview);
     assert_eq!(signed_in(&model).desk_ticket, None);
+}
+
+/// A save and a logo change each answer with the whole settings as stored, so
+/// they never go together, and neither answer undoes the other's state: a
+/// name typed while the logo uploads stays, and a save keeps what the form
+/// says about the logo.
+#[test]
+fn a_logo_change_keeps_what_is_typed_and_waits_for_a_save() {
+    let mut model = on_settings(settings());
+    let upload = event(&mut model, DeskEvent::UploadLogo(logo()));
+    event(&mut model, DeskEvent::EditBrandName("Engines".to_owned()));
+    assert!(self::form(&model).is_dirty());
+    assert!(event(&mut model, DeskEvent::SaveSettings).is_empty());
+    model.update(Event::DeskLogoUploaded {
+        ticket: last_ticket(&upload),
+        result: Ok(fixture("district-desk-logo.json")),
+    });
+    let form = self::form(&model);
+    assert!(form.stored.public_logo_url.is_some() && !form.logo_busy);
+    assert_eq!(form.brand_name, "Engines");
+    assert_eq!(
+        form.patch().public_brand_name,
+        Some(DeskBrandName::Set("Engines".to_owned()))
+    );
+
+    // No logo change while a save is on its way.
+    let save = event(&mut model, DeskEvent::SaveSettings);
+    assert!(event(&mut model, DeskEvent::UploadLogo(logo())).is_empty());
+    assert!(event(&mut model, DeskEvent::DeleteLogo).is_empty());
+    model.update(Event::DeskSettingsSaved {
+        ticket: last_ticket(&save),
+        result: settings_answer(DeskSettings {
+            public_brand_name: Some("Engines".to_owned()),
+            ..self::form(&model).stored.clone()
+        }),
+    });
+
+    // A save keeps the note that a logo's file outlived it.
+    let delete = event(&mut model, DeskEvent::DeleteLogo);
+    let mut removed: DeskLogoRemovalResponse = fixture("district-desk-logo-delete.json");
+    removed.object_removed = false;
+    model.update(Event::DeskLogoDeleted {
+        ticket: last_ticket(&delete),
+        result: Ok(removed),
+    });
+    event(&mut model, DeskEvent::SetNotify(false));
+    let save = event(&mut model, DeskEvent::SaveSettings);
+    model.update(Event::DeskSettingsSaved {
+        ticket: last_ticket(&save),
+        result: settings_answer(self::form(&model).stored.clone()),
+    });
+    assert!(self::form(&model).logo_file_kept);
 }

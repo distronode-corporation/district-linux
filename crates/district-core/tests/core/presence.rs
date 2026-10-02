@@ -255,15 +255,19 @@ fn quitting_unregisters_once_and_a_desktop_that_never_rang_sends_nothing() {
     let effects = model.update(Event::Quitting);
     assert!(matches!(
         effects.as_slice(),
-        [Effect::SetPresence {
-            registered: false,
-            ..
-        }]
+        [
+            Effect::SetPresence {
+                registered: false,
+                ..
+            },
+            Effect::SaveSession
+        ]
     ));
-    assert!(model.update(Event::Quitting).is_empty());
+    // Quitting also saves a session a refresh could not, every time.
+    assert_eq!(model.update(Event::Quitting), [Effect::SaveSession]);
 
     let (mut model, _) = signed_in_with(false);
-    assert!(model.update(Event::Quitting).is_empty());
+    assert_eq!(model.update(Event::Quitting), [Effect::SaveSession]);
     assert!(model.update(Event::Resumed).is_empty());
 }
 

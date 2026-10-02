@@ -15,9 +15,9 @@ use crate::effects::Effects;
 use crate::gtk::gio;
 
 /// The application id: the D-Bus name, the desktop file's name, and the
-/// prefix of everything else the desktop knows the app by. The same as
-/// `district_desktop::APP_ID`, which names its files and secrets.
-pub const APP_ID: &str = "com.distronode.DistrictAI";
+/// prefix of everything else the desktop knows the app by. Declared once, in
+/// `district-desktop`, which names the app's files and secrets after it.
+pub use district_desktop::APP_ID;
 
 /// What the application is built from.
 pub struct Parts {
@@ -85,9 +85,8 @@ mod tests {
     /// GLib refuses to register an application whose id it considers invalid,
     /// so a typo here would stop the app from starting at all.
     #[test]
-    fn application_id_is_valid_and_the_desktop_crates() {
+    fn application_id_is_valid() {
         assert!(gio::Application::id_is_valid(APP_ID));
-        assert_eq!(APP_ID, district_desktop::APP_ID);
     }
 
     /// The desktop entry, the D-Bus service and the AppStream metadata name

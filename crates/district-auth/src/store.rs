@@ -78,8 +78,14 @@ pub trait SessionStore: Send + Sync + 'static {
         token: &RefreshToken,
     ) -> impl Future<Output = Result<(), StoreError>> + Send;
 
-    /// The refresh tokens in the revoke outbox.
-    fn revoke_outbox(&self) -> impl Future<Output = Result<Vec<RefreshToken>, StoreError>> + Send;
+    /// The revoke outbox: each entry's refresh token, or why that entry could
+    /// not be read. An entry that cannot be read is left in the outbox, not
+    /// dropped: it may be readable later, and the token in it may still be
+    /// live on the service. The whole answer is an error only when the outbox
+    /// itself could not be listed.
+    fn revoke_outbox(
+        &self,
+    ) -> impl Future<Output = Result<Vec<Result<RefreshToken, StoreError>>, StoreError>> + Send;
 
     /// Removes one token from the revoke outbox. Removing one that is not there
     /// is not an error.
@@ -225,8 +231,8 @@ impl SessionStore for MemorySessionStore {
         Ok(())
     }
 
-    async fn revoke_outbox(&self) -> Result<Vec<RefreshToken>, StoreError> {
-        Ok(self.state().outbox.clone())
+    async fn revoke_outbox(&self) -> Result<Vec<Result<RefreshToken, StoreError>>, StoreError> {
+        Ok(self.state().outbox.iter().cloned().map(Ok).collect())
     }
 
     async fn remove_revoke(&self, token: &RefreshToken) -> Result<(), StoreError> {

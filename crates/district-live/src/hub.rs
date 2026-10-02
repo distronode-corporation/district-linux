@@ -13,9 +13,11 @@ use crate::update::WorkspaceUpdate;
 /// The live connections for a set of workspaces, with their updates merged into
 /// one receiver and each tagged with its workspace.
 ///
-/// The app keeps one connection for each workspace where the user can take
-/// calls, and one for the workspace on screen, and tells the hub which those are
-/// with [`set_watched`](Self::set_watched) whenever that changes. Each
+/// The app keeps one connection for the workspace on screen and one for each
+/// other workspace where the user's role may answer a call, because the service
+/// rings a desktop through a workspace's own socket. It tells the hub which
+/// those are with [`set_watched`](Self::set_watched) whenever that changes, and
+/// a set that keeps a workspace keeps its connection running. Each
 /// connection is independent: its own credential, renewal and backoff, and an
 /// error in one ends only that one.
 pub struct TelemetryHub<M> {

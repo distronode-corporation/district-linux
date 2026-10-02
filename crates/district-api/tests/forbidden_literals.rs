@@ -9,7 +9,10 @@
 //! The endpoint table already has no such endpoint, and the parity test keeps it
 //! that way. This scan is the second line: it catches the same thing typed
 //! anywhere else, in any crate, including a hand-built URL or a doc comment that
-//! would invite one. The first four are matched case-insensitively.
+//! would invite one. The first four are matched case-insensitively, in the
+//! source as written and in every string literal as the compiler reads it (its
+//! escapes decoded, its line continuations joined, and the pieces of a
+//! `concat!` put together), so spelling one in pieces does not hide it.
 //!
 //! One exception: a string literal inside the initializer of [`EXCLUDED`] whose
 //! whole value is one of that list's names, paths or reasons, because the
@@ -41,19 +44,28 @@ struct Literal {
     value: String,
 }
 
-/// The string literals in Rust source, with the common escapes decoded. Comments are
+/// The string literals in Rust source, with their escapes decoded. Comments are
 /// skipped (they are scanned as plain text, never allowed), and a character
 /// literal such as `'"'` is not mistaken for the start of a string.
 fn string_literals(source: &str) -> Vec<Literal> {
+    lex(source).0
+}
+
+/// The string literals in Rust source, and where its comments are.
+fn lex(source: &str) -> (Vec<Literal>, Vec<(usize, usize)>) {
     let bytes = source.as_bytes();
     let mut literals = Vec::new();
+    let mut comments = Vec::new();
     let mut i = 0;
     while i < bytes.len() {
         match bytes[i] {
             b'/' if bytes.get(i + 1) == Some(&b'/') => {
+                let start = i;
                 i = source[i..].find('\n').map_or(bytes.len(), |n| i + n);
+                comments.push((start, i));
             }
             b'/' if bytes.get(i + 1) == Some(&b'*') => {
+                let start = i;
                 let mut depth = 0;
                 while i < bytes.len() {
                     if source[i..].starts_with("/*") {
@@ -69,6 +81,7 @@ fn string_literals(source: &str) -> Vec<Literal> {
                         i += 1;
                     }
                 }
+                comments.push((start, i.min(bytes.len())));
             }
             b'\'' => {
                 // A character literal is a quote, one character or escape, and a
@@ -110,7 +123,71 @@ fn string_literals(source: &str) -> Vec<Literal> {
             _ => i += 1,
         }
     }
-    literals
+    (literals, comments)
+}
+
+/// The source with its comments and string literals blanked out, every other
+/// byte where it was: the code alone, to look for a field name in.
+fn code_only(source: &str) -> String {
+    let (literals, comments) = lex(source);
+    let mut code = source.as_bytes().to_vec();
+    let spans = literals
+        .iter()
+        .map(|l| (l.start, l.end))
+        .chain(comments.iter().copied());
+    for (start, end) in spans {
+        for byte in &mut code[start..end.min(source.len())] {
+            if *byte != b'\n' {
+                *byte = b' ';
+            }
+        }
+    }
+    // Only ASCII bytes were replaced, by ASCII, so this is still UTF-8 except
+    // inside a blanked span, whose bytes were all replaced.
+    String::from_utf8_lossy(&code).into_owned()
+}
+
+/// The values of the string literals each `concat!` joins, with where each
+/// invocation starts.
+fn concatenations(source: &str, literals: &[Literal]) -> Vec<(usize, String)> {
+    let code = code_only(source);
+    let mut joined = Vec::new();
+    for (at, _) in code.match_indices("concat!") {
+        let Some(open) = code[at..].find(['(', '[', '{']).map(|n| at + n) else {
+            continue;
+        };
+        let mut depth = 0;
+        let mut close = code.len();
+        for (offset, c) in code[open..].char_indices() {
+            match c {
+                '(' | '[' | '{' => depth += 1,
+                ')' | ']' | '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        close = open + offset;
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        let value: String = literals
+            .iter()
+            .filter(|l| open < l.start && l.start < close)
+            .map(|l| l.value.as_str())
+            .collect();
+        joined.push((at, value));
+    }
+    joined
+}
+
+/// Whether `code` has a field or a key named `intent` at `offset`: the whole
+/// word, followed by one colon (not the two of a path).
+fn names_intent_field(code: &str, offset: usize) -> bool {
+    let word = |c: char| c.is_ascii_alphanumeric() || c == '_';
+    let before = code[..offset].chars().next_back();
+    let after = code[offset + "intent".len()..].trim_start();
+    !before.is_some_and(word) && after.starts_with(':') && !after.starts_with("::")
 }
 
 /// The number of `#` in a raw string opening at the start of `s` (`r"`, `r#"`).
@@ -132,7 +209,26 @@ fn cooked_string(source: &str, from: usize) -> (String, usize) {
             '\\' => match chars.next() {
                 Some((_, 'n')) => value.push('\n'),
                 Some((_, 't')) => value.push('\t'),
+                Some((_, 'r')) => value.push('\r'),
+                Some((_, '0')) => value.push('\0'),
                 Some((_, '\n')) => while chars.next_if(|(_, c)| c.is_whitespace()).is_some() {},
+                Some((_, 'x')) => {
+                    let hex: String = (0..2)
+                        .filter_map(|_| chars.next().map(|(_, c)| c))
+                        .collect();
+                    value.extend(u8::from_str_radix(&hex, 16).ok().map(char::from));
+                }
+                Some((_, 'u')) => {
+                    let mut hex = String::new();
+                    for (_, c) in chars.by_ref() {
+                        match c {
+                            '{' => {}
+                            '}' => break,
+                            c => hex.push(c),
+                        }
+                    }
+                    value.extend(u32::from_str_radix(&hex, 16).ok().and_then(char::from_u32));
+                }
                 Some((_, other)) => value.push(other),
                 None => break,
             },
@@ -183,39 +279,48 @@ fn scan(file: &str, source: &str, allowed: &BTreeSet<String>) -> Vec<Finding> {
     };
     let lower = source.to_ascii_lowercase();
     let mut findings = Vec::new();
+    let mut found = |offset: usize, what: &str| {
+        let finding = Finding {
+            file: file.to_owned(),
+            line: line_of(offset),
+            what: what.to_owned(),
+        };
+        if !findings.contains(&finding) {
+            findings.push(finding);
+        }
+    };
 
+    // As written, comments included, and as the compiler reads each literal and
+    // each `concat!`.
+    let decoded = literals
+        .iter()
+        .filter(|l| !exempt(l.start + 1))
+        .map(|l| (l.start, l.value.clone()))
+        .chain(concatenations(source, &literals));
     for needle in FORBIDDEN {
         for (offset, _) in lower.match_indices(needle) {
             if !exempt(offset) {
-                findings.push(Finding {
-                    file: file.to_owned(),
-                    line: line_of(offset),
-                    what: (*needle).to_owned(),
-                });
+                found(offset, needle);
             }
+        }
+    }
+    for (offset, value) in decoded {
+        let value = value.to_ascii_lowercase();
+        for needle in FORBIDDEN.iter().filter(|needle| value.contains(**needle)) {
+            found(offset, needle);
         }
     }
 
     // An `intent` JSON key, written as a literal (`json!({"intent": ..})`,
-    // `rename = "intent"`) or as a struct field that serializes under that name.
+    // `rename = "intent"`) or as a field of any visibility, anywhere on its line,
+    // that serializes under that name.
     for literal in literals.iter().filter(|l| l.value == "intent") {
-        findings.push(Finding {
-            file: file.to_owned(),
-            line: line_of(literal.start),
-            what: "an intent field".to_owned(),
-        });
+        found(literal.start, "an intent field");
     }
-    for (index, line) in source.lines().enumerate() {
-        let code = line.trim_start();
-        let field = ["pub intent:", "pub(crate) intent:", "intent:"]
-            .iter()
-            .any(|prefix| code.starts_with(prefix));
-        if field {
-            findings.push(Finding {
-                file: file.to_owned(),
-                line: index + 1,
-                what: "an intent field".to_owned(),
-            });
+    let code = code_only(source);
+    for (offset, _) in code.match_indices("intent") {
+        if names_intent_field(&code, offset) {
+            found(offset, "an intent field");
         }
     }
     findings
@@ -304,22 +409,50 @@ fn the_scan_reads_every_crate() {
         .filter_map(|f| f.iter().next())
         .map(|c| c.to_string_lossy().into_owned())
         .collect();
-    let manifest = fs::read_to_string(root.join("Cargo.toml")).unwrap();
-    for member in manifest
-        .lines()
-        .filter_map(|l| l.trim().strip_prefix("\"crates/"))
-    {
-        let member = member.trim_end_matches(['"', ',']);
-        assert!(
-            crates.contains(member),
-            "the scan does not read crates/{member}/src"
-        );
-    }
+    let members = workspace_members(&fs::read_to_string(root.join("Cargo.toml")).unwrap());
+    // Read by a TOML parser, so a members list written on one line (or any other
+    // way TOML allows) is still read, and an empty one fails here rather than
+    // checking nothing.
+    assert!(!members.is_empty(), "the workspace lists no members");
+    assert_eq!(
+        members, crates,
+        "every member's src/ is scanned, and every crate scanned is a member"
+    );
     let this_crate = root.join("crates/district-api/src");
     for file in ["lib.rs", "exclusions.rs"] {
         assert!(
             files.contains(&this_crate.join(file)),
             "{file} is not scanned"
+        );
+    }
+}
+
+/// The workspace's members, as `crates/<name>` entries name them.
+fn workspace_members(manifest: &str) -> BTreeSet<String> {
+    let manifest: toml::Table = manifest.parse().expect("Cargo.toml is TOML");
+    manifest["workspace"]["members"]
+        .as_array()
+        .expect("a members list")
+        .iter()
+        .map(|member| {
+            let member = member.as_str().expect("a member path");
+            member
+                .strip_prefix("crates/")
+                .unwrap_or_else(|| panic!("{member} is not under crates/"))
+                .to_owned()
+        })
+        .collect()
+}
+
+#[test]
+fn the_members_are_read_however_the_list_is_written() {
+    let one_line = "[workspace]\nmembers = [\"crates/a\", \"crates/b\"]\n";
+    let spread =
+        "[workspace]\nresolver = \"3\"\nmembers = [\n  \"crates/b\",\n  \"crates/a\",\n]\n";
+    for manifest in [one_line, spread] {
+        assert_eq!(
+            workspace_members(manifest),
+            BTreeSet::from(["a".to_owned(), "b".to_owned()])
         );
     }
 }
@@ -358,6 +491,15 @@ fn a_planted_violation_is_caught_in_code_strings_and_comments() {
         ("/// Calls the Elevate endpoint.", "elevate"),
         ("let room = \"video_ws_1_avatar\";", "video_"),
         ("const PREFIX: &str = r#\"VIDEO_\"#;", "video_"),
+        // Spelled in pieces, the compiler still reads the forbidden text.
+        ("let url = \"/api/\\u{61}dmin/users\";", "/api/admin"),
+        ("let url = \"/api/\\x61dmin/users\";", "/api/admin"),
+        ("let url = \"/api/ad\\\n    min/users\";", "/api/admin"),
+        ("let p = concat!(\"/api/\", \"admin\");", "/api/admin"),
+        (
+            "let p = concat![\"calls/\", \"out\", \"bound\"];",
+            "calls/outbound",
+        ),
     ];
     for (source, needle) in planted {
         let findings = scan("planted.rs", source, &allowed);
@@ -405,6 +547,10 @@ fn an_intent_field_is_caught_and_the_word_alone_is_not() {
         "    pub intent: String,",
         "    intent: Option<String>,",
         "    pub(crate) intent: u8,",
+        "    pub(super) intent: String,",
+        "struct SignIn { intent: &'static str }",
+        "#[derive(Serialize)] struct B<'a> { pub intent: &'a str }",
+        "let body = Body { kind, intent : admin };",
     ] {
         let findings = scan("planted.rs", source, &allowed);
         assert!(
@@ -416,6 +562,10 @@ fn an_intent_field_is_caught_and_the_word_alone_is_not() {
         "// The intent of this module is clarity.",
         "let intentional = \"intentional\";",
         "let s = \"the intent\";",
+        "/* intent: in a block comment */",
+        "let s = \"intent: in a string\";",
+        "use crate::intent::Thing;",
+        "let my_intent: u8 = 0;",
     ] {
         assert!(scan("fine.rs", source, &allowed).is_empty(), "{source:?}");
     }
@@ -447,6 +597,13 @@ fn literals_are_read_the_way_the_compiler_reads_them() {
     assert_eq!(
         string_literals("let t = \"tab\\t\"; let x = \"\\")[0].value,
         "tab\t"
+    );
+    let escapes = string_literals("\"\\r\\0\\x41\\u{1F427}\\u{110000}\\xZZ\"");
+    assert_eq!(escapes[0].value, "\r\0A\u{1F427}");
+    // A `concat!` with no brackets after it joins nothing.
+    assert_eq!(
+        concatenations("concat! \"a\"", &string_literals("concat! \"a\"")),
+        []
     );
 }
 

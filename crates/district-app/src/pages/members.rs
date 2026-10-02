@@ -17,8 +17,8 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
-use crate::pages::settings_kit::{Choices, Echoed, Frame, draw_line};
-use crate::pages::shared::{Ask, Asking, humanize};
+use crate::pages::settings_kit::{Choices, Echoed, Frame};
+use crate::pages::shared::{Ask, Asking, draw_line, draw_spinner, humanize};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -247,8 +247,7 @@ impl MembersView {
         imp.notice.update(&section.write);
         imp.top_group.set_visible(!manage || imp.notice.showing());
         let changing = busy && section.last_write != Some(MembersAction::Rename);
-        imp.members_spinner.set_visible(changing);
-        imp.members_spinner.set_spinning(changing);
+        draw_spinner(&imp.members_spinner, changing);
         self.draw_members(members, manage, busy);
         imp.add_group.set_visible(manage);
         imp.email
@@ -279,16 +278,22 @@ impl MembersView {
         imp.new_name_row.set_sensitive(!busy);
         imp.rename_button.set_sensitive(section.can_rename());
         let renaming = busy && section.last_write == Some(MembersAction::Rename);
-        imp.rename_spinner.set_visible(renaming);
-        imp.rename_spinner.set_spinning(renaming);
+        draw_spinner(&imp.rename_spinner, renaming);
     }
 
     /// A row per member, built again only when the members, or what may be
     /// done to them, change.
     fn draw_members(&self, members: &[WorkspaceMember], manage: bool, busy: bool) {
         let imp = self.imp();
-        let wanted = (members.to_vec(), manage, busy);
-        if imp.drawn.borrow().as_ref() != Some(&wanted) {
+        // Compared where it is kept, and copied only when it changed.
+        let drawn = imp
+            .drawn
+            .borrow()
+            .as_ref()
+            .is_some_and(|(listed, was_manage, was_busy)| {
+                listed.as_slice() == members && *was_manage == manage && *was_busy == busy
+            });
+        if !drawn {
             for row in imp.rows.take() {
                 imp.members_group.remove(&row);
             }
@@ -298,7 +303,7 @@ impl MembersView {
                 .map(|member| self.member_row(member, manage, busy))
                 .collect();
             imp.rows.replace(rows);
-            imp.drawn.replace(Some(wanted));
+            imp.drawn.replace(Some((members.to_vec(), manage, busy)));
         }
         for (picker, choices, role) in imp.pickers.borrow().iter() {
             choices.draw(picker, role_choices(), role.as_ref(), String::new);
@@ -379,6 +384,7 @@ impl MembersView {
             self,
             asked.as_ref().map(|(email, question)| Ask {
                 key: format!("remove-{email}"),
+                heading: None,
                 question,
                 action: MembersSection::REMOVE_ACTION,
                 destructive: true,

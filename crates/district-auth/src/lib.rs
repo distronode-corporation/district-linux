@@ -59,13 +59,13 @@ pub use api::{
     RefreshApi, RefreshOutcome, RevokeApi, RevokeOutcome, TOKEN_PATH,
 };
 pub use claims::{AccessClaims, ClaimsError};
-pub use coordinator::{
-    Clock, EARLY_REFRESH_MARGIN_MS, Persistence, SystemClock, TokenRefreshCoordinator,
+pub use coordinator::{EARLY_REFRESH_MARGIN_MS, Persistence, ServerClock, TokenRefreshCoordinator};
+pub use district_api::{
+    AccessToken, Clock, ReauthReason, RetryReason, SystemClock, TokenError, TokenSource,
 };
-pub use district_api::{AccessToken, ReauthReason, RetryReason, TokenError, TokenSource};
 pub use login::{
-    AUTHORIZE_PATH, AuthorizationCode, AuthorizationGrant, LoginError, LoginFlow, REDIRECT_SCHEME,
-    REDIRECT_URI,
+    AUTHORIZE_PATH, AuthorizationCode, AuthorizationGrant, CODE_CHALLENGE_METHOD, LoginError,
+    LoginFlow, REDIRECT_SCHEME, REDIRECT_URI,
 };
 pub use pkce::{Pkce, PkceVerifier, challenge_for, is_valid_challenge, is_valid_verifier};
 pub use sign_out::{

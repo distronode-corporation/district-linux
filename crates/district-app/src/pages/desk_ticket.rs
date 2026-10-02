@@ -2,7 +2,7 @@
 //! it, its conversation, and the reply. Each change is sent once, on its
 //! press, and the ticket shows what the service answers with.
 
-use std::cell::{Cell, OnceCell, RefCell};
+use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
 use district_core::{
@@ -18,7 +18,8 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::desk::status_badge;
 use crate::pages::reply_box::{ReplyBox, ReplyEvents, ReplyState};
 use crate::pages::shared::{
-    add_value_row, clear_box, clear_group, conversation_message, humanize, short_text, when_text,
+    Landing, add_value_row, clear_box, clear_group, conversation_message, draw_line, draw_spinner,
+    failure_text, humanize, short_text, when_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -99,8 +100,8 @@ mod imp {
         /// The ticket the page was last built from.
         pub drawn: RefCell<Option<DeskTicketDetail>>,
         pub detail_rows: RefCell<Vec<gtk::Widget>>,
-        /// Whether a reply was on its way when last drawn.
-        pub sending: Cell<bool>,
+        /// Whether a reply was on its way when last drawn, and for which.
+        pub sending: Landing<()>,
     }
 
     #[glib::object_subclass]
@@ -192,7 +193,8 @@ impl DeskTicketView {
             DeskTicketRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
             }
             DeskTicketRead::Ready(detail) => {
@@ -206,28 +208,28 @@ impl DeskTicketView {
             button.set_active(controls.status == Some(status));
             button.set_sensitive(controls.can_change_status);
         }
-        imp.status_spinner
-            .set_visible(screen.status_change.is_some());
-        imp.status_spinner
-            .set_spinning(screen.status_change.is_some());
+        draw_spinner(&imp.status_spinner, screen.status_change.is_some());
         for (label, failure) in [
             (&*imp.status_failure, &screen.status_failure),
             (&*imp.refresh_failure, &screen.refresh_failure),
         ] {
-            let failure = failure.as_ref().map(|f| f.message.as_str());
-            label.set_visible(failure.is_some());
-            label.set_label(failure.unwrap_or_default());
+            let failure = failure.as_ref().map(failure_text);
+            draw_line(label, failure);
         }
-        let failure = screen.send_failure.as_ref().map(|f| f.message.as_str());
+        let failure = screen.send_failure.as_ref().map(failure_text);
         imp.reply_box.update(ReplyState {
             text: &screen.reply,
             sending: screen.sending,
             can_send: controls.can_reply,
-            failure,
+            failure: failure.as_deref(),
             note: notified_note(screen.last_notified),
         });
-        let was_sending = imp.sending.replace(screen.sending);
-        (was_sending && !screen.sending && screen.send_failure.is_none()).then_some("Reply sent.")
+        let landed = imp
+            .sending
+            .landed(&screen.ticket_id, screen.sending.then_some(()));
+        landed
+            .filter(|()| screen.send_failure.is_none())
+            .map(|()| "Reply sent.")
     }
 
     fn draw(&self, detail: &DeskTicketDetail) {
@@ -264,7 +266,7 @@ impl DeskTicketView {
         let imp = self.imp();
         imp.reply_box.reset();
         imp.drawn.replace(None);
-        imp.sending.set(false);
+        imp.sending.forget();
     }
 }
 

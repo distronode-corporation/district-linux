@@ -94,9 +94,7 @@ fn screen(model: &Model) -> &ContactDetailScreen {
 }
 
 fn controls(model: &Model) -> ContactControls {
-    signed_in(model)
-        .contact_controls()
-        .expect("a contact is open")
+    screen(model).controls(&signed_in(model).capabilities())
 }
 
 fn read(model: &Model) -> &Contact {
@@ -174,7 +172,7 @@ fn the_list_reads_a_page_and_knows_its_end_from_the_total() {
     let rows = rows(&model);
     assert_eq!(rows.contacts.len(), 2);
     assert_eq!(rows.total, 2);
-    assert!(rows.end_reached && !rows.can_load_more());
+    assert!(rows.paging.end_reached && !rows.paging.can_load_more());
     assert!(contacts_event(&mut model, ContactsEvent::LoadMore).is_empty());
     assert_eq!(ContactList::EMPTY_TITLE, "No contacts yet");
     assert!(ContactList::EMPTY_BODY.contains("automatically"));
@@ -191,13 +189,13 @@ fn pages_follow_the_size_the_service_applied() {
         ticket: last_ticket(&effects),
         result: Ok(page(many("a", 25), 60, 0)),
     });
-    assert!(!rows(&model).end_reached);
+    assert!(!rows(&model).paging.end_reached);
     let effects = contacts_event(&mut model, ContactsEvent::LoadMore);
     let [Effect::LoadContacts { offset, .. }] = effects.as_slice() else {
         panic!("{effects:?}");
     };
     assert_eq!(*offset, 25);
-    assert!(rows(&model).loading_more);
+    assert!(rows(&model).paging.loading_more);
     assert!(contacts_event(&mut model, ContactsEvent::LoadMore).is_empty());
     // A contact added meanwhile pushes one row onto this page twice.
     let mut next = vec![contact("a24", json!({}))];
@@ -208,7 +206,10 @@ fn pages_follow_the_size_the_service_applied() {
     });
     let rows = rows(&model);
     assert_eq!(rows.contacts.len(), 43);
-    assert!(rows.end_reached, "a page shorter than the size applied");
+    assert!(
+        rows.paging.end_reached,
+        "a page shorter than the size applied"
+    );
 
     // The total ends the list too.
     let (mut model, _) = loaded(AGENCY, "agency");
@@ -217,7 +218,7 @@ fn pages_follow_the_size_the_service_applied() {
         ticket: last_ticket(&effects),
         result: Ok(page(many("a", 25), 25, 25)),
     });
-    assert!(self::rows(&model).end_reached);
+    assert!(self::rows(&model).paging.end_reached);
 }
 
 #[test]
@@ -240,15 +241,15 @@ fn a_failed_read_says_so_and_a_failed_page_keeps_the_list() {
         ticket: last_ticket(&more),
         result: Err(server_error()),
     });
-    assert_eq!(rows(&model).more_failure, Some(failed.clone()));
-    assert!(!rows(&model).loading_more);
+    assert_eq!(rows(&model).paging.more_failure, Some(failed.clone()));
+    assert!(!rows(&model).paging.loading_more);
     contacts_event(&mut model, ContactsEvent::LoadMore);
-    assert_eq!(rows(&model).more_failure, None);
+    assert_eq!(rows(&model).paging.more_failure, None);
 
     // Reading again from the top drops the page on its way, and keeps the list
     // showing through a failure.
     let effects = model.update(Event::Refresh);
-    assert!(rows(&model).refreshing);
+    assert!(rows(&model).paging.refreshing);
     assert!(
         model
             .update(Event::ContactsLoaded {
@@ -263,8 +264,8 @@ fn a_failed_read_says_so_and_a_failed_page_keeps_the_list() {
     });
     let rows = rows(&model);
     assert_eq!(rows.contacts.len(), 25);
-    assert!(!rows.refreshing);
-    assert_eq!(rows.refresh_failure, Some(failed));
+    assert!(!rows.paging.refreshing);
+    assert_eq!(rows.paging.refresh_failure, Some(failed));
 }
 
 // Adding one.
@@ -353,7 +354,7 @@ fn adding_a_contact_sends_what_was_typed_and_reads_the_list_again() {
         [Effect::LoadContacts { offset: 0, .. }]
     ));
     assert_eq!(signed_in(&model).contacts.create, None);
-    assert!(rows(&model).refreshing);
+    assert!(rows(&model).paging.refreshing);
 }
 
 /// A 409 is the service saying the contact exists, in its own words.
@@ -1054,7 +1055,7 @@ fn contact_events_with_no_contact_open_do_nothing() {
     let mut model = on_contacts("agency");
     assert!(contacts_event(&mut model, ContactsEvent::AskDelete).is_empty());
     assert!(contacts_event(&mut model, ContactsEvent::Confirm).is_empty());
-    assert_eq!(signed_in(&model).contact_controls(), None);
+    assert_eq!(signed_in(&model).contact, None);
 }
 
 #[test]
@@ -1206,4 +1207,36 @@ fn a_contact_is_called_by_the_best_thing_it_holds() {
         "a number stored without its plus reads with it"
     );
     assert_eq!(blocked_label(&caller("", None)), UNNAMED_CONTACT);
+}
+
+/// A refresh drops the next page on its way. If the refresh then fails, the
+/// list can still ask for that page again.
+#[test]
+fn a_failed_refresh_leaves_the_next_page_to_ask_for() {
+    let mut model = on_contacts("agency");
+    let effects = model.update(Event::Refresh);
+    model.update(Event::ContactsLoaded {
+        ticket: last_ticket(&effects),
+        result: Ok(page(many("c", 25), 60, 25)),
+    });
+    let more = contacts_event(&mut model, ContactsEvent::LoadMore);
+    assert!(rows(&model).paging.loading_more);
+    let refresh = model.update(Event::Refresh);
+    assert!(!rows(&model).paging.loading_more);
+    // The page that was on its way lands, and is dropped.
+    model.update(Event::ContactsLoaded {
+        ticket: last_ticket(&more),
+        result: Ok(page(many("d", 25), 60, 25)),
+    });
+    assert_eq!(rows(&model).contacts.len(), 25);
+    model.update(Event::ContactsLoaded {
+        ticket: last_ticket(&refresh),
+        result: Err(server_error()),
+    });
+    assert!(rows(&model).paging.can_load_more());
+    let again = contacts_event(&mut model, ContactsEvent::LoadMore);
+    assert!(matches!(
+        again.as_slice(),
+        [Effect::LoadContacts { offset: 25, .. }]
+    ));
 }

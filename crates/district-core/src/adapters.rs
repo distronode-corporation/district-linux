@@ -941,17 +941,12 @@ where
         self.flow.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// The browser's answer checked against the attempt. The attempt is used up
-    /// whatever the outcome, including a link that is not a URL at all.
+    /// The browser's answer checked against the attempt. A link that is not a
+    /// URL at all answers nothing, and leaves the attempt waiting, as any link
+    /// that is not this attempt's does.
     fn grant(&self, callback: &str) -> Result<AuthorizationGrant, LoginError> {
-        let mut flow = self.flow();
-        match Url::parse(callback) {
-            Ok(url) => flow.complete(&url),
-            Err(_) => {
-                flow.cancel();
-                Err(LoginError::NotOurRedirect)
-            }
-        }
+        let url = Url::parse(callback).map_err(|_| LoginError::NotOurRedirect)?;
+        self.flow().complete(&url)
     }
 }
 
@@ -1018,6 +1013,10 @@ where
 
     async fn drain_revoke_outbox(&self) -> DrainReport {
         self.sign_out.drain_revoke_outbox().await
+    }
+
+    async fn save_session(&self) {
+        let _ = self.coordinator.save_unsaved().await;
     }
 }
 

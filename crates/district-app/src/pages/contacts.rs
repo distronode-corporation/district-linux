@@ -2,6 +2,7 @@
 //! form that adds a contact. The next page is read as the list nears its end;
 //! in a narrow window one pane shows at a time.
 
+use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
@@ -18,7 +19,9 @@ use crate::pages::blocked::BlockedView;
 use crate::pages::contact::ContactView;
 use crate::pages::contact_form::{ContactFormDialog, FormKind};
 use crate::pages::inbox::avatar;
-use crate::pages::shared::{EndWatch, clear_list, watch_end};
+use crate::pages::shared::{
+    EndWatch, PagedRows, PagingFooter, back_on_fold, failure_text, watch_end,
+};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -32,7 +35,7 @@ pub(crate) enum ListShown<'a> {
         /// The heading.
         title: &'static str,
         /// The text under it.
-        body: &'a str,
+        body: Cow<'a, str>,
         /// Whether "Try again" is honest.
         retry: bool,
     },
@@ -46,12 +49,12 @@ pub(crate) fn list_shown(list: &ContactList) -> ListShown<'_> {
         ContactList::NotLoaded | ContactList::Loading => ListShown::Loading,
         ContactList::Failed(failure) => ListShown::Status {
             title: ContactList::FAILED_TITLE,
-            body: &failure.message,
+            body: failure_text(failure),
             retry: failure.retryable,
         },
         ContactList::Ready(rows) if rows.contacts.is_empty() => ListShown::Status {
             title: ContactList::EMPTY_TITLE,
-            body: ContactList::EMPTY_BODY,
+            body: ContactList::EMPTY_BODY.into(),
             retry: false,
         },
         ContactList::Ready(rows) => ListShown::Contacts(rows),
@@ -131,8 +134,7 @@ mod imp {
         pub blocked_view: TemplateChild<BlockedView>,
         pub sink: OnceCell<EventSink>,
         /// The contacts the list was last built from, and each row's id.
-        pub listed: RefCell<Vec<Contact>>,
-        pub rows: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        pub rows: PagedRows<Contact>,
         pub end: OnceCell<EndWatch>,
         /// Whether a contact or the blocked list is open, as last drawn.
         pub open: Cell<bool>,
@@ -185,28 +187,13 @@ mod imp {
             self.end.set(end).ok();
             let weak = page.downgrade();
             self.contact_list.connect_row_activated(move |_, row| {
-                let Some(page) = weak.upgrade() else {
-                    return;
-                };
-                let id = page
-                    .imp()
-                    .rows
-                    .borrow()
-                    .iter()
-                    .find_map(|(listed, id)| (listed == row).then(|| id.clone()));
-                if let Some(contact_id) = id {
+                if let Some(page) = weak.upgrade()
+                    && let Some(contact_id) = page.imp().rows.ids().key_of(row)
+                {
                     page.send(Event::Navigate(Route::ContactDetail { contact_id }));
                 }
             });
-            let weak = page.downgrade();
-            self.split_view.connect_show_content_notify(move |split| {
-                if let Some(page) = weak.upgrade()
-                    && !split.shows_content()
-                    && page.imp().open.get()
-                {
-                    page.send(Event::Back);
-                }
-            });
+            back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }
     }
 
@@ -255,24 +242,17 @@ impl ContactsPage {
             ListShown::Status { title, body, retry } => {
                 imp.list_stack.set_visible_child_name("status");
                 imp.list_status.set_title(title);
-                imp.list_status.set_description(Some(&escape(body)));
+                imp.list_status.set_description(Some(&escape(&body)));
                 imp.list_retry.set_visible(retry);
             }
             ListShown::Contacts(rows) => {
                 imp.list_stack.set_visible_child_name("list");
-                self.draw_rows(rows);
-                more = rows.can_load_more() && rows.more_failure.is_none();
+                more = self.draw_rows(rows);
             }
         }
         let open = signed_in.contact.as_ref();
-        let selected = open.map(|screen| screen.contact_id.as_str());
-        let row = imp
-            .rows
-            .borrow()
-            .iter()
-            .find(|(_, id)| Some(id.as_str()) == selected)
-            .map(|(row, _)| row.clone());
-        imp.contact_list.select_row(row.as_ref());
+        let selected = open.map(|screen| &screen.contact_id);
+        imp.rows.ids().select(&imp.contact_list, selected);
         let mut toast = self.deleted(signed_in);
         let blocked = signed_in.route == Route::BlockedContacts;
         match open {
@@ -338,41 +318,25 @@ impl ContactsPage {
             dialog.present(Some(self));
             dialog
         });
-        let failure = create.failure.as_ref().map(|f| f.message.as_str());
-        dialog.update(&create.form, create.saving, failure);
+        let failure = create.failure.as_ref().map(failure_text);
+        dialog.update(&create.form, create.saving, failure.as_deref());
         None
     }
 
-    fn draw_rows(&self, rows: &ContactRows) {
+    fn draw_rows(&self, rows: &ContactRows) -> bool {
         let imp = self.imp();
         imp.count_label.set_label(&count(rows.total));
-        let failure = rows.refresh_failure.as_ref().map(|f| f.message.as_str());
-        imp.refresh_failure.set_visible(failure.is_some());
-        imp.refresh_failure.set_label(failure.unwrap_or_default());
-        imp.more_spinner.set_visible(rows.loading_more);
-        imp.more_spinner.set_spinning(rows.loading_more);
-        let more_failure = rows.more_failure.as_ref().map(|f| f.message.as_str());
-        imp.more_failure.set_visible(more_failure.is_some());
-        imp.more_failure.set_label(more_failure.unwrap_or_default());
-        imp.more_button.set_visible(more_failure.is_some());
-        let listed = imp.listed.borrow().clone();
-        if listed == rows.contacts {
-            return;
+        let more = PagingFooter {
+            refresh_failure: &imp.refresh_failure,
+            more_spinner: &imp.more_spinner,
+            more_failure: &imp.more_failure,
+            more_button: &imp.more_button,
         }
-        let appended = !listed.is_empty() && rows.contacts.starts_with(&listed);
-        if !appended {
-            clear_list(&imp.contact_list);
-            imp.rows.borrow_mut().clear();
-        }
-        let start = if appended { listed.len() } else { 0 };
-        for contact in &rows.contacts[start..] {
-            let row = contact_row(contact);
-            imp.contact_list.append(&row);
-            imp.rows
-                .borrow_mut()
-                .push((row.upcast(), contact.id.clone()));
-        }
-        imp.listed.replace(rows.contacts.clone());
+        .draw(&rows.paging);
+        imp.rows.draw(&imp.contact_list, &rows.contacts, |contact| {
+            (contact_row(contact).upcast(), contact.id.clone())
+        });
+        more
     }
 
     /// The contacts section is no longer showing: every dialog it opened
@@ -434,7 +398,7 @@ mod tests {
             list_shown(&ContactList::Failed(failure("Offline.", false))),
             ListShown::Status {
                 title: ContactList::FAILED_TITLE,
-                body: "Offline.",
+                body: "Offline.".into(),
                 retry: false,
             }
         );

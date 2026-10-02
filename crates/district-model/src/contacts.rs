@@ -4,17 +4,25 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::{PhoneIntel, ThreadRef};
+use crate::PhoneIntel;
 
-/// A contact's research status while a run is queued or working on it. See
-/// [`Contact::dgi_status`].
-const DGI_IN_FLIGHT: [&str; 3] = ["pending", "crawling", "synthesizing"];
+/// A contact's research status ([`Contact::dgi_status`]): queued.
+pub const DGI_PENDING: &str = "pending";
+/// Searching the web.
+pub const DGI_CRAWLING: &str = "crawling";
+/// Writing the dossier from what was found.
+pub const DGI_SYNTHESIZING: &str = "synthesizing";
+/// Finished, with a dossier.
+pub const DGI_COMPLETE: &str = "complete";
+/// The run failed; [`Contact::dgi_error`] may say why.
+pub const DGI_FAILED: &str = "failed";
 
-/// A contact's research status after a run failed.
-const DGI_FAILED: &str = "failed";
+/// The statuses of a run that is queued or working.
+const DGI_IN_FLIGHT: [&str; 3] = [DGI_PENDING, DGI_CRAWLING, DGI_SYNTHESIZING];
 
-/// The name the voice agent gives a caller it could not identify.
-const UNKNOWN_NAME: &str = "Unknown";
+/// The name the voice agent gives a caller it could not identify, on a contact
+/// and on a blocked caller alike: no name at all.
+pub const UNKNOWN_CALLER_NAME: &str = "Unknown";
 
 /// The key of the LinkedIn handle in [`Contact::social_handles`].
 const LINKEDIN_KEY: &str = "linkedin";
@@ -79,7 +87,8 @@ impl Contact {
     /// The name to show, or `None` when the name says nothing (blank, or the
     /// `Unknown` the voice agent writes).
     pub fn display_name(&self) -> Option<&str> {
-        Some(self.name.as_str()).filter(|name| !name.trim().is_empty() && *name != UNKNOWN_NAME)
+        Some(self.name.as_str())
+            .filter(|name| !name.trim().is_empty() && *name != UNKNOWN_CALLER_NAME)
     }
 
     /// Whether a research run is queued or working. All three in-flight states
@@ -112,12 +121,6 @@ impl Contact {
             .and_then(|handles| handles.get(LINKEDIN_KEY))
             .and_then(Value::as_str)
             .filter(|handle| !handle.trim().is_empty())
-    }
-
-    /// The contact's thread, for reading their history of messages and calls
-    /// (`GET /api/district/timeline`).
-    pub fn thread_ref(&self) -> ThreadRef {
-        ThreadRef::Contact(self.id.clone())
     }
 }
 
@@ -431,7 +434,6 @@ mod tests {
             "latestContextSummary": "Booked.", "budget": "10k", "timeline": "Q4",
             "website": "https://example.com",
         }));
-        assert_eq!(row.thread_ref(), ThreadRef::Contact("c_1".to_owned()));
         let update = UpdateContactRequest::from_contact(&row);
         assert_eq!(
             serde_json::to_value(&update).unwrap(),

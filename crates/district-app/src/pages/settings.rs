@@ -24,7 +24,7 @@ use crate::pages::members::MembersView;
 use crate::pages::messaging::MessagingView;
 use crate::pages::persona::PersonaView;
 use crate::pages::routing::RoutingView;
-use crate::pages::shared::clear_list;
+use crate::pages::shared::{RowIds, back_on_fold, clear_list};
 use crate::pages::tools::ToolsView;
 use crate::routes;
 use crate::sink::EventSink;
@@ -87,7 +87,7 @@ mod imp {
         pub sink: OnceCell<EventSink>,
         /// The hub's rows, as last built, each with its section.
         pub listed: RefCell<Vec<SettingsRow>>,
-        pub rows: RefCell<Vec<(gtk::ListBoxRow, WorkspaceSection)>>,
+        pub rows: RowIds<WorkspaceSection>,
         /// Whether a section is open, as last drawn.
         pub open: Cell<bool>,
     }
@@ -125,15 +125,7 @@ mod imp {
                     page.open_row(row);
                 }
             });
-            let weak = page.downgrade();
-            self.split_view.connect_show_content_notify(move |split| {
-                if let Some(page) = weak.upgrade()
-                    && !split.shows_content()
-                    && page.imp().open.get()
-                {
-                    page.send(Event::Back);
-                }
-            });
+            back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }
     }
 
@@ -176,13 +168,7 @@ impl SettingsPage {
 
     /// Opens the section `row` names.
     fn open_row(&self, row: &gtk::ListBoxRow) {
-        let section = self
-            .imp()
-            .rows
-            .borrow()
-            .iter()
-            .find_map(|(listed, section)| (listed == row).then_some(*section));
-        if let Some(section) = section {
+        if let Some(section) = self.imp().rows.key_of(row) {
             self.send(Event::Navigate(Route::Workspace(section)));
         }
     }
@@ -239,13 +225,7 @@ impl SettingsPage {
             imp.rows.replace(built);
             imp.listed.replace(rows);
         }
-        let chosen = imp
-            .rows
-            .borrow()
-            .iter()
-            .find(|(_, listed)| *listed == section)
-            .map(|(row, _)| row.clone());
-        imp.hub_list.select_row(chosen.as_ref());
+        imp.rows.select(&imp.hub_list, Some(&section));
     }
 
     /// Every section but `showing` lets go of its dialogs, its questions and
@@ -287,22 +267,7 @@ mod tests {
 
     #[test]
     fn every_section_has_a_name_of_its_own() {
-        let sections = [
-            WorkspaceSection::Hub,
-            WorkspaceSection::Persona,
-            WorkspaceSection::Tools,
-            WorkspaceSection::Directory,
-            WorkspaceSection::Routing,
-            WorkspaceSection::CallHandling,
-            WorkspaceSection::Knowledge,
-            WorkspaceSection::Messaging,
-            WorkspaceSection::Members,
-            WorkspaceSection::Numbers,
-        ];
-        let keys: Vec<&str> = sections
-            .iter()
-            .map(|section| section_key(*section))
-            .collect();
+        let keys: Vec<&str> = WorkspaceSection::ALL.map(section_key).to_vec();
         for (index, key) in keys.iter().enumerate() {
             assert!(!keys[..index].contains(key), "{key}");
         }

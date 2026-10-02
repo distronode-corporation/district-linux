@@ -16,7 +16,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::when_text;
+use crate::pages::shared::{draw_spinner, failure_text, when_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -168,7 +168,8 @@ impl SchedulingPage {
             SchedulingStatus::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(SchedulingStatus::FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
                 return;
             }
@@ -200,12 +201,12 @@ impl SchedulingPage {
             row.set_visible(value.is_some());
             row.set_subtitle(value.as_deref().unwrap_or_default());
         }
-        let notice = screen.notice.as_ref().map(|notice| notice.message.as_str());
+        let notice = screen.notice.as_ref().map(failure_text);
         imp.notice_box.set_visible(notice.is_some());
-        imp.notice_label.set_label(notice.unwrap_or_default());
+        imp.notice_label
+            .set_label(notice.as_deref().unwrap_or_default());
         let busy = screen.enabling || screen.opening;
-        imp.busy_spinner.set_visible(busy);
-        imp.busy_spinner.set_spinning(busy);
+        draw_spinner(&imp.busy_spinner, busy);
         imp.enable_button.set_visible(shown.offers_enable(status));
         imp.enable_button.set_sensitive(!screen.enabling);
         imp.check_button.set_visible(shown.offers_refresh());

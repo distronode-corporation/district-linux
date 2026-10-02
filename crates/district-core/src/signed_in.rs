@@ -22,13 +22,13 @@ use crate::analytics::AnalyticsScreen;
 use crate::billing::BillingScreen;
 use crate::call::{ActiveCall, CallEnd};
 use crate::calls::{CallDetailScreen, CallLog};
-use crate::contacts::{BlockedScreen, ContactDetailScreen, ContactsScreen};
-use crate::desk::{DeskScreen, DeskSettingsView, DeskTicketScreen};
+use crate::contacts::{BlockedScreen, ContactDetailScreen, ContactList, ContactsScreen};
+use crate::desk::{DeskQueue, DeskScreen, DeskSettingsView, DeskTicketScreen};
 use crate::devices::{Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen};
 use crate::dialer::{DialerScreen, PendingDial};
 use crate::failure::FailureText;
 use crate::hq::HqScreen;
-use crate::inbox::InboxScreen;
+use crate::inbox::{ConversationList, InboxScreen};
 use crate::live::LiveState;
 use crate::marketplace::MarketplaceScreen;
 use crate::media::MediaSession;
@@ -45,8 +45,8 @@ use crate::settings::{
     CallHandlingSection, DirectorySection, KnowledgeSection, MembersSection, MessagingSection,
     PersonaSection, RoutingRulesSection, ToolsSection,
 };
-use crate::support::{SupportRequestScreen, SupportScreen};
-use crate::thread::ThreadScreen;
+use crate::support::{SupportList, SupportRequestScreen, SupportScreen};
+use crate::thread::{DraftWrites, ThreadScreen};
 use crate::workflows::WorkflowsScreen;
 use crate::workspaces::{self, Resolved, WorkspacesState};
 
@@ -142,6 +142,8 @@ pub struct SignedIn {
     pub presence: PresenceState,
     /// The dial whose answer is awaited.
     pub(crate) pending_dial: Option<PendingDial>,
+    /// The saved replies being written, one at a time.
+    pub(crate) draft_writes: DraftWrites,
     /// Whether this build can carry a call's audio
     /// ([`CoreConfig::calls_available`]).
     pub(crate) calls_available: bool,
@@ -210,6 +212,7 @@ impl SignedIn {
             media: None,
             presence: PresenceState::default(),
             pending_dial: None,
+            draft_writes: DraftWrites::default(),
             calls_available,
         }
     }
@@ -333,9 +336,28 @@ impl SignedIn {
         let Some(parent) = self.route.parent() else {
             return stay();
         };
-        let effects = self.leave(&parent, tickets);
+        let mut effects = self.leave(&parent, tickets);
         self.route = parent;
+        // A list that was never read here is read now, or it would show its
+        // spinner for good: a notification opens a call without its log, and
+        // a workspace switch under the blocked callers drops the contacts. A
+        // list already read is shown as it was.
+        if self.never_read() {
+            effects.extend(self.enter(tickets));
+        }
         Next::Stay(effects)
+    }
+
+    /// Whether the route showing is a list never read in this workspace.
+    fn never_read(&self) -> bool {
+        match self.route {
+            Route::Inbox => self.inbox.list == ConversationList::NotLoaded,
+            Route::Calls => self.calls == CallLog::NotLoaded,
+            Route::Contacts => self.contacts.list == ContactList::NotLoaded,
+            Route::Desk => self.desk.queue == DeskQueue::NotLoaded,
+            Route::Support => self.support.list == SupportList::NotLoaded,
+            _ => false,
+        }
     }
 
     pub(crate) fn refresh(&mut self, tickets: &mut Tickets) -> Next {
@@ -499,9 +521,7 @@ impl SignedIn {
         }
         let response = match result {
             Ok(response) => response,
-            Err(error) => {
-                return Next::Stay(self.close_workspace(workspaces::failed(&error), tickets));
-            }
+            Err(error) => return Next::Stay(self.workspaces_failed(&error, tickets)),
         };
         let previous = self.active_id();
         let Resolved {
@@ -522,6 +542,8 @@ impl SignedIn {
             effects.extend(self.close_screens(tickets));
             self.overview = OverviewScreen::Loading;
             effects.extend(self.open_workspace(&active, tickets));
+        } else {
+            effects.extend(self.watch_again(&active, tickets));
         }
         tickets.cancel(Slot::Setup);
         let ticket = tickets.issue(Slot::Overview);
@@ -747,6 +769,20 @@ impl SignedIn {
                 stay()
             }
         }
+    }
+
+    /// The workspace list could not be read. An open workspace stays open, with
+    /// its screens and its live updates, and the overview says why: a refresh
+    /// that failed (offline, say) is no reason to drop what was showing. With
+    /// nothing open, or when the answer is that the account has no workspace at
+    /// all, the failure is what the screen shows instead.
+    fn workspaces_failed(&mut self, error: &ApiError, tickets: &mut Tickets) -> Vec<Effect> {
+        let open = matches!(self.workspaces, WorkspacesState::Ready(_));
+        if !open || matches!(error, ApiError::NotFound(_)) {
+            return self.close_workspace(workspaces::failed(error), tickets);
+        }
+        self.overview = OverviewScreen::Failed(FailureText::from_api_error(error));
+        Vec::new()
     }
 
     /// No workspace is open any more: `state` says why.

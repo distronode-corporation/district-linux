@@ -5,12 +5,14 @@ This product includes software developed by Distronode Corporation, licensed
 under the Apache License, Version 2.0. The full licence text is in LICENSE.
 
 The distributed binaries statically link a number of third-party Rust crates.
-Third-party dependencies keep their own licences. The .deb carries the licence
-text of every crate the binary links, with the crates each text covers, as
-/usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt, beside this file. It is
+Third-party dependencies keep their own licences. Both packages carry the
+licence text of every crate the binary links, with the crates each text covers,
+as THIRD-PARTY-LICENSES.txt beside this file: the .deb as
+/usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt and the Flatpak as
+/app/share/licenses/com.distronode.DistrictAI/THIRD-PARTY-LICENSES.txt. It is
 written from Cargo.lock by cargo-about (about.toml and about.hbs in this
-repository) when the package is built, and running scripts/build-deb.sh
-writes the same file into target/release for a build of your own.
+repository) when a package is built, and scripts/third-party-licenses.sh
+writes the same file for a build of your own.
 
 Third-party notices for native libraries bundled with a release (for example in
 a Flatpak or a .deb) are listed in this file when such a library is added.

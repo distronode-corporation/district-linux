@@ -2,14 +2,17 @@
 //! ever presented.
 
 use std::future::Future;
+use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use district_api::{AccessToken, ReauthReason, RetryReason, TokenError, TokenSource};
+use district_api::{
+    AccessToken, Clock, ReauthReason, RetryReason, SystemClock, TokenError, TokenSource,
+};
 use tokio::runtime::Handle;
 use tokio::sync::OwnedMutexGuard;
 
 use crate::api::{RefreshApi, RefreshOutcome, RevokeApi, RevokeOutcome};
+use crate::claims::issued_at_ms;
 use crate::sign_out::{RevokeStatus, SignOutReport};
 use crate::store::{SessionStore, StoreError, StoreErrorKind};
 use crate::tokens::{NativeTokens, PersistedSession};
@@ -22,26 +25,6 @@ use crate::tokens::{NativeTokens, PersistedSession};
 /// token, is what stops every request in flight at the ten-minute mark from
 /// failing once.
 pub const EARLY_REFRESH_MARGIN_MS: i64 = 60_000;
-
-/// Where the coordinator reads the time: Unix epoch milliseconds, the unit the
-/// service states every expiry in. A trait so tests can move time by hand.
-pub trait Clock: Send + Sync + 'static {
-    /// The current time, in epoch milliseconds.
-    fn now_ms(&self) -> i64;
-}
-
-/// The system's wall clock.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct SystemClock;
-
-impl Clock for SystemClock {
-    fn now_ms(&self) -> i64 {
-        let since_epoch = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default();
-        i64::try_from(since_epoch.as_millis()).unwrap_or(i64::MAX)
-    }
-}
 
 /// Whether a new session reached the [`SessionStore`].
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -104,6 +87,15 @@ pub enum Persistence {
 /// ([`Offline`](RetryReason::Offline)), or the store could not be read or written
 /// just now (the reason names the store's failure: see
 /// [`StoreErrorKind::retry_reason`]).
+///
+/// # The service's clock
+///
+/// Every expiry the service states is by its own clock, and this machine's
+/// may be minutes off. A clock running fast would see every access token as
+/// already due and refresh on every call, until the service's rate limit
+/// refused the refreshes. So each access token's issue time (`iat`) says how
+/// far apart the two clocks are, and expiries are compared with this machine's
+/// time moved by that much: [`server_clock`](Self::server_clock).
 pub struct TokenRefreshCoordinator<S, A> {
     inner: Arc<Inner<S, A>>,
 }
@@ -119,7 +111,7 @@ impl<S, A> Clone for TokenRefreshCoordinator<S, A> {
 struct Inner<S, A> {
     store: S,
     api: A,
-    clock: Arc<dyn Clock>,
+    clock: ServerClock,
     /// The work that must not be abandoned runs here.
     runtime: Handle,
     /// The access token, in memory only.
@@ -155,7 +147,10 @@ impl<S: SessionStore, A: RefreshApi> TokenRefreshCoordinator<S, A> {
             inner: Arc::new(Inner {
                 store,
                 api,
-                clock: Arc::new(clock),
+                clock: ServerClock {
+                    local: Arc::new(clock),
+                    skew_ms: Arc::new(AtomicI64::new(0)),
+                },
                 runtime: Handle::current(),
                 cache: Mutex::new(None),
                 rotation: Arc::new(tokio::sync::Mutex::new(None)),
@@ -166,6 +161,23 @@ impl<S: SessionStore, A: RefreshApi> TokenRefreshCoordinator<S, A> {
     /// The store this coordinator keeps the session in.
     pub fn store(&self) -> &S {
         &self.inner.store
+    }
+
+    /// The service's time, as this machine's clock moved by how far apart the
+    /// two were when the last access token was issued (this machine's own
+    /// until one has been). The clock to compare anything the service states
+    /// an expiry for with: the live updates' credential too.
+    pub fn server_clock(&self) -> ServerClock {
+        self.inner.clock.clone()
+    }
+
+    /// Saves a rotated session the store refused earlier, if there is one, for
+    /// the app to ask as it quits: held only in memory, it would be lost, and
+    /// the next start would find its spent predecessor and end the session.
+    /// [`Persistence::Saved`] when there was nothing waiting to be saved.
+    pub async fn save_unsaved(&self) -> Persistence {
+        self.locked(|inner, mut rescue| async move { inner.save_rescued(&mut rescue).await })
+            .await
     }
 
     /// An access token to send, refreshing first if the cached one is missing or
@@ -302,12 +314,8 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
         // saved, because presenting it would mean moving the marker off the
         // predecessor, and a crash then would leave a spent token in the store
         // with nothing to say so.
-        if let Some(successor) = rescue.take() {
-            if let Err(error) = self.store.save_session(&successor).await {
-                *rescue = Some(successor);
-                return Err(retry_later(&error));
-            }
-            self.store.clear_refresh_pending().await.ok();
+        if let Persistence::MemoryOnly(error) = self.save_rescued(rescue).await {
+            return Err(retry_later(&error));
         }
 
         let session = match self.store.load_session().await {
@@ -357,7 +365,9 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
             RefreshOutcome::Success(tokens) => {
                 let access = tokens.access_token.clone();
                 // Whether or not the store took the successor, it is kept: the
-                // predecessor is spent, so the successor is the session now.
+                // predecessor is spent, so the successor is the session now. One
+                // the store refused is saved again before the next refresh, and
+                // when the app quits (`save_unsaved`).
                 let _ = self.install(rescue, tokens, session.device_id).await;
                 Ok(access)
             }
@@ -380,6 +390,24 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
             // ends the session instead of presenting a possibly spent token.
             RefreshOutcome::TransportFailure => {
                 Err(self.signed_out(ReauthReason::RefreshUnreachable))
+            }
+        }
+    }
+
+    /// Saves a successor the store refused earlier, if there is one, and then
+    /// clears the marker it left on its predecessor.
+    async fn save_rescued(&self, rescue: &mut Rescue) -> Persistence {
+        let Some(successor) = rescue.take() else {
+            return Persistence::Saved;
+        };
+        match self.store.save_session(&successor).await {
+            Ok(()) => {
+                self.store.clear_refresh_pending().await.ok();
+                Persistence::Saved
+            }
+            Err(error) => {
+                *rescue = Some(successor);
+                Persistence::MemoryOnly(error)
             }
         }
     }
@@ -414,6 +442,9 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
                 Persistence::MemoryOnly(error)
             }
         };
+        if let Some(issued_at_ms) = issued_at_ms(&tokens.access_token) {
+            self.clock.learn(issued_at_ms);
+        }
         *lock(&self.cache) = Some(Cached {
             token: tokens.access_token,
             expires_at_ms: tokens.access_token_expires_at_ms,
@@ -462,6 +493,33 @@ impl<S: SessionStore, A: RefreshApi> Inner<S, A> {
     async fn discard(&self, reason: ReauthReason) -> TokenError {
         self.store.clear_session().await.ok();
         self.signed_out(reason)
+    }
+}
+
+/// The service's time: this machine's clock, moved by how far the service's
+/// was from it when the last access token was issued. See
+/// [`TokenRefreshCoordinator::server_clock`]. Clones share what was learned.
+#[derive(Clone)]
+pub struct ServerClock {
+    local: Arc<dyn Clock>,
+    skew_ms: Arc<AtomicI64>,
+}
+
+impl ServerClock {
+    /// A token issued at `issued_at_ms` by the service's clock has just
+    /// arrived: the two clocks are that far apart, give or take the request's
+    /// round trip and the second `iat` is rounded to.
+    fn learn(&self, issued_at_ms: i64) {
+        let skew = issued_at_ms.saturating_sub(self.local.now_ms());
+        self.skew_ms.store(skew, Ordering::Relaxed);
+    }
+}
+
+impl Clock for ServerClock {
+    fn now_ms(&self) -> i64 {
+        self.local
+            .now_ms()
+            .saturating_add(self.skew_ms.load(Ordering::Relaxed))
     }
 }
 

@@ -24,6 +24,12 @@ use crate::window::{
 /// The ringtone, in the resources built into the binary.
 const RINGTONE: &str = "/com/distronode/DistrictAI/sounds/ringtone.wav";
 
+/// The AppStream metadata, in the resources built into the binary.
+const METAINFO: &str = "/com/distronode/DistrictAI/com.distronode.DistrictAI.metainfo.xml";
+
+/// The About dialog's copyright line, which the metadata does not hold.
+const COPYRIGHT: &str = "Copyright 2026 Distronode Corporation";
+
 /// How long the app waits, as it quits, for the effects quitting asks for:
 /// unregistering this desktop's presence, ending a call at the carrier.
 const QUIT_LIMIT: Duration = Duration::from_secs(2);
@@ -256,12 +262,26 @@ impl Controller {
 
     fn create_window(&self, app: &adw::Application) -> DistrictWindow {
         let window = DistrictWindow::new(app, self.sink.clone());
+        // Whether the user can be looking at the window, told to the model
+        // each time it changes: a message arriving in the open thread is
+        // marked read only then, and notified otherwise.
         let events = self.events.clone();
-        window.connect_visible_notify(move |window| {
-            events
-                .try_send(Event::WindowVisible(window.is_visible()))
-                .ok();
+        let told = Rc::new(Cell::new(None));
+        let report: Rc<dyn Fn(&DistrictWindow)> = Rc::new(move |window| {
+            let now = looking(
+                window.is_visible(),
+                window.is_active(),
+                window.is_suspended(),
+            );
+            if told.replace(Some(now)) != Some(now) {
+                events.try_send(Event::WindowVisible(now)).ok();
+            }
         });
+        let reported = Rc::clone(&report);
+        window.connect_visible_notify(move |window| reported(window));
+        let reported = Rc::clone(&report);
+        window.connect_is_active_notify(move |window| reported(window));
+        window.connect_suspended_notify(move |window| report(window));
         self.window.set(Some(&window));
         self.render();
         window
@@ -281,10 +301,18 @@ impl Controller {
                 );
             }
             UiCommand::Notify(notification) => {
+                let model = self.model.borrow();
+                let elsewhere = match model.session() {
+                    SessionState::SignedIn(signed_in) => notifications::elsewhere(
+                        signed_in,
+                        notifications::workspace_of(&notification.target),
+                    ),
+                    _ => None,
+                };
                 if let Some(app) = app {
                     app.send_notification(
                         Some(&notification.id),
-                        &notifications::to_gio(&notification),
+                        &notifications::to_gio(&notification, elsewhere),
                     );
                 }
             }
@@ -359,17 +387,36 @@ impl Controller {
     }
 }
 
-/// The About dialog.
+/// Whether the user can be looking at a window that is `visible`, `active`
+/// (it has the keyboard focus) and `suspended` (minimised, or otherwise not
+/// shown on screen). A visible window says only that it is mapped: minimised
+/// or behind another window, it stays visible.
+fn looking(visible: bool, active: bool, suspended: bool) -> bool {
+    visible && active && !suspended
+}
+
+/// The About dialog, from the AppStream metadata a software centre shows:
+/// the name, the developer, the links and the licence are written once, there.
+/// The version is this build's, which is the metadata's newest release.
 fn show_about(app: &adw::Application, version: &str) {
-    let about = adw::AboutDialog::builder()
-        .application_name("District AI")
-        .application_icon(APP_ID)
-        .developer_name("Distronode Corporation")
-        .version(version)
-        .website("https://www.distronode.com")
-        .issue_url("https://github.com/distronode-corporation/district-linux/issues")
-        .license_type(gtk::License::Apache20)
-        .copyright("Copyright 2026 Distronode Corporation")
-        .build();
+    let about = adw::AboutDialog::from_appdata(METAINFO, Some(version));
+    about.set_version(version);
+    about.set_copyright(COPYRIGHT);
     about.present(app.active_window().as_ref());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A window minimised, behind another or hidden is not being read, so a
+    /// message in its open thread is notified rather than marked read.
+    #[test]
+    fn only_a_shown_focused_window_is_being_looked_at() {
+        assert!(looking(true, true, false));
+        assert!(!looking(true, false, false), "behind another window");
+        assert!(!looking(true, true, true), "minimised");
+        assert!(!looking(false, true, false), "hidden");
+        assert!(!looking(false, false, true));
+    }
 }

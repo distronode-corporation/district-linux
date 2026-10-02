@@ -1,0 +1,52 @@
+name: Install clang 21 and the headers webrtc-sys compiles against
+description: >-
+  clang 21 from the LLVM project's apt repository, the GTK 4, libadwaita and
+  libwebrtc build headers, and any further packages the caller names; sets CXX
+  for the rest of the job. Ubuntu 24.04 runners only.
+
+# clang 21, because the prebuilt libwebrtc is built against Chromium's own
+# libc++, which needs clang 21.1 or newer (webrtc-sys's build script checks, and
+# refuses GCC outright). Ubuntu 24.04 ships clang 18. LiveKit's own CI downloads
+# the whole LLVM release (2 GB); the LLVM project's apt repository for this
+# release has clang 21 alone, signed with the key whose fingerprint is pinned
+# here, and apt refuses anything it did not sign.
+#
+# The rest: GTK 4 and libadwaita for the app, and the headers webrtc-sys compiles
+# against (it loads the X11, DRM and VA libraries at run time and links none of
+# them). voice.yml and deb.yml both use this, so a key or package change is made
+# once.
+inputs:
+  packages:
+    description: Further apt packages to install in the same transaction, separated by spaces
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install clang 21 and the system libraries
+      shell: bash
+      env:
+        LLVM_KEY_FINGERPRINT: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
+        EXTRA_PACKAGES: ${{ inputs.packages }}
+      run: |
+        set -euo pipefail
+        curl -fsSL -o "$RUNNER_TEMP/llvm.key" https://apt.llvm.org/llvm-snapshot.gpg.key
+        have="$(gpg --show-keys --with-colons "$RUNNER_TEMP/llvm.key" | awk -F: '/^fpr/ { print $10; exit }')"
+        if [ "$have" != "$LLVM_KEY_FINGERPRINT" ]; then
+          echo "::error::apt.llvm.org's key is $have, not the pinned $LLVM_KEY_FINGERPRINT"
+          exit 1
+        fi
+        gpg --dearmor < "$RUNNER_TEMP/llvm.key" | sudo tee /usr/share/keyrings/llvm.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" \
+          | sudo tee /etc/apt/sources.list.d/llvm-21.list > /dev/null
+        sudo apt-get update
+        # shellcheck disable=SC2086 # deliberate word splitting into one package per arg
+        sudo apt-get install -y --no-install-recommends \
+          clang-21 \
+          pkg-config libgtk-4-dev libadwaita-1-dev \
+          libglib2.0-dev libx11-dev libxext-dev libxfixes-dev libxdamage-dev libxrandr-dev \
+          libxcomposite-dev libgl1-mesa-dev libdrm-dev libgbm-dev libva-dev libpulse-dev \
+          $EXTRA_PACKAGES
+        echo "CXX=clang++-21" >> "$GITHUB_ENV"
+        clang++-21 --version

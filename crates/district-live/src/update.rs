@@ -85,9 +85,9 @@ pub enum Disconnect {
 /// changed: the user signed in again, or was added back to the workspace.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum LiveError {
-    /// The service would not mint a credential: the session has ended
-    /// ([`ApiError::requires_sign_in`] says so), the member may not read this
-    /// workspace, or the request itself was refused.
+    /// The service would not mint a credential: the session has ended (an
+    /// [`ApiError::Unauthorized`] that asks for a new sign-in), the member may
+    /// not read this workspace, or the request itself was refused.
     #[error("the service would not issue a live updates credential: {0}")]
     Mint(ApiError),
     /// The service answered with a credential that cannot be presented: empty,

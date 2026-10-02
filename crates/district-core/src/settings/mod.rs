@@ -25,7 +25,9 @@
 //!
 //! A save that fails keeps the member's edits and the settings they were made
 //! against, and nothing is sent again by itself. Each section has one write on
-//! its way at a time.
+//! its way at a time, but for call handling: the member's own availability
+//! switch is saved by a route of its own, and may go beside a save of the
+//! section.
 
 mod call_handling;
 mod directory;
@@ -179,6 +181,25 @@ pub(crate) fn settle(
         };
     }
     load
+}
+
+/// A section's save was answered. A success is followed by the read that
+/// becomes the section's new starting point, waited for in `slot`; a failure
+/// stays in `save`, beside the edits.
+pub(crate) fn after_save(
+    save: &mut SaveState,
+    result: Result<(), ApiError>,
+    slot: Slot,
+    workspace_id: String,
+    tickets: &mut Tickets,
+) -> Vec<Effect> {
+    match result {
+        Ok(()) => vec![read_config(slot, workspace_id, tickets)],
+        Err(error) => {
+            *save = SaveState::Failed(FailureText::from_api_error(&error));
+            Vec::new()
+        }
+    }
 }
 
 /// The read of the settings row, for the section waiting in `slot`.

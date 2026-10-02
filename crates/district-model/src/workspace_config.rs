@@ -367,11 +367,6 @@ impl DirectoryEntry {
     pub fn is_incomplete(&self) -> bool {
         self.name().trim().is_empty() || self.phone_number().trim().is_empty()
     }
-
-    /// The whole stored object, every key included.
-    pub fn as_json(&self) -> &Map<String, Value> {
-        &self.0
-    }
 }
 
 /// A key of a routing rule that the web console's rule builder edits.
@@ -528,7 +523,6 @@ mod tests {
             serde_json::to_value(&edited).unwrap(),
             json!({"name": "Ops desk", "phoneNumber": "+14165550178", "type": "app"})
         );
-        assert_eq!(edited.as_json().len(), 3);
     }
 
     #[test]

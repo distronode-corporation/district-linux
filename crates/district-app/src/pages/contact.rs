@@ -10,7 +10,9 @@ use district_core::{
     ContactDetails, ContactView as ContactRead, ContactsEvent, Event, contact_label,
     format_phone_number,
 };
-use district_model::{Contact, PhoneIntel};
+use district_model::{
+    Contact, DGI_COMPLETE, DGI_CRAWLING, DGI_FAILED, DGI_PENDING, DGI_SYNTHESIZING, PhoneIntel,
+};
 use serde_json::{Map, Value};
 
 use crate::adw;
@@ -20,7 +22,9 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::call::location;
 use crate::pages::contact_form::{ContactFormDialog, FormKind};
 use crate::pages::inbox::has_initials;
-use crate::pages::shared::{Ask, Asking, add_value_row, clear_group, humanize, long_time, now};
+use crate::pages::shared::{
+    Ask, Asking, Landing, add_value_row, clear_group, failure_text, humanize, long_time, now,
+};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -73,11 +77,11 @@ pub(crate) fn research_status(contact: &Contact) -> Option<String> {
     let status = contact.dgi_status.as_deref()?;
     Some(
         match status {
-            "pending" => "Queued",
-            "crawling" => "Searching the web",
-            "synthesizing" => "Writing the summary",
-            "complete" => "Complete",
-            "failed" => "Did not finish",
+            DGI_PENDING => "Queued",
+            DGI_CRAWLING => "Searching the web",
+            DGI_SYNTHESIZING => "Writing the summary",
+            DGI_COMPLETE => "Complete",
+            DGI_FAILED => "Did not finish",
             other => return Some(humanize(other)),
         }
         .to_owned(),
@@ -226,7 +230,7 @@ mod imp {
         /// The form changing the contact, while it is open.
         pub form: RefCell<Option<ContactFormDialog>>,
         /// The change on its way when last drawn, to report it when it lands.
-        pub saving: std::cell::Cell<Option<ContactAction>>,
+        pub saving: Landing<ContactAction>,
     }
 
     #[glib::object_subclass]
@@ -321,7 +325,8 @@ impl ContactView {
             ContactRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
             }
             ContactRead::Ready(details) => {
@@ -333,11 +338,10 @@ impl ContactView {
         self.draw_controls(screen, &controls, capabilities);
         self.ask(screen.confirming);
         self.edit(screen);
-        let before = imp.saving.replace(screen.saving);
-        match (before, screen.saving) {
-            (Some(action), None) if screen.failure.is_none() => done_words(action),
-            _ => None,
-        }
+        imp.saving
+            .landed(&screen.contact_id, screen.saving)
+            .filter(|_| screen.failure.is_none())
+            .and_then(done_words)
     }
 
     fn draw(&self, details: &ContactDetails) {
@@ -426,9 +430,10 @@ impl ContactView {
             .failure
             .as_ref()
             .filter(|_| screen.editing.is_none())
-            .map(|f| f.message.as_str());
+            .map(failure_text);
         imp.failure_box.set_visible(failure.is_some());
-        imp.failure_label.set_label(failure.unwrap_or_default());
+        imp.failure_label
+            .set_label(failure.as_deref().unwrap_or_default());
     }
 
     fn ask(&self, confirming: Option<ContactConfirmation>) {
@@ -437,6 +442,7 @@ impl ContactView {
             self,
             confirming.map(|confirmation| Ask {
                 key: format!("{confirmation:?}"),
+                heading: None,
                 question: confirmation.question(),
                 action: confirmation.action(),
                 destructive: confirmation != ContactConfirmation::Unblock,
@@ -462,7 +468,7 @@ impl ContactView {
             return;
         };
         let saving = screen.saving == Some(ContactAction::Save);
-        let failure = screen.failure.as_ref().map(|f| f.message.as_str());
+        let failure = screen.failure.as_ref().map(failure_text);
         let mut open = imp.form.borrow_mut();
         let dialog = open.get_or_insert_with(|| {
             let dialog = ContactFormDialog::new(
@@ -473,7 +479,7 @@ impl ContactView {
             dialog.present(Some(self));
             dialog
         });
-        dialog.update(form, saving, failure);
+        dialog.update(form, saving, failure.as_deref());
     }
 
     /// The contact is no longer showing: its question and its form close.
@@ -483,7 +489,7 @@ impl ContactView {
         if let Some(open) = imp.form.take() {
             open.force_close();
         }
-        imp.saving.set(None);
+        imp.saving.forget();
     }
 }
 

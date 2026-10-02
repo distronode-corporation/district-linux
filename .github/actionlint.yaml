@@ -11,3 +11,10 @@ paths:
       # actionlint 1.7.12, the newest release, predates. Only that message is
       # ignored, and only in this file.
       - 'reusable workflow call "\$/\.github/workflows/(deb|flatpak)\.yml" at "uses" is not following the format'
+  .github/workflows/{audit,ci,deb,flatpak,voice}.yml:
+    ignore:
+      # The same syntax for this repository's own composite actions under
+      # .github/actions/ (`uses: $/.github/actions/...`), which zizmor's
+      # self-repository audit asks for and actionlint 1.7.12 reads as a remote
+      # action without a ref.
+      - 'specifying action "\$/\.github/actions/[a-z0-9-]+" in invalid format because ref is missing'

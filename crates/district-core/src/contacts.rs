@@ -20,12 +20,13 @@ use district_api::ApiError;
 use district_model::{
     BlockedContact, BlockedContactsResponse, Contact, ContactBlockResponse, ContactDetailResponse,
     ContactListResponse, ContactMutationResponse, CreateContactRequest, PhoneIntel,
-    UpdateContactRequest,
+    UNKNOWN_CALLER_NAME, UpdateContactRequest,
 };
 
 use crate::dialer::format_phone_number;
 use crate::failure::FailureText;
 use crate::model::{Effect, Slot, Ticket, Tickets};
+use crate::paging::Paging;
 use crate::role::Capabilities;
 use crate::route::Route;
 use crate::signed_in::{Next, SignedIn, stay};
@@ -99,35 +100,16 @@ pub struct ContactRows {
     pub contacts: Vec<Contact>,
     /// How many the workspace has in all, as the service counted.
     pub total: i64,
-    /// Whether every contact has been read.
-    pub end_reached: bool,
-    /// Whether the next page is on its way.
-    pub loading_more: bool,
-    /// Why the next page failed, shown at the end of the list.
-    pub more_failure: Option<FailureText>,
-    /// Whether the list is being read again, with these still showing.
-    pub refreshing: bool,
-    /// Why the last read again failed, shown beside the list.
-    pub refresh_failure: Option<FailureText>,
-    next_offset: u32,
+    /// The next page, and the list read again from the top.
+    pub paging: Paging,
 }
 
 impl ContactRows {
-    /// Whether to ask for the next page now (when the user nears the end).
-    pub fn can_load_more(&self) -> bool {
-        !self.end_reached && !self.loading_more
-    }
-
     fn first(page: ContactListResponse) -> Self {
         let mut rows = Self {
             contacts: Vec::new(),
             total: 0,
-            end_reached: false,
-            loading_more: false,
-            more_failure: None,
-            refreshing: false,
-            refresh_failure: None,
-            next_offset: 0,
+            paging: Paging::default(),
         };
         rows.add(page);
         rows
@@ -135,8 +117,7 @@ impl ContactRows {
 
     /// Adds a page. The end is known from the total the service reports, and
     /// from a page shorter than the size the service applied, which can be
-    /// smaller than the one asked for. The offset moves by the rows sent, not
-    /// the rows kept.
+    /// smaller than the one asked for.
     fn add(&mut self, page: ContactListResponse) {
         let received = page.contacts.len();
         let applied = if page.limit > 0 {
@@ -144,9 +125,12 @@ impl ContactRows {
         } else {
             i64::from(CONTACT_PAGE_SIZE)
         };
-        self.next_offset += received as u32;
+        let paging = &mut self.paging;
+        paging.loading_more = false;
+        paging.next_offset += received as u32;
+        paging.end_reached =
+            (received as i64) < applied || i64::from(paging.next_offset) >= page.total;
         self.total = page.total;
-        self.end_reached = (received as i64) < applied || i64::from(self.next_offset) >= page.total;
         let mut seen: BTreeSet<String> = self
             .contacts
             .iter()
@@ -256,12 +240,9 @@ pub fn contact_label(contact: &Contact) -> String {
 /// What to call a blocked caller on screen, by the same rule as
 /// [`contact_label`].
 pub fn blocked_label(caller: &BlockedContact) -> String {
-    let name = Some(caller.name.as_str()).filter(|name| *name != UNKNOWN_NAME);
+    let name = Some(caller.name.as_str()).filter(|name| *name != UNKNOWN_CALLER_NAME);
     label(name, caller.phone_number.as_deref(), None)
 }
-
-/// The name the receptionist writes for a caller it could not identify.
-const UNKNOWN_NAME: &str = "Unknown";
 
 fn label(name: Option<&str>, phone_number: Option<&str>, email: Option<&str>) -> String {
     given(name)
@@ -593,22 +574,18 @@ pub enum ContactsEvent {
 }
 
 impl SignedIn {
-    /// What the open contact may offer, or `None` with no contact open.
-    pub fn contact_controls(&self) -> Option<ContactControls> {
-        let capabilities = self.capabilities();
-        self.contact
-            .as_ref()
-            .map(|screen| screen.controls(&capabilities))
-    }
-
     /// Opens the contacts list, or reads it again from the top.
     pub(crate) fn enter_contacts(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         match &mut self.contacts.list {
-            ContactList::Ready(rows) => rows.refreshing = true,
+            ContactList::Ready(rows) => {
+                rows.paging.refreshing = true;
+                // The answer starts the list again, so a later page asked for
+                // before it would land on the wrong list. It is dropped, and
+                // may be asked for again if the read fails.
+                rows.paging.loading_more = false;
+            }
             other => *other = ContactList::Loading,
         }
-        // The answer starts the list again, so a later page asked for before it
-        // would land on the wrong list.
         tickets.cancel(Slot::ContactsMore);
         vec![Effect::LoadContacts {
             ticket: tickets.issue(Slot::Contacts),
@@ -627,10 +604,7 @@ impl SignedIn {
         if tickets.accept(Slot::Contacts, ticket) {
             match (result, &mut self.contacts.list) {
                 (Ok(page), list) => *list = ContactList::Ready(ContactRows::first(page)),
-                (Err(error), ContactList::Ready(rows)) => {
-                    rows.refreshing = false;
-                    rows.refresh_failure = Some(FailureText::from_api_error(&error));
-                }
+                (Err(error), ContactList::Ready(rows)) => rows.paging.refresh_failed(&error),
                 (Err(error), list) => {
                     *list = ContactList::Failed(FailureText::from_api_error(&error));
                 }
@@ -638,10 +612,9 @@ impl SignedIn {
         } else if tickets.accept(Slot::ContactsMore, ticket)
             && let ContactList::Ready(rows) = &mut self.contacts.list
         {
-            rows.loading_more = false;
             match result {
                 Ok(page) => rows.add(page),
-                Err(error) => rows.more_failure = Some(FailureText::from_api_error(&error)),
+                Err(error) => rows.paging.more_failed(&error),
             }
         }
         stay()
@@ -684,14 +657,12 @@ impl SignedIn {
     fn load_more_contacts(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         let workspace_id = self.workspace_id();
         match &mut self.contacts.list {
-            ContactList::Ready(rows) if rows.can_load_more() => {
-                rows.loading_more = true;
-                rows.more_failure = None;
+            ContactList::Ready(rows) if rows.paging.can_load_more() => {
                 vec![Effect::LoadContacts {
                     ticket: tickets.issue(Slot::ContactsMore),
                     workspace_id,
                     limit: CONTACT_PAGE_SIZE,
-                    offset: rows.next_offset,
+                    offset: rows.paging.start_more(),
                 }]
             }
             _ => Vec::new(),

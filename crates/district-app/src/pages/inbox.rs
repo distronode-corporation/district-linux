@@ -1,6 +1,7 @@
 //! The inbox: the workspace's threads, or the matches of a search, beside the
 //! open thread. In a narrow window one pane shows at a time.
 
+use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::BTreeSet;
 
@@ -14,7 +15,9 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{Echo, clear_list, now, short_time};
+use crate::pages::shared::{
+    Echo, RowIds, back_on_fold, clear_list, draw_line, draw_spinner, failure_text, now, short_time,
+};
 use crate::pages::thread::ThreadView;
 use crate::pages::{Sends, escape};
 use crate::sink::EventSink;
@@ -29,7 +32,7 @@ pub(crate) enum ListShown<'a> {
         /// The heading.
         title: &'static str,
         /// The text under it.
-        body: &'a str,
+        body: Cow<'a, str>,
         /// Whether "Try again" is honest.
         retry: bool,
     },
@@ -43,12 +46,12 @@ pub(crate) fn list_shown(list: &ConversationList) -> ListShown<'_> {
         ConversationList::NotLoaded | ConversationList::Loading => ListShown::Loading,
         ConversationList::Failed(failure) => ListShown::Status {
             title: ConversationList::FAILED_TITLE,
-            body: &failure.message,
+            body: failure_text(failure),
             retry: failure.retryable,
         },
         ConversationList::Ready(list) if list.threads.is_empty() => ListShown::Status {
             title: Conversations::EMPTY_TITLE,
-            body: Conversations::EMPTY_BODY,
+            body: Conversations::EMPTY_BODY.into(),
             retry: false,
         },
         ConversationList::Ready(list) => ListShown::Threads(list),
@@ -67,7 +70,7 @@ pub(crate) enum SearchShown<'a> {
     /// The search failed. Never shown as no matches.
     Failed {
         /// Why.
-        body: &'a str,
+        body: Cow<'a, str>,
         /// Whether searching again is honest.
         retry: bool,
     },
@@ -91,7 +94,7 @@ pub(crate) fn search_shown(search: &SearchState) -> Option<SearchShown<'_>> {
     }
     Some(match &search.failure {
         Some(failure) => SearchShown::Failed {
-            body: &failure.message,
+            body: failure_text(failure),
             retry: failure.retryable,
         },
         None if search.hits.is_empty() && search.running => SearchShown::Searching,
@@ -163,12 +166,12 @@ mod imp {
         pub sink: OnceCell<EventSink>,
         /// The threads and draft badges the list was last built from.
         pub listed: RefCell<Option<(Vec<ConversationSummary>, BTreeSet<String>)>>,
-        /// Each thread row's key, in the list's order.
-        pub keys: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        /// Each thread row's key.
+        pub keys: RowIds,
         /// The matches the search list was last built from.
         pub found: RefCell<Option<Vec<MessageSearchHit>>>,
         /// Each match row's thread key.
-        pub hit_keys: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        pub hit_keys: RowIds,
         /// The search field against the model's query.
         pub echo: RefCell<Echo>,
         /// Whether the search field is being written from the model.
@@ -213,16 +216,7 @@ mod imp {
                     page.send(Event::Inbox(InboxEvent::Search(query)));
                 }
             });
-            let weak = page.downgrade();
-            self.split_view.connect_show_content_notify(move |split| {
-                if let Some(page) = weak.upgrade()
-                    && !split.shows_content()
-                    && page.imp().open.get()
-                {
-                    // Left for the list by a gesture or a key, not a button.
-                    page.send(Event::Back);
-                }
-            });
+            back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }
     }
 
@@ -259,31 +253,17 @@ impl InboxPage {
         let imp = self.imp();
         let weak = self.downgrade();
         imp.thread_list.connect_row_activated(move |_, row| {
-            let Some(page) = weak.upgrade() else {
-                return;
-            };
-            let key = page
-                .imp()
-                .keys
-                .borrow()
-                .iter()
-                .find_map(|(listed, key)| (listed == row).then(|| key.clone()));
-            if let Some(thread_key) = key {
+            if let Some(page) = weak.upgrade()
+                && let Some(thread_key) = page.imp().keys.key_of(row)
+            {
                 page.send(Event::Navigate(Route::Thread { thread_key }));
             }
         });
         let weak = self.downgrade();
         imp.hit_list.connect_row_activated(move |_, row| {
-            let Some(page) = weak.upgrade() else {
-                return;
-            };
-            let key = page
-                .imp()
-                .hit_keys
-                .borrow()
-                .iter()
-                .find_map(|(listed, key)| (listed == row).then(|| key.clone()));
-            if let Some(thread_key) = key {
+            if let Some(page) = weak.upgrade()
+                && let Some(thread_key) = page.imp().hit_keys.key_of(row)
+            {
                 page.send(Event::Navigate(Route::Thread { thread_key }));
             }
         });
@@ -326,14 +306,8 @@ impl InboxPage {
             None => self.draw_list(&signed_in.inbox.list, &signed_in.inbox.draft_keys),
         }
         let open = signed_in.thread.as_ref();
-        let selected = open.map(|screen| screen.thread_key.as_str());
-        let row = imp
-            .keys
-            .borrow()
-            .iter()
-            .find(|(_, key)| Some(key.as_str()) == selected)
-            .map(|(row, _)| row.clone());
-        imp.thread_list.select_row(row.as_ref());
+        imp.keys
+            .select(&imp.thread_list, open.map(|screen| &screen.thread_key));
         imp.open.set(open.is_some());
         match open {
             Some(screen) => {
@@ -364,16 +338,15 @@ impl InboxPage {
                 imp.list_stack.set_visible_child_name("status");
                 imp.list_status.set_icon_name(Some("mail-unread-symbolic"));
                 imp.list_status.set_title(title);
-                imp.list_status.set_description(Some(&escape(body)));
+                imp.list_status.set_description(Some(&escape(&body)));
                 imp.list_retry.set_visible(retry);
             }
             ListShown::Threads(list) => {
                 imp.list_stack.set_visible_child_name("list");
                 imp.partial_note.set_visible(list.partial);
                 imp.partial_note.set_label(Conversations::PARTIAL_NOTE);
-                let failure = list.refresh_failure.as_ref().map(|f| f.message.as_str());
-                imp.refresh_failure.set_visible(failure.is_some());
-                imp.refresh_failure.set_label(failure.unwrap_or_default());
+                let failure = list.refresh_failure.as_ref().map(failure_text);
+                draw_line(&imp.refresh_failure, failure);
                 self.draw_threads(&list.threads, draft_keys);
             }
         }
@@ -414,7 +387,7 @@ impl InboxPage {
         match found {
             SearchShown::Searching => imp.list_stack.set_visible_child_name("loading"),
             SearchShown::Failed { body, retry } => {
-                self.search_status(SEARCH_FAILED_TITLE, body, retry);
+                self.search_status(SEARCH_FAILED_TITLE, &body, retry);
             }
             SearchShown::NoMatches => {
                 self.search_status(SearchState::NONE_TITLE, SearchState::NONE_BODY, false);
@@ -425,8 +398,7 @@ impl InboxPage {
                 truncated,
             } => {
                 imp.list_stack.set_visible_child_name("search");
-                imp.search_more_spinner.set_visible(running);
-                imp.search_more_spinner.set_spinning(running);
+                draw_spinner(&imp.search_more_spinner, running);
                 imp.truncated_note.set_visible(truncated);
                 imp.truncated_note.set_label(SearchState::TRUNCATED_NOTE);
                 if imp.found.borrow().as_deref() != Some(hits) {
@@ -620,7 +592,7 @@ mod tests {
             list_shown(&failed),
             ListShown::Status {
                 title: ConversationList::FAILED_TITLE,
-                body: "Offline.",
+                body: "Offline.".into(),
                 retry: true,
             }
         );
@@ -630,7 +602,7 @@ mod tests {
             list_shown(&ConversationList::Ready(empty)),
             ListShown::Status {
                 title: Conversations::EMPTY_TITLE,
-                body: Conversations::EMPTY_BODY,
+                body: Conversations::EMPTY_BODY.into(),
                 retry: false,
             }
         );
@@ -654,7 +626,7 @@ mod tests {
         assert_eq!(
             search_shown(&search),
             Some(SearchShown::Failed {
-                body: "Offline.",
+                body: "Offline.".into(),
                 retry: true,
             })
         );

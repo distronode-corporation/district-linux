@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use district_api::{
     ApiError, CODE_REGIONS_DEGRADED, Endpoint, ErrorDetail, FALLBACK_MESSAGE, ReauthReason,
-    RetryReason, TokenError, TransportError, TransportKind, UnauthorizedReason,
+    RetryReason, TransportError, TransportKind, UnauthorizedReason,
 };
 use district_core::{FailureText, SessionEnd};
 
@@ -308,15 +308,13 @@ fn no_token_right_now_names_its_remedy() {
         };
         assert_eq!(FailureText::from_retry_reason(reason), expected);
         assert_eq!(
-            FailureText::from_token_error(&TokenError::RetryLater(reason)),
-            expected
-        );
-        assert_eq!(
             FailureText::from_api_error(&ApiError::TokenUnavailable(reason)),
             expected
         );
     }
-    let ended = FailureText::from_token_error(&TokenError::SignInRequired(ReauthReason::NoSession));
+    let ended = FailureText::from_api_error(&ApiError::Unauthorized(
+        UnauthorizedReason::SignInRequired(ReauthReason::NoSession),
+    ));
     assert_eq!(
         ended.session_ended,
         Some(SessionEnd::Reauth(ReauthReason::NoSession))

@@ -23,7 +23,7 @@ use crate::charts::{
     sentiment_summary, swatch,
 };
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{clear_box, clear_list};
+use crate::pages::shared::{clear_box, clear_list, draw_spinner, failure_text, metric_tile};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -198,21 +198,7 @@ mod imp {
                 .set_description(Some(HistoryCard::CAPTION));
             let mut values = self.values.borrow_mut();
             for _ in 0..5 {
-                let value = gtk::Label::builder()
-                    .xalign(0.0)
-                    .css_classes(["title-2", "value"])
-                    .build();
-                let caption = gtk::Label::builder()
-                    .xalign(0.0)
-                    .css_classes(["dim-label"])
-                    .build();
-                let tile = gtk::Box::builder()
-                    .orientation(gtk::Orientation::Vertical)
-                    .spacing(4)
-                    .css_classes(["card", "metric"])
-                    .build();
-                tile.append(&value);
-                tile.append(&caption);
+                let (tile, value, caption) = metric_tile("title-2");
                 self.tiles.append(&tile);
                 values.push((value, caption));
             }
@@ -272,7 +258,8 @@ impl AnalyticsPage {
         if let Some(failure) = screen.failure() {
             imp.stack.set_visible_child_name("status");
             imp.status.set_title(AnalyticsScreen::FAILED_TITLE);
-            imp.status.set_description(Some(&escape(&failure.message)));
+            imp.status
+                .set_description(Some(&escape(&failure_text(failure))));
             imp.retry_button.set_visible(failure.retryable);
             return;
         }
@@ -290,8 +277,7 @@ impl AnalyticsPage {
         let loading = matches!(card, AnalyticsCard::NotLoaded | AnalyticsCard::Loading);
         imp.report_loading.set_spinning(loading);
         let refreshing = matches!(card, AnalyticsCard::Ready(report) if report.refreshing);
-        imp.report_spinner.set_visible(refreshing);
-        imp.report_spinner.set_spinning(refreshing);
+        draw_spinner(&imp.report_spinner, refreshing);
         match card {
             AnalyticsCard::NotLoaded | AnalyticsCard::Loading => {
                 imp.report_group.set_title("Calls");
@@ -303,7 +289,7 @@ impl AnalyticsPage {
                 imp.report_failure.set_label(&format!(
                     "{}. {}",
                     AnalyticsCard::FAILED_TITLE,
-                    failure.message
+                    failure_text(failure)
                 ));
             }
             AnalyticsCard::Ready(report) => {
@@ -437,7 +423,7 @@ impl AnalyticsPage {
             UsageCard::NotLoaded | UsageCard::Loading => ("loading", String::new(), "dim-label"),
             UsageCard::Failed(failure) => (
                 "note",
-                format!("{}. {}", UsageCard::FAILED_TITLE, failure.message),
+                format!("{}. {}", UsageCard::FAILED_TITLE, failure_text(failure)),
                 "error",
             ),
             UsageCard::Ready {
@@ -484,7 +470,7 @@ impl AnalyticsPage {
             }
             HistoryCard::Failed(failure) => (
                 "note",
-                format!("{}. {}", HistoryCard::FAILED_TITLE, failure.message),
+                format!("{}. {}", HistoryCard::FAILED_TITLE, failure_text(failure)),
                 "error",
             ),
             HistoryCard::Ready { months, .. } if months.is_empty() => {

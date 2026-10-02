@@ -160,6 +160,16 @@
                           </object>
                         </child>
                         <child>
+                          <object class="GtkButton" id="copy_link_button">
+                            <property name="label">Copy guest link</property>
+                            <property name="visible">False</property>
+                            <property name="tooltip-text">Copy a link that lets someone without an account join this room</property>
+                            <style>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
                           <object class="GtkButton" id="leave_button">
                             <property name="label">Leave the room</property>
                             <style>

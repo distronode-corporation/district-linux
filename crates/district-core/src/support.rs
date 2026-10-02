@@ -20,9 +20,9 @@
 
 use district_api::ApiError;
 use district_model::{
-    SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse, SupportRequestDetail,
-    SupportRequestDraft, SupportRequestFiling, SupportRequestKind, SupportRequestResponse,
-    SupportRequestSummary, SupportRequestsResponse,
+    SUPPORT_STATUS_DONE, SupportCloseResponse, SupportReplyResponse, SupportRequestCreateResponse,
+    SupportRequestDetail, SupportRequestDraft, SupportRequestFiling, SupportRequestKind,
+    SupportRequestResponse, SupportRequestSummary, SupportRequestsResponse,
 };
 use uuid::Uuid;
 
@@ -38,9 +38,6 @@ pub const SUPPORT_SUBJECT_MAX: usize = 200;
 pub const SUPPORT_MESSAGE_MAX: usize = 10_000;
 /// The most requests the list holds; a list this long may be missing older ones.
 pub const SUPPORT_LIST_CAP: usize = 100;
-
-/// The status category of a resolved request.
-const RESOLVED: &str = "DONE";
 
 /// The slots of an open request, forgotten when it closes.
 const REQUEST_SLOTS: [Slot; 3] = [Slot::SupportRequest, Slot::SupportReply, Slot::SupportClose];
@@ -276,7 +273,9 @@ pub enum SupportRequestView {
 
 /// Whether a request is resolved, by its category.
 fn is_resolved(detail: &SupportRequestDetail) -> bool {
-    detail.status_category.eq_ignore_ascii_case(RESOLVED)
+    detail
+        .status_category
+        .eq_ignore_ascii_case(SUPPORT_STATUS_DONE)
 }
 
 /// What the member does on the support screens.
@@ -476,10 +475,17 @@ impl SignedIn {
             screen.sending = false;
             match result {
                 // The reply as the service stored it, added rather than read
-                // again: the read is a live fetch from the support desk.
+                // again: the read is a live fetch from the support desk. A read
+                // that landed first may hold it already.
                 Ok(answer) => {
                     screen.reply.clear();
-                    detail.messages.push(answer.message);
+                    if !detail
+                        .messages
+                        .iter()
+                        .any(|held| held.id == answer.message.id)
+                    {
+                        detail.messages.push(answer.message);
+                    }
                 }
                 Err(error) => screen.send_failure = Some(FailureText::from_api_error(&error)),
             }
@@ -502,7 +508,7 @@ impl SignedIn {
                 // The status is the desk's own word for it; the category, which
                 // the close does not echo, is what says it is resolved.
                 Ok(answer) => {
-                    detail.status_category = RESOLVED.to_owned();
+                    detail.status_category = SUPPORT_STATUS_DONE.to_owned();
                     detail.status_name = answer.status_name.clone();
                     screen.closed_as = Some(answer.status_name);
                 }

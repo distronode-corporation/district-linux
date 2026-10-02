@@ -713,3 +713,52 @@ fn signing_out_while_ringing_silences_the_ring_first() {
     assert_eq!(effects[..2], [Effect::StopRingtone, withdraw()]);
     assert!(matches!(effects.last(), Some(Effect::SignOut { .. })));
 }
+
+/// A call in a workspace other than the one open rings here too, when the
+/// member takes calls there, tagged with its workspace: a viewer's workspace
+/// open on screen does not stop the member answering an agency workspace's
+/// call, and the call's end ends the ring from its own workspace's socket.
+#[test]
+fn a_call_in_another_workspace_where_the_member_takes_calls_rings_here() {
+    let mut model = ready(VIEWER, "viewer");
+    rung(&mut model);
+    assert_eq!(ring(&model).workspace_id, AGENCY);
+    answer_it(&mut model);
+
+    let mut model = ready(VIEWER, "viewer");
+    rung(&mut model);
+    let effects = model.update(call_event(
+        AGENCY,
+        CALL,
+        TelemetryEventType::CallEnded,
+        json!({}),
+    ));
+    assert_eq!(effects, [Effect::StopRingtone, withdraw()]);
+    assert_eq!(ring(&model).phase, RingPhase::Ended(RingEnd::CallEnded));
+
+    // Not in a workspace where the member is a viewer, open or not.
+    let mut model = ready(AGENCY, "agency");
+    assert!(model.update(ringing(VIEWER, CALL, &[USER])).is_empty());
+}
+
+/// A ring whose workspace is no longer listed (the list read again without
+/// it) is not answered: nothing says the member may take calls there now.
+#[test]
+fn a_ring_in_a_workspace_no_longer_listed_is_not_answered() {
+    let mut model = ready(AGENCY, "agency");
+    rung(&mut model);
+    let effects = model.update(Event::Refresh);
+    model.update(Event::WorkspacesLoaded {
+        ticket: crate::support::last_ticket(&effects),
+        remembered: None,
+        result: Ok(district_model::WorkspaceListResponse {
+            workspaces: Vec::new(),
+            default_workspace_id: None,
+            ..crate::support::workspace_list()
+        }),
+    });
+    let answered = model.update(Event::Ring(RingEvent::Answer {
+        call_id: CALL.to_owned(),
+    }));
+    assert!(answered.is_empty(), "{answered:?}");
+}

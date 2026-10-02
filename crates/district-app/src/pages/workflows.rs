@@ -3,6 +3,7 @@
 //! if the service refuses; pausing or resuming the campaign asks first, and
 //! shows only the state the service answers with.
 
+use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 use std::collections::BTreeMap;
 
@@ -16,7 +17,9 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{Ask, Asking, clear_list, humanize, when_text};
+use crate::pages::shared::{
+    Ask, Asking, clear_list, draw_line, draw_spinner, failure_text, humanize, when_text,
+};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -195,9 +198,10 @@ impl WorkflowsPage {
         let capabilities = signed_in.capabilities();
         self.draw_campaign(screen, &capabilities);
         let imp = self.imp();
-        let failure = screen.toggle_failure.as_ref().map(|f| f.message.as_str());
+        let failure = screen.toggle_failure.as_ref().map(failure_text);
         imp.toggle_failure_box.set_visible(failure.is_some());
-        imp.toggle_failure.set_label(failure.unwrap_or_default());
+        imp.toggle_failure
+            .set_label(failure.as_deref().unwrap_or_default());
         imp.list_spinner.set_spinning(matches!(
             screen.list,
             WorkflowList::NotLoaded | WorkflowList::Loading
@@ -215,7 +219,7 @@ impl WorkflowsPage {
             WorkflowList::Failed(failure) => {
                 status(
                     WorkflowList::FAILED_TITLE,
-                    &failure.message,
+                    &failure_text(failure),
                     failure.retryable,
                 );
             }
@@ -235,6 +239,7 @@ impl WorkflowsPage {
             self,
             asked.as_ref().map(|(confirm, question)| Ask {
                 key: format!("campaign-{}", confirm.enable),
+                heading: None,
                 question,
                 action: confirm.action(),
                 destructive: false,
@@ -267,7 +272,7 @@ impl WorkflowsPage {
                 imp.campaign_failed.set_label(&format!(
                     "{}. {}",
                     CampaignCard::FAILED_TITLE,
-                    failure.message
+                    failure_text(failure)
                 ));
                 None
             }
@@ -310,11 +315,9 @@ impl WorkflowsPage {
         imp.resume_button
             .set_visible(!active && capabilities.can_change);
         imp.resume_button.set_sensitive(controls.can_resume);
-        imp.campaign_spinner.set_visible(screen.campaign_pending);
-        imp.campaign_spinner.set_spinning(screen.campaign_pending);
-        let failure = screen.campaign_failure.as_ref().map(|f| f.message.as_str());
-        imp.campaign_failure.set_visible(failure.is_some());
-        imp.campaign_failure.set_label(failure.unwrap_or_default());
+        draw_spinner(&imp.campaign_spinner, screen.campaign_pending);
+        let failure = screen.campaign_failure.as_ref().map(failure_text);
+        draw_line(&imp.campaign_failure, failure);
         imp.campaign_note.set_label(if capabilities.can_change {
             CampaignCard::WEB_ONLY
         } else {
@@ -427,9 +430,9 @@ impl WorkflowsPage {
             row.add_row(&line);
         }
         let note = match (&history.failure, history.runs.is_empty(), history.loading) {
-            (_, _, true) => Some(("Reading runs.", "dim-label")),
-            (Some(failure), _, false) => Some((failure.message.as_str(), "error")),
-            (None, true, false) => Some((RunHistory::EMPTY, "dim-label")),
+            (_, _, true) => Some((Cow::Borrowed("Reading runs."), "dim-label")),
+            (Some(failure), _, false) => Some((failure_text(failure), "error")),
+            (None, true, false) => Some((Cow::Borrowed(RunHistory::EMPTY), "dim-label")),
             (None, false, false) => None,
         };
         let more = history.can_load_more() || history.failure.is_some();
@@ -443,14 +446,14 @@ impl WorkflowsPage {
             .margin_top(8)
             .margin_bottom(8)
             .build();
-        if let Some((text, class)) = note {
+        if let Some((text, class)) = &note {
             let label = gtk::Label::builder()
-                .label(text)
+                .label(text.as_ref())
                 .use_markup(false)
                 .xalign(0.0)
                 .hexpand(true)
                 .wrap(true)
-                .css_classes([class])
+                .css_classes([*class])
                 .build();
             footer.append(&label);
         }

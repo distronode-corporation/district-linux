@@ -410,14 +410,17 @@ fn the_thread_list_folds_a_contacts_channels_and_keeps_a_bare_address() {
         "both of the contact's addresses"
     );
     assert_eq!(
-        folded.thread_ref(),
+        ThreadRef::from_thread_key(&folded.thread_key),
         folded.contact_id.clone().map(ThreadRef::Contact)
     );
     let bare = threads
         .iter()
         .find(|t| t.contact_id.is_none())
         .expect("a thread with no contact");
-    assert!(matches!(bare.thread_ref(), Some(ThreadRef::Address(_))));
+    assert!(matches!(
+        ThreadRef::from_thread_key(&bare.thread_key),
+        Some(ThreadRef::Address(_))
+    ));
     assert!(
         bare.can_sms && !bare.can_email,
         "the service decides each channel"
@@ -1024,7 +1027,12 @@ fn the_config_covers_every_section_and_both_shapes_of_a_routing_rule() {
     let directory = config.directory_entries().expect("an editable directory");
     assert!(directory.iter().all(|entry| !entry.is_incomplete()));
     assert!(
-        directory.iter().any(|entry| entry.as_json().len() > 2),
+        directory.iter().any(|entry| serde_json::to_value(entry)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .len()
+            > 2),
         "an entry with a key this client does not edit"
     );
     assert!(

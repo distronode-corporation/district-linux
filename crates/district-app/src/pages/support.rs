@@ -14,9 +14,9 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::shared::{clear_list, short_text};
+use crate::pages::shared::{RowIds, back_on_fold, clear_list, draw_line, failure_text, short_text};
 use crate::pages::support_request::SupportRequestView;
-use crate::pages::ticket_form::TicketFormDialog;
+use crate::pages::ticket_form::{FormState, TicketFormDialog};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -79,7 +79,7 @@ mod imp {
         pub sink: OnceCell<EventSink>,
         /// The requests the lists were last built from, and each row's key.
         pub listed: RefCell<Option<Vec<SupportRequestSummary>>>,
-        pub rows: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        pub rows: RowIds,
         /// Whether a request is open, as last drawn.
         pub open: Cell<bool>,
         /// The form raising a request, while it is open.
@@ -122,15 +122,7 @@ mod imp {
                     }
                 });
             }
-            let weak = page.downgrade();
-            self.split_view.connect_show_content_notify(move |split| {
-                if let Some(page) = weak.upgrade()
-                    && !split.shows_content()
-                    && page.imp().open.get()
-                {
-                    page.send(Event::Back);
-                }
-            });
+            back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }
     }
 
@@ -170,13 +162,7 @@ impl SupportPage {
 
     /// Opens the request `row` shows.
     fn open_row(&self, row: &gtk::ListBoxRow) {
-        let key = self
-            .imp()
-            .rows
-            .borrow()
-            .iter()
-            .find_map(|(listed, key)| (listed == row).then(|| key.clone()));
-        if let Some(key) = key {
+        if let Some(key) = self.imp().rows.key_of(row) {
             self.send(Event::Navigate(Route::SupportRequest { key }));
         }
     }
@@ -196,13 +182,7 @@ impl SupportPage {
             .set_label(submitted.as_deref().unwrap_or_default());
         self.draw_compose(support);
         let open = signed_in.support_request.as_ref();
-        let selected = open.map(|screen| screen.key.as_str());
-        let row = imp
-            .rows
-            .borrow()
-            .iter()
-            .find(|(_, key)| Some(key.as_str()) == selected)
-            .map(|(row, _)| row.clone());
+        let row = imp.rows.row_of(open.map(|screen| &screen.key));
         for list in [&*imp.open_list, &*imp.resolved_list] {
             let mine = row
                 .as_ref()
@@ -244,7 +224,7 @@ impl SupportPage {
             SupportList::Failed(failure) => {
                 status(
                     SupportList::FAILED_TITLE,
-                    &failure.message,
+                    &failure_text(failure),
                     failure.retryable,
                 );
             }
@@ -253,12 +233,8 @@ impl SupportPage {
             }
             SupportList::Ready(requests) => {
                 imp.list_stack.set_visible_child_name("list");
-                let failure = requests
-                    .refresh_failure
-                    .as_ref()
-                    .map(|f| f.message.as_str());
-                imp.refresh_failure.set_visible(failure.is_some());
-                imp.refresh_failure.set_label(failure.unwrap_or_default());
+                let failure = requests.refresh_failure.as_ref().map(failure_text);
+                draw_line(&imp.refresh_failure, failure);
                 imp.capped_note.set_visible(requests.capped());
                 self.draw_rows(requests);
             }
@@ -301,27 +277,15 @@ impl SupportPage {
     }
 
     fn draw_compose(&self, support: &SupportScreen) {
-        let imp = self.imp();
-        let Some(compose) = support.compose.as_ref() else {
-            if let Some(open) = imp.compose.take() {
-                open.force_close();
-            }
-            return;
-        };
-        let mut open = imp.compose.borrow_mut();
-        let dialog = open.get_or_insert_with(|| {
-            let dialog = TicketFormDialog::support(
-                &compose.form,
-                self.sink().expect("the window handed over its sink"),
-            );
-            dialog.present(Some(self));
-            dialog
+        let wanted = support.compose.as_ref().map(|compose| {
+            let state = FormState {
+                can_submit: compose.form.can_submit(),
+                submitting: compose.submitting,
+                failure: compose.failure.as_ref(),
+            };
+            (state, |sink| TicketFormDialog::support(&compose.form, sink))
         });
-        dialog.update(
-            compose.form.can_submit(),
-            compose.submitting,
-            compose.failure.as_ref().map(|f| f.message.as_str()),
-        );
+        TicketFormDialog::sync(&self.imp().compose, self, wanted);
     }
 
     /// Support is no longer showing: every dialog it opened closes.

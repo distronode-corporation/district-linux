@@ -18,7 +18,8 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
-use crate::pages::settings_kit::{Echoed, draw_busy};
+use crate::pages::settings_kit::Echoed;
+use crate::pages::shared::{draw_busy, draw_spinner, failure_text};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -205,15 +206,14 @@ impl CallHandlingView {
     fn draw_handling(&self, section: &CallHandlingSection, can_change: bool) {
         let imp = self.imp();
         let loading = section.handling == HandlingRead::Loading;
-        imp.handling_spinner.set_visible(loading);
-        imp.handling_spinner.set_spinning(loading);
+        draw_spinner(&imp.handling_spinner, loading);
         let failure = match &section.handling {
             HandlingRead::Failed(failure) => Some(failure),
             _ => None,
         };
         imp.handling_failed.set_visible(failure.is_some());
         if let Some(failure) = failure {
-            imp.handling_failed.set_subtitle(&failure.message);
+            imp.handling_failed.set_subtitle(&failure_text(failure));
             imp.handling_retry.set_visible(failure.retryable);
         }
         let stored = section.stored();
@@ -256,15 +256,14 @@ impl CallHandlingView {
         let imp = self.imp();
         let busy = section.availability_save.is_busy();
         let loading = section.availability == AvailabilityView::Loading;
-        imp.availability_spinner.set_visible(loading || busy);
-        imp.availability_spinner.set_spinning(loading || busy);
+        draw_spinner(&imp.availability_spinner, loading || busy);
         let failure = match &section.availability {
             AvailabilityView::Failed(failure) => Some(failure),
             _ => None,
         };
         imp.availability_failed.set_visible(failure.is_some());
         if let Some(failure) = failure {
-            imp.availability_failed.set_subtitle(&failure.message);
+            imp.availability_failed.set_subtitle(&failure_text(failure));
             imp.availability_retry.set_visible(failure.retryable);
         }
         let read = section.availability().is_some();

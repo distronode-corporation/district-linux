@@ -14,7 +14,9 @@
 //!   seconds after the typing stops, and deleted once the box is cleared: a
 //!   blank draft is the absence of one. The drafts route's rate limit is shared
 //!   by every member of the workspace, which is why it is a debounce and not a
-//!   write per keystroke.
+//!   write per keystroke. One draft write is on its way at a time: effects run
+//!   side by side, so a save and the delete after it could otherwise land in
+//!   either order and bring back a draft of a message already sent.
 //! - The saved draft is restored when the thread opens, unless something has
 //!   been typed already: adopting into an empty box can only add, overwriting a
 //!   typed one can only lose.
@@ -27,7 +29,7 @@
 //! - A reply written by a model is asked for only by an explicit
 //!   [`ThreadEvent::DraftReply`]: every one is a billed model run.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::time::Duration;
 
@@ -38,10 +40,7 @@ use district_model::{
     TimelineCursor, TimelineEvent, TimelineResponse,
 };
 
-use crate::failure::{
-    ATTACHMENT_SIZE, FailureText, TOO_MANY_ATTACHMENTS, UNREADABLE_ATTACHMENT,
-    UNSUPPORTED_ATTACHMENT,
-};
+use crate::failure::{FailureText, UNREADABLE_ATTACHMENT, UNSUPPORTED_ATTACHMENT};
 use crate::inbox::InboxScreen;
 use crate::model::{Effect, Slot, Ticket, Tickets};
 use crate::role::Capabilities;
@@ -73,6 +72,86 @@ const THREAD_SLOTS: [Slot; 7] = [
     Slot::Upload,
     Slot::AiDraft,
 ];
+
+/// The member's saved replies being written: one write on its way at a time,
+/// and the next ones waiting until it lands, the last one wanted for each
+/// thread in place of any before it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct DraftWrites {
+    /// By workspace and thread key.
+    waiting: BTreeMap<(String, String), DraftWrite>,
+}
+
+/// One write of a saved reply.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum DraftWrite {
+    Save {
+        workspace_id: String,
+        draft: DraftSaveRequest,
+    },
+    Delete {
+        workspace_id: String,
+        thread_key: String,
+    },
+}
+
+impl DraftWrite {
+    fn key(&self) -> (String, String) {
+        match self {
+            Self::Save {
+                workspace_id,
+                draft,
+            } => (workspace_id.clone(), draft.thread_key.clone()),
+            Self::Delete {
+                workspace_id,
+                thread_key,
+            } => (workspace_id.clone(), thread_key.clone()),
+        }
+    }
+
+    fn effect(self, ticket: Ticket) -> Effect {
+        match self {
+            Self::Save {
+                workspace_id,
+                draft,
+            } => Effect::SaveDraft {
+                ticket,
+                workspace_id,
+                draft,
+            },
+            Self::Delete {
+                workspace_id,
+                thread_key,
+            } => Effect::DeleteDraft {
+                ticket,
+                workspace_id,
+                thread_key,
+            },
+        }
+    }
+}
+
+impl DraftWrites {
+    /// Sends `write` now, or keeps it until the write on its way lands.
+    fn write(&mut self, write: DraftWrite, tickets: &mut Tickets) -> Vec<Effect> {
+        if tickets.awaiting(Slot::DraftWrite) {
+            self.waiting.insert(write.key(), write);
+            return Vec::new();
+        }
+        vec![write.effect(tickets.issue(Slot::DraftWrite))]
+    }
+
+    /// The write on its way landed, whatever its answer (a failed save is
+    /// superseded by the next one, and the text is still in the composer):
+    /// the next one waiting goes.
+    fn landed(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
+        self.waiting
+            .pop_first()
+            .map(|(_, write)| write.effect(tickets.issue(Slot::DraftWrite)))
+            .into_iter()
+            .collect()
+    }
+}
 
 /// The open thread.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -259,14 +338,20 @@ pub struct PickedAttachment {
 
 impl PickedAttachment {
     /// Why the service would refuse this as the next of `held` attachments, in
-    /// its words, or `None` when it would take it.
-    pub fn problem(&self, held: usize) -> Option<&'static str> {
+    /// its words, or `None` when it would take it. The limits named are the
+    /// constants checked, so the words cannot fall behind them.
+    pub fn problem(&self, held: usize) -> Option<String> {
         if held >= MAX_ATTACHMENTS {
-            Some(TOO_MANY_ATTACHMENTS)
+            Some(format!(
+                "You can attach up to {MAX_ATTACHMENTS} images to one message."
+            ))
         } else if !ATTACHMENT_TYPES.contains(&self.mime_type.as_str()) {
-            Some(UNSUPPORTED_ATTACHMENT)
+            Some(UNSUPPORTED_ATTACHMENT.to_owned())
         } else if self.bytes.is_empty() || self.bytes.len() > MAX_ATTACHMENT_BYTES {
-            Some(ATTACHMENT_SIZE)
+            Some(format!(
+                "Attachments must be between 1 byte and {} MB.",
+                MAX_ATTACHMENT_BYTES / (1024 * 1024)
+            ))
         } else {
             None
         }
@@ -304,14 +389,6 @@ pub enum ThreadEvent {
 }
 
 impl SignedIn {
-    /// What the open thread's composer may offer, or `None` with no thread open.
-    pub fn thread_controls(&self) -> Option<ThreadControls> {
-        let capabilities = self.capabilities();
-        self.thread
-            .as_ref()
-            .map(|screen| screen.controls(&capabilities))
-    }
-
     /// Opens the thread `thread_key`, or reads it again when it is the one
     /// already open, and marks it read.
     pub(crate) fn open_thread(
@@ -419,7 +496,14 @@ impl SignedIn {
             .thread
             .as_mut()
             .filter(|screen| screen.composer.save_pending)
-            .map(|screen| write_draft(screen, &mut self.inbox.draft_keys, tickets))
+            .map(|screen| {
+                write_draft(
+                    screen,
+                    &mut self.inbox.draft_keys,
+                    &mut self.draft_writes,
+                    tickets,
+                )
+            })
             .unwrap_or_default();
         tickets.cancel_each(&THREAD_SLOTS);
         self.thread = None;
@@ -430,20 +514,37 @@ impl SignedIn {
     pub(crate) fn save_draft_now(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         self.thread
             .as_mut()
-            .map(|screen| write_draft(screen, &mut self.inbox.draft_keys, tickets))
+            .map(|screen| {
+                write_draft(
+                    screen,
+                    &mut self.inbox.draft_keys,
+                    &mut self.draft_writes,
+                    tickets,
+                )
+            })
             .unwrap_or_default()
+    }
+
+    /// A saved reply was written or deleted. Nothing waits on the answer, but
+    /// the next write waiting goes now.
+    pub(crate) fn draft_written(&mut self, ticket: Ticket, tickets: &mut Tickets) -> Next {
+        if !tickets.accept(Slot::DraftWrite, ticket) {
+            return stay();
+        }
+        Next::Stay(self.draft_writes.landed(tickets))
     }
 
     pub(crate) fn thread_event(&mut self, event: ThreadEvent, tickets: &mut Tickets) -> Next {
         let capabilities = self.capabilities();
         let draft_keys = &mut self.inbox.draft_keys;
+        let draft_writes = &mut self.draft_writes;
         let Some(screen) = self.thread.as_mut() else {
             return stay();
         };
         let can_reply = screen.controls(&capabilities).can_reply;
         let effects = match event {
             ThreadEvent::Compose(text) if can_reply => compose(screen, text, tickets),
-            ThreadEvent::Send => send(screen, &capabilities, draft_keys, tickets),
+            ThreadEvent::Send => send(screen, &capabilities, draft_keys, draft_writes, tickets),
             ThreadEvent::LoadOlder => load_older(screen, tickets),
             ThreadEvent::Attach(picked) => attach(screen, &capabilities, picked, tickets),
             ThreadEvent::AttachFailed if screen.controls(&capabilities).can_attach => {
@@ -772,37 +873,38 @@ fn schedule_save(screen: &mut ThreadScreen, tickets: &mut Tickets) -> Vec<Effect
 fn write_draft(
     screen: &mut ThreadScreen,
     draft_keys: &mut BTreeSet<String>,
+    draft_writes: &mut DraftWrites,
     tickets: &mut Tickets,
 ) -> Vec<Effect> {
     screen.composer.save_pending = false;
-    let ticket = tickets.issue(Slot::DraftWrite);
     let workspace_id = screen.workspace_id.clone();
     let thread_key = screen.thread_key.clone();
-    if screen.composer.text.trim().is_empty() {
+    let write = if screen.composer.text.trim().is_empty() {
         draft_keys.remove(&thread_key);
-        return vec![Effect::DeleteDraft {
-            ticket,
+        DraftWrite::Delete {
             workspace_id,
             thread_key,
-        }];
-    }
-    draft_keys.insert(thread_key.clone());
-    vec![Effect::SaveDraft {
-        ticket,
-        workspace_id,
-        draft: DraftSaveRequest {
-            thread_key,
-            body: screen.composer.text.clone(),
-            subject: None,
-            media_urls: screen.composer.attachments.clone(),
-        },
-    }]
+        }
+    } else {
+        draft_keys.insert(thread_key.clone());
+        DraftWrite::Save {
+            workspace_id,
+            draft: DraftSaveRequest {
+                thread_key,
+                body: screen.composer.text.clone(),
+                subject: None,
+                media_urls: screen.composer.attachments.clone(),
+            },
+        }
+    };
+    draft_writes.write(write, tickets)
 }
 
 fn send(
     screen: &mut ThreadScreen,
     capabilities: &Capabilities,
     draft_keys: &mut BTreeSet<String>,
+    draft_writes: &mut DraftWrites,
     tickets: &mut Tickets,
 ) -> Vec<Effect> {
     if !screen.controls(capabilities).can_send {
@@ -811,7 +913,7 @@ fn send(
     screen
         .reply_target
         .clone()
-        .map(|target| start_send(screen, target, draft_keys, tickets))
+        .map(|target| start_send(screen, target, draft_keys, draft_writes, tickets))
         .unwrap_or_default()
 }
 
@@ -819,6 +921,7 @@ fn start_send(
     screen: &mut ThreadScreen,
     target: ReplyTarget,
     draft_keys: &mut BTreeSet<String>,
+    draft_writes: &mut DraftWrites,
     tickets: &mut Tickets,
 ) -> Vec<Effect> {
     let composer = &mut screen.composer;
@@ -835,18 +938,19 @@ fn start_send(
     };
     composer.sent = Some((message.body.clone(), message.media_urls.clone()));
     draft_keys.remove(&screen.thread_key);
-    vec![
-        Effect::SendMessage {
-            ticket: tickets.issue(Slot::Send),
-            workspace_id: screen.workspace_id.clone(),
-            message,
-        },
-        Effect::DeleteDraft {
-            ticket: tickets.issue(Slot::DraftWrite),
+    let mut effects = vec![Effect::SendMessage {
+        ticket: tickets.issue(Slot::Send),
+        workspace_id: screen.workspace_id.clone(),
+        message,
+    }];
+    effects.extend(draft_writes.write(
+        DraftWrite::Delete {
             workspace_id: screen.workspace_id.clone(),
             thread_key: screen.thread_key.clone(),
         },
-    ]
+        tickets,
+    ));
+    effects
 }
 
 fn attach(

@@ -11,7 +11,9 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::calls::{call_icon, call_title};
-use crate::pages::shared::{add_value_row, clear_group, humanize, long_time, now};
+use crate::pages::shared::{
+    add_value_row, clear_group, draw_line, failure_text, humanize, long_time, now,
+};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -215,7 +217,8 @@ impl CallView {
             CallRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
                 imp.status.set_title(FAILED_TITLE);
-                imp.status.set_description(Some(&escape(&failure.message)));
+                imp.status
+                    .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
             }
             CallRead::Ready(call) => {
@@ -223,9 +226,8 @@ impl CallView {
                 self.draw(call);
             }
         }
-        let failure = screen.refresh_failure.as_ref().map(|f| f.message.as_str());
-        imp.refresh_failure.set_visible(failure.is_some());
-        imp.refresh_failure.set_label(failure.unwrap_or_default());
+        let failure = screen.refresh_failure.as_ref().map(failure_text);
+        draw_line(&imp.refresh_failure, failure);
         self.draw_transcript(&screen.transcript);
     }
 
@@ -292,7 +294,7 @@ impl CallView {
             TranscriptView::Failed(failure) => {
                 imp.transcript_stack.set_visible_child_name("note");
                 imp.transcript_note.add_css_class("error");
-                imp.transcript_note.set_label(&failure.message);
+                imp.transcript_note.set_label(&failure_text(failure));
             }
         }
     }

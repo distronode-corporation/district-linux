@@ -2,7 +2,8 @@
 //! its end; in a narrow window one pane shows at a time. "Place a call" opens
 //! the dialler, for a role the core lets dial, in a build that can.
 
-use std::cell::{Cell, OnceCell, RefCell};
+use std::borrow::Cow;
+use std::cell::{Cell, OnceCell};
 
 use district_core::{CallLog, CallRows, CallsEvent, Event, Route, SignedIn, format_phone_number};
 use district_model::CallSummary;
@@ -12,7 +13,9 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::call::CallView;
-use crate::pages::shared::{EndWatch, clear_list, now, short_time, watch_end};
+use crate::pages::shared::{
+    EndWatch, PagedRows, PagingFooter, back_on_fold, failure_text, now, short_time, watch_end,
+};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -41,7 +44,7 @@ pub(crate) enum LogShown<'a> {
         /// The heading.
         title: &'static str,
         /// The text under it.
-        body: &'a str,
+        body: Cow<'a, str>,
         /// Whether "Try again" is honest.
         retry: bool,
     },
@@ -55,12 +58,12 @@ pub(crate) fn log_shown(log: &CallLog) -> LogShown<'_> {
         CallLog::NotLoaded | CallLog::Loading => LogShown::Loading,
         CallLog::Failed(failure) => LogShown::Status {
             title: CallLog::FAILED_TITLE,
-            body: &failure.message,
+            body: failure_text(failure),
             retry: failure.retryable,
         },
         CallLog::Ready(rows) if rows.calls.is_empty() => LogShown::Status {
             title: CallLog::EMPTY_TITLE,
-            body: CallLog::EMPTY_BODY,
+            body: CallLog::EMPTY_BODY.into(),
             retry: false,
         },
         CallLog::Ready(rows) => LogShown::Calls(rows),
@@ -149,8 +152,7 @@ mod imp {
         pub call_view: TemplateChild<CallView>,
         pub sink: OnceCell<EventSink>,
         /// The calls the list was last built from, and each row's call id.
-        pub listed: RefCell<Vec<CallSummary>>,
-        pub rows: RefCell<Vec<(gtk::ListBoxRow, String)>>,
+        pub rows: PagedRows<CallSummary>,
         pub end: OnceCell<EndWatch>,
         /// Whether a call is open, as last drawn.
         pub open: Cell<bool>,
@@ -190,28 +192,13 @@ mod imp {
             self.end.set(end).ok();
             let weak = page.downgrade();
             self.call_list.connect_row_activated(move |_, row| {
-                let Some(page) = weak.upgrade() else {
-                    return;
-                };
-                let id = page
-                    .imp()
-                    .rows
-                    .borrow()
-                    .iter()
-                    .find_map(|(listed, id)| (listed == row).then(|| id.clone()));
-                if let Some(call_id) = id {
+                if let Some(page) = weak.upgrade()
+                    && let Some(call_id) = page.imp().rows.ids().key_of(row)
+                {
                     page.send(Event::Navigate(Route::CallDetail { call_id }));
                 }
             });
-            let weak = page.downgrade();
-            self.split_view.connect_show_content_notify(move |split| {
-                if let Some(page) = weak.upgrade()
-                    && !split.shows_content()
-                    && page.imp().open.get()
-                {
-                    page.send(Event::Back);
-                }
-            });
+            back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }
     }
 
@@ -257,24 +244,17 @@ impl CallsPage {
             LogShown::Status { title, body, retry } => {
                 imp.list_stack.set_visible_child_name("status");
                 imp.list_status.set_title(title);
-                imp.list_status.set_description(Some(&escape(body)));
+                imp.list_status.set_description(Some(&escape(&body)));
                 imp.list_retry.set_visible(retry);
             }
             LogShown::Calls(rows) => {
                 imp.list_stack.set_visible_child_name("list");
-                self.draw_rows(rows);
-                more = rows.can_load_more() && rows.more_failure.is_none();
+                more = self.draw_rows(rows);
             }
         }
         let open = signed_in.call.as_ref();
-        let selected = open.map(|screen| screen.call_id.as_str());
-        let row = imp
-            .rows
-            .borrow()
-            .iter()
-            .find(|(_, id)| Some(id.as_str()) == selected)
-            .map(|(row, _)| row.clone());
-        imp.call_list.select_row(row.as_ref());
+        let selected = open.map(|screen| &screen.call_id);
+        imp.rows.ids().select(&imp.call_list, selected);
         imp.open.set(open.is_some());
         match open {
             Some(screen) => {
@@ -289,36 +269,20 @@ impl CallsPage {
         }
     }
 
-    fn draw_rows(&self, rows: &CallRows) {
+    fn draw_rows(&self, rows: &CallRows) -> bool {
         let imp = self.imp();
-        let failure = rows.refresh_failure.as_ref().map(|f| f.message.as_str());
-        imp.refresh_failure.set_visible(failure.is_some());
-        imp.refresh_failure.set_label(failure.unwrap_or_default());
-        imp.more_spinner.set_visible(rows.loading_more);
-        imp.more_spinner.set_spinning(rows.loading_more);
-        let more_failure = rows.more_failure.as_ref().map(|f| f.message.as_str());
-        imp.more_failure.set_visible(more_failure.is_some());
-        imp.more_failure.set_label(more_failure.unwrap_or_default());
-        imp.more_button.set_visible(more_failure.is_some());
-        let listed = imp.listed.borrow().clone();
-        if listed == rows.calls {
-            return;
+        let more = PagingFooter {
+            refresh_failure: &imp.refresh_failure,
+            more_spinner: &imp.more_spinner,
+            more_failure: &imp.more_failure,
+            more_button: &imp.more_button,
         }
+        .draw(&rows.paging);
         let now = now();
-        // A page added at the end keeps the rows above, and the place the
-        // person scrolled to; anything else builds the list again.
-        let appended = !listed.is_empty() && rows.calls.starts_with(&listed);
-        if !appended {
-            clear_list(&imp.call_list);
-            imp.rows.borrow_mut().clear();
-        }
-        let start = if appended { listed.len() } else { 0 };
-        for call in &rows.calls[start..] {
-            let row = call_row(call, now.as_ref());
-            imp.call_list.append(&row);
-            imp.rows.borrow_mut().push((row.upcast(), call.id.clone()));
-        }
-        imp.listed.replace(rows.calls.clone());
+        imp.rows.draw(&imp.call_list, &rows.calls, |call| {
+            (call_row(call, now.as_ref()).upcast(), call.id.clone())
+        });
+        more
     }
 }
 
@@ -350,7 +314,7 @@ mod tests {
             log_shown(&CallLog::Failed(failure("Offline.", true))),
             LogShown::Status {
                 title: CallLog::FAILED_TITLE,
-                body: "Offline.",
+                body: "Offline.".into(),
                 retry: true,
             }
         );

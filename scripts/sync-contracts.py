@@ -68,6 +68,8 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from _common import git, head, refusal, uncommitted
+
 ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / "contracts"
 SUMS = DEST / "SHA256SUMS"
@@ -117,7 +119,6 @@ SETS: tuple[FixtureSet, ...] = (
 )
 
 EM_DASH = chr(0x2014)
-EN_DASH = chr(0x2013)
 
 
 def load_hygiene():
@@ -468,12 +469,6 @@ def check_replacements_are_new(
 # The server repository.
 
 
-def git(repo: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", "-C", str(repo), *args], check=True, capture_output=True, text=True
-    ).stdout
-
-
 def read_monorepo(path: Path, allow_dirty: bool) -> tuple[str, dict[str, bool], dict[str, str]]:
     """The commit, whether each set's source directory is clean (by set name), and
     every fixture's text keyed by its path under contracts/ (`<set>/<file>`)."""
@@ -481,7 +476,7 @@ def read_monorepo(path: Path, allow_dirty: bool) -> tuple[str, dict[str, bool], 
         top = Path(git(path, "rev-parse", "--show-toplevel").strip())
     except subprocess.CalledProcessError as exc:
         raise SyncError(f"{path} is not a git checkout: {exc.stderr.strip()}") from exc
-    commit = git(top, "rev-parse", "HEAD").strip()
+    commit = head(top)
     clean: dict[str, bool] = {}
     sources: dict[str, str] = {}
     for fixture_set in SETS:
@@ -492,18 +487,10 @@ def read_monorepo(path: Path, allow_dirty: bool) -> tuple[str, dict[str, bool], 
             raise SyncError(
                 f"{top / fixture_set.generator} does not exist; the generator path in SERVER_REPO_* is stale"
             )
-        # Ignored files count too: a fixture on disk that git does not track is not
-        # part of the commit being recorded.
-        dirty = git(
-            top, "status", "--porcelain", "--ignored", "--untracked-files=all", "--", fixture_set.source
-        )
-        clean[fixture_set.name] = not dirty.strip()
-        if not clean[fixture_set.name] and not allow_dirty:
-            raise SyncError(
-                f"{fixture_set.source} has changes that are not committed at {commit[:12]}, so that "
-                f"commit would not describe what is copied. Commit them, or pass --allow-dirty "
-                f"(recorded as source_clean = false for the {fixture_set.name} set):\n{dirty.rstrip()}"
-            )
+        dirty = uncommitted(top, fixture_set.source)
+        clean[fixture_set.name] = not dirty
+        if dirty and not allow_dirty:
+            raise SyncError(refusal(f"{fixture_set.source} (at {commit[:12]})", dirty))
         files = sorted(directory.glob("*.json"))
         for file in files:
             if file.is_symlink() or not file.is_file():

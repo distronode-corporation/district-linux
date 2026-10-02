@@ -351,6 +351,22 @@ async fn the_drain_reports_store_failures() {
     assert_eq!(s.store.outbox(), ["old-a"]);
 }
 
+/// An entry that cannot be read does not stop the drain: the others are
+/// revoked, and it is left in the outbox for a later one, counted as deferred
+/// and reported.
+#[tokio::test(start_paused = true)]
+async fn an_unreadable_entry_is_kept_and_the_rest_are_drained() {
+    let s = setup(None);
+    with_outbox(&s, &["old-a", "old-b"]).await;
+    s.store.plant_unreadable(StoreErrorKind::Locked);
+
+    let report = s.sign_out.drain_revoke_outbox().await;
+    assert_eq!((report.revoked, report.deferred), (2, 1));
+    assert_eq!(report.error.unwrap().kind, StoreErrorKind::Locked);
+    assert!(s.store.outbox().is_empty());
+    assert_eq!(s.store.unreadable(), 1, "kept, not removed");
+}
+
 #[tokio::test(start_paused = true)]
 async fn a_deferred_sign_out_is_finished_by_the_next_drain() {
     let s = setup(Some(0));

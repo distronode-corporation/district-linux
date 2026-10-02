@@ -158,6 +158,15 @@ pub const LINUX_ONLY: &[Addition] = &[
                  The Android app called it only to decide whether to show its administration \
                  screens, and stopped when those left the app.",
     },
+    Addition {
+        endpoint: Endpoint::ContactBlock,
+        reason: "Blocking a caller from a contact's page. The Android app has no screen that \
+                 blocks a caller and removed its unused client for these routes.",
+    },
+    Addition {
+        endpoint: Endpoint::ContactsBlocked,
+        reason: "The blocked callers list on the contacts page, for the same reason as blocking.",
+    },
 ];
 
 /// A path template with every `{name}` placeholder written as `{}`, so that two

@@ -1167,6 +1167,8 @@ async fn a_sign_in_in_the_browser_is_exchanged_kept_and_signed_out() {
         )]
     );
 
+    // Quitting finds nothing waiting to be saved: the session already was.
+    auth.save_session().await;
     // At the next start, the session is found and its owner read from it.
     let restored = auth.restore().await.unwrap();
     assert_eq!(restored.user_id, claims().user_id);
@@ -1180,8 +1182,10 @@ async fn a_sign_in_in_the_browser_is_exchanged_kept_and_signed_out() {
     assert_eq!(auth.drain_revoke_outbox().await, Default::default());
 }
 
+/// Something that is not a link at all answers no attempt, so the sign-in
+/// under way still takes its own answer after it.
 #[tokio::test]
-async fn an_answer_that_is_not_a_link_uses_up_the_attempt() {
+async fn an_answer_that_is_not_a_link_leaves_the_attempt_waiting() {
     let exchange = FakeExchange::answering(ExchangeOutcome::Rejected);
     let (auth, _) = native_auth(&ApiConfig::default(), exchange);
     let authorize = auth.begin_sign_in();
@@ -1191,7 +1195,7 @@ async fn an_answer_that_is_not_a_link_uses_up_the_attempt() {
     );
     assert_eq!(
         auth.complete_sign_in(&answer_to(&authorize)).await,
-        Err(SignInError::Callback(LoginError::NoAttemptInProgress))
+        Err(SignInError::Exchange(ExchangeFailure::Rejected))
     );
 }
 

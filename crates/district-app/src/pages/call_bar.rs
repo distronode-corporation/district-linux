@@ -24,7 +24,8 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::pages::settings_kit::draw_line;
+use crate::notifications;
+use crate::pages::shared::{draw_line, draw_spinner};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -33,8 +34,9 @@ use crate::sink::EventSink;
 pub(crate) struct RingShown {
     /// Its icon.
     pub(crate) icon: &'static str,
-    /// Its heading.
-    pub(crate) title: &'static str,
+    /// Its heading, naming the workspace the call is in when that is not the
+    /// one open.
+    pub(crate) title: String,
     /// The line under it: where the call came from, or how the ring ended.
     pub(crate) message: String,
     /// The note that answering uses the microphone, while it can be answered.
@@ -53,8 +55,9 @@ pub(crate) struct RingShown {
     pub(crate) sounding: bool,
 }
 
-/// What the strip shows for `ring`.
-pub(crate) fn ring_shown(ring: &IncomingRing) -> RingShown {
+/// What the strip shows for `ring`, in the workspace named `elsewhere` when
+/// that is not the one open (see [`notifications::elsewhere`]).
+pub(crate) fn ring_shown(ring: &IncomingRing, elsewhere: Option<&str>) -> RingShown {
     let live = ring.is_live();
     let answering = ring.phase == RingPhase::Answering;
     let offered = matches!(ring.phase, RingPhase::Ringing | RingPhase::Answering);
@@ -64,11 +67,14 @@ pub(crate) fn ring_shown(ring: &IncomingRing) -> RingShown {
         } else {
             "call-missed-symbolic"
         },
-        title: match ring.phase {
-            RingPhase::Waiting => Notification::WAITING_TITLE,
-            RingPhase::Ended(RingEnd::Missed) => Notification::MISSED_TITLE,
-            _ => IncomingRing::TITLE,
-        },
+        title: notifications::heading(
+            match ring.phase {
+                RingPhase::Waiting => Notification::WAITING_TITLE,
+                RingPhase::Ended(RingEnd::Missed) => Notification::MISSED_TITLE,
+                _ => IncomingRing::TITLE,
+            },
+            elsewhere,
+        ),
         message: ring.message(),
         note: ring.can_answer().then_some(IncomingRing::MICROPHONE_NOTE),
         answer: offered,
@@ -266,7 +272,9 @@ impl CallBar {
             .media
             .as_ref()
             .filter(|media| media.owner == MediaOwner::Call);
-        self.draw_ring(ring);
+        let elsewhere =
+            ring.and_then(|ring| notifications::elsewhere(signed_in, &ring.workspace_id));
+        self.draw_ring(ring, elsewhere);
         self.draw_call(call, session);
         imp.strip_separator
             .set_visible(ring.is_some() && call.is_some());
@@ -276,20 +284,19 @@ impl CallBar {
         ring.is_some() || call.is_some()
     }
 
-    fn draw_ring(&self, ring: Option<&IncomingRing>) {
+    fn draw_ring(&self, ring: Option<&IncomingRing>, elsewhere: Option<&str>) {
         let imp = self.imp();
         imp.ring_strip.set_visible(ring.is_some());
         let Some(ring) = ring else {
             return;
         };
-        let shown = ring_shown(ring);
+        let shown = ring_shown(ring, elsewhere);
         imp.ringing.replace(ring.call_id.clone());
         imp.ring_icon.set_icon_name(Some(shown.icon));
-        imp.ring_title.set_label(shown.title);
+        imp.ring_title.set_label(&shown.title);
         imp.ring_message.set_label(&shown.message);
         draw_line(&imp.ring_note, shown.note);
-        imp.ring_spinner.set_visible(shown.answering);
-        imp.ring_spinner.set_spinning(shown.answering);
+        draw_spinner(&imp.ring_spinner, shown.answering);
         imp.answer_button.set_visible(shown.answer);
         imp.answer_button.set_sensitive(shown.can_answer);
         imp.decline_button.set_visible(shown.decline);
@@ -350,20 +357,24 @@ mod tests {
 
     #[test]
     fn a_ring_offers_what_its_phase_allows() {
-        let ringing = ring_shown(&ring(RingPhase::Ringing));
+        let ringing = ring_shown(&ring(RingPhase::Ringing), None);
         assert_eq!(ringing.title, IncomingRing::TITLE);
         assert_eq!(ringing.message, IncomingRing::BODY);
         assert_eq!(ringing.note, Some(IncomingRing::MICROPHONE_NOTE));
         assert!(ringing.answer && ringing.can_answer && ringing.decline && ringing.can_decline);
         assert!(ringing.sounding && !ringing.dismiss && !ringing.answering);
 
-        let waiting = ring_shown(&ring(RingPhase::Waiting));
+        let waiting = ring_shown(&ring(RingPhase::Waiting), None);
         assert_eq!(waiting.title, Notification::WAITING_TITLE);
         assert_eq!(waiting.message, IncomingRing::WAITING_BODY);
         assert!(!waiting.answer && waiting.decline && waiting.can_decline);
         assert!(!waiting.sounding && waiting.note.is_none());
 
-        let answering = ring_shown(&ring(RingPhase::Answering));
+        // A call in a workspace other than the one open names it.
+        let elsewhere = ring_shown(&ring(RingPhase::Ringing), Some("Bravo Client"));
+        assert_eq!(elsewhere.title, "Incoming call in Bravo Client");
+
+        let answering = ring_shown(&ring(RingPhase::Answering), None);
         assert!(answering.answer && !answering.can_answer && answering.answering);
         assert!(answering.decline && !answering.can_decline);
 
@@ -384,8 +395,11 @@ mod tests {
                 "The service is busy.",
             ),
         ] {
-            let ended = ring_shown(&ring(RingPhase::Ended(end)));
-            assert_eq!((ended.title, ended.message.as_str()), (title, line));
+            let ended = ring_shown(&ring(RingPhase::Ended(end)), None);
+            assert_eq!(
+                (ended.title.as_str(), ended.message.as_str()),
+                (title, line)
+            );
             assert_eq!(ended.icon, "call-missed-symbolic");
             assert!(ended.dismiss && !ended.answer && !ended.decline);
         }

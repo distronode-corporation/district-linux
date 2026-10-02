@@ -17,10 +17,6 @@ use livekit::{DisconnectReason as RoomReason, ParticipantKind};
 use super::Task;
 use super::audio::{self, Audio};
 
-/// The identity prefix of the note-taking Companion as it joined rooms before
-/// it joined as an agent. The web still treats it as one, and so does this.
-const RETIRED_COMPANION_PREFIX: &str = "ai-companion-";
-
 /// Encrypted audio this many packets in (a second of 20 ms packets) without a
 /// single frame decrypted: this session's key and the sender's disagree.
 ///
@@ -347,7 +343,9 @@ impl People {
     fn joined(&mut self, participant: &RemoteParticipant) -> MediaEvent {
         let identity = participant.identity().to_string();
         let name = Some(participant.name()).filter(|name| !name.is_empty());
-        let is_agent = is_agent(participant.kind(), &identity);
+        // The media library's own kind. The Companion's identity from before it
+        // joined as an agent is the core's rule (`Participant::is_service`).
+        let is_agent = participant.kind() == ParticipantKind::Agent;
         self.present.insert(identity.clone(), Tracks::default());
         MediaEvent::ParticipantJoined(Participant::new(identity, name, is_agent))
     }
@@ -384,12 +382,6 @@ impl People {
             available: after,
         })
     }
-}
-
-/// Whether a participant joined as a service rather than a person: the media
-/// library's kind, or the Companion's identity from before it joined as one.
-fn is_agent(kind: ParticipantKind, identity: &str) -> bool {
-    kind == ParticipantKind::Agent || identity.starts_with(RETIRED_COMPANION_PREFIX)
 }
 
 fn kind(kind: RoomTrackKind) -> TrackKind {
@@ -459,14 +451,6 @@ mod tests {
         for (reason, expected) in cases {
             assert_eq!(disconnect_reason(reason), expected, "{reason:?}");
         }
-    }
-
-    #[test]
-    fn an_agent_is_the_librarys_kind_or_the_retired_companion() {
-        assert!(is_agent(ParticipantKind::Agent, "receptionist"));
-        assert!(is_agent(ParticipantKind::Standard, "ai-companion-7"));
-        assert!(!is_agent(ParticipantKind::Standard, "member-7"));
-        assert!(!is_agent(ParticipantKind::Sip, "caller"));
     }
 
     #[test]

@@ -44,7 +44,10 @@ async fn it_keeps_the_three_slots_apart() {
     assert_eq!(store.refresh_pending().await, Ok(None));
     assert_eq!(
         store.revoke_outbox().await,
-        Ok(vec![RefreshToken::new("old"), RefreshToken::new("older")])
+        Ok(vec![
+            Ok(RefreshToken::new("old")),
+            Ok(RefreshToken::new("older"))
+        ])
     );
 
     store
@@ -57,7 +60,7 @@ async fn it_keeps_the_three_slots_apart() {
         .unwrap();
     assert_eq!(
         store.revoke_outbox().await,
-        Ok(vec![RefreshToken::new("older")])
+        Ok(vec![Ok(RefreshToken::new("older"))])
     );
     assert!(!format!("{store:?}").contains("older"), "{store:?}");
 }

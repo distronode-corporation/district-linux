@@ -8,7 +8,8 @@ name: Flatpak
 #
 # Run by hand, from release.yml, and on pull requests that change what the
 # Flatpak is built from (the manifest and cargo-sources.json, which moves with
-# every Cargo.lock change, and the files the manifest installs or runs).
+# every Cargo.lock change, the files the manifest installs or runs, and what
+# THIRD-PARTY-LICENSES.txt is written from).
 # Minutes are metered while the repository is private, and a build with
 # calls is long, so it is one job and never runs on a push to main.
 on:
@@ -18,7 +19,16 @@ on:
     paths:
       - "packaging/flatpak/**"
       - "crates/district-app/data/com.distronode.DistrictAI.*"
+      - "crates/district-app/data/icons/**"
+      - "LICENSE"
+      - "NOTICE"
+      - "Cargo.lock"
+      - "about.toml"
+      - "about.hbs"
       - "scripts/fetch-libwebrtc.sh"
+      - "scripts/third-party-licenses.sh"
+      - ".github/actions/read-version/**"
+      - ".github/actions/install-cargo-about/**"
       - ".github/workflows/flatpak.yml"
 
 permissions:
@@ -61,12 +71,28 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Read the version
-        id: version
+      - id: version
+        uses: $/.github/actions/read-version
+
+      # THIRD-PARTY-LICENSES.txt, the licence texts of every crate the binary
+      # links, as the .deb ships them. cargo-about is not in the SDK and the
+      # build is offline, so the file is written here, on the runner, before
+      # the build, and the manifest installs it from
+      # target/flatpak/THIRD-PARTY-LICENSES.txt. The crates are fetched with
+      # --locked, each checked against the SHA-256 Cargo.lock records, and the
+      # texts come from those sources; nothing is cached.
+      - name: Install the stable toolchain
         run: |
-          version="$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "building $version"
+          rustup toolchain install stable --profile minimal
+          rustc --version
+
+      - uses: $/.github/actions/install-cargo-about
+
+      - name: Write THIRD-PARTY-LICENSES.txt
+        run: |
+          set -euo pipefail
+          cargo fetch --locked
+          scripts/third-party-licenses.sh target/flatpak/THIRD-PARTY-LICENSES.txt
 
       # Privileged: flatpak-builder builds, and flatpak runs, inside bubblewrap
       # sandboxes, which a default container may not create; the image's
@@ -124,6 +150,30 @@ jobs:
               echo "::error::--version in the sandbox said \"$got\", not \"$want\""
               exit 1
             fi
+          '
+
+      # Every licence text the bundle must carry, where NOTICE says it is:
+      # /app in the sandbox is files/ under the installed app's location. A
+      # crate every build links must be listed, so an empty or truncated
+      # THIRD-PARTY-LICENSES.txt fails.
+      - name: The installed bundle holds the licence texts
+        run: |
+          docker exec flatpak bash -euo pipefail -c '
+            app="$(flatpak info --system --show-location com.distronode.DistrictAI)"
+            dir="$app/files/share/licenses/com.distronode.DistrictAI"
+            ls -l "$dir"
+            fail=0
+            for file in LICENSE NOTICE libwebrtc-LICENSE.md THIRD-PARTY-LICENSES.txt; do
+              if [ ! -s "$dir/$file" ]; then
+                echo "::error::the bundle has no /app/share/licenses/com.distronode.DistrictAI/$file"
+                fail=1
+              fi
+            done
+            if ! grep -qE "^  gtk4 [0-9]" "$dir/THIRD-PARTY-LICENSES.txt"; then
+              echo "::error::THIRD-PARTY-LICENSES.txt does not list gtk4"
+              fail=1
+            fi
+            exit "$fail"
           '
 
       - name: Name the bundle for the release

@@ -19,9 +19,8 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::audition::AuditionDialog;
 use crate::pages::save_notice::SaveNotice;
-use crate::pages::settings_kit::{
-    Choices, Echoed, Frame, draw_busy, draw_config, draw_line, unlisted,
-};
+use crate::pages::settings_kit::{Choices, Echoed, Frame, draw_config, unlisted};
+use crate::pages::shared::{draw_busy, draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -314,8 +313,7 @@ impl PersonaView {
             row.set_sensitive(section.engine_editable());
         }
         let loading = section.options == PersonaOptionsLoad::Loading;
-        imp.options_spinner.set_visible(loading);
-        imp.options_spinner.set_spinning(loading);
+        draw_spinner(&imp.options_spinner, loading);
         let failure = match &section.options {
             PersonaOptionsLoad::Failed(failure) => Some(failure),
             _ => None,
@@ -325,7 +323,7 @@ impl PersonaView {
             (None, Some(failure)) => Some(format!(
                 "{} {}",
                 PersonaSection::ENGINE_READ_ONLY,
-                failure.message
+                failure_text(failure)
             )),
             (None, None) => Some(OPTIONS_LOADING.to_owned()),
         };

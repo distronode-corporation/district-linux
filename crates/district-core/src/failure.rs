@@ -8,7 +8,7 @@
 //! from here.
 
 use district_api::{
-    ApiError, CODE_REGIONS_DEGRADED, FALLBACK_MESSAGE, RetryReason, TokenError, TransportKind,
+    ApiError, CODE_REGIONS_DEGRADED, FALLBACK_MESSAGE, RetryReason, TransportKind,
     UnauthorizedReason,
 };
 use district_live::LiveError;
@@ -19,7 +19,7 @@ use crate::session::SessionEnd;
 const SIGNED_OUT: &str = "Your session has ended.";
 const REGIONS_DEGRADED: &str =
     "A region is unreachable, so this could not be loaded. Your account has not changed.";
-const OFFLINE: &str = "Could not reach District AI. Check your connection.";
+pub(crate) const OFFLINE: &str = "Could not reach District AI. Check your connection.";
 const NOT_JSON: &str = "Could not reach District AI. If this network asks you to sign in, as \
     hotel and public networks often do, sign in to it and try again.";
 const REDIRECTED: &str = "Could not reach District AI: the request was redirected. If this \
@@ -27,7 +27,7 @@ const REDIRECTED: &str = "Could not reach District AI: the request was redirecte
 const UNEXPECTED_RESPONSE: &str = "District AI sent a response this version of the app does not \
     understand. Updating the app should fix it.";
 const SERVER: &str = "Something went wrong on our side. Please try again shortly.";
-const RATE_LIMITED: &str = "Too many requests. Wait a moment and try again.";
+pub(crate) const RATE_LIMITED: &str = "Too many requests. Wait a moment and try again.";
 const FORBIDDEN: &str = "Your role in this workspace does not allow this.";
 const NOT_FOUND: &str = "That could not be found. It may have been removed.";
 const REFUSED_NOT_RETRIED: &str = "District AI did not accept that just now. Please try again.";
@@ -41,10 +41,8 @@ const LIVE_FORBIDDEN: &str = "Live updates are not available to you in this work
     calls and messages appear when you refresh.";
 const LIVE_UNUSABLE: &str = "Live updates could not be started, so new calls and messages \
     appear when you refresh. Updating the app may fix it.";
-pub(crate) const TOO_MANY_ATTACHMENTS: &str = "You can attach up to 5 images to one message.";
 pub(crate) const UNSUPPORTED_ATTACHMENT: &str =
     "Only JPEG, PNG, GIF or WebP images can be attached.";
-pub(crate) const ATTACHMENT_SIZE: &str = "Attachments must be between 1 byte and 5 MB.";
 pub(crate) const UNREADABLE_ATTACHMENT: &str =
     "That image could not be read. Try picking it again.";
 /// Turning booking pages on, refused by the service's list of workspaces that
@@ -157,17 +155,6 @@ impl FailureText {
                 Self::final_(or_ours(&detail.message, LAST_AGENCY_MEMBER))
             }
             other => Self::from_api_error(other),
-        }
-    }
-
-    /// The text for a token source that had no token to give.
-    pub fn from_token_error(error: &TokenError) -> Self {
-        match error {
-            TokenError::SignInRequired(reason) => Self {
-                session_ended: Some(SessionEnd::Reauth(*reason)),
-                ..Self::final_(SIGNED_OUT)
-            },
-            TokenError::RetryLater(reason) => Self::from_retry_reason(*reason),
         }
     }
 
