@@ -61,6 +61,7 @@ mod softphone;
 mod support;
 mod telemetry;
 mod usage;
+mod voice_studio;
 mod workflows;
 mod workspace;
 mod workspace_config;
@@ -155,6 +156,16 @@ pub use support::{
 };
 pub use telemetry::{TelemetryEnvelope, TelemetryEventType, TelemetryToken};
 pub use usage::{UsageHistoryResponse, UsageMonth, UsageResponse};
+pub use voice_studio::{
+    CUSTOM_PIPELINE, ENGINE_MIX_VERSION, EngineMix, EngineMixInterruption, EngineMixLlm,
+    EngineMixStt, EngineMixTts, EngineMixTurn, GEMINI_38_LIVE, GEMINI_LIVE_25, StudioBlock,
+    StudioCatalog, StudioChain, StudioChainResidency, StudioChannelLabels, StudioCurrent,
+    StudioCurrentMeter, StudioFields, StudioHonouredBy, StudioLabels, StudioLatency,
+    StudioLegLabels, StudioLlmModel, StudioLocation, StudioMeter, StudioOption, StudioPreset,
+    StudioRealtimeModel, StudioRecipe, StudioResidency, StudioStage, StudioStageLabels,
+    StudioSttModel, StudioTtsModel, StudioTuningKey, StudioTurn, StudioTurnDetector, StudioTurnEar,
+    StudioVoice, StudioVoiceGroup, StudioVoiceList, VoiceStudioResponse,
+};
 pub use workflows::{
     CampaignStatus, CampaignStatusResponse, WorkflowActionResult, WorkflowLatestRun,
     WorkflowListResponse, WorkflowRun, WorkflowRunsResponse, WorkflowSummary,

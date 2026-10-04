@@ -1322,7 +1322,7 @@ async fn the_api_client_serves_the_workspace_settings() {
     }
     let handling = json!({"success": true, "callHandling": "app_first", "appRingSeconds": 12});
     let availability = json!({"success": true, "availableForCalls": false, "reason": null});
-    let routes: [(&str, &str, serde_json::Value); 24] = [
+    let routes: [(&str, &str, serde_json::Value); 25] = [
         (
             "GET",
             "/api/district/workspace/config",
@@ -1347,6 +1347,11 @@ async fn the_api_client_serves_the_workspace_settings() {
             "GET",
             "/api/district/workspace/persona/options",
             fixture("district-persona-options.json"),
+        ),
+        (
+            "GET",
+            "/api/district/workspace/persona/voice-studio",
+            fixture("district-voice-studio.json"),
         ),
         (
             "PATCH",
@@ -1475,6 +1480,10 @@ async fn the_api_client_serves_the_workspace_settings() {
             .unwrap()
             .region,
         "us"
+    );
+    assert_eq!(
+        DistrictApi::voice_studio(&client, ws).await.unwrap().locale,
+        "en"
     );
     assert!(
         DistrictApi::save_persona(&client, ws, &PersonaPatch::default())

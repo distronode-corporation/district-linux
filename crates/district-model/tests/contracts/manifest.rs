@@ -39,8 +39,8 @@ use district_model::{
     SchedulingStatusResponse, SendMessageResponse, SetupResponse, SupportCloseResponse,
     SupportReplyResponse, SupportRequestCreateResponse, SupportRequestResponse,
     SupportRequestsResponse, TelemetryEnvelope, TelemetryToken, TimelineResponse,
-    UnreadCountResponse, UsageHistoryResponse, UsageResponse, WorkflowListResponse,
-    WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    UnreadCountResponse, UsageHistoryResponse, UsageResponse, VoiceStudioResponse,
+    WorkflowListResponse, WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
     WorkspaceConfigResponse, WorkspaceListResponse, WorkspaceSaveResponse,
 };
 
@@ -87,7 +87,7 @@ pub const SETS: &[Manifest] = &[
 /// Asserted exactly, not as a floor: a floor passes against a directory that lost
 /// files, and never notices one the server started recording. When a sync adds a
 /// fixture, this fails until the new file is placed in one of the sets below.
-pub const EXPECTED_FIXTURE_COUNT: usize = 156;
+pub const EXPECTED_FIXTURE_COUNT: usize = 157;
 
 /// Fixtures decoded by a type in this crate: the fixture's name and the decoder
 /// for its type. Sorted by name.
@@ -457,6 +457,8 @@ pub const IMPLEMENTED: &[(&str, Codec)] = &[
     ("district-usage-history.json", codec::<UsageHistoryResponse>),
     // GET /api/district/workspace/usage.
     ("district-usage.json", codec::<UsageResponse>),
+    // GET /api/district/workspace/persona/voice-studio: the Studio, read.
+    ("district-voice-studio.json", codec::<VoiceStudioResponse>),
     // GET /api/district/workflows/runs: a run of each status.
     ("district-workflow-runs.json", codec::<WorkflowRunsResponse>),
     // PATCH /api/district/workflows.

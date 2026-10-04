@@ -1,4 +1,4 @@
-//! The workspace settings: the hub and its nine sections.
+//! The workspace settings: the hub and its ten sections.
 //!
 //! The hub ([`settings_rows`]) holds no state and makes no request: it lists the
 //! sections the member's role may open. Each section reads what it shows when it
@@ -37,6 +37,7 @@ mod messaging;
 mod persona;
 mod routing;
 mod tools;
+mod voice_studio;
 
 use district_api::ApiError;
 use district_model::{WorkspaceConfig, WorkspaceConfigResponse};
@@ -68,22 +69,29 @@ pub use messaging::{
     MessagingWrite, SecretText, channel_label, credential_source_label, provider_label,
 };
 pub use persona::{
-    PERSONA_GEMINI_LIVE_ENGINE, PREVIEW_COOLDOWN, PersonaEngineEdit, PersonaEngineValues,
-    PersonaEvent, PersonaOptionsLoad, PersonaPreview, PersonaSection, PersonaText,
+    PREVIEW_COOLDOWN, PersonaEngineEdit, PersonaEngineValues, PersonaEvent, PersonaOptionsLoad,
+    PersonaPreview, PersonaRefit, PersonaSection, PersonaText,
 };
 pub use routing::{RoutingRulesConfirm, RoutingRulesEvent, RoutingRulesSection};
 pub use tools::{
     CAPABILITY_CATALOG, CapabilityRow, SCHEDULING_TOOLS, ToolsEvent, ToolsSection,
     capability_label, default_allowed_tools,
 };
+pub use voice_studio::{
+    StudioEdit, StudioSaveState, VoiceStudioEvent, VoiceStudioLoad, VoiceStudioSection,
+};
 
 /// Every slot the settings sections wait in, forgotten when a section is left.
-pub(crate) const SETTINGS_SLOTS: [Slot; 24] = [
+pub(crate) const SETTINGS_SLOTS: [Slot; 28] = [
     Slot::PersonaConfig,
     Slot::PersonaOptions,
     Slot::PersonaSave,
     Slot::PersonaPreview,
     Slot::PersonaCooldown,
+    Slot::PersonaStudio,
+    Slot::PersonaRefit,
+    Slot::VoiceStudio,
+    Slot::VoiceStudioSave,
     Slot::ToolsConfig,
     Slot::ToolsSave,
     Slot::DirectoryConfig,
@@ -222,11 +230,16 @@ pub struct SettingsRow {
 }
 
 /// Every row the hub can show, in its order.
-const ROWS: [SettingsRow; 9] = [
+const ROWS: [SettingsRow; 10] = [
     SettingsRow {
         section: WorkspaceSection::Persona,
         title: "Receptionist persona",
-        subtitle: "Its name, greeting and character, and the voice and engine it speaks with.",
+        subtitle: "Its name, greeting, character, language and answer length.",
+    },
+    SettingsRow {
+        section: WorkspaceSection::VoiceStudio,
+        title: "Voice Studio",
+        subtitle: "The voice and engine it speaks with, part by part, and how fast it answers.",
     },
     SettingsRow {
         section: WorkspaceSection::Tools,
@@ -274,7 +287,7 @@ const ROWS: [SettingsRow; 9] = [
 pub const SETTINGS_MORE_ON_WEB: &str =
     "The outbound campaign and the video avatar are changed on the District AI website.";
 
-/// The note under the hub for a viewer, who sees three sections of nine.
+/// The note under the hub for a viewer, who sees three sections of ten.
 pub const SETTINGS_VIEWER_NOTE: &str = "You have read-only access to this workspace. These \
     are the settings you may read; an agency or client member can change them.";
 
@@ -311,6 +324,7 @@ impl SignedIn {
         let workspace_id = self.workspace_id();
         match section {
             WorkspaceSection::Persona => self.enter_persona(workspace_id, tickets),
+            WorkspaceSection::VoiceStudio => self.enter_voice_studio(workspace_id, tickets),
             WorkspaceSection::Tools => self.enter_tools(workspace_id, tickets),
             WorkspaceSection::Directory => self.enter_directory(workspace_id, tickets),
             WorkspaceSection::Routing => self.enter_routing(workspace_id, tickets),
@@ -330,6 +344,7 @@ impl SignedIn {
     pub(crate) fn close_settings(&mut self, tickets: &mut Tickets) -> Vec<Effect> {
         tickets.cancel_each(&SETTINGS_SLOTS);
         self.persona = None;
+        self.voice_studio = None;
         self.tools = None;
         self.directory = None;
         self.routing_rules = None;
@@ -343,13 +358,17 @@ impl SignedIn {
     /// Whether the open settings section holds edits that would be lost by
     /// leaving it, so the app can ask "Discard your changes?" before sending
     /// [`Event::Back`](crate::Event::Back) or another navigation. The forms of
-    /// the persona, the capabilities, the directory, the routing rules and call
-    /// handling count; a half-typed knowledge document, carrier account or
+    /// the persona, Voice Studio, the capabilities, the directory, the routing
+    /// rules and call handling count; a half-typed knowledge document, carrier account or
     /// member address does not, as on Android.
     pub fn settings_unsaved(&self) -> bool {
         self.persona
             .as_ref()
             .is_some_and(PersonaSection::has_unsaved_changes)
+            || self
+                .voice_studio
+                .as_ref()
+                .is_some_and(VoiceStudioSection::has_unsaved_changes)
             || self
                 .tools
                 .as_ref()
@@ -397,6 +416,10 @@ impl SignedIn {
         let workspace_id = self.workspace_id();
         let effects = if tickets.accept(Slot::PersonaSave, ticket) {
             self.persona_saved(result, workspace_id, tickets)
+        } else if tickets.accept(Slot::PersonaRefit, ticket) {
+            self.persona_refit_saved(result, workspace_id, tickets)
+        } else if tickets.accept(Slot::VoiceStudioSave, ticket) {
+            self.voice_studio_saved(result, workspace_id, tickets)
         } else if tickets.accept(Slot::ToolsSave, ticket) {
             self.tools_saved(result, workspace_id, tickets)
         } else if tickets.accept(Slot::DirectorySave, ticket) {

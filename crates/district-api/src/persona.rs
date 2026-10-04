@@ -1,12 +1,12 @@
 //! Typed calls for the receptionist's persona: the choices it may be given,
-//! saving it, and auditioning an unsaved one.
+//! Voice Studio's read, saving it, and auditioning an unsaved one.
 //!
-//! The service refuses a viewer all three. The options are repeated once after
+//! The service refuses a viewer all four. The two reads are repeated once after
 //! a refused access token; the save and the audition never are.
 
 use district_model::{
     PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse,
-    WorkspaceSaveResponse,
+    VoiceStudioResponse, WorkspaceSaveResponse,
 };
 
 use crate::client::ApiClient;
@@ -32,10 +32,27 @@ impl<S: TokenSource> ApiClient<S> {
         Ok(options)
     }
 
+    /// Everything Voice Studio shows for `workspace_id`: the recipes, the saved
+    /// engine as a signal chain, the time-to-first-word meter, each leg's
+    /// models, the voices and the tuning keys, in the reader's portal
+    /// language. Read it when the Studio opens and after every save, which
+    /// answers `success` alone: the service allows 60 a minute per workspace.
+    pub async fn voice_studio(&self, workspace_id: &str) -> Result<VoiceStudioResponse, ApiError> {
+        let studio: VoiceStudioResponse = self
+            .request(Endpoint::PersonaVoiceStudio)
+            .workspace(workspace_id)
+            .send()
+            .await?;
+        confirm(Endpoint::PersonaVoiceStudio, studio.success)?;
+        Ok(studio)
+    }
+
     /// Saves what `patch` names and keeps every other persona field.
     ///
-    /// The answer is `success` alone: read the config again to show what was
-    /// stored. The service allows 30 saves a minute per workspace. Sent once,
+    /// The answer is `success` alone: read the config again (or Voice Studio,
+    /// for the engine) to show what was stored. A chain the service's
+    /// catalogue does not accept is refused with a 400 whose body's `code` is
+    /// `invalid_engine_mix`, and nothing is written. The service allows 30 saves a minute per workspace. Sent once,
     /// never repeated.
     pub async fn save_persona(
         &self,

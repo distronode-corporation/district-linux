@@ -14,6 +14,7 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::rooms::RoomE2ee;
+use crate::voice_studio::EngineMix;
 
 /// The engine whose voices, and language list, depend on the language.
 pub const PERSONA_LANGUAGE_KEYED_ENGINE: &str = "deepgram-pipeline";
@@ -67,6 +68,14 @@ pub struct PersonaPatch {
     /// Synthesize speech ahead of time, which is billed. Not for Gemini Live.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preemptive_tts: Option<bool>,
+    /// The chain of a [`CUSTOM_PIPELINE`](crate::CUSTOM_PIPELINE) engine,
+    /// sent with its engine id. The service refuses a chain its catalogue does
+    /// not accept with a 400 (`invalid_engine_mix`) and writes nothing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub engine_mix: Option<EngineMix>,
+    /// English and French on one call, for the engines that carry it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bilingual: Option<bool>,
 }
 
 /// An engine, and optionally its answer length, for [`PersonaPatch`].
@@ -277,6 +286,10 @@ pub struct PersonaPreviewForm {
     /// Synthesize speech ahead of time, which is billed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preemptive_tts: Option<bool>,
+    /// The chain, for a [`CUSTOM_PIPELINE`](crate::CUSTOM_PIPELINE) engine.
+    /// Without one the service auditions its default engine instead.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub engine_mix: Option<EngineMix>,
 }
 
 /// `POST /api/district/workspace/persona/preview-token`: the credential for one

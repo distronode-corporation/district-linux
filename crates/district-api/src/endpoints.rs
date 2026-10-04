@@ -378,6 +378,10 @@ endpoint_table! {
     /// Starts a voice preview of an unsaved persona. Opens a billed media session.
     PersonaPreviewToken => Post "/api/district/workspace/persona/preview-token",
         workspace: Body, body: Json, retry: Never;
+    /// Everything Voice Studio shows: the recipes, the saved engine as a signal
+    /// chain, the meter, each leg's models, the voices and the tuning keys.
+    PersonaVoiceStudio => Get "/api/district/workspace/persona/voice-studio",
+        workspace: Query, body: Empty, retry: OnceAfterRefresh;
     /// Saves which tools the receptionist may use. Replaces the whole list.
     ToolsSave => Patch "/api/district/workspace/tools",
         workspace: Body, body: Json, retry: Never;

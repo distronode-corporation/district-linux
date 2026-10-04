@@ -1,18 +1,18 @@
-//! The persona: its texts from the settings read, its engine half only with the
-//! options too, a save that sends only what changed and is read back, and the
-//! billed audition, asked for only on Start, one at a time, with its credential
-//! held for the call engine and dropped with the dialog.
+//! The persona: its texts from the settings read, its language half only with
+//! the options too, a save that sends only what changed and is read back, a
+//! chain of the member's own fitted to a new language, and the billed
+//! audition, asked for only on Start, one at a time, with its credential held
+//! for the call engine and dropped with the dialog.
 
 use district_api::ApiError;
 use district_core::{
-    ConfigLoad, DisconnectReason, Effect, Event, FailureText, MediaEvent, Model,
-    PERSONA_GEMINI_LIVE_ENGINE, PREVIEW_COOLDOWN, PersonaEngineEdit, PersonaEvent,
-    PersonaOptionsLoad, PersonaPreview, PersonaSection, PersonaText, RingEvent, Route, SaveState,
-    Ticket, WorkspaceSection,
+    ConfigLoad, DisconnectReason, Effect, Event, FailureText, MediaEvent, Model, PREVIEW_COOLDOWN,
+    PersonaEngineEdit, PersonaEvent, PersonaOptionsLoad, PersonaPreview, PersonaRefit,
+    PersonaSection, PersonaText, RingEvent, Route, SaveState, Ticket, WorkspaceSection,
 };
 use district_model::{
-    PersonaEngineChoice, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
-    PersonaPreviewTokenResponse, WorkspaceConfigResponse,
+    CUSTOM_PIPELINE, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
+    PersonaPreviewTokenResponse, VoiceStudioResponse, WorkspaceConfigResponse,
 };
 use serde_json::json;
 
@@ -130,37 +130,24 @@ fn the_form_starts_from_what_is_stored_and_offers_only_the_options() {
             values.language.as_str(),
             values.voice.as_str(),
             values.response_length.as_str(),
-            values.temperature,
-            values.voice_style.as_str(),
-            values.preemptive_tts,
         ),
-        (
-            DEEPGRAM,
-            "en-US",
-            "aura-2-asteria-en",
-            "concise",
-            0.7,
-            "en-GB-Studio-B",
-            true
-        )
+        (DEEPGRAM, "en-US", "aura-2-asteria-en", "concise")
     );
     assert_eq!(section.engines().len(), 7);
     assert_eq!(section.languages().len(), 7, "the Deepgram list");
-    assert_eq!(section.voice_groups().len(), 2);
     assert_eq!(section.response_lengths().len(), 3);
-    assert!(section.voice_styles().is_empty(), "Gemini Live only");
-    assert!(!section.shows_voice_style() && section.shows_preemptive_tts());
-    assert!(!section.voice_off_catalogue());
     assert!(section.text_editable() && section.engine_editable());
     assert!(!section.has_unsaved_changes() && !section.can_save());
-    assert!(section.can_preview());
+    assert!(section.can_preview() && section.refit.is_none());
     assert_eq!(section.patch(), PersonaPatch::default());
+    assert!(!PersonaSection::STUDIO_HINT.is_empty());
 }
 
-/// A persona nobody configured starts on the service's starting values.
+/// A persona nobody configured starts on the service's starting values, and
+/// has no engine to file an answer length under.
 #[test]
 fn a_persona_never_configured_starts_on_the_services_defaults() {
-    let model = read(
+    let mut model = read(
         Ok(fixture("district-workspace-config-sparse.json")),
         Ok(options()),
     );
@@ -172,17 +159,18 @@ fn a_persona_never_configured_starts_on_the_services_defaults() {
             values.model_id.as_str(),
             values.voice.as_str(),
             values.response_length.as_str(),
-            values.temperature,
-            values.preemptive_tts,
         ),
-        ("", "", "concise", 0.7, false)
+        ("", "", "concise")
     );
     assert!(section.response_lengths().is_empty(), "no engine chosen");
-    assert!(!section.voice_off_catalogue());
-    assert_eq!(section.patch(), PersonaPatch::default());
+    engine(
+        &mut model,
+        PersonaEngineEdit::ResponseLength("verbose".to_owned()),
+    );
+    assert_eq!(persona(&model).patch(), PersonaPatch::default());
 }
 
-/// Without the options the engine half is read only and there is no
+/// Without the options the language half is read only and there is no
 /// audition; the texts stay editable. Without the settings there is no form.
 #[test]
 fn each_read_failing_takes_only_its_own_half() {
@@ -191,10 +179,10 @@ fn each_read_failing_takes_only_its_own_half() {
     assert!(matches!(section.options, PersonaOptionsLoad::Failed(_)));
     assert!(section.engine().is_none() && !section.engine_editable() && !section.can_preview());
     assert!(section.engines().is_empty() && section.languages().is_empty());
-    assert!(section.voice_groups().is_empty() && section.response_lengths().is_empty());
+    assert!(section.response_lengths().is_empty());
     assert!(section.options().is_none());
     assert!(!PersonaSection::ENGINE_READ_ONLY.is_empty());
-    assert!(engine(&mut model, PersonaEngineEdit::Engine(AWS.to_owned())).is_empty());
+    assert!(engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned())).is_empty());
     assert!(event(&mut model, PersonaEvent::OpenPreview).is_empty());
     assert_eq!(persona(&model).preview, None);
     text(&mut model, PersonaText::Greeting, "Hello");
@@ -236,70 +224,9 @@ fn a_save_sends_only_the_texts_that_changed_and_is_read_back() {
     assert_eq!(persona(&model).save, SaveState::Idle);
 }
 
-/// Choosing an engine moves the voice to its own, keeps a language it speaks,
-/// and takes the answer length stored for it, which is not a change.
-#[test]
-fn an_engine_carries_its_voice_and_its_own_answer_length() {
-    let mut model = ready();
-    // Not offered: unknown, and outside the region.
-    assert!(engine(&mut model, PersonaEngineEdit::Engine("nope".to_owned())).is_empty());
-    engine(&mut model, PersonaEngineEdit::Engine(DEEPGRAM.to_owned()));
-    assert!(
-        !persona(&model).has_unsaved_changes(),
-        "the same engine is no change"
-    );
-
-    engine(
-        &mut model,
-        PersonaEngineEdit::Engine(PERSONA_GEMINI_LIVE_ENGINE.to_owned()),
-    );
-    let section = persona(&model);
-    let values = section.engine().unwrap();
-    assert_eq!(
-        (
-            values.model_id.as_str(),
-            values.language.as_str(),
-            values.voice.as_str(),
-            values.response_length.as_str()
-        ),
-        (PERSONA_GEMINI_LIVE_ENGINE, "en-US", "Puck", "concise")
-    );
-    assert!(section.shows_voice_style() && !section.shows_preemptive_tts());
-    assert!(!section.voice_styles().is_empty());
-    assert_eq!(section.languages().len(), 6, "the general list");
-
-    // Gemini Live reads a voice style and does not speak early.
-    engine(
-        &mut model,
-        PersonaEngineEdit::VoiceStyle("en-US-Journey-F".to_owned()),
-    );
-    engine(
-        &mut model,
-        PersonaEngineEdit::VoiceStyle("not-a-style".to_owned()),
-    );
-    engine(&mut model, PersonaEngineEdit::PreemptiveTts(false));
-    engine(&mut model, PersonaEngineEdit::Voice("Kore".to_owned()));
-    engine(
-        &mut model,
-        PersonaEngineEdit::Voice("aura-2-luna-en".to_owned()),
-    );
-    assert_eq!(
-        persona(&model).patch(),
-        PersonaPatch {
-            engine: Some(PersonaEngineChoice {
-                model_id: PERSONA_GEMINI_LIVE_ENGINE.to_owned(),
-                response_length: None,
-            }),
-            voice: Some("Kore".to_owned()),
-            voice_style: Some("en-US-Journey-F".to_owned()),
-            ..PersonaPatch::default()
-        }
-    );
-}
-
 /// For the engine whose voices speak one language each, choosing a language
-/// moves the voice; for any other engine it does not. An engine that does not
-/// speak the language clears it, and an empty field is never sent.
+/// moves the voice; for any other engine it does not. A language the engine
+/// does not speak is refused, and no engine id is ever sent for a language.
 #[test]
 fn a_language_moves_the_voice_only_where_voices_speak_one_language() {
     let mut model = ready();
@@ -307,86 +234,59 @@ fn a_language_moves_the_voice_only_where_voices_speak_one_language() {
     engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned()));
     assert_eq!(persona(&model).engine().unwrap().voice, "aura-2-elara-de");
     engine(&mut model, PersonaEngineEdit::Language("nl-NL".to_owned()));
-    assert_eq!(persona(&model).engine().unwrap().voice, "aura-2-beatrix-nl");
-
-    engine(&mut model, PersonaEngineEdit::Engine(AWS.to_owned()));
-    let values = persona(&model).engine().unwrap().clone();
-    assert_eq!(
-        (values.language.as_str(), values.voice.as_str()),
-        ("", "Joanna")
-    );
-    let patch = persona(&model).patch();
-    assert_eq!(patch.language, None, "an emptied engine field is not sent");
-    assert_eq!(patch.voice.as_deref(), Some("Joanna"));
-
-    engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned()));
-    assert_eq!(
-        persona(&model).engine().unwrap().voice,
-        "Joanna",
-        "one voice per engine"
-    );
-    engine(&mut model, PersonaEngineEdit::Voice("Matthew".to_owned()));
-    engine(&mut model, PersonaEngineEdit::PreemptiveTts(false));
     assert_eq!(
         serde_json::to_value(persona(&model).patch()).unwrap(),
-        json!({
-            "modelId": AWS, "language": "de-DE", "voice": "Matthew",
-            "preemptiveTts": false,
-        })
+        json!({"language": "nl-NL", "voice": "aura-2-beatrix-nl"})
+    );
+
+    let mut stored = settings_row();
+    stored.config.ai_persona.as_mut().unwrap().model_id = Some(AWS.to_owned());
+    stored.config.ai_persona.as_mut().unwrap().voice = Some("Joanna".to_owned());
+    let mut model = read(Ok(stored), Ok(options()));
+    assert_eq!(persona(&model).languages().len(), 6, "the general list");
+    engine(&mut model, PersonaEngineEdit::Language("nl-NL".to_owned()));
+    engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned()));
+    assert_eq!(
+        serde_json::to_value(persona(&model).patch()).unwrap(),
+        json!({"language": "de-DE"}),
+        "one voice per engine"
     );
 }
 
-/// An answer length travels with its engine, the variation stays within 0 to
-/// 1, and a float's noise is not a change.
+/// An answer length travels with the stored engine's id, which changes no
+/// engine.
 #[test]
-fn an_answer_length_goes_with_its_engine_and_the_variation_is_kept_in_range() {
+fn an_answer_length_goes_with_the_stored_engine() {
     let mut model = ready();
     engine(
         &mut model,
-        PersonaEngineEdit::ResponseLength("verbose".to_owned()),
+        PersonaEngineEdit::ResponseLength("unheard-of".to_owned()),
     );
-    engine(&mut model, PersonaEngineEdit::Temperature(f64::NAN));
-    engine(&mut model, PersonaEngineEdit::Temperature(0.7002));
     assert!(!persona(&model).has_unsaved_changes());
     engine(
         &mut model,
         PersonaEngineEdit::ResponseLength("detailed".to_owned()),
     );
-    engine(&mut model, PersonaEngineEdit::Temperature(1.7));
-    assert_eq!(persona(&model).engine().unwrap().temperature, 1.0);
     let mut stored = settings_row();
-    let row = stored.config.ai_persona.as_mut().unwrap();
-    row.temperature = Some(1.0);
-    row.response_length
+    stored
+        .config
+        .ai_persona
+        .as_mut()
+        .unwrap()
+        .response_length
         .as_mut()
         .unwrap()
         .insert(DEEPGRAM.to_owned(), "detailed".to_owned());
     let patch = save(&mut model, stored);
     assert_eq!(
         serde_json::to_value(&patch).unwrap(),
-        json!({"modelId": DEEPGRAM, "responseLength": "detailed", "temperature": 1.0})
+        json!({"modelId": DEEPGRAM, "responseLength": "detailed"})
     );
-    let values = persona(&model).engine().unwrap();
     assert_eq!(
-        (values.response_length.as_str(), values.temperature),
-        ("detailed", 1.0)
+        persona(&model).engine().unwrap().response_length,
+        "detailed"
     );
     assert!(!persona(&model).has_unsaved_changes());
-}
-
-/// An engine outside the region is listed, not chosen; a stored voice the
-/// options no longer list is kept and said.
-#[test]
-fn an_engine_outside_the_region_cannot_be_chosen_and_an_old_voice_is_kept() {
-    let mut outside = options();
-    outside.engines[5].in_region = false;
-    let mut stored = settings_row();
-    stored.config.ai_persona.as_mut().unwrap().voice = Some("aura-retired-en".to_owned());
-    let mut model = read(Ok(stored), Ok(outside));
-    assert!(persona(&model).voice_off_catalogue());
-    assert!(!PersonaSection::VOICE_OFF_CATALOGUE.is_empty());
-    engine(&mut model, PersonaEngineEdit::Engine(AWS.to_owned()));
-    assert_eq!(persona(&model).engine().unwrap().model_id, DEEPGRAM);
 }
 
 /// While a save is on its way nothing moves, a refresh reads nothing, and a
@@ -395,17 +295,17 @@ fn an_engine_outside_the_region_cannot_be_chosen_and_an_old_voice_is_kept() {
 fn a_save_on_its_way_holds_the_form_and_a_failure_keeps_it() {
     let mut model = ready();
     text(&mut model, PersonaText::Name, "Bea");
-    engine(&mut model, PersonaEngineEdit::Temperature(0.2));
+    engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned()));
     let effects = event(&mut model, PersonaEvent::Save);
     assert_eq!(persona(&model).save, SaveState::Saving);
     assert!(text(&mut model, PersonaText::Name, "Cy").is_empty());
-    engine(&mut model, PersonaEngineEdit::Temperature(0.9));
+    engine(&mut model, PersonaEngineEdit::Language("fr-FR".to_owned()));
     assert!(event(&mut model, PersonaEvent::Save).is_empty());
     assert!(event(&mut model, PersonaEvent::DismissSaveNotice).is_empty());
     assert!(model.update(Event::Refresh).is_empty());
     let section = persona(&model);
     assert_eq!(section.value(PersonaText::Name), "Bea");
-    assert_eq!(section.engine().unwrap().temperature, 0.2);
+    assert_eq!(section.engine().unwrap().language, "de-DE");
 
     model.update(Event::SettingsWritten {
         ticket: ticket(&effects[0]),
@@ -417,7 +317,255 @@ fn a_save_on_its_way_holds_the_form_and_a_failure_keeps_it() {
         SaveState::Failed(FailureText::from_api_error(&server_error()))
     );
     assert_eq!(section.value(PersonaText::Name), "Bea");
-    assert!(section.can_save());
+    assert!(section.can_save() && section.refit.is_none());
+}
+
+// A chain of the member's own and a new language.
+
+/// A chain of the member's own, as the persona stores it: a Flux ear that
+/// speaks English only, Gemini, and an Aura-2 voice.
+fn custom_mix() -> serde_json::Value {
+    json!({
+        "v": 1,
+        "stt": {"provider": "deepgram", "model": "flux-general-en", "language": null, "location": null},
+        "llm": {"model": "gemini-2.5-flash", "location": "auto", "thinking": "off", "temperature": null},
+        "tts": {"provider": "deepgram", "model": "aura-2", "voice": "aura-2-asteria-en",
+                "speed": null, "location": null},
+        "turn": {"minDelay": null, "maxDelay": null, "eotThreshold": null},
+        "preemptiveTts": false,
+    })
+}
+
+/// The persona open on a stored chain of the member's own.
+fn custom() -> Model {
+    let mut stored = settings_row();
+    let row = stored.config.ai_persona.as_mut().unwrap();
+    row.model_id = Some(CUSTOM_PIPELINE.to_owned());
+    row.engine_mix = Some(custom_mix());
+    read(Ok(stored), Ok(options()))
+}
+
+/// Voice Studio's read for the new language, where the stored chain's English
+/// ear does not fit and the service no longer accepts the chain.
+fn studio_after(fits: bool) -> VoiceStudioResponse {
+    let mut studio: VoiceStudioResponse = fixture("district-voice-studio.json");
+    studio.current.model_id = Some(CUSTOM_PIPELINE.to_owned());
+    for ear in &mut studio.catalog.stt {
+        if ear.model == "flux-general-en" {
+            ear.for_language = false;
+        }
+    }
+    studio.current.engine_mix = fits.then(|| serde_json::from_value(custom_mix()).unwrap());
+    studio
+}
+
+/// Saves a new language on the custom chain: the config read and Voice
+/// Studio's read follow. The ticket of the Studio's read.
+fn save_language(model: &mut Model) -> Ticket {
+    engine(model, PersonaEngineEdit::Language("fr-CA".to_owned()));
+    let effects = event(model, PersonaEvent::Save);
+    let written = model.update(Event::SettingsWritten {
+        ticket: ticket(&effects[0]),
+        result: Ok(()),
+    });
+    let [
+        Effect::LoadWorkspaceConfig { .. },
+        Effect::LoadVoiceStudio { ticket: studio, .. },
+    ] = written.as_slice()
+    else {
+        panic!("{written:?}");
+    };
+    assert_eq!(persona(model).refit, Some(PersonaRefit::Checking));
+    assert!(
+        model.update(Event::Refresh).is_empty(),
+        "fitting the chain is not dropped"
+    );
+    *studio
+}
+
+/// A new language on a chain the service no longer accepts: the chain is moved
+/// to the nearest models that speak it, saved alone, and read again.
+#[test]
+fn a_new_language_fits_a_chain_of_the_members_own_and_checks_it() {
+    let mut model = custom();
+    let studio = save_language(&mut model);
+    let effects = model.update(Event::VoiceStudioLoaded {
+        ticket: studio,
+        result: Ok(Box::new(studio_after(false))),
+    });
+    let [Effect::SavePersona { patch, ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let mut fitted = custom_mix();
+    // Flux's sibling that takes turns the same way, and speaks the language.
+    fitted["stt"]["model"] = json!("flux-general-multi");
+    assert_eq!(
+        serde_json::to_value(&**patch).unwrap(),
+        json!({
+            "modelId": CUSTOM_PIPELINE, "voice": "aura-2-asteria-en", "engineMix": fitted,
+        })
+    );
+    assert_eq!(persona(&model).refit, Some(PersonaRefit::Saving));
+    let verify = model.update(Event::SettingsWritten {
+        ticket: *ticket,
+        result: Ok(()),
+    });
+    let [Effect::LoadVoiceStudio { ticket: again, .. }] = verify.as_slice() else {
+        panic!("{verify:?}");
+    };
+    assert_eq!(persona(&model).refit, Some(PersonaRefit::Verifying));
+    model.update(Event::VoiceStudioLoaded {
+        ticket: *again,
+        result: Ok(Box::new(studio_after(true))),
+    });
+    let refit = persona(&model).refit.clone().unwrap();
+    assert_eq!(refit, PersonaRefit::Refitted);
+    assert!(!refit.is_running() && refit.line() == PersonaRefit::REFITTED);
+}
+
+/// A chain that still fits is left alone, and says nothing.
+#[test]
+fn a_chain_that_still_fits_is_left_alone() {
+    let mut model = custom();
+    let studio = save_language(&mut model);
+    assert_eq!(
+        persona(&model).refit.as_ref().map(PersonaRefit::line),
+        Some(PersonaRefit::CHECKING.to_owned())
+    );
+    let effects = model.update(Event::VoiceStudioLoaded {
+        ticket: studio,
+        result: Ok(Box::new(studio_after(true))),
+    });
+    assert!(effects.is_empty() && persona(&model).refit.is_none());
+}
+
+/// Nothing to fit to, a read or a save that fails, and a check that does not
+/// see the chain fit: each is said, and nothing is sent again by itself.
+#[test]
+fn a_chain_that_cannot_be_fitted_says_so() {
+    // No offered ear speaks the language.
+    let mut model = custom();
+    let studio = save_language(&mut model);
+    let mut nothing = studio_after(false);
+    for ear in &mut nothing.catalog.stt {
+        ear.for_language = false;
+    }
+    assert!(
+        model
+            .update(Event::VoiceStudioLoaded {
+                ticket: studio,
+                result: Ok(Box::new(nothing)),
+            })
+            .is_empty()
+    );
+    assert_eq!(persona(&model).refit, Some(PersonaRefit::NoFit));
+    assert_eq!(
+        persona(&model).refit.as_ref().unwrap().line(),
+        PersonaRefit::NO_FIT
+    );
+
+    // The read fails.
+    let mut model = custom();
+    let studio = save_language(&mut model);
+    model.update(Event::VoiceStudioLoaded {
+        ticket: studio,
+        result: Err(server_error()),
+    });
+    let failed = PersonaRefit::Failed(FailureText::from_api_error(&server_error()));
+    assert_eq!(persona(&model).refit, Some(failed.clone()));
+    assert!(failed.line().starts_with(PersonaRefit::FAILED));
+
+    // The fitted chain's save is refused.
+    let mut model = custom();
+    let studio = save_language(&mut model);
+    let effects = model.update(Event::VoiceStudioLoaded {
+        ticket: studio,
+        result: Ok(Box::new(studio_after(false))),
+    });
+    model.update(Event::SettingsWritten {
+        ticket: ticket(&effects[0]),
+        result: Err(server_error()),
+    });
+    assert_eq!(persona(&model).refit, Some(failed));
+
+    // Saved, and the check after it does not see it fit, or cannot be taken.
+    for answer in [Ok(Box::new(studio_after(false))), Err(server_error())] {
+        let mut model = custom();
+        let studio = save_language(&mut model);
+        let effects = model.update(Event::VoiceStudioLoaded {
+            ticket: studio,
+            result: Ok(Box::new(studio_after(false))),
+        });
+        let verify = model.update(Event::SettingsWritten {
+            ticket: ticket(&effects[0]),
+            result: Ok(()),
+        });
+        model.update(Event::VoiceStudioLoaded {
+            ticket: ticket(&verify[0]),
+            result: answer,
+        });
+        assert_eq!(persona(&model).refit, Some(PersonaRefit::NotSeen));
+        assert_eq!(
+            persona(&model).refit.as_ref().unwrap().line(),
+            PersonaRefit::NOT_SEEN
+        );
+    }
+}
+
+/// Only a saved new language on a chain of the member's own is fitted: not a
+/// fixed engine's, not a save without a language, not a save that failed.
+#[test]
+fn only_a_saved_language_on_a_chain_of_the_members_own_is_fitted() {
+    let mut model = ready();
+    engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned()));
+    let effects = event(&mut model, PersonaEvent::Save);
+    let written = model.update(Event::SettingsWritten {
+        ticket: ticket(&effects[0]),
+        result: Ok(()),
+    });
+    assert!(matches!(
+        written.as_slice(),
+        [Effect::LoadWorkspaceConfig { .. }]
+    ));
+
+    let mut model = custom();
+    text(&mut model, PersonaText::Name, "Bea");
+    let effects = event(&mut model, PersonaEvent::Save);
+    let written = model.update(Event::SettingsWritten {
+        ticket: ticket(&effects[0]),
+        result: Ok(()),
+    });
+    assert!(matches!(
+        written.as_slice(),
+        [Effect::LoadWorkspaceConfig { .. }]
+    ));
+
+    // A stored chain this client cannot read is not fitted, nor auditioned.
+    let mut stored = settings_row();
+    let row = stored.config.ai_persona.as_mut().unwrap();
+    row.model_id = Some(CUSTOM_PIPELINE.to_owned());
+    row.engine_mix = Some(json!({"v": 2}));
+    let mut model = read(Ok(stored), Ok(options()));
+    assert_eq!(persona(&model).preview_form().unwrap().engine_mix, None);
+    engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned()));
+    let effects = event(&mut model, PersonaEvent::Save);
+    let written = model.update(Event::SettingsWritten {
+        ticket: ticket(&effects[0]),
+        result: Ok(()),
+    });
+    assert!(matches!(
+        written.as_slice(),
+        [Effect::LoadWorkspaceConfig { .. }]
+    ));
+}
+
+/// The audition of a chain of the member's own runs that chain.
+#[test]
+fn an_audition_of_a_chain_of_the_members_own_runs_it() {
+    let model = custom();
+    let form = persona(&model).preview_form().unwrap();
+    assert_eq!(form.model_id.as_deref(), Some(CUSTOM_PIPELINE));
+    assert_eq!(serde_json::to_value(form.engine_mix).unwrap(), custom_mix());
 }
 
 /// The dialog opens with nothing asked for; Start asks once, for the form on
@@ -457,6 +605,7 @@ fn an_audition_is_asked_for_only_on_start_and_its_credential_is_dropped() {
             temperature: Some(0.7),
             voice_style: Some("en-GB-Studio-B".to_owned()),
             preemptive_tts: Some(true),
+            engine_mix: None,
         }
     );
     assert_eq!(persona(&model).preview, Some(PersonaPreview::Minting));
@@ -628,7 +777,7 @@ fn an_audition_that_cannot_start_is_not_retried_by_itself() {
 fn nothing_is_offered_before_both_reads() {
     let (mut model, effects) = open(WorkspaceSection::Persona, "agency");
     assert!(event(&mut model, PersonaEvent::OpenPreview).is_empty());
-    assert!(engine(&mut model, PersonaEngineEdit::Voice("Kore".to_owned())).is_empty());
+    assert!(engine(&mut model, PersonaEngineEdit::Language("de-DE".to_owned())).is_empty());
     let stale: Ticket = crate::settings::stale();
     unchanged(
         &mut model,

@@ -1242,6 +1242,17 @@ pub fn cases() -> Vec<Case> {
             body: Sent::Nothing,
         },
         Case {
+            name: "voice_studio",
+            endpoint: Endpoint::PersonaVoiceStudio,
+            retried: true,
+            answer: fixture("district-voice-studio.json"),
+            call: call!(c => c.voice_studio(WS)),
+            method: "GET",
+            path: "/api/district/workspace/persona/voice-studio",
+            query: vec![("workspaceId", WS)],
+            body: Sent::Nothing,
+        },
+        Case {
             name: "save_persona",
             endpoint: Endpoint::PersonaSave,
             retried: false,

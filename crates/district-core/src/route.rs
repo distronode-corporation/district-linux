@@ -119,8 +119,10 @@ pub enum Route {
 pub enum WorkspaceSection {
     /// The list of sections.
     Hub,
-    /// How the receptionist sounds and what it says.
+    /// What the receptionist says, and the language it speaks.
     Persona,
+    /// The voice engine the receptionist speaks through.
+    VoiceStudio,
     /// Which tools the receptionist may use.
     Tools,
     /// The staff the receptionist can transfer a call to.
@@ -141,9 +143,10 @@ pub enum WorkspaceSection {
 
 impl WorkspaceSection {
     /// Every section, the hub first and then the others in the hub's order.
-    pub const ALL: [WorkspaceSection; 10] = [
+    pub const ALL: [WorkspaceSection; 11] = [
         WorkspaceSection::Hub,
         WorkspaceSection::Persona,
+        WorkspaceSection::VoiceStudio,
         WorkspaceSection::Tools,
         WorkspaceSection::Directory,
         WorkspaceSection::Routing,

@@ -158,6 +158,12 @@ pub struct AiPersona {
     /// The language, for example `en-US`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// The chain of a [`CUSTOM_PIPELINE`](crate::CUSTOM_PIPELINE) engine, as
+    /// stored. Kept as JSON: a stored chain this client cannot read must not
+    /// make the whole settings row unreadable. Read it with
+    /// [`EngineMix`](crate::EngineMix) where it is needed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub engine_mix: Option<Value>,
     /// Whether video calls are answered by an avatar (`videoEnabled`).
     #[serde(
         rename = "videoEnabled",

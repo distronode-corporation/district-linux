@@ -94,6 +94,14 @@
                     </child>
                     <child>
                       <object class="GtkStackPage">
+                        <property name="name">voice-studio</property>
+                        <property name="child">
+                          <object class="DistrictVoiceStudioView" id="voice_studio_view"/>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
                         <property name="name">tools</property>
                         <property name="child">
                           <object class="DistrictToolsView" id="tools_view"/>

@@ -158,6 +158,7 @@ pub(crate) fn title(route: &Route) -> &'static str {
         Route::Workspace(section) => match section {
             WorkspaceSection::Hub => "Workspace settings",
             WorkspaceSection::Persona => "Persona",
+            WorkspaceSection::VoiceStudio => "Voice Studio",
             WorkspaceSection::Tools => "Capabilities",
             WorkspaceSection::Directory => "Transfer directory",
             WorkspaceSection::Routing => "Routing rules",

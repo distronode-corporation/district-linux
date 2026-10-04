@@ -60,8 +60,9 @@ use district_model::{
     MessagingResponse, NativeDevice, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse,
     PersonaOptionsResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
     SchedulingStatusResponse, SendMessageResponse, SupportRequestsResponse, TelemetryEnvelope,
-    TimelineResponse, UnreadCountResponse, UsageHistoryResponse, WorkflowListResponse, WorkflowRun,
-    WorkflowRunsResponse, WorkspaceBillingResponse, WorkspaceConfigResponse, WorkspaceListResponse,
+    TimelineResponse, UnreadCountResponse, UsageHistoryResponse, VoiceStudioResponse,
+    WorkflowListResponse, WorkflowRun, WorkflowRunsResponse, WorkspaceBillingResponse,
+    WorkspaceConfigResponse, WorkspaceListResponse,
 };
 use gtk::{gdk, gio, glib};
 use gtk4 as gtk;
@@ -4435,6 +4436,7 @@ fn settings_screens(smoke: &Smoke) {
     assert!(smoke.shown("hub_list"));
     for row in [
         "settings-persona",
+        "settings-voice-studio",
         "settings-tools",
         "settings-directory",
         "settings-routing",
@@ -4456,6 +4458,7 @@ fn settings_screens(smoke: &Smoke) {
     smoke.forget();
     smoke.activate("sidebar-settings");
     persona_section(smoke);
+    voice_studio_section(smoke);
     tools_section(smoke);
     directory_section(smoke);
     routing_section(smoke);
@@ -4527,36 +4530,15 @@ fn persona_section(smoke: &Smoke) {
         smoke.buffer_text("personality_view"),
         "Warm, concise, and never oversells."
     );
-    let engine = combo(smoke, "engine_row", 0);
-    let offered = choice_labels(&engine);
     assert_eq!(
-        offered.last().map(String::as_str),
-        Some("Cartesia Pipeline - US (processed outside your region)"),
-        "the stored engine, listed after the ones that can be chosen"
+        smoke.subtitle("engine_row"),
+        "Cartesia Pipeline - US (processed outside your region)",
+        "the stored engine, named; it is changed in Voice Studio"
     );
-    assert_eq!(chosen(&engine), offered[offered.len() - 1]);
-    assert_eq!(
-        offered
-            .iter()
-            .filter(|label| label.starts_with("Cartesia"))
-            .count(),
-        1,
-        "an engine outside the region is not one of the choices"
-    );
-    assert!(smoke.shown("outside-engine-row"), "but it is shown");
+    assert!(smoke.shown("studio_button"));
     assert_eq!(chosen(&combo(smoke, "language_row", 0)), "sv-SE");
     assert_eq!(chosen(&combo(smoke, "length_row", 0)), "verbose");
-    let voice = combo(smoke, "voice_row", 0);
-    assert_eq!(
-        chosen(&voice),
-        "aura-luna-en",
-        "the stored voice, as stored"
-    );
-    assert_eq!(
-        voice.subtitle().as_deref(),
-        Some(district_core::PersonaSection::VOICE_OFF_CATALOGUE)
-    );
-    assert!(smoke.shown("early_row") && !smoke.shown("style_row"));
+    assert!(!smoke.shown("refit_note"));
     assert!(!smoke.sensitive("save_button"), "nothing changed yet");
     assert!(smoke.sensitive("preview_button"));
     smoke.shot("94-persona");
@@ -4578,40 +4560,13 @@ fn persona_section(smoke: &Smoke) {
     smoke.respond("keep");
     assert!(smoke.shown("name_row"));
 
-    // The engine half: Gemini Live has a speaking style and no early speech.
-    choose(
-        smoke,
-        &engine,
-        "Gemini 2.5 Live - US (processed in your region)",
-    );
-    assert!(smoke.shown("style_row") && !smoke.shown("early_row"));
-    assert_eq!(
-        chosen(&combo(smoke, "language_row", 0)),
-        "Not chosen",
-        "a language the engine does not speak is cleared"
-    );
+    // The language half: a language and an answer length the engine offers.
     choose(smoke, &combo(smoke, "language_row", 0), "German");
-    choose(
-        smoke,
-        &combo(smoke, "voice_row", 0),
-        "Kore (Friendly Female)",
-    );
     choose(
         smoke,
         &combo(smoke, "length_row", 0),
         "Balanced (up to 3 sentences, under 60 words)",
     );
-    choose(
-        smoke,
-        &combo(smoke, "style_row", 0),
-        "Journey US English - Female",
-    );
-    smoke
-        .mapped("temperature_scale")
-        .downcast::<gtk::Scale>()
-        .unwrap()
-        .set_value(0.35);
-    smoke.pump();
     smoke
         .mapped_buffer("personality_view")
         .set_text("Brisk and kind.");
@@ -4623,10 +4578,7 @@ fn persona_section(smoke: &Smoke) {
     smoke.click("save_button");
     let saving = smoke.take("SavePersona");
     let sent = format!("{saving:?}");
-    assert!(
-        sent.contains("Grace") && sent.contains("gemini-live"),
-        "{sent}"
-    );
+    assert!(sent.contains("Grace") && sent.contains("de-DE"), "{sent}");
     assert!(
         !smoke.sensitive("name_row"),
         "nothing is typed while it saves"
@@ -4762,6 +4714,258 @@ fn persona_section(smoke: &Smoke) {
         smoke.first::<adw::Dialog>().is_none(),
         "closed with the section"
     );
+}
+
+/// Voice Studio as recorded.
+fn voice_studio() -> VoiceStudioResponse {
+    fixture("district-voice-studio.json")
+}
+
+/// The scale on screen for the tuning key `key`.
+fn tuning_scale(smoke: &Smoke, key: &str) -> gtk::Scale {
+    smoke.nth::<gtk::Scale>(&format!("tuning-{key}"), 0)
+}
+
+/// Voice Studio: a failed read, the recipes and the signal chain in the
+/// service's words, the tiers, an edit on each leg with the meter summed for
+/// it, the tuning behind Advanced, a save the read after it does not hold, a
+/// refused one and one whose read failed, a realtime recipe, and leaving with
+/// edits.
+fn voice_studio_section(smoke: &Smoke) {
+    // The persona names its engine, and opens Voice Studio for it.
+    smoke.forget();
+    smoke.activate("settings-persona");
+    config_read(smoke, Ok(fixture("district-workspace-config.json")));
+    smoke.reply("LoadPersonaOptions", |ticket| Event::PersonaOptionsLoaded {
+        ticket,
+        result: Ok(persona_options()),
+    });
+    smoke.click("studio_button");
+    assert!(smoke.pending("LoadVoiceStudio"));
+    smoke.forget();
+    smoke.activate("settings-tools");
+    smoke.forget();
+    smoke.activate("settings-voice-studio");
+    assert!(smoke.pending("LoadVoiceStudio"));
+    smoke.shot("100c-studio-loading");
+    smoke.reply("LoadVoiceStudio", |ticket| Event::VoiceStudioLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert_eq!(
+        smoke.status_title("status"),
+        district_core::VoiceStudioSection::FAILED_TITLE
+    );
+    smoke.click("retry_button");
+    // A held voice the list no longer has shows the read's placeholder.
+    let mut unlisted = voice_studio();
+    unlisted
+        .voices
+        .iter_mut()
+        .filter(|list| list.model == "aura-2")
+        .flat_map(|list| &mut list.groups)
+        .for_each(|group| {
+            group
+                .options
+                .retain(|voice| voice.value != "aura-2-asteria-en")
+        });
+    smoke.reply("LoadVoiceStudio", |ticket| Event::VoiceStudioLoaded {
+        ticket,
+        result: Ok(Box::new(unlisted)),
+    });
+    let studio = voice_studio();
+    let labels = &studio.labels;
+    assert!(smoke.shown("recipe-fastest") && smoke.shown("leg-stt"));
+    assert!(
+        smoke.shows_text(&studio.latency.text),
+        "the service's meter"
+    );
+    assert!(smoke.shows_text(&labels.all_saved));
+    assert!(!smoke.sensitive("save_button") && !smoke.shown("based_row"));
+    smoke.shot("100d-studio");
+
+    // The Latest tier applies the recipe again; back to Stable.
+    smoke
+        .mapped("latest_button")
+        .downcast::<gtk::ToggleButton>()
+        .unwrap()
+        .set_active(true);
+    smoke.pump();
+    assert!(smoke.sensitive("save_button") && smoke.shows_text(&labels.unsaved));
+    smoke.shot("100e-studio-latest");
+    smoke
+        .mapped("stable_button")
+        .downcast::<gtk::ToggleButton>()
+        .unwrap()
+        .set_active(true);
+    smoke.pump();
+    assert!(!smoke.sensitive("save_button"));
+
+    // The brain away from the region: summed, at least, in the read's words,
+    // and the residency saying which leg leaves.
+    smoke.activate("leg-llm");
+    choose(smoke, &combo(smoke, "location_row", 0), "EU (europe-west4)");
+    assert!(smoke.shows_text("At least 520\u{a0}ms"));
+    assert!(smoke.shows_text(&labels.meter_partial));
+    assert!(smoke.shows_text(&labels.leaves_region));
+    assert!(smoke.shown("based_row"));
+    assert!(smoke.shows_text("Based on Fastest, 1 change."));
+    smoke.shot("100f-studio-brain-edited");
+    smoke.click("reset_button");
+    assert!(!smoke.shown("based_row"));
+    choose(
+        smoke,
+        &combo(smoke, "model_row", 0),
+        "Gemini 3.8 Flash \u{b7} Latest",
+    );
+
+    // The voice leg: another voice, and its speed behind Advanced.
+    smoke.activate("leg-tts");
+    assert_eq!(
+        chosen(&combo(smoke, "voice_row", 0)),
+        labels.voice_placeholder
+    );
+    choose(
+        smoke,
+        &combo(smoke, "voice_row", 0),
+        "Luna (US English - Feminine) (English (Feminine))",
+    );
+    choose(smoke, &combo(smoke, "vendor_row", 0), "Cartesia");
+    choose(
+        smoke,
+        &combo(smoke, "model_row", 0),
+        "Sonic 3.6 \u{b7} Latest",
+    );
+    smoke
+        .mapped("advanced_row")
+        .downcast::<adw::ExpanderRow>()
+        .unwrap()
+        .set_expanded(true);
+    smoke.pump();
+    let unset = smoke.nth::<gtk::CheckButton>("default-engineMix.tts.speed", 0);
+    assert!(unset.is_active());
+    unset.set_active(false);
+    smoke.pump();
+    tuning_scale(smoke, "engineMix.tts.speed").set_value(1.4);
+    smoke.pump();
+    smoke.shot("100g-studio-voice-tuned");
+
+    // Turn-taking: speak sooner, the waits, an interruption choice.
+    smoke.activate("leg-turn");
+    let sooner = smoke.nth::<adw::SwitchRow>("tuning-engineMix.preemptiveTts", 0);
+    sooner.set_active(true);
+    smoke.pump();
+    smoke
+        .mapped("advanced_row")
+        .downcast::<adw::ExpanderRow>()
+        .unwrap()
+        .set_expanded(true);
+    smoke.pump();
+    smoke
+        .nth::<gtk::CheckButton>("default-engineMix.turn.minDelay", 0)
+        .set_active(false);
+    smoke.pump();
+    tuning_scale(smoke, "engineMix.turn.minDelay").set_value(0.5);
+    smoke.pump();
+    choose(
+        smoke,
+        &combo(smoke, "tuning-engineMix.turn.mode", 0),
+        "Fixed",
+    );
+    assert!(smoke.shows_text(&labels.interruptions));
+    smoke.shot("100h-studio-turn-tuned");
+
+    // The ear: key terms, typed.
+    smoke.activate("leg-stt");
+    smoke
+        .mapped("advanced_row")
+        .downcast::<adw::ExpanderRow>()
+        .unwrap()
+        .set_expanded(true);
+    smoke.pump();
+    smoke
+        .mapped_buffer("tuning-engineMix.stt.keyterms")
+        .set_text("Ada\nDistronode\n");
+    smoke.pump();
+    assert_eq!(
+        smoke.buffer_text("tuning-engineMix.stt.keyterms"),
+        "Ada\nDistronode\n",
+        "what is typed stays while it says the same"
+    );
+
+    // Saved, and the read after it does not hold it: the read's own words.
+    smoke.click("save_button");
+    let saving = smoke.take("SavePersona");
+    assert!(format!("{saving:?}").contains("custom-pipeline"));
+    assert!(smoke.shown("save_spinner"));
+    smoke.answer(Event::SettingsWritten {
+        ticket: ticket(&saving),
+        result: Ok(()),
+    });
+    smoke.reply("LoadVoiceStudio", |ticket| Event::VoiceStudioLoaded {
+        ticket,
+        result: Ok(Box::new(voice_studio())),
+    });
+    assert!(smoke.shows_text(&labels.save_failed));
+    smoke.scroll_within_to_end("voice_studio_view");
+    smoke.shot("100i-studio-save-not-held");
+
+    // Refused: the edits stay. Then landed with its read failing.
+    smoke.activate("leg-tts");
+    choose(
+        smoke,
+        &combo(smoke, "voice_row", 0),
+        "Luna (US English - Feminine) (English (Feminine))",
+    );
+    smoke.click("save_button");
+    written(
+        smoke,
+        "SavePersona",
+        Err(ApiError::Rejected {
+            status: 400,
+            detail: ErrorDetail {
+                message: Some("That voice chain cannot be saved.".to_owned()),
+                ..ErrorDetail::default()
+            },
+        }),
+    );
+    assert!(smoke.shows_part("That voice chain cannot be saved."));
+    assert!(smoke.sensitive("save_button"));
+    smoke.click("save_button");
+    written(smoke, "SavePersona", Ok(()));
+    smoke.reply("LoadVoiceStudio", |ticket| Event::VoiceStudioLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_part(district_core::VoiceStudioSection::SAVED_STALE));
+
+    // A realtime recipe: one leg, its temperature and its voice style.
+    smoke.activate("recipe-realtime");
+    assert!(smoke.shown("leg-realtime") && !smoke.shown("leg-stt"));
+    smoke
+        .mapped("advanced_row")
+        .downcast::<adw::ExpanderRow>()
+        .unwrap()
+        .set_expanded(true);
+    smoke.pump();
+    tuning_scale(smoke, "temperature").set_value(0.4);
+    smoke.pump();
+    choose(
+        smoke,
+        &combo(smoke, "tuning-voiceStyle", 0),
+        "Journey US English - Female",
+    );
+    choose(
+        smoke,
+        &combo(smoke, "model_row", 0),
+        "Gemini 3.8 Live \u{b7} Preview \u{b7} Preview: processed globally by Google",
+    );
+    smoke.shot("100j-studio-realtime");
+
+    // Leaving with edits asks first.
+    smoke.activate("settings-tools");
+    assert!(question(smoke).is_some());
+    smoke.respond("discard");
 }
 
 /// The capabilities: every tool, a stored one this build cannot name, a
@@ -5632,7 +5836,12 @@ fn viewer_settings(smoke: &Smoke) {
     ] {
         assert!(smoke.shown(row), "{row}");
     }
-    for closed in ["settings-persona", "settings-members", "settings-numbers"] {
+    for closed in [
+        "settings-persona",
+        "settings-voice-studio",
+        "settings-members",
+        "settings-numbers",
+    ] {
         assert!(!smoke.shown(closed), "{closed}");
     }
     smoke.shot("129-settings-hub-viewer");

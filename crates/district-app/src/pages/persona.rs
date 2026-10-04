@@ -1,17 +1,19 @@
 //! The receptionist's persona: its three texts, editable once the settings
-//! are read; its engine, language, voice, answer length, variation, speaking
-//! style and early speech, editable only as the options read for the
-//! workspace's region offer them; the save of only what changed; and the
-//! audition, a billed call started only from its own dialog.
+//! are read; its language and answer length, editable only as the options read
+//! for the workspace's region offer them; the stored engine's name, with the
+//! way to Voice Studio, where the engine and the voice are changed; the save
+//! of only what changed, and the line about fitting a chain of the member's
+//! own to a new language; and the audition, a billed call started only from
+//! its own dialog.
 
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
 use district_core::{
     Event, MediaOwner, PersonaEngineEdit, PersonaEngineValues, PersonaEvent, PersonaOptionsLoad,
-    PersonaSection, PersonaText, SignedIn,
+    PersonaSection, PersonaText, Route, SignedIn, WorkspaceSection,
 };
-use district_model::{PersonaEngineOption, PersonaVoiceGroup};
+use district_model::PersonaEngineOption;
 
 use crate::adw;
 use crate::adw::prelude::*;
@@ -25,29 +27,7 @@ use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
 /// The line while the options are being read.
-pub(crate) const OPTIONS_LOADING: &str = "Reading the engines and voices this workspace may use.";
-
-/// The line under an engine this workspace's region does not offer.
-pub(crate) const OUTSIDE_REGION: &str = "Not offered in this workspace's region.";
-
-/// The voices of `groups` as a picker lists them: each voice's label, with its
-/// heading when there is more than one.
-pub(crate) fn voice_choices(groups: &[PersonaVoiceGroup]) -> Vec<(String, String)> {
-    let headed = groups.len() > 1;
-    groups
-        .iter()
-        .flat_map(|group| {
-            group.options.iter().map(move |voice| {
-                let label = if headed {
-                    format!("{} ({})", voice.label, group.label)
-                } else {
-                    voice.label.clone()
-                };
-                (voice.value.clone(), label)
-            })
-        })
-        .collect()
-}
+pub(crate) const OPTIONS_LOADING: &str = "Reading the languages this workspace may use.";
 
 /// The label of the stored engine `id`: its own when the options list it, else
 /// the id as stored.
@@ -58,23 +38,19 @@ pub(crate) fn engine_label(engines: &[PersonaEngineOption], id: &str) -> String 
         .map_or_else(|| unlisted(id), |engine| engine.label.clone())
 }
 
-/// The pickers of the engine half, and what each sends.
+/// The pickers of the language half, and what each sends.
 #[derive(Debug)]
 pub struct Pickers {
-    engine: Rc<Choices<String>>,
     language: Rc<Choices<String>>,
-    voice: Rc<Choices<String>>,
     length: Rc<Choices<String>>,
-    style: Rc<Choices<String>>,
 }
 
-/// The boxes and the slider, against the core's values.
+/// The boxes, against the core's values.
 #[derive(Debug)]
 pub struct Fields {
     name: Rc<Echoed>,
     greeting: Rc<Echoed>,
     personality: Rc<Echoed>,
-    temperature: Rc<Echoed>,
 }
 
 mod imp {
@@ -102,27 +78,19 @@ mod imp {
         #[template_child]
         pub options_spinner: TemplateChild<gtk::Spinner>,
         #[template_child]
-        pub engine_row: TemplateChild<adw::ComboRow>,
+        pub engine_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        pub studio_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub language_row: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub voice_row: TemplateChild<adw::ComboRow>,
-        #[template_child]
         pub length_row: TemplateChild<adw::ComboRow>,
-        #[template_child]
-        pub temperature_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub temperature_scale: TemplateChild<gtk::Scale>,
-        #[template_child]
-        pub style_row: TemplateChild<adw::ComboRow>,
-        #[template_child]
-        pub early_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         pub engine_note: TemplateChild<gtk::Label>,
         #[template_child]
         pub options_retry: TemplateChild<gtk::Button>,
         #[template_child]
-        pub regions_group: TemplateChild<adw::PreferencesGroup>,
+        pub refit_note: TemplateChild<gtk::Label>,
         #[template_child]
         pub notice: TemplateChild<SaveNotice>,
         #[template_child]
@@ -134,9 +102,6 @@ mod imp {
         pub sink: OnceCell<EventSink>,
         pub fields: OnceCell<Fields>,
         pub pickers: OnceCell<Pickers>,
-        /// The engines outside the region, as their rows were last built.
-        pub outside: RefCell<Vec<String>>,
-        pub outside_rows: RefCell<Vec<gtk::Widget>>,
         /// The audition dialog, while it is open.
         pub audition: RefCell<Option<AuditionDialog>>,
     }
@@ -166,6 +131,9 @@ mod imp {
             let persona = |event: PersonaEvent| move || Event::Persona(event.clone());
             on_click(&self.retry_button, &*view, || Event::Refresh);
             on_click(&self.options_retry, &*view, || Event::Refresh);
+            on_click(&self.studio_button, &*view, || {
+                Event::Navigate(Route::Workspace(WorkspaceSection::VoiceStudio))
+            });
             on_click(&self.save_button, &*view, persona(PersonaEvent::Save));
             on_click(
                 &self.preview_button,
@@ -189,44 +157,22 @@ mod imp {
                         &*view,
                         text(PersonaText::Personality),
                     ),
-                    temperature: Echoed::scale(&self.temperature_scale, &*view, |value| {
-                        Event::Persona(PersonaEvent::Engine(PersonaEngineEdit::Temperature(value)))
-                    }),
                 })
                 .ok();
             self.pickers
                 .set(Pickers {
-                    engine: Choices::bind(
-                        &self.engine_row,
-                        &*view,
-                        engine(PersonaEngineEdit::Engine),
-                    ),
                     language: Choices::bind(
                         &self.language_row,
                         &*view,
                         engine(PersonaEngineEdit::Language),
                     ),
-                    voice: Choices::bind(&self.voice_row, &*view, engine(PersonaEngineEdit::Voice)),
                     length: Choices::bind(
                         &self.length_row,
                         &*view,
                         engine(PersonaEngineEdit::ResponseLength),
                     ),
-                    style: Choices::bind(
-                        &self.style_row,
-                        &*view,
-                        engine(PersonaEngineEdit::VoiceStyle),
-                    ),
                 })
                 .ok();
-            let weak = view.downgrade();
-            self.early_row.connect_active_notify(move |row| {
-                if let Some(view) = weak.upgrade() {
-                    view.send(Event::Persona(PersonaEvent::Engine(
-                        PersonaEngineEdit::PreemptiveTts(row.is_active()),
-                    )));
-                }
-            });
         }
     }
 
@@ -305,13 +251,12 @@ impl PersonaView {
         for row in [
             imp.engine_row.upcast_ref::<gtk::Widget>(),
             imp.language_row.upcast_ref(),
-            imp.voice_row.upcast_ref(),
             imp.length_row.upcast_ref(),
-            imp.temperature_row.upcast_ref(),
         ] {
             row.set_visible(values.is_some());
-            row.set_sensitive(section.engine_editable());
         }
+        imp.language_row.set_sensitive(section.engine_editable());
+        imp.length_row.set_sensitive(section.engine_editable());
         let loading = section.options == PersonaOptionsLoad::Loading;
         draw_spinner(&imp.options_spinner, loading);
         let failure = match &section.options {
@@ -330,16 +275,20 @@ impl PersonaView {
         draw_line(&imp.engine_note, note.as_deref());
         imp.options_retry
             .set_visible(values.is_none() && failure.is_some_and(|failure| failure.retryable));
-        imp.style_row
-            .set_visible(values.is_some() && section.shows_voice_style());
-        imp.early_row
-            .set_visible(values.is_some() && section.shows_preemptive_tts());
-        imp.style_row.set_sensitive(section.engine_editable());
-        imp.early_row.set_sensitive(section.engine_editable());
+        draw_line(
+            &imp.refit_note,
+            section
+                .refit
+                .as_ref()
+                .map(district_core::PersonaRefit::line),
+        );
         if let Some(values) = values {
+            imp.engine_row
+                .set_subtitle(&engine_label(section.engines(), &values.model_id));
+            imp.engine_row
+                .set_tooltip_text(Some(PersonaSection::STUDIO_HINT));
             self.draw_pickers(section, values);
         }
-        self.draw_outside(section, values.is_some());
     }
 
     fn draw_pickers(&self, section: &PersonaSection, values: &PersonaEngineValues) {
@@ -350,85 +299,18 @@ impl PersonaView {
                 .map(|choice| (choice.value.clone(), choice.label.clone()))
                 .collect::<Vec<_>>()
         };
-        let in_region = section
-            .engines()
-            .iter()
-            .filter(|engine| engine.in_region)
-            .map(|engine| (engine.id.clone(), engine.label.clone()))
-            .collect();
-        pickers
-            .engine
-            .draw(&imp.engine_row, in_region, Some(&values.model_id), || {
-                engine_label(section.engines(), &values.model_id)
-            });
         pickers.language.draw(
             &imp.language_row,
             labelled(section.languages()),
             Some(&values.language),
             || unlisted(&values.language),
         );
-        pickers.voice.draw(
-            &imp.voice_row,
-            voice_choices(section.voice_groups()),
-            Some(&values.voice),
-            || unlisted(&values.voice),
-        );
-        imp.voice_row
-            .set_subtitle(if section.voice_off_catalogue() {
-                PersonaSection::VOICE_OFF_CATALOGUE
-            } else {
-                ""
-            });
         pickers.length.draw(
             &imp.length_row,
             labelled(section.response_lengths()),
             Some(&values.response_length),
             || unlisted(&values.response_length),
         );
-        pickers.style.draw(
-            &imp.style_row,
-            labelled(section.voice_styles()),
-            Some(&values.voice_style),
-            || unlisted(&values.voice_style),
-        );
-        imp.fields
-            .get()
-            .expect("bound when built")
-            .temperature
-            .draw_scale(&imp.temperature_scale, values.temperature);
-        imp.early_row.set_active(values.preemptive_tts);
-    }
-
-    /// The engines the region does not offer, shown with their labels, which
-    /// say where their audio is processed, and never chosen here.
-    fn draw_outside(&self, section: &PersonaSection, shown: bool) {
-        let imp = self.imp();
-        let outside: Vec<String> = section
-            .engines()
-            .iter()
-            .filter(|engine| !engine.in_region)
-            .map(|engine| engine.label.clone())
-            .collect();
-        imp.regions_group.set_visible(shown && !outside.is_empty());
-        if *imp.outside.borrow() == outside {
-            return;
-        }
-        for row in imp.outside_rows.take() {
-            imp.regions_group.remove(&row);
-        }
-        let mut rows = Vec::new();
-        for label in &outside {
-            let row = adw::ActionRow::builder()
-                .use_markup(false)
-                .title(label)
-                .subtitle(OUTSIDE_REGION)
-                .name("outside-engine-row")
-                .build();
-            imp.regions_group.add(&row);
-            rows.push(row.upcast());
-        }
-        imp.outside_rows.replace(rows);
-        imp.outside.replace(outside);
     }
 
     fn draw_actions(&self, section: &PersonaSection) {
@@ -476,12 +358,7 @@ impl PersonaView {
         let imp = self.imp();
         self.close_audition();
         let fields = imp.fields.get().expect("bound when built");
-        for echoed in [
-            &fields.name,
-            &fields.greeting,
-            &fields.personality,
-            &fields.temperature,
-        ] {
+        for echoed in [&fields.name, &fields.greeting, &fields.personality] {
             echoed.reset();
         }
     }
@@ -489,47 +366,18 @@ impl PersonaView {
 
 #[cfg(test)]
 mod tests {
-    use district_model::{PersonaLabelledValue, PersonaOptionsResponse};
+    use district_model::PersonaOptionsResponse;
 
     use super::*;
     use crate::testing::fixture;
 
-    fn voice(value: &str, label: &str) -> PersonaLabelledValue {
-        PersonaLabelledValue {
-            value: value.to_owned(),
-            label: label.to_owned(),
-        }
-    }
-
     #[test]
-    fn voices_are_headed_only_when_there_is_more_than_one_heading() {
-        let one = [PersonaVoiceGroup {
-            label: "Voices".to_owned(),
-            options: vec![voice("a", "Asteria")],
-        }];
-        assert_eq!(
-            voice_choices(&one),
-            [("a".to_owned(), "Asteria".to_owned())]
-        );
-        let two = [
-            one[0].clone(),
-            PersonaVoiceGroup {
-                label: "British".to_owned(),
-                options: vec![voice("b", "Brit")],
-            },
-        ];
-        assert_eq!(
-            voice_choices(&two),
-            [
-                ("a".to_owned(), "Asteria (Voices)".to_owned()),
-                ("b".to_owned(), "Brit (British)".to_owned())
-            ]
-        );
+    fn the_stored_engine_is_named_by_the_options_or_as_stored() {
         let options: PersonaOptionsResponse = fixture("district-persona-options.json");
         assert!(engine_label(&options.engines, "deepgram-pipeline").starts_with("Deepgram"));
         assert_eq!(
-            engine_label(&options.engines, "retired-engine"),
-            "retired-engine"
+            engine_label(&options.engines, "custom-pipeline"),
+            "custom-pipeline"
         );
         assert_eq!(engine_label(&options.engines, ""), "Not chosen");
     }

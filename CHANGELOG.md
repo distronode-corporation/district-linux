@@ -13,13 +13,37 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-04
+
+### Added
+
+- Voice Studio, a workspace settings section of its own: the receptionist's voice
+  engine as recipes on a Stable and a Latest tier, the signal chain (ear, turn-taking,
+  brain and voice, or one realtime model) with an editor per part, the time to first
+  word, and where each part of a call is processed. Every word in it is the service's,
+  in your portal language, as the web console shows it. A save sends only what changed
+  through the persona's own save, then reads the Studio again, and says so when the
+  service did not keep what was sent. For an unsaved edit the time to first word is the
+  sum of the measured medians, "at least" when a part has none, in the words the
+  service's own meters use; nothing is estimated.
+- A new language on the persona of a chain of your own moves the chain's ear and voice
+  to models that speak it, as the web console does, and checks that the service now
+  accepts it.
+
 ### Changed
 
+- The persona keeps its name, greeting, character, language and answer length, names
+  its voice engine, and opens Voice Studio for the rest: the engine, voice, variation,
+  speaking style and early speech pickers are gone from it, so a persona form opened
+  before a Voice Studio save can no longer send an older engine back.
+- Auditioning a chain of your own runs that chain.
 - Contracts follow the service's removal of call recordings, the scheduler's recordings,
   storage settings, notetaker and booking notes and transcripts: the eight fixtures for
   them are gone, a call's `recordingUrl` is always null (still decoded, never used), and
   the endpoint table no longer lists call recordings as an exclusion, since the Android
   app stopped calling that route.
+- Contracts: Voice Studio's read (`GET /api/district/workspace/persona/voice-studio`)
+  and its fixture, and the persona save's `engineMix` and `bilingual`.
 
 ## [1.0.0] - 2026-10-02
 

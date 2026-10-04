@@ -26,6 +26,7 @@ use crate::pages::persona::PersonaView;
 use crate::pages::routing::RoutingView;
 use crate::pages::shared::{RowIds, back_on_fold, clear_list};
 use crate::pages::tools::ToolsView;
+use crate::pages::voice_studio::VoiceStudioView;
 use crate::routes;
 use crate::sink::EventSink;
 
@@ -41,6 +42,7 @@ pub(crate) fn section_key(section: WorkspaceSection) -> &'static str {
     match section {
         WorkspaceSection::Hub => "none",
         WorkspaceSection::Persona => "persona",
+        WorkspaceSection::VoiceStudio => "voice-studio",
         WorkspaceSection::Tools => "tools",
         WorkspaceSection::Directory => "directory",
         WorkspaceSection::Routing => "routing",
@@ -71,6 +73,8 @@ mod imp {
         #[template_child]
         pub persona_view: TemplateChild<PersonaView>,
         #[template_child]
+        pub voice_studio_view: TemplateChild<VoiceStudioView>,
+        #[template_child]
         pub tools_view: TemplateChild<ToolsView>,
         #[template_child]
         pub directory_view: TemplateChild<DirectoryView>,
@@ -100,6 +104,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             PersonaView::static_type();
+            VoiceStudioView::static_type();
             ToolsView::static_type();
             DirectoryView::static_type();
             RoutingView::static_type();
@@ -151,6 +156,7 @@ impl SettingsPage {
     pub(crate) fn set_sink(&self, sink: EventSink) {
         let imp = self.imp();
         imp.persona_view.set_sink(sink.clone());
+        imp.voice_studio_view.set_sink(sink.clone());
         imp.tools_view.set_sink(sink.clone());
         imp.directory_view.set_sink(sink.clone());
         imp.routing_view.set_sink(sink.clone());
@@ -184,6 +190,7 @@ impl SettingsPage {
         self.leave_except(section);
         match section {
             WorkspaceSection::Persona => imp.persona_view.update(signed_in),
+            WorkspaceSection::VoiceStudio => imp.voice_studio_view.update(signed_in),
             WorkspaceSection::Tools => imp.tools_view.update(signed_in),
             WorkspaceSection::Directory => imp.directory_view.update(signed_in),
             WorkspaceSection::Routing => imp.routing_view.update(signed_in),
@@ -234,6 +241,9 @@ impl SettingsPage {
         let imp = self.imp();
         if showing != WorkspaceSection::Persona {
             imp.persona_view.leave();
+        }
+        if showing != WorkspaceSection::VoiceStudio {
+            imp.voice_studio_view.leave();
         }
         if showing != WorkspaceSection::Directory {
             imp.directory_view.leave();
