@@ -24,7 +24,7 @@ use district_model::{
 
 use super::engine::StudioEngine;
 use super::legs::tts_voices;
-use super::words::StudioWords;
+use super::words;
 
 const MEASURED: &str = "measured";
 const AUTO: &str = "auto";
@@ -53,7 +53,7 @@ impl LatencyText {
     pub fn text(&self, studio: &VoiceStudioResponse) -> String {
         match self {
             Self::Server(text) => text.clone(),
-            Self::Millis(ms) => StudioWords::of(studio).millis(*ms),
+            Self::Millis(ms) => words::millis(&studio.labels, *ms),
             Self::None => studio.labels.not_measured.clone(),
         }
     }
@@ -99,16 +99,16 @@ pub enum MeterHeadline {
     /// The service's own sentence.
     Server(String),
     /// A sum of measured medians for an edit the service has not seen, in the
-    /// read's words when it gave them ([`StudioWords`]).
+    /// read's `meterAbout` or `meterAtLeast`.
     Local {
         /// The sum.
         ms: f64,
         /// Whether a stage is missing.
         at_least: bool,
-        /// The headline, or `None` when the read gave no words for it.
-        text: Option<String>,
+        /// The headline.
+        text: String,
     },
-    /// Nothing measured.
+    /// Nothing measured: the read's `meterNone`.
     None,
 }
 
@@ -117,19 +117,19 @@ pub enum MeterHeadline {
 pub struct MeterView {
     /// The headline.
     pub headline: MeterHeadline,
-    /// Why it is "at least", when it is and something is measured.
+    /// Why it is "at least" (the read's `meterPartial` for an edit's sum), when
+    /// it is and something is measured.
     pub note: Option<String>,
     /// Every stage in call order.
     pub stages: Vec<StageView>,
 }
 
 impl MeterView {
-    /// The headline's words, `None` when the read gave none for an edit's sum.
-    pub fn headline_text(&self, studio: &VoiceStudioResponse) -> Option<String> {
+    /// The headline's words.
+    pub fn headline_text(&self, studio: &VoiceStudioResponse) -> String {
         match &self.headline {
-            MeterHeadline::Server(text) => Some(text.clone()),
-            MeterHeadline::Local { text, .. } => text.clone(),
-            MeterHeadline::None => Some(studio.labels.not_measured.clone()),
+            MeterHeadline::Server(text) | MeterHeadline::Local { text, .. } => text.clone(),
+            MeterHeadline::None => studio.labels.meter_none.clone(),
         }
     }
 }
@@ -380,18 +380,10 @@ fn local_meter(engine: &StudioEngine, studio: &VoiceStudioResponse) -> MeterView
         MeterHeadline::Local {
             ms,
             at_least: missing,
-            text: StudioWords::of(studio).headline(ms, missing),
+            text: words::meter_headline(&studio.labels, ms, missing),
         }
     };
-    // The "some steps are not measured" sentence is the service's; every
-    // meter carries the same one.
-    let note = studio
-        .recipes
-        .iter()
-        .map(|recipe| &recipe.time_to_first_word.note)
-        .chain(std::iter::once(&studio.latency.note))
-        .find_map(Clone::clone)
-        .filter(|_| missing && !measured.is_empty());
+    let note = (missing && !measured.is_empty()).then(|| studio.labels.meter_partial.clone());
     MeterView {
         headline,
         note,

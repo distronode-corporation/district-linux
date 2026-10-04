@@ -789,7 +789,7 @@ impl VoiceStudioView {
         imp.meter_group
             .set_description(Some(&labels.meter_description));
         let meter = ready.meter();
-        draw_line(&imp.meter_headline, meter.headline_text(studio));
+        draw_line(&imp.meter_headline, Some(meter.headline_text(studio)));
         draw_line(&imp.meter_note, meter.note.clone());
         imp.meter_source.set_label(&studio.latency.source_text);
         let stages: Vec<(String, String)> = meter

@@ -219,7 +219,7 @@ fn every_edit_goes_to_the_studio_and_says_how_far_it_went() {
     );
     assert_eq!(
         section(&model).based_on().as_deref(),
-        Some("Based on Fastest, 1 change")
+        Some("Based on Fastest, 1 change.")
     );
     edit(&mut model, StudioEdit::Reset);
     assert_eq!(section(&model).based_on(), None);
@@ -246,7 +246,7 @@ fn every_edit_goes_to_the_studio_and_says_how_far_it_went() {
     );
     assert_eq!(
         section(&model).based_on().as_deref(),
-        Some("Based on Fastest, 3 changes")
+        Some("Based on Fastest, 3 changes.")
     );
     assert!(signed_in(&model).settings_unsaved());
     send(&mut model, VoiceStudioEvent::SelectLeg("stt".to_owned()));

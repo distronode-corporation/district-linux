@@ -630,7 +630,7 @@ fn the_studio_opens_on_what_the_service_says_is_saved() {
     assert_eq!(ready.blocks().len(), 4);
     assert_eq!(
         ready.meter().headline_text(&ready.studio),
-        Some(ready.studio.latency.text.clone())
+        ready.studio.latency.text
     );
     assert!(ready.residency().in_region);
     assert_eq!(ready.saved_fields(), &ready.studio.current.fields);

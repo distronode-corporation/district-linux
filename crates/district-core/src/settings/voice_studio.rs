@@ -15,8 +15,8 @@
 //! it, the read's own `saveFailed` is shown over what the workspace now runs.
 //!
 //! Every word of the Studio itself is the service's, in the reader's portal
-//! language, shown as sent. Only this app's own sentences (a failed read, the
-//! change count) are its own.
+//! language, shown as sent or filled into the templates it sends (the change
+//! count, an edit's meter). Only the failure sentences are this app's own.
 
 use std::collections::BTreeSet;
 
@@ -26,7 +26,7 @@ use district_model::{StudioFields, VoiceStudioResponse};
 use crate::failure::FailureText;
 use crate::model::{Effect, Slot, Ticket, Tickets};
 use crate::signed_in::{Next, SignedIn, stay};
-use crate::studio::{PickerKind, StudioKey, StudioReady, landed, patch};
+use crate::studio::{self, PickerKind, StudioKey, StudioReady, landed, patch};
 
 /// Where the read stands.
 #[derive(Clone, Debug, PartialEq)]
@@ -114,18 +114,13 @@ impl VoiceStudioSection {
         self.editable() && self.has_unsaved_changes()
     }
 
-    /// "Based on Fastest, 2 changes": what the held engine started from and
-    /// how far it moved, or `None` before any change. This app's own words,
-    /// around the read's recipe name.
+    /// "Based on Fastest, 2 changes.": what the held engine started from and
+    /// how far it moved, in the read's `basedOnOne`/`basedOnMany`, or `None`
+    /// before any change or when the recipe has no name in this tier.
     pub fn based_on(&self) -> Option<String> {
         let ready = self.ready()?;
-        let changes = ready.changes();
-        let name = ready.base_name();
-        if changes == 0 || name.is_empty() {
-            return None;
-        }
-        let noun = if changes == 1 { "change" } else { "changes" };
-        Some(format!("Based on {name}, {changes} {noun}"))
+        let name = Some(ready.base_name()).filter(|name| !name.is_empty())?;
+        studio::based_on(&ready.studio.labels, name, ready.changes())
     }
 
     fn edit(&mut self, edit: StudioEdit) {

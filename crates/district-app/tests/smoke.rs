@@ -4806,8 +4806,10 @@ fn voice_studio_section(smoke: &Smoke) {
     smoke.activate("leg-llm");
     choose(smoke, &combo(smoke, "location_row", 0), "EU (europe-west4)");
     assert!(smoke.shows_text("At least 520\u{a0}ms"));
+    assert!(smoke.shows_text(&labels.meter_partial));
     assert!(smoke.shows_text(&labels.leaves_region));
     assert!(smoke.shown("based_row"));
+    assert!(smoke.shows_text("Based on Fastest, 1 change."));
     smoke.shot("100f-studio-brain-edited");
     smoke.click("reset_button");
     assert!(!smoke.shown("based_row"));

@@ -5,9 +5,9 @@
 use std::collections::BTreeSet;
 
 use district_core::studio::{
-    LatencyText, MeterHeadline, StudioEngine, StudioKey, StudioState, StudioWords,
+    LatencyText, MeterHeadline, StudioEngine, StudioKey, StudioState, based_on,
     bilingual_available, bilingual_pair, blocks, canonical_model_id, changed_keys, count_changes,
-    fields_of, initial_state, landed, meter, patch, residency,
+    fields_of, grouped, initial_state, landed, meter, meter_headline, millis, patch, residency,
 };
 use district_model::{
     CUSTOM_PIPELINE, EngineMix, EngineMixInterruption, GEMINI_38_LIVE, GEMINI_LIVE_25,
@@ -322,10 +322,7 @@ fn the_saved_engine_reads_exactly_as_the_service_described_it() {
         meter.headline,
         MeterHeadline::Server(studio.latency.text.clone())
     );
-    assert_eq!(
-        meter.headline_text(&studio),
-        Some(studio.latency.text.clone())
-    );
+    assert_eq!(meter.headline_text(&studio), studio.latency.text);
     assert_eq!(meter.stages.len(), 3);
     assert_eq!(
         meter.stages[0].value.text(&studio),
@@ -382,7 +379,7 @@ fn an_edited_chain_is_assembled_from_the_catalogue_in_the_services_words() {
         MeterHeadline::Local {
             ms: 970.0,
             at_least: false,
-            text: Some("About 970\u{a0}ms".to_owned()),
+            text: "About 970\u{a0}ms".to_owned(),
         }
     );
     assert_eq!(meter.note, None);
@@ -419,10 +416,10 @@ fn a_brain_away_from_the_regions_own_location_or_thinking_is_not_measured() {
             MeterHeadline::Local {
                 ms: 520.0,
                 at_least: true,
-                text: Some("At least 520\u{a0}ms".to_owned()),
+                text: "At least 520\u{a0}ms".to_owned(),
             }
         );
-        assert!(meter.note.is_some());
+        assert_eq!(meter.note.as_ref(), Some(&studio.labels.meter_partial));
         assert_eq!(meter.stages[1].value, LatencyText::None);
     }
     // A brain with no `auto` location is never at the region's own.
@@ -527,10 +524,7 @@ fn nothing_measured_anywhere_says_not_measured_with_no_note() {
     let meter = meter(&chained(mix), &studio);
     assert_eq!(meter.headline, MeterHeadline::None);
     assert_eq!(meter.note, None);
-    assert_eq!(
-        meter.headline_text(&studio),
-        Some(studio.labels.not_measured.clone())
-    );
+    assert_eq!(meter.headline_text(&studio), studio.labels.meter_none);
     // An end of turn from the lab is not a measured stage.
     studio.latency.eou = latency("lab", 300.0);
     let mut mix = saved_mix();
@@ -555,7 +549,7 @@ fn a_realtime_model_that_is_not_a_recipes_is_assembled_from_the_catalogue() {
         MeterHeadline::Local {
             ms: 300.0,
             at_least: true,
-            text: Some("At least 300\u{a0}ms".to_owned()),
+            text: "At least 300\u{a0}ms".to_owned(),
         }
     );
     assert_eq!(meter.stages[0].value, LatencyText::None);
@@ -595,67 +589,150 @@ fn an_engine_naming_a_model_the_catalogue_does_not_list_draws_nothing_and_claims
     assert!(!residency(&unknown, &studio).in_region);
 }
 
-// The words of an edit's meter, in the portal's language.
+// The words of an edit's meter and its "Based on" line, from the read's
+// templates, in the portal's language.
 
-/// The read as a French reader gets it.
+/// The read as a French reader gets it: the templates and grouping in French.
 fn french() -> VoiceStudioResponse {
     let mut studio = studio();
     studio.locale = "fr".to_owned();
-    let say = |text: &str| {
-        text.replace("About ", "Environ ")
-            .replace("At least ", "Au moins ")
-    };
-    studio.latency.text = say(&studio.latency.text);
-    for recipe in &mut studio.recipes {
-        recipe.time_to_first_word.text = say(&recipe.time_to_first_word.text);
-    }
+    let labels = &mut studio.labels;
+    labels.meter_about = "Environ {ms}\u{a0}ms".to_owned();
+    labels.meter_at_least = "Au moins {ms}\u{a0}ms".to_owned();
+    labels.meter_none = "Pas encore mesuré".to_owned();
+    labels.meter_partial =
+        "Certaines étapes ne sont pas encore mesurées, donc le délai réel est plus long."
+            .to_owned();
+    labels.number_grouping = "\u{a0}".to_owned();
+    labels.based_on_one = "Basé sur {recipe}, 1 modification.".to_owned();
+    labels.based_on_many = "Basé sur {recipe}, {n} modifications.".to_owned();
     studio
 }
 
 #[test]
-fn an_edits_meter_reads_in_the_portal_language_from_the_services_own_meters() {
+fn the_fixture_carries_the_templates_with_one_placeholder_each() {
+    let labels = studio().labels;
+    assert_eq!(labels.meter_about, "About {ms}\u{a0}ms");
+    assert_eq!(labels.meter_at_least, "At least {ms}\u{a0}ms");
+    assert_eq!(labels.number_grouping, ",");
+    assert_eq!(labels.based_on_one, "Based on {recipe}, 1 change.");
+    assert_eq!(labels.based_on_many, "Based on {recipe}, {n} changes.");
+    assert!(!labels.meter_none.is_empty() && !labels.meter_partial.is_empty());
+}
+
+#[test]
+fn an_edits_meter_headline_groups_its_number_in_english() {
+    let labels = studio().labels;
+    assert_eq!(meter_headline(&labels, 970.0, false), "About 970\u{a0}ms");
+    assert_eq!(
+        meter_headline(&labels, 1234.0, false),
+        "About 1,234\u{a0}ms"
+    );
+    assert_eq!(
+        meter_headline(&labels, 12345.0, true),
+        "At least 12,345\u{a0}ms"
+    );
+    assert_eq!(millis(&labels, 1234.0), "1,234\u{a0}ms");
+}
+
+#[test]
+fn an_edits_meter_headline_groups_its_number_in_french() {
     let studio = french();
-    let words = StudioWords::of(&studio);
-    assert!(words.complete());
+    let labels = &studio.labels;
+    assert_eq!(meter_headline(labels, 970.0, false), "Environ 970\u{a0}ms");
     assert_eq!(
-        words.headline(1030.0, false).as_deref(),
-        Some("Environ 1\u{a0}030\u{a0}ms")
+        meter_headline(labels, 1234.0, false),
+        "Environ 1\u{a0}234\u{a0}ms"
     );
     assert_eq!(
-        words.headline(520.5, true).as_deref(),
-        Some("Au moins 520,5\u{a0}ms")
+        meter_headline(labels, 12345.0, true),
+        "Au moins 12\u{a0}345\u{a0}ms"
     );
-    assert_eq!(words.millis(150.0), "150\u{a0}ms");
-    assert_eq!(words.number(2.25).as_deref(), Some("2,25"));
+    assert_eq!(millis(labels, 150.0), "150\u{a0}ms");
+    // Summed from an edit: at least, with the partial sentence under it.
     let mut mix = saved_mix();
     mix.llm.thinking = "dynamic".to_owned();
+    let partial = meter_of(&mix, &studio);
+    assert_eq!(partial.headline_text(&studio), "Au moins 520\u{a0}ms");
+    assert_eq!(partial.note.as_ref(), Some(&labels.meter_partial));
+    let mut mix = saved_mix();
+    mix.llm.location = "us-east4".to_owned();
+    let whole = meter_of(&mix, &studio);
+    assert_eq!(whole.headline_text(&studio), "Environ 970\u{a0}ms");
+    assert_eq!(whole.note, None);
+    // Nothing measured.
+    let mut bare = studio.clone();
+    bare.latency.eou = None;
+    bare.catalog.llm[0].latency = None;
+    bare.catalog.tts[0].latency = None;
     assert_eq!(
-        meter_of(&mix, &studio).headline_text(&studio).as_deref(),
-        Some("Au moins 520\u{a0}ms")
+        meter_of(&mix, &bare).headline_text(&bare),
+        "Pas encore mesuré"
     );
 }
 
 #[test]
-fn a_read_without_words_for_a_meter_draws_no_headline_rather_than_english() {
-    // No meter of the "at least" kind in the read.
-    let mut studio = studio();
-    studio
-        .recipes
-        .retain(|recipe| !recipe.time_to_first_word.at_least);
-    let words = StudioWords::of(&studio);
-    assert!(!words.complete());
-    assert_eq!(words.headline(500.0, true), None);
-    assert!(words.headline(500.0, false).is_some());
-    let mut mix = saved_mix();
-    mix.llm.thinking = "dynamic".to_owned();
-    assert_eq!(meter_of(&mix, &studio).headline_text(&studio), None);
+fn the_meter_rule_reproduces_every_meter_the_service_wrote() {
+    let studio = studio();
+    let meters = std::iter::once((
+        studio.latency.ms,
+        studio.latency.at_least,
+        &studio.latency.text,
+    ))
+    .chain(studio.recipes.iter().map(|recipe| {
+        let meter = &recipe.time_to_first_word;
+        (meter.ms, meter.at_least, &meter.text)
+    }));
+    let mut checked = 0;
+    for (ms, at_least, text) in meters {
+        match ms {
+            Some(ms) => assert_eq!(&meter_headline(&studio.labels, ms, at_least), text),
+            None => assert_eq!(text, &studio.labels.meter_none),
+        }
+        checked += 1;
+    }
+    assert!(checked > 1);
+}
 
-    // A locale this client cannot write numbers for has no words, and a bare
-    // median is the number alone.
-    let mut studio = self::studio();
-    studio.locale = "de".to_owned();
-    let words = StudioWords::of(&studio);
-    assert!(!words.complete() && words.number(1.0).is_none());
-    assert_eq!(words.headline(970.0, false), None);
-    assert_eq!(words.millis(149.6), "150");
+#[test]
+fn a_number_is_grouped_only_from_a_thousand() {
+    for (ms, en, fr) in [
+        (7.0, "7", "7"),
+        (970.0, "970", "970"),
+        (1234.0, "1,234", "1\u{a0}234"),
+        (12345.0, "12,345", "12\u{a0}345"),
+        (1_234_567.0, "1,234,567", "1\u{a0}234\u{a0}567"),
+    ] {
+        assert_eq!(grouped(ms, ","), en);
+        assert_eq!(grouped(ms, "\u{a0}"), fr);
+    }
+}
+
+#[test]
+fn the_based_on_line_uses_one_or_many_and_nothing_for_none() {
+    let labels = studio().labels;
+    assert_eq!(based_on(&labels, "Fastest", 0), None);
+    assert_eq!(
+        based_on(&labels, "Fastest", 1).as_deref(),
+        Some("Based on Fastest, 1 change.")
+    );
+    assert_eq!(
+        based_on(&labels, "Fastest", 1234).as_deref(),
+        Some("Based on Fastest, 1234 changes.")
+    );
+    let french = french();
+    assert_eq!(
+        based_on(&french.labels, "Naturel", 1).as_deref(),
+        Some("Basé sur Naturel, 1 modification.")
+    );
+    assert_eq!(
+        based_on(&french.labels, "Naturel", 2).as_deref(),
+        Some("Basé sur Naturel, 2 modifications.")
+    );
+    // Each placeholder once, as literal text: a name holding a placeholder
+    // is written as it is.
+    assert_eq!(
+        based_on(&labels, "{n} {recipe}", 3).as_deref(),
+        Some("Based on {n} {recipe}, 3 changes.")
+    );
 }

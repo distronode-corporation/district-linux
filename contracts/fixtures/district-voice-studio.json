@@ -55,7 +55,14 @@
       "latest": "Latest",
       "preview": "Preview",
       "legacy": "Legacy"
-    }
+    },
+    "meterAbout": "About {ms} ms",
+    "meterAtLeast": "At least {ms} ms",
+    "meterNone": "Not measured yet",
+    "meterPartial": "Some steps are not measured yet, so the real time is longer.",
+    "numberGrouping": ",",
+    "basedOnOne": "Based on {recipe}, 1 change.",
+    "basedOnMany": "Based on {recipe}, {n} changes."
   },
   "current": {
     "modelId": "deepgram-pipeline",

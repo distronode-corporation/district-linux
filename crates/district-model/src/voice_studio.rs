@@ -296,6 +296,22 @@ pub struct StudioLabels {
     pub stages: StudioStageLabels,
     /// Each channel's name.
     pub channels: StudioChannelLabels,
+    /// An unsaved edit's meter with every stage measured: "About {ms} ms", with
+    /// `{ms}` the grouped whole number and the unit already in the template.
+    pub meter_about: String,
+    /// An unsaved edit's meter with a stage missing: "At least {ms} ms".
+    pub meter_at_least: String,
+    /// An unsaved edit's meter with nothing measured.
+    pub meter_none: String,
+    /// The sentence under an "at least" meter: some steps are not measured.
+    pub meter_partial: String,
+    /// What goes between groups of three digits of a meter's `{ms}`: `,` in
+    /// English, a no-break space in French. A value, not a template.
+    pub number_grouping: String,
+    /// "Based on {recipe}, 1 change."
+    pub based_on_one: String,
+    /// "Based on {recipe}, {n} changes.", `{n}` in plain digits.
+    pub based_on_many: String,
 }
 
 /// The legs' names: "Ear", "Turn-taking", "Brain", "Voice".

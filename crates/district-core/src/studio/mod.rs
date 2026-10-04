@@ -39,4 +39,4 @@ pub use tuning::{
     VOICE_STYLE, choice, conform, honoured, keys_for, known_for, number, parse_keyterms, range,
     set_choice, set_number, snap,
 };
-pub use words::StudioWords;
+pub use words::{based_on, grouped, meter_headline, millis};

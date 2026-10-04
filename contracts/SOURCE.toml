@@ -21,7 +21,7 @@
 # `sha256sum -c SHA256SUMS` checks them.
 
 [source]
-commit = "73833bd97d53571ca74ae48ae4c52061f62cf845"
+commit = "73b9a2945f49cd963218dd48c50786ddc41b3127"
 
 [sets.fixtures]
 source = "the Android app's contract fixtures, recorded by the District AI server's contract tests"
