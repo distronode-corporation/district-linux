@@ -1,7 +1,7 @@
 {
   "generated_by": "scripts/sync-endpoints.py",
   "source": {
-    "commit": "077ebbc883fc13c654c4f267b9776c39e47549e7",
+    "commit": "68e95b13e28449a30ab8cdb6da0033bc4e58060d",
     "uncommitted_changes": false
   },
   "endpoints": [
@@ -88,12 +88,6 @@
       "path": "/api/district/calls/{callId}/hangup",
       "auth": "bearer",
       "workspace": "body"
-    },
-    {
-      "method": "GET",
-      "path": "/api/district/calls/{callId}/recording",
-      "auth": "bearer",
-      "workspace": "query"
     },
     {
       "method": "GET",
@@ -304,12 +298,6 @@
       "path": "/api/district/scheduling/admin",
       "auth": "bearer",
       "workspace": "body"
-    },
-    {
-      "method": "GET",
-      "path": "/api/district/scheduling/admin/download/{recordingId}",
-      "auth": "bearer",
-      "workspace": "query"
     },
     {
       "method": "POST",

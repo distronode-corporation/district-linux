@@ -121,13 +121,6 @@ pub const EXCLUDED: &[Exclusion] = &[
         android_calls_it: true,
     },
     Exclusion {
-        name: "call recordings",
-        method: None,
-        path: PathMatch::Exact("/api/district/calls/{callId}/recording"),
-        reason: "The service stores no call recordings.",
-        android_calls_it: true,
-    },
-    Exclusion {
         name: "campaign dialling",
         method: None,
         path: PathMatch::Exact("/api/district/calls/outbound"),

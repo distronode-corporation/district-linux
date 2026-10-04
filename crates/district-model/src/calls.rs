@@ -42,7 +42,8 @@ pub struct CallSummary {
     pub time: String,
     /// The call's AI summary, or a placeholder sentence when there is none.
     pub ai_summary: String,
-    /// Where the call's recording can be fetched, when there is one.
+    /// Always null: the service records no calls. The key stays for older
+    /// clients that require it, so it is still decoded, and never used.
     pub recording_url: Option<String>,
     /// Always empty. The transcript is fetched on its own when a call is opened;
     /// the key stays for older clients that require it.

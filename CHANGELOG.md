@@ -13,6 +13,14 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Changed
+
+- Contracts follow the service's removal of call recordings, the scheduler's recordings,
+  storage settings, notetaker and booking notes and transcripts: the eight fixtures for
+  them are gone, a call's `recordingUrl` is always null (still decoded, never used), and
+  the endpoint table no longer lists call recordings as an exclusion, since the Android
+  app stopped calling that route.
+
 ## [1.0.0] - 2026-10-02
 
 ### Added
