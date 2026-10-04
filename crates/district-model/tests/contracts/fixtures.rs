@@ -128,13 +128,9 @@ fn the_overview_covers_populated_and_empty_call_rows() {
     covers("no follow-up", calls.iter().any(|c| c.follow_up.is_none()));
     covers("an analysis", calls.iter().any(|c| c.analysis.is_some()));
     covers("no analysis", calls.iter().any(|c| c.analysis.is_none()));
-    covers(
-        "a recording",
-        calls.iter().any(|c| c.recording_url.is_some()),
-    );
-    covers(
-        "no recording",
-        calls.iter().any(|c| c.recording_url.is_none()),
+    assert!(
+        calls.iter().all(|c| c.recording_url.is_none()),
+        "the service records no calls, so every recording URL is null"
     );
     covers("a transcript", calls.iter().any(|c| c.has_transcript));
     covers("no transcript", calls.iter().any(|c| !c.has_transcript));

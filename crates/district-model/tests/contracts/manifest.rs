@@ -87,7 +87,7 @@ pub const SETS: &[Manifest] = &[
 /// Asserted exactly, not as a floor: a floor passes against a directory that lost
 /// files, and never notices one the server started recording. When a sync adds a
 /// fixture, this fails until the new file is placed in one of the sets below.
-pub const EXPECTED_FIXTURE_COUNT: usize = 164;
+pub const EXPECTED_FIXTURE_COUNT: usize = 156;
 
 /// Fixtures decoded by a type in this crate: the fixture's name and the decoder
 /// for its type. Sorted by name.
@@ -539,9 +539,6 @@ pub const EXCLUDED_BY_DECISION: &[Exclusion] = &[Exclusion {
         "district-scheduling-api-key-created.json",
         "district-scheduling-api-keys.json",
         "district-scheduling-booking-answers.json",
-        "district-scheduling-booking-notes-regenerated.json",
-        "district-scheduling-booking-notes.json",
-        "district-scheduling-booking-transcript.json",
         "district-scheduling-booking.json",
         "district-scheduling-bookings.json",
         "district-scheduling-branding.json",
@@ -554,7 +551,6 @@ pub const EXCLUDED_BY_DECISION: &[Exclusion] = &[Exclusion {
         "district-scheduling-llm.json",
         "district-scheduling-me.json",
         "district-scheduling-no-content.json",
-        "district-scheduling-notetaker.json",
         "district-scheduling-oauth-connections.json",
         "district-scheduling-ok.json",
         "district-scheduling-override-created.json",
@@ -562,13 +558,9 @@ pub const EXCLUDED_BY_DECISION: &[Exclusion] = &[Exclusion {
         "district-scheduling-overrides.json",
         "district-scheduling-question.json",
         "district-scheduling-questions.json",
-        "district-scheduling-recordings-consent.json",
-        "district-scheduling-recordings-deleted.json",
-        "district-scheduling-recordings.json",
         "district-scheduling-rule.json",
         "district-scheduling-rules.json",
         "district-scheduling-slots.json",
-        "district-scheduling-storage.json",
         "district-scheduling-team.json",
         "district-scheduling-teams.json",
         "district-scheduling-test-email.json",

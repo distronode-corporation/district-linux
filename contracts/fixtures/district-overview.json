@@ -18,7 +18,7 @@
       "duration": "1m 5s",
       "time": "Aug 15, 14:30",
       "aiSummary": "Caller booked an appointment for Thursday.",
-      "recordingUrl": "https://recordings.distronode.test/call_contract_answered.mp3",
+      "recordingUrl": null,
       "transcript": "",
       "hasTranscript": true,
       "callerName": "Contract Test Caller",
