@@ -41,7 +41,7 @@ use district_model::{
     MessagingMetaResponse, MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault,
     MessagingTestResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
     PersonaPreviewTokenResponse, PresenceRegistration, PushRegistrationResponse, RenameResponse,
-    RoutingRule, WorkspaceConfigResponse, WorkspaceSaveResponse,
+    RoutingRule, VoiceStudioResponse, WorkspaceConfigResponse, WorkspaceSaveResponse,
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 use url::Url;
@@ -597,6 +597,13 @@ impl<S: TokenSource> DistrictApi for ApiClient<S> {
         workspace_id: &str,
     ) -> impl Future<Output = Result<PersonaOptionsResponse, ApiError>> + Send {
         ApiClient::persona_options(self, workspace_id)
+    }
+
+    fn voice_studio(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<VoiceStudioResponse, ApiError>> + Send {
+        ApiClient::voice_studio(self, workspace_id)
     }
 
     fn save_persona(

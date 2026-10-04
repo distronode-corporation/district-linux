@@ -46,8 +46,8 @@ use district_model::{
     MessagingCreatorCell, MessagingCredentials, MessagingDefaultResponse, MessagingDelete,
     MessagingMetaResponse, MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault,
     MessagingTestResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
-    PersonaPreviewTokenResponse, RenameResponse, RoutingRule, WorkspaceConfigResponse,
-    WorkspaceSaveResponse,
+    PersonaPreviewTokenResponse, RenameResponse, RoutingRule, VoiceStudioResponse,
+    WorkspaceConfigResponse, WorkspaceSaveResponse,
 };
 
 use crate::contacts::{ContactWrite, ContactWritten};
@@ -470,6 +470,11 @@ pub trait DistrictApi: Send + Sync {
         &self,
         workspace_id: &str,
     ) -> impl Future<Output = Result<PersonaOptionsResponse, ApiError>> + Send;
+    /// Everything Voice Studio shows.
+    fn voice_studio(
+        &self,
+        workspace_id: &str,
+    ) -> impl Future<Output = Result<VoiceStudioResponse, ApiError>> + Send;
     /// Changes what `patch` names of the persona. Sent once.
     fn save_persona(
         &self,
@@ -1436,6 +1441,13 @@ where
             } => Event::PersonaOptionsLoaded {
                 ticket,
                 result: self.api.persona_options(&workspace_id).await,
+            },
+            Effect::LoadVoiceStudio {
+                ticket,
+                workspace_id,
+            } => Event::VoiceStudioLoaded {
+                ticket,
+                result: self.api.voice_studio(&workspace_id).await.map(Box::new),
             },
             Effect::RequestPersonaPreview {
                 ticket,

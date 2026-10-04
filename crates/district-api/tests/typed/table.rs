@@ -155,7 +155,7 @@ fn assert_sent_as_android_sends(case: &Case, request: &wiremock::Request) {
 #[tokio::test]
 async fn every_method_sends_what_android_sends_and_decodes_the_answer() {
     let cases = cases();
-    assert_eq!(cases.len(), 92, "a method without a row is not tested");
+    assert_eq!(cases.len(), 93, "a method without a row is not tested");
     let names: BTreeSet<&str> = cases.iter().map(|case| case.name).collect();
     assert_eq!(names.len(), cases.len(), "two rows share a name");
     for case in &cases {

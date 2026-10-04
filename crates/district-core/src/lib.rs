@@ -59,7 +59,9 @@
 //!   meeting records ([`RoomsScreen`]).
 //! - The screens of the fourth: the workspace settings hub ([`settings_rows`])
 //!   and its sections, each read when it opens and saved only from what it read:
-//!   the persona with its audition ([`PersonaSection`]), the capabilities
+//!   the persona with its audition ([`PersonaSection`]), Voice Studio, the
+//!   receptionist's voice engine as recipes and a signal chain
+//!   ([`VoiceStudioSection`], whose rules are in [`studio`]), the capabilities
 //!   ([`ToolsSection`]), the transfer directory ([`DirectorySection`]), the
 //!   routing rules ([`RoutingRulesSection`]), call handling and availability
 //!   ([`CallHandlingSection`]), the knowledge base ([`KnowledgeSection`]), the
@@ -119,6 +121,7 @@ mod scheduling;
 mod session;
 mod settings;
 mod signed_in;
+pub mod studio;
 mod support;
 mod thread;
 mod workflows;
@@ -211,11 +214,12 @@ pub use settings::{
     KnowledgeModeView, KnowledgeSection, KnowledgeWrite, MESSAGING_CHANNELS, MemberList,
     MemberWrite, MembersAction, MembersEvent, MembersSection, MessagingAccounts, MessagingAction,
     MessagingDeleteConfirm, MessagingEvent, MessagingForm, MessagingFormEdit, MessagingSection,
-    MessagingWrite, PERSONA_GEMINI_LIVE_ENGINE, PREVIEW_COOLDOWN, PersonaEngineEdit,
-    PersonaEngineValues, PersonaEvent, PersonaOptionsLoad, PersonaPreview, PersonaSection,
-    PersonaText, RoutingRulesConfirm, RoutingRulesEvent, RoutingRulesSection, SCHEDULING_TOOLS,
-    SETTINGS_MORE_ON_WEB, SETTINGS_VIEWER_NOTE, SaveState, SecretText, SettingsRow, ToolsEvent,
-    ToolsSection, availability_reason_text, call_handling_mode, call_handling_mode_body,
+    MessagingWrite, PREVIEW_COOLDOWN, PersonaEngineEdit, PersonaEngineValues, PersonaEvent,
+    PersonaOptionsLoad, PersonaPreview, PersonaRefit, PersonaSection, PersonaText,
+    RoutingRulesConfirm, RoutingRulesEvent, RoutingRulesSection, SCHEDULING_TOOLS,
+    SETTINGS_MORE_ON_WEB, SETTINGS_VIEWER_NOTE, SaveState, SecretText, SettingsRow, StudioEdit,
+    StudioSaveState, ToolsEvent, ToolsSection, VoiceStudioEvent, VoiceStudioLoad,
+    VoiceStudioSection, availability_reason_text, call_handling_mode, call_handling_mode_body,
     call_handling_mode_label, capability_label, channel_label, credential_source_label,
     default_allowed_tools, is_member_email, knowledge_mode_body, knowledge_mode_label,
     member_role_label, provider_label, settings_note, settings_rows,

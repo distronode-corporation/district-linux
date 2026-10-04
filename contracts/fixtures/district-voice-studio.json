@@ -1,0 +1,5768 @@
+{
+  "success": true,
+  "region": "us",
+  "locale": "en",
+  "language": "en-US",
+  "previewAllowed": true,
+  "labels": {
+    "heading": "Voice Studio",
+    "description": "Pick a starting point, then fine-tune any part of the call.",
+    "tierLabel": "Models",
+    "tierStable": "Stable",
+    "tierLatest": "Latest",
+    "tierDescription": "Stable models are proven on live calls. Latest models are newer and still settling.",
+    "recipesLabel": "Starting point",
+    "defaultBadge": "Default",
+    "reset": "Reset",
+    "chainLabel": "Signal chain",
+    "editLeg": "Part to edit",
+    "edit": "Edit",
+    "meterHeading": "Time to first word",
+    "meterDescription": "From the caller's last word to the first sound of the reply, at the median.",
+    "residencyHeading": "Where the call is processed",
+    "allInRegion": "Every part of this call stays in the United States.",
+    "leavesRegion": "Part of this call leaves your region.",
+    "providerLabel": "Vendor",
+    "modelLabel": "Model",
+    "locationLabel": "Location",
+    "voiceLabel": "Voice",
+    "voicePlaceholder": "Choose a voice",
+    "listen": "Listen",
+    "stopListening": "Stop",
+    "advanced": "Advanced",
+    "interruptions": "Interruptions",
+    "notMeasured": "Not measured yet",
+    "previewNote": "Preview: processed globally by Google",
+    "save": "Save voice settings",
+    "saved": "Voice settings saved.",
+    "saveFailed": "Voice settings were not saved.",
+    "unsaved": "Unsaved changes",
+    "allSaved": "All changes saved",
+    "legs": {
+      "stt": "Ear",
+      "turn": "Turn-taking",
+      "llm": "Brain",
+      "tts": "Voice"
+    },
+    "stages": {
+      "eou": "End of turn",
+      "llm_ttft": "Brain, first word",
+      "tts_ttfb": "Voice, first sound",
+      "realtime_ttft": "Model, first sound"
+    },
+    "channels": {
+      "stable": "Stable",
+      "latest": "Latest",
+      "preview": "Preview",
+      "legacy": "Legacy"
+    }
+  },
+  "current": {
+    "modelId": "deepgram-pipeline",
+    "engineMix": null,
+    "preemptiveTts": false,
+    "temperature": 0.7,
+    "bilingual": false,
+    "voiceStyle": null,
+    "recipeId": "fastest",
+    "tier": "stable",
+    "fields": {
+      "modelId": "deepgram-pipeline",
+      "voice": "aura-2-asteria-en",
+      "engineMix": null,
+      "preemptiveTts": false,
+      "temperature": null,
+      "bilingual": null,
+      "voiceStyle": null
+    },
+    "chain": {
+      "kind": "chained",
+      "engineMix": {
+        "v": 1,
+        "stt": {
+          "provider": "deepgram",
+          "model": "flux-general-en",
+          "language": null,
+          "location": null
+        },
+        "llm": {
+          "model": "gemini-2.5-flash",
+          "location": "auto",
+          "thinking": "off",
+          "temperature": null
+        },
+        "tts": {
+          "provider": "deepgram",
+          "model": "aura-2",
+          "voice": "aura-2-asteria-en",
+          "speed": null,
+          "location": null
+        },
+        "turn": {
+          "minDelay": null,
+          "maxDelay": null,
+          "eotThreshold": null
+        },
+        "preemptiveTts": false
+      },
+      "realtimeModelId": null,
+      "voice": "aura-2-asteria-en",
+      "blocks": [
+        {
+          "leg": "stt",
+          "title": "Ear",
+          "role": "Speech recognition",
+          "model": "Deepgram Flux (English)",
+          "channel": "stable",
+          "channelLabel": "Stable",
+          "where": "Processed in the United States",
+          "inRegion": true,
+          "note": null,
+          "latency": {
+            "source": "lab",
+            "ms": 150,
+            "samples": null,
+            "text": "Lab: 150 ms"
+          }
+        },
+        {
+          "leg": "turn",
+          "title": "Turn-taking",
+          "role": "When to reply",
+          "model": "Flux end of turn",
+          "channel": "stable",
+          "channelLabel": "Stable",
+          "where": "Processed in the United States",
+          "inRegion": true,
+          "note": null,
+          "latency": {
+            "source": "measured",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          }
+        },
+        {
+          "leg": "llm",
+          "title": "Brain",
+          "role": "Reasoning",
+          "model": "Gemini 2.5 Flash",
+          "channel": "stable",
+          "channelLabel": "Stable",
+          "where": "Processed in the United States",
+          "inRegion": true,
+          "note": null,
+          "latency": {
+            "source": "measured",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          }
+        },
+        {
+          "leg": "tts",
+          "title": "Voice",
+          "role": "Speech synthesis",
+          "model": "Deepgram Aura-2",
+          "channel": "stable",
+          "channelLabel": "Stable",
+          "where": "Processed in the United States",
+          "inRegion": true,
+          "note": null,
+          "latency": {
+            "source": "measured",
+            "ms": 120,
+            "samples": 100,
+            "text": "Median 120 ms over 100 calls"
+          }
+        }
+      ],
+      "residency": {
+        "inRegion": true,
+        "text": "Every part of this call stays in the United States.",
+        "legsOut": []
+      }
+    }
+  },
+  "latency": {
+    "ms": 970,
+    "atLeast": false,
+    "text": "About 970 ms",
+    "note": null,
+    "stages": [
+      {
+        "stage": "eou",
+        "label": "End of turn",
+        "ms": 400,
+        "samples": 200,
+        "text": "Median 400 ms over 200 calls"
+      },
+      {
+        "stage": "llm_ttft",
+        "label": "Brain, first word",
+        "ms": 450,
+        "samples": 300,
+        "text": "Median 450 ms over 300 calls"
+      },
+      {
+        "stage": "tts_ttfb",
+        "label": "Voice, first sound",
+        "ms": 120,
+        "samples": 100,
+        "text": "Median 120 ms over 100 calls"
+      }
+    ],
+    "eou": {
+      "source": "measured",
+      "ms": 400,
+      "samples": 200,
+      "text": "Median 400 ms over 200 calls"
+    },
+    "sourceText": "Measured on live calls over 30 days, to Oct 3, 2026. A sum of medians: a guide, not a promise.",
+    "measuredThrough": "2026-10-03",
+    "measuredDays": 30
+  },
+  "recipeIds": [
+    "in-region",
+    "fastest",
+    "natural",
+    "bilingual",
+    "realtime",
+    "custom"
+  ],
+  "recipes": [
+    {
+      "id": "in-region",
+      "tier": "stable",
+      "name": "Stays in the United States",
+      "description": "Every part of the call is processed in your region.",
+      "isDefault": false,
+      "channel": "stable",
+      "channelLabel": "Stable",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 970,
+        "atLeast": false,
+        "text": "About 970 ms",
+        "note": null,
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": 120,
+            "samples": 100,
+            "text": "Median 120 ms over 100 calls"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "nova-3-general",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "aura-2",
+            "voice": "aura-2-asteria-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "aura-2-asteria-en",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Nova-3",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Turn detector",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Decided by the voice agent, not a vendor",
+            "inRegion": null,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 2.5 Flash",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 450,
+              "samples": 300,
+              "text": "Median 450 ms over 300 calls"
+            }
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Deepgram Aura-2",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 120,
+              "samples": 100,
+              "text": "Median 120 ms over 100 calls"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "custom-pipeline",
+        "voice": "aura-2-asteria-en",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "nova-3-general",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "aura-2",
+            "voice": "aura-2-asteria-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": false,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "fastest",
+      "tier": "stable",
+      "name": "Fastest",
+      "description": "The quickest reply we have measured.",
+      "isDefault": false,
+      "channel": "stable",
+      "channelLabel": "Stable",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 970,
+        "atLeast": false,
+        "text": "About 970 ms",
+        "note": null,
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": 120,
+            "samples": 100,
+            "text": "Median 120 ms over 100 calls"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-en",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "aura-2",
+            "voice": "aura-2-asteria-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "aura-2-asteria-en",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Flux (English)",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "lab",
+              "ms": 150,
+              "samples": null,
+              "text": "Lab: 150 ms"
+            }
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Flux end of turn",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 2.5 Flash",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 450,
+              "samples": 300,
+              "text": "Median 450 ms over 300 calls"
+            }
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Deepgram Aura-2",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 120,
+              "samples": 100,
+              "text": "Median 120 ms over 100 calls"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "deepgram-pipeline",
+        "voice": "aura-2-asteria-en",
+        "engineMix": null,
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": null,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "natural",
+      "tier": "stable",
+      "name": "Most natural",
+      "description": "The most lifelike voices.",
+      "isDefault": false,
+      "channel": "stable",
+      "channelLabel": "Stable",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 850,
+        "atLeast": true,
+        "text": "At least 850 ms",
+        "note": "Some steps are not measured yet, so the real time is longer.",
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "nova-3-general",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "cartesia",
+            "model": "sonic-3",
+            "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Nova-3",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Turn detector",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Decided by the voice agent, not a vendor",
+            "inRegion": null,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 2.5 Flash",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 450,
+              "samples": 300,
+              "text": "Median 450 ms over 300 calls"
+            }
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Cartesia Sonic 3",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "lab",
+              "ms": 180,
+              "samples": null,
+              "text": "Lab: 180 ms"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "cartesia-pipeline",
+        "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+        "engineMix": null,
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": null,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "bilingual",
+      "tier": "stable",
+      "name": "Bilingual EN/FR",
+      "description": "Answers in English or French, and switches when the caller does.",
+      "isDefault": false,
+      "channel": "preview",
+      "channelLabel": "Preview",
+      "note": "Preview: processed globally by Google",
+      "bilingual": true,
+      "residency": {
+        "processedIn": "Global (Google)",
+        "inRegion": false,
+        "text": "Leaves your region: global (Google)",
+        "vendorsOutOfRegion": [
+          "Google Cloud Platform (Google LLC)"
+        ]
+      },
+      "timeToFirstWord": {
+        "ms": null,
+        "atLeast": true,
+        "text": "Not measured yet",
+        "note": null,
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          },
+          {
+            "stage": "realtime_ttft",
+            "label": "Model, first sound",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "realtime",
+        "engineMix": null,
+        "realtimeModelId": "gemini-3.8-live",
+        "voice": "Puck",
+        "blocks": [
+          {
+            "leg": "realtime",
+            "title": "All-in-one",
+            "role": "Listens, takes turns, thinks and speaks",
+            "model": "Gemini 3.8 Live",
+            "channel": "preview",
+            "channelLabel": "Preview",
+            "where": "Leaves your region: global (Google)",
+            "inRegion": false,
+            "note": "Preview: processed globally by Google",
+            "latency": {
+              "source": "lab",
+              "ms": 350,
+              "samples": null,
+              "text": "Lab: 350 ms"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": false,
+          "text": "Part of this call leaves your region.",
+          "legsOut": [
+            "Reasoning: global (Google) (Google Cloud Platform (Google LLC))"
+          ]
+        }
+      },
+      "save": {
+        "modelId": "gemini-3.8-live",
+        "voice": "Puck",
+        "engineMix": null,
+        "preemptiveTts": null,
+        "temperature": 0.7,
+        "bilingual": true,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "realtime",
+      "tier": "stable",
+      "name": "All-in-one realtime",
+      "description": "One model listens, thinks and speaks.",
+      "isDefault": true,
+      "channel": "stable",
+      "channelLabel": "Stable",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 300,
+        "atLeast": true,
+        "text": "At least 300 ms",
+        "note": "Some steps are not measured yet, so the real time is longer.",
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          },
+          {
+            "stage": "realtime_ttft",
+            "label": "Model, first sound",
+            "ms": 300,
+            "samples": 100,
+            "text": "Median 300 ms over 100 calls"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "realtime",
+        "engineMix": null,
+        "realtimeModelId": "gemini-live-2.5-flash-native-audio",
+        "voice": "Puck",
+        "blocks": [
+          {
+            "leg": "realtime",
+            "title": "All-in-one",
+            "role": "Listens, takes turns, thinks and speaks",
+            "model": "Gemini 2.5 Live (native audio)",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 300,
+              "samples": 100,
+              "text": "Median 300 ms over 100 calls"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "gemini-live-2.5-flash-native-audio",
+        "voice": "Puck",
+        "engineMix": null,
+        "preemptiveTts": null,
+        "temperature": 0.7,
+        "bilingual": null,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "custom",
+      "tier": "stable",
+      "name": "Your chain",
+      "description": "The chain saved on this persona.",
+      "isDefault": false,
+      "channel": "stable",
+      "channelLabel": "Stable",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 970,
+        "atLeast": false,
+        "text": "About 970 ms",
+        "note": null,
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": 120,
+            "samples": 100,
+            "text": "Median 120 ms over 100 calls"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-en",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "aura-2",
+            "voice": "aura-2-asteria-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "aura-2-asteria-en",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Flux (English)",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "lab",
+              "ms": 150,
+              "samples": null,
+              "text": "Lab: 150 ms"
+            }
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Flux end of turn",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 2.5 Flash",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 450,
+              "samples": 300,
+              "text": "Median 450 ms over 300 calls"
+            }
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Deepgram Aura-2",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 120,
+              "samples": 100,
+              "text": "Median 120 ms over 100 calls"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "deepgram-pipeline",
+        "voice": "aura-2-asteria-en",
+        "engineMix": null,
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": null,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "in-region",
+      "tier": "latest",
+      "name": "Stays in the United States",
+      "description": "Every part of the call is processed in your region.",
+      "isDefault": false,
+      "channel": "latest",
+      "channelLabel": "Latest",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 850,
+        "atLeast": true,
+        "text": "At least 850 ms",
+        "note": "Some steps are not measured yet, so the real time is longer.",
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-multi",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "flux-tts",
+            "voice": "flux-alexis-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "flux-alexis-en",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Flux (multilingual)",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Flux end of turn",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 2.5 Flash",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 450,
+              "samples": 300,
+              "text": "Median 450 ms over 300 calls"
+            }
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Deepgram Flux TTS",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "custom-pipeline",
+        "voice": "flux-alexis-en",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-multi",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "flux-tts",
+            "voice": "flux-alexis-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": false,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "fastest",
+      "tier": "latest",
+      "name": "Fastest",
+      "description": "The quickest reply we have measured.",
+      "isDefault": false,
+      "channel": "latest",
+      "channelLabel": "Latest",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 850,
+        "atLeast": true,
+        "text": "At least 850 ms",
+        "note": "Some steps are not measured yet, so the real time is longer.",
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-multi",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "flux-tts",
+            "voice": "flux-alexis-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "flux-alexis-en",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Flux (multilingual)",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Flux end of turn",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 2.5 Flash",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 450,
+              "samples": 300,
+              "text": "Median 450 ms over 300 calls"
+            }
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Deepgram Flux TTS",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "custom-pipeline",
+        "voice": "flux-alexis-en",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-multi",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "flux-tts",
+            "voice": "flux-alexis-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": false,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "natural",
+      "tier": "latest",
+      "name": "Most natural",
+      "description": "The most lifelike voices.",
+      "isDefault": false,
+      "channel": "latest",
+      "channelLabel": "Latest",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "Global (Google)",
+        "inRegion": false,
+        "text": "Leaves your region: global (Google)",
+        "vendorsOutOfRegion": [
+          "Google Cloud Platform (Google LLC)"
+        ]
+      },
+      "timeToFirstWord": {
+        "ms": 400,
+        "atLeast": true,
+        "text": "At least 400 ms",
+        "note": "Some steps are not measured yet, so the real time is longer.",
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-multi",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-3.8-flash",
+            "location": "global",
+            "thinking": "low",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "cartesia",
+            "model": "sonic-3.6",
+            "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Flux (multilingual)",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Flux end of turn",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 3.8 Flash",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Leaves your region: global (Google)",
+            "inRegion": false,
+            "note": null,
+            "latency": null
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Cartesia Sonic 3.6",
+            "channel": "latest",
+            "channelLabel": "Latest",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": null
+          }
+        ],
+        "residency": {
+          "inRegion": false,
+          "text": "Part of this call leaves your region.",
+          "legsOut": [
+            "Reasoning: global (Google) (Google Cloud Platform (Google LLC))"
+          ]
+        }
+      },
+      "save": {
+        "modelId": "custom-pipeline",
+        "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-multi",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-3.8-flash",
+            "location": "global",
+            "thinking": "low",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "cartesia",
+            "model": "sonic-3.6",
+            "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": false,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "bilingual",
+      "tier": "latest",
+      "name": "Bilingual EN/FR",
+      "description": "Answers in English or French, and switches when the caller does.",
+      "isDefault": false,
+      "channel": "preview",
+      "channelLabel": "Preview",
+      "note": "Preview: processed globally by Google",
+      "bilingual": true,
+      "residency": {
+        "processedIn": "Global (Google)",
+        "inRegion": false,
+        "text": "Leaves your region: global (Google)",
+        "vendorsOutOfRegion": [
+          "Google Cloud Platform (Google LLC)"
+        ]
+      },
+      "timeToFirstWord": {
+        "ms": null,
+        "atLeast": true,
+        "text": "Not measured yet",
+        "note": null,
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          },
+          {
+            "stage": "realtime_ttft",
+            "label": "Model, first sound",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "realtime",
+        "engineMix": null,
+        "realtimeModelId": "gemini-3.8-live",
+        "voice": "Puck",
+        "blocks": [
+          {
+            "leg": "realtime",
+            "title": "All-in-one",
+            "role": "Listens, takes turns, thinks and speaks",
+            "model": "Gemini 3.8 Live",
+            "channel": "preview",
+            "channelLabel": "Preview",
+            "where": "Leaves your region: global (Google)",
+            "inRegion": false,
+            "note": "Preview: processed globally by Google",
+            "latency": {
+              "source": "lab",
+              "ms": 350,
+              "samples": null,
+              "text": "Lab: 350 ms"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": false,
+          "text": "Part of this call leaves your region.",
+          "legsOut": [
+            "Reasoning: global (Google) (Google Cloud Platform (Google LLC))"
+          ]
+        }
+      },
+      "save": {
+        "modelId": "gemini-3.8-live",
+        "voice": "Puck",
+        "engineMix": null,
+        "preemptiveTts": null,
+        "temperature": 0.7,
+        "bilingual": true,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "realtime",
+      "tier": "latest",
+      "name": "All-in-one realtime",
+      "description": "One model listens, thinks and speaks.",
+      "isDefault": true,
+      "channel": "preview",
+      "channelLabel": "Preview",
+      "note": "Preview: processed globally by Google",
+      "bilingual": false,
+      "residency": {
+        "processedIn": "Global (Google)",
+        "inRegion": false,
+        "text": "Leaves your region: global (Google)",
+        "vendorsOutOfRegion": [
+          "Google Cloud Platform (Google LLC)"
+        ]
+      },
+      "timeToFirstWord": {
+        "ms": null,
+        "atLeast": true,
+        "text": "Not measured yet",
+        "note": null,
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          },
+          {
+            "stage": "realtime_ttft",
+            "label": "Model, first sound",
+            "ms": null,
+            "samples": null,
+            "text": "Not measured yet"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "realtime",
+        "engineMix": null,
+        "realtimeModelId": "gemini-3.8-live",
+        "voice": "Puck",
+        "blocks": [
+          {
+            "leg": "realtime",
+            "title": "All-in-one",
+            "role": "Listens, takes turns, thinks and speaks",
+            "model": "Gemini 3.8 Live",
+            "channel": "preview",
+            "channelLabel": "Preview",
+            "where": "Leaves your region: global (Google)",
+            "inRegion": false,
+            "note": "Preview: processed globally by Google",
+            "latency": {
+              "source": "lab",
+              "ms": 350,
+              "samples": null,
+              "text": "Lab: 350 ms"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": false,
+          "text": "Part of this call leaves your region.",
+          "legsOut": [
+            "Reasoning: global (Google) (Google Cloud Platform (Google LLC))"
+          ]
+        }
+      },
+      "save": {
+        "modelId": "gemini-3.8-live",
+        "voice": "Puck",
+        "engineMix": null,
+        "preemptiveTts": null,
+        "temperature": 0.7,
+        "bilingual": false,
+        "voiceStyle": null
+      }
+    },
+    {
+      "id": "custom",
+      "tier": "latest",
+      "name": "Your chain",
+      "description": "The chain saved on this persona.",
+      "isDefault": false,
+      "channel": "stable",
+      "channelLabel": "Stable",
+      "note": null,
+      "bilingual": false,
+      "residency": {
+        "processedIn": "US",
+        "inRegion": true,
+        "text": "Processed in the United States",
+        "vendorsOutOfRegion": []
+      },
+      "timeToFirstWord": {
+        "ms": 970,
+        "atLeast": false,
+        "text": "About 970 ms",
+        "note": null,
+        "stages": [
+          {
+            "stage": "eou",
+            "label": "End of turn",
+            "ms": 400,
+            "samples": 200,
+            "text": "Median 400 ms over 200 calls"
+          },
+          {
+            "stage": "llm_ttft",
+            "label": "Brain, first word",
+            "ms": 450,
+            "samples": 300,
+            "text": "Median 450 ms over 300 calls"
+          },
+          {
+            "stage": "tts_ttfb",
+            "label": "Voice, first sound",
+            "ms": 120,
+            "samples": 100,
+            "text": "Median 120 ms over 100 calls"
+          }
+        ]
+      },
+      "chain": {
+        "kind": "chained",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-en",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "aura-2",
+            "voice": "aura-2-asteria-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        },
+        "realtimeModelId": null,
+        "voice": "aura-2-asteria-en",
+        "blocks": [
+          {
+            "leg": "stt",
+            "title": "Ear",
+            "role": "Speech recognition",
+            "model": "Deepgram Flux (English)",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "lab",
+              "ms": 150,
+              "samples": null,
+              "text": "Lab: 150 ms"
+            }
+          },
+          {
+            "leg": "turn",
+            "title": "Turn-taking",
+            "role": "When to reply",
+            "model": "Flux end of turn",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 400,
+              "samples": 200,
+              "text": "Median 400 ms over 200 calls"
+            }
+          },
+          {
+            "leg": "llm",
+            "title": "Brain",
+            "role": "Reasoning",
+            "model": "Gemini 2.5 Flash",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 450,
+              "samples": 300,
+              "text": "Median 450 ms over 300 calls"
+            }
+          },
+          {
+            "leg": "tts",
+            "title": "Voice",
+            "role": "Speech synthesis",
+            "model": "Deepgram Aura-2",
+            "channel": "stable",
+            "channelLabel": "Stable",
+            "where": "Processed in the United States",
+            "inRegion": true,
+            "note": null,
+            "latency": {
+              "source": "measured",
+              "ms": 120,
+              "samples": 100,
+              "text": "Median 120 ms over 100 calls"
+            }
+          }
+        ],
+        "residency": {
+          "inRegion": true,
+          "text": "Every part of this call stays in the United States.",
+          "legsOut": []
+        }
+      },
+      "save": {
+        "modelId": "deepgram-pipeline",
+        "voice": "aura-2-asteria-en",
+        "engineMix": null,
+        "preemptiveTts": false,
+        "temperature": null,
+        "bilingual": null,
+        "voiceStyle": null
+      }
+    }
+  ],
+  "catalog": {
+    "presets": [
+      {
+        "modelId": "deepgram-pipeline",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-en",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "deepgram",
+            "model": "aura-2",
+            "voice": "aura-2-asteria-en",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        }
+      },
+      {
+        "modelId": "elevenlabs-pipeline",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "flux-general-en",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "elevenlabs",
+            "model": "eleven_flash_v2_5",
+            "voice": "pNInz6obpgDQGcFmaJgB",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        }
+      },
+      {
+        "modelId": "cartesia-pipeline",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "deepgram",
+            "model": "nova-3-general",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "cartesia",
+            "model": "sonic-3",
+            "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        }
+      },
+      {
+        "modelId": "assemblyai-pipeline",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "assemblyai",
+            "model": "universal-3-5-pro",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "elevenlabs",
+            "model": "eleven_flash_v2_5",
+            "voice": "pNInz6obpgDQGcFmaJgB",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        }
+      },
+      {
+        "modelId": "aws-pipeline",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "aws-transcribe",
+            "model": "transcribe-streaming",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "aws-polly",
+            "model": "neural",
+            "voice": "Joanna",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        }
+      },
+      {
+        "modelId": "inworld-pipeline",
+        "engineMix": {
+          "v": 1,
+          "stt": {
+            "provider": "inworld",
+            "model": "inworld/inworld-stt-1",
+            "language": null,
+            "location": null
+          },
+          "llm": {
+            "model": "gemini-2.5-flash",
+            "location": "auto",
+            "thinking": "off",
+            "temperature": null
+          },
+          "tts": {
+            "provider": "inworld",
+            "model": "inworld-tts-2",
+            "voice": "Hades",
+            "speed": null,
+            "location": null
+          },
+          "turn": {
+            "minDelay": null,
+            "maxDelay": null,
+            "eotThreshold": null
+          },
+          "preemptiveTts": false
+        }
+      }
+    ],
+    "stt": [
+      {
+        "provider": "deepgram",
+        "providerLabel": "Deepgram",
+        "model": "nova-3-general",
+        "label": "Nova-3",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": true,
+        "takesTurns": false,
+        "keyterms": true,
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "deepgram",
+        "providerLabel": "Deepgram",
+        "model": "flux-general-en",
+        "label": "Flux (English)",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "takesTurns": true,
+        "keyterms": true,
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": {
+          "source": "lab",
+          "ms": 150,
+          "samples": null,
+          "text": "Lab: 150 ms"
+        }
+      },
+      {
+        "provider": "deepgram",
+        "providerLabel": "Deepgram",
+        "model": "flux-general-multi",
+        "label": "Flux (multilingual)",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": true,
+        "takesTurns": true,
+        "keyterms": true,
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "assemblyai",
+        "providerLabel": "AssemblyAI",
+        "model": "universal-3-5-pro",
+        "label": "Universal-3.5 Pro",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": true,
+        "takesTurns": false,
+        "keyterms": true,
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "assemblyai",
+        "providerLabel": "AssemblyAI",
+        "model": "universal-3-6-pro",
+        "label": "Universal-3.6 Pro",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": true,
+        "takesTurns": false,
+        "keyterms": true,
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "aws-transcribe",
+        "providerLabel": "Amazon Transcribe",
+        "model": "transcribe-streaming",
+        "label": "Streaming",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": true,
+        "takesTurns": false,
+        "keyterms": false,
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "inworld",
+        "providerLabel": "Inworld",
+        "model": "inworld/inworld-stt-1",
+        "label": "Inworld STT 1",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": false,
+        "offered": false,
+        "forLanguage": true,
+        "forBilingual": false,
+        "takesTurns": false,
+        "keyterms": false,
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "google-stt",
+        "providerLabel": "Google Chirp 3",
+        "model": "chirp_3",
+        "label": "Chirp 3",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": true,
+        "takesTurns": false,
+        "keyterms": false,
+        "defaultLocation": "us",
+        "locations": [
+          {
+            "value": "us",
+            "label": "United States (us)",
+            "residency": {
+              "processedIn": "US",
+              "inRegion": true,
+              "text": "Processed in the United States",
+              "vendorsOutOfRegion": []
+            }
+          },
+          {
+            "value": "eu",
+            "label": "EU (eu)",
+            "residency": {
+              "processedIn": "EU",
+              "inRegion": false,
+              "text": "Leaves your region: EU",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          }
+        ],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      }
+    ],
+    "turn": {
+      "detector": {
+        "label": "Turn detector",
+        "where": "Decided by the voice agent, not a vendor"
+      },
+      "ear": {
+        "label": "Flux end of turn"
+      },
+      "latency": {
+        "source": "measured",
+        "ms": 400,
+        "samples": 200,
+        "text": "Median 400 ms over 200 calls"
+      }
+    },
+    "llm": [
+      {
+        "model": "gemini-2.5-flash",
+        "label": "Gemini 2.5 Flash",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "defaultLocation": "auto",
+        "locations": [
+          {
+            "value": "auto",
+            "label": "Your region (United States)",
+            "residency": {
+              "processedIn": "US",
+              "inRegion": true,
+              "text": "Processed in the United States",
+              "vendorsOutOfRegion": []
+            }
+          },
+          {
+            "value": "us-east4",
+            "label": "United States (us-east4)",
+            "residency": {
+              "processedIn": "US",
+              "inRegion": true,
+              "text": "Processed in the United States",
+              "vendorsOutOfRegion": []
+            }
+          },
+          {
+            "value": "northamerica-northeast1",
+            "label": "Canada (northamerica-northeast1)",
+            "residency": {
+              "processedIn": "Canada",
+              "inRegion": false,
+              "text": "Leaves your region: Canada",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          },
+          {
+            "value": "europe-west4",
+            "label": "EU (europe-west4)",
+            "residency": {
+              "processedIn": "EU",
+              "inRegion": false,
+              "text": "Leaves your region: EU",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          },
+          {
+            "value": "asia-southeast1",
+            "label": "Asia-Pacific (asia-southeast1)",
+            "residency": {
+              "processedIn": "APAC",
+              "inRegion": false,
+              "text": "Leaves your region: Asia-Pacific",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          },
+          {
+            "value": "global",
+            "label": "global (Google) (global)",
+            "residency": {
+              "processedIn": "Global (Google)",
+              "inRegion": false,
+              "text": "Leaves your region: global (Google)",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          }
+        ],
+        "thinking": [
+          {
+            "value": "off",
+            "label": "Off"
+          },
+          {
+            "value": "dynamic",
+            "label": "Dynamic (the model decides)"
+          }
+        ],
+        "defaultThinking": "off",
+        "temperatureMin": 0,
+        "temperatureMax": 2,
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": {
+          "source": "measured",
+          "ms": 450,
+          "samples": 300,
+          "text": "Median 450 ms over 300 calls"
+        }
+      },
+      {
+        "model": "gemini-3.5-flash",
+        "label": "Gemini 3.5 Flash",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "defaultLocation": "northamerica-northeast1",
+        "locations": [
+          {
+            "value": "northamerica-northeast1",
+            "label": "Canada (northamerica-northeast1)",
+            "residency": {
+              "processedIn": "Canada",
+              "inRegion": false,
+              "text": "Leaves your region: Canada",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          },
+          {
+            "value": "asia-southeast1",
+            "label": "Asia-Pacific (asia-southeast1)",
+            "residency": {
+              "processedIn": "APAC",
+              "inRegion": false,
+              "text": "Leaves your region: Asia-Pacific",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          },
+          {
+            "value": "global",
+            "label": "global (Google) (global)",
+            "residency": {
+              "processedIn": "Global (Google)",
+              "inRegion": false,
+              "text": "Leaves your region: global (Google)",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          }
+        ],
+        "thinking": [
+          {
+            "value": "low",
+            "label": "Low"
+          },
+          {
+            "value": "medium",
+            "label": "Medium"
+          },
+          {
+            "value": "high",
+            "label": "High"
+          }
+        ],
+        "defaultThinking": "low",
+        "temperatureMin": 0,
+        "temperatureMax": 2,
+        "residency": {
+          "processedIn": "Canada",
+          "inRegion": false,
+          "text": "Leaves your region: Canada",
+          "vendorsOutOfRegion": [
+            "Google Cloud Platform (Google LLC)"
+          ]
+        },
+        "latency": null
+      },
+      {
+        "model": "gemini-3.6-flash",
+        "label": "Gemini 3.6 Flash",
+        "channel": "legacy",
+        "channelLabel": "Legacy",
+        "available": true,
+        "offered": true,
+        "defaultLocation": "global",
+        "locations": [
+          {
+            "value": "global",
+            "label": "global (Google) (global)",
+            "residency": {
+              "processedIn": "Global (Google)",
+              "inRegion": false,
+              "text": "Leaves your region: global (Google)",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          }
+        ],
+        "thinking": [
+          {
+            "value": "low",
+            "label": "Low"
+          },
+          {
+            "value": "medium",
+            "label": "Medium"
+          },
+          {
+            "value": "high",
+            "label": "High"
+          }
+        ],
+        "defaultThinking": "low",
+        "temperatureMin": 0,
+        "temperatureMax": 2,
+        "residency": {
+          "processedIn": "Global (Google)",
+          "inRegion": false,
+          "text": "Leaves your region: global (Google)",
+          "vendorsOutOfRegion": [
+            "Google Cloud Platform (Google LLC)"
+          ]
+        },
+        "latency": null
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "label": "Gemini 3.8 Flash",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "defaultLocation": "global",
+        "locations": [
+          {
+            "value": "global",
+            "label": "global (Google) (global)",
+            "residency": {
+              "processedIn": "Global (Google)",
+              "inRegion": false,
+              "text": "Leaves your region: global (Google)",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          }
+        ],
+        "thinking": [
+          {
+            "value": "low",
+            "label": "Low"
+          },
+          {
+            "value": "medium",
+            "label": "Medium"
+          },
+          {
+            "value": "high",
+            "label": "High"
+          }
+        ],
+        "defaultThinking": "low",
+        "temperatureMin": 0,
+        "temperatureMax": 2,
+        "residency": {
+          "processedIn": "Global (Google)",
+          "inRegion": false,
+          "text": "Leaves your region: global (Google)",
+          "vendorsOutOfRegion": [
+            "Google Cloud Platform (Google LLC)"
+          ]
+        },
+        "latency": null
+      }
+    ],
+    "tts": [
+      {
+        "provider": "deepgram",
+        "providerLabel": "Deepgram",
+        "model": "aura-2",
+        "label": "Aura-2",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "aura-2-asteria-en",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": {
+          "source": "measured",
+          "ms": 120,
+          "samples": 100,
+          "text": "Median 120 ms over 100 calls"
+        }
+      },
+      {
+        "provider": "deepgram",
+        "providerLabel": "Deepgram",
+        "model": "flux-tts",
+        "label": "Flux TTS",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "flux-alexis-en",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "elevenlabs",
+        "providerLabel": "ElevenLabs",
+        "model": "eleven_flash_v2_5",
+        "label": "Flash v2.5",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": false,
+        "offered": false,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "EXAVITQu4vr4xnSDxMaL",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "elevenlabs",
+        "providerLabel": "ElevenLabs",
+        "model": "eleven_multilingual_v2",
+        "label": "Multilingual v2",
+        "channel": "legacy",
+        "channelLabel": "Legacy",
+        "available": false,
+        "offered": false,
+        "forLanguage": true,
+        "forBilingual": true,
+        "defaultVoice": "EXAVITQu4vr4xnSDxMaL",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "elevenlabs",
+        "providerLabel": "ElevenLabs",
+        "model": "eleven_v4",
+        "label": "v4",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": false,
+        "offered": false,
+        "forLanguage": true,
+        "forBilingual": true,
+        "defaultVoice": "EXAVITQu4vr4xnSDxMaL",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "elevenlabs",
+        "providerLabel": "ElevenLabs",
+        "model": "eleven_v4_turbo",
+        "label": "v4 Turbo",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": false,
+        "offered": false,
+        "forLanguage": true,
+        "forBilingual": true,
+        "defaultVoice": "EXAVITQu4vr4xnSDxMaL",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "cartesia",
+        "providerLabel": "Cartesia",
+        "model": "sonic-3",
+        "label": "Sonic 3",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": {
+          "source": "lab",
+          "ms": 180,
+          "samples": null,
+          "text": "Lab: 180 ms"
+        }
+      },
+      {
+        "provider": "cartesia",
+        "providerLabel": "Cartesia",
+        "model": "sonic-3.6",
+        "label": "Sonic 3.6",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "inworld",
+        "providerLabel": "Inworld",
+        "model": "inworld-tts-2",
+        "label": "TTS 2",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": false,
+        "offered": false,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "Ashley",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "inworld",
+        "providerLabel": "Inworld",
+        "model": "inworld-tts-2-flash",
+        "label": "TTS 2 Flash",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": false,
+        "offered": false,
+        "forLanguage": true,
+        "forBilingual": true,
+        "defaultVoice": "Ashley",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "aws-polly",
+        "providerLabel": "Amazon Polly",
+        "model": "neural",
+        "label": "Neural",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "Joanna",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "aws-polly",
+        "providerLabel": "Amazon Polly",
+        "model": "generative",
+        "label": "Generative",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "Joanna",
+        "defaultLocation": null,
+        "locations": [],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      },
+      {
+        "provider": "google-tts",
+        "providerLabel": "Google Chirp 3 HD",
+        "model": "chirp-3-hd",
+        "label": "Chirp 3 HD",
+        "channel": "latest",
+        "channelLabel": "Latest",
+        "available": true,
+        "offered": true,
+        "forLanguage": true,
+        "forBilingual": false,
+        "defaultVoice": "Achernar",
+        "defaultLocation": "us",
+        "locations": [
+          {
+            "value": "global",
+            "label": "global (Google) (global)",
+            "residency": {
+              "processedIn": "Global (Google)",
+              "inRegion": false,
+              "text": "Leaves your region: global (Google)",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          },
+          {
+            "value": "us",
+            "label": "United States (us)",
+            "residency": {
+              "processedIn": "US",
+              "inRegion": true,
+              "text": "Processed in the United States",
+              "vendorsOutOfRegion": []
+            }
+          },
+          {
+            "value": "eu",
+            "label": "EU (eu)",
+            "residency": {
+              "processedIn": "EU",
+              "inRegion": false,
+              "text": "Leaves your region: EU",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          },
+          {
+            "value": "asia-southeast1",
+            "label": "Asia-Pacific (asia-southeast1)",
+            "residency": {
+              "processedIn": "APAC",
+              "inRegion": false,
+              "text": "Leaves your region: Asia-Pacific",
+              "vendorsOutOfRegion": [
+                "Google Cloud Platform (Google LLC)"
+              ]
+            }
+          }
+        ],
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": null
+      }
+    ],
+    "realtime": [
+      {
+        "model": "gemini-3.8-live",
+        "label": "Gemini 3.8 Live",
+        "channel": "preview",
+        "channelLabel": "Preview",
+        "available": true,
+        "offered": true,
+        "refusedInRegion": false,
+        "note": "Preview: processed globally by Google",
+        "residency": {
+          "processedIn": "Global (Google)",
+          "inRegion": false,
+          "text": "Leaves your region: global (Google)",
+          "vendorsOutOfRegion": [
+            "Google Cloud Platform (Google LLC)"
+          ]
+        },
+        "latency": {
+          "source": "lab",
+          "ms": 350,
+          "samples": null,
+          "text": "Lab: 350 ms"
+        }
+      },
+      {
+        "model": "gemini-live-2.5-flash-native-audio",
+        "label": "Gemini 2.5 Live (native audio)",
+        "channel": "stable",
+        "channelLabel": "Stable",
+        "available": true,
+        "offered": true,
+        "refusedInRegion": false,
+        "note": null,
+        "residency": {
+          "processedIn": "US",
+          "inRegion": true,
+          "text": "Processed in the United States",
+          "vendorsOutOfRegion": []
+        },
+        "latency": {
+          "source": "measured",
+          "ms": 300,
+          "samples": 100,
+          "text": "Median 300 ms over 100 calls"
+        }
+      }
+    ]
+  },
+  "voices": [
+    {
+      "kind": "tts",
+      "provider": "deepgram",
+      "model": "aura-2",
+      "groups": [
+        {
+          "label": "English (Feminine)",
+          "options": [
+            {
+              "value": "aura-2-asteria-en",
+              "label": "Asteria (US English - Feminine)",
+              "clip": null,
+              "p50": 120
+            },
+            {
+              "value": "aura-2-luna-en",
+              "label": "Luna (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-athena-en",
+              "label": "Athena (UK English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-hera-en",
+              "label": "Hera (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-harmonia-en",
+              "label": "Harmonia (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-callista-en",
+              "label": "Callista (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-ophelia-en",
+              "label": "Ophelia (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-andromeda-en",
+              "label": "Andromeda (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-juno-en",
+              "label": "Juno (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-cora-en",
+              "label": "Cora (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-cordelia-en",
+              "label": "Cordelia (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-helena-en",
+              "label": "Helena (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-minerva-en",
+              "label": "Minerva (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-pandora-en",
+              "label": "Pandora (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "English (Masculine)",
+          "options": [
+            {
+              "value": "aura-2-orion-en",
+              "label": "Orion (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-arcas-en",
+              "label": "Arcas (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-orpheus-en",
+              "label": "Orpheus (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-zeus-en",
+              "label": "Zeus (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-hermes-en",
+              "label": "Hermes (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-neptune-en",
+              "label": "Neptune (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-apollo-en",
+              "label": "Apollo (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-mars-en",
+              "label": "Mars (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-aries-en",
+              "label": "Aries (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-jupiter-en",
+              "label": "Jupiter (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-saturn-en",
+              "label": "Saturn (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-draco-en",
+              "label": "Draco (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-janus-en",
+              "label": "Janus (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-odysseus-en",
+              "label": "Odysseus (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Spanish",
+          "options": [
+            {
+              "value": "aura-2-sirio-es",
+              "label": "Sirio (Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-carina-es",
+              "label": "Carina (Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-selena-es",
+              "label": "Selena (Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-javier-es",
+              "label": "Javier (Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-diana-es",
+              "label": "Diana (Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-nestor-es",
+              "label": "Nestor (Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-celeste-es",
+              "label": "Celeste (Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-alvaro-es",
+              "label": "Alvaro (Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-aquila-es",
+              "label": "Aquila (Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "aura-2-estrella-es",
+              "label": "Estrella (Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "deepgram",
+      "model": "flux-tts",
+      "groups": [
+        {
+          "label": "English",
+          "options": [
+            {
+              "value": "flux-alexis-en",
+              "label": "Alexis",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-bree-en",
+              "label": "Bree",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-brittany-en",
+              "label": "Brittany",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-brooke-en",
+              "label": "Brooke",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-bruce-en",
+              "label": "Bruce",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-cliff-en",
+              "label": "Cliff",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-cole-en",
+              "label": "Cole",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-colin-en",
+              "label": "Colin",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-conor-en",
+              "label": "Conor",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-donovan-en",
+              "label": "Donovan",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-drew-en",
+              "label": "Drew",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-elise-en",
+              "label": "Elise",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-gemma-en",
+              "label": "Gemma",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-haley-en",
+              "label": "Haley",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-hannah-en",
+              "label": "Hannah",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-heather-en",
+              "label": "Heather",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-jack-en",
+              "label": "Jack",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-kai-en",
+              "label": "Kai",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-kelsey-en",
+              "label": "Kelsey",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-kit-en",
+              "label": "Kit",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-maeve-en",
+              "label": "Maeve",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-marcelo-en",
+              "label": "Marcelo",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-marcus-en",
+              "label": "Marcus",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-meena-en",
+              "label": "Meena",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-meghan-en",
+              "label": "Meghan",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-miles-en",
+              "label": "Miles",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-naveen-en",
+              "label": "Naveen",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-paige-en",
+              "label": "Paige",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-priya-en",
+              "label": "Priya",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-rufus-en",
+              "label": "Rufus",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-sean-en",
+              "label": "Sean",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-sharon-en",
+              "label": "Sharon",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-sienna-en",
+              "label": "Sienna",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-tanner-en",
+              "label": "Tanner",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-wade-en",
+              "label": "Wade",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "flux-wes-en",
+              "label": "Wes",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "elevenlabs",
+      "model": "eleven_flash_v2_5",
+      "groups": [
+        {
+          "label": "Feminine Voices",
+          "options": [
+            {
+              "value": "EXAVITQu4vr4xnSDxMaL",
+              "label": "Sarah - Mature, Reassuring, Confident",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "hpp4J3VqNfWAUOO0d1Us",
+              "label": "Bella - Professional, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Xb7hH8MSUJpSbSDYk0k2",
+              "label": "Alice - Clear, Engaging Educator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "XrExE9yKIg1WjnnlVkGX",
+              "label": "Matilda - Knowledgable, Professional",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cgSgspJ2msm6clMCkdW9",
+              "label": "Jessica - Playful, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pFZP5JQG7iQjIQuC4Bku",
+              "label": "Lily - Velvety Actress",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "FGY2WhTYpPnrIDTdsKH5",
+              "label": "Laura - Enthusiast, Quirky Attitude",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Masculine Voices",
+          "options": [
+            {
+              "value": "pNInz6obpgDQGcFmaJgB",
+              "label": "Adam - Dominant, Firm (Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "IKne3meq5aSn9XLyUdCD",
+              "label": "Charlie - Deep, Confident, Energetic",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "JBFqnCBsd6RMkjVDRZzb",
+              "label": "George - Warm, Captivating Storyteller",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "N2lVS1w4EtoT3dr4eOWO",
+              "label": "Callum - Husky Trickster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "SOYHLrjzK2X1ezoPC6cr",
+              "label": "Harry - Fierce Warrior",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "TX3LPaxmHKxFdv7VOQHJ",
+              "label": "Liam - Energetic Creator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "bIHbv24MWmeRgasZH58o",
+              "label": "Will - Relaxed Optimist",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cjVigY5qzO86Huf0OWal",
+              "label": "Eric - Smooth, Trustworthy",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "iP95p4xoKVk53GoZ742B",
+              "label": "Chris - Charming, Down-to-Earth",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "nPczCjzI2devNBz1zQrb",
+              "label": "Brian - Deep, Resonant and Comforting",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "onwK4e9ZLuTAKqWW03F9",
+              "label": "Daniel - Steady Broadcaster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pqHfZKP75CvOlQylNhV4",
+              "label": "Bill - Wise, Mature, Balanced",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "CwhRBWXzGAHq8TQ4Fs17",
+              "label": "Roger - Laid-Back, Casual, Resonant",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Neutral Voices",
+          "options": [
+            {
+              "value": "SAz9YHcvj6GT2YYXdXww",
+              "label": "River - Relaxed, Neutral, Informative",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "elevenlabs",
+      "model": "eleven_multilingual_v2",
+      "groups": [
+        {
+          "label": "Feminine Voices",
+          "options": [
+            {
+              "value": "EXAVITQu4vr4xnSDxMaL",
+              "label": "Sarah - Mature, Reassuring, Confident",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "hpp4J3VqNfWAUOO0d1Us",
+              "label": "Bella - Professional, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Xb7hH8MSUJpSbSDYk0k2",
+              "label": "Alice - Clear, Engaging Educator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "XrExE9yKIg1WjnnlVkGX",
+              "label": "Matilda - Knowledgable, Professional",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cgSgspJ2msm6clMCkdW9",
+              "label": "Jessica - Playful, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pFZP5JQG7iQjIQuC4Bku",
+              "label": "Lily - Velvety Actress",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "FGY2WhTYpPnrIDTdsKH5",
+              "label": "Laura - Enthusiast, Quirky Attitude",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Masculine Voices",
+          "options": [
+            {
+              "value": "pNInz6obpgDQGcFmaJgB",
+              "label": "Adam - Dominant, Firm (Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "IKne3meq5aSn9XLyUdCD",
+              "label": "Charlie - Deep, Confident, Energetic",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "JBFqnCBsd6RMkjVDRZzb",
+              "label": "George - Warm, Captivating Storyteller",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "N2lVS1w4EtoT3dr4eOWO",
+              "label": "Callum - Husky Trickster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "SOYHLrjzK2X1ezoPC6cr",
+              "label": "Harry - Fierce Warrior",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "TX3LPaxmHKxFdv7VOQHJ",
+              "label": "Liam - Energetic Creator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "bIHbv24MWmeRgasZH58o",
+              "label": "Will - Relaxed Optimist",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cjVigY5qzO86Huf0OWal",
+              "label": "Eric - Smooth, Trustworthy",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "iP95p4xoKVk53GoZ742B",
+              "label": "Chris - Charming, Down-to-Earth",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "nPczCjzI2devNBz1zQrb",
+              "label": "Brian - Deep, Resonant and Comforting",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "onwK4e9ZLuTAKqWW03F9",
+              "label": "Daniel - Steady Broadcaster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pqHfZKP75CvOlQylNhV4",
+              "label": "Bill - Wise, Mature, Balanced",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "CwhRBWXzGAHq8TQ4Fs17",
+              "label": "Roger - Laid-Back, Casual, Resonant",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Neutral Voices",
+          "options": [
+            {
+              "value": "SAz9YHcvj6GT2YYXdXww",
+              "label": "River - Relaxed, Neutral, Informative",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "elevenlabs",
+      "model": "eleven_v4",
+      "groups": [
+        {
+          "label": "Feminine Voices",
+          "options": [
+            {
+              "value": "EXAVITQu4vr4xnSDxMaL",
+              "label": "Sarah - Mature, Reassuring, Confident",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "hpp4J3VqNfWAUOO0d1Us",
+              "label": "Bella - Professional, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Xb7hH8MSUJpSbSDYk0k2",
+              "label": "Alice - Clear, Engaging Educator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "XrExE9yKIg1WjnnlVkGX",
+              "label": "Matilda - Knowledgable, Professional",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cgSgspJ2msm6clMCkdW9",
+              "label": "Jessica - Playful, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pFZP5JQG7iQjIQuC4Bku",
+              "label": "Lily - Velvety Actress",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "FGY2WhTYpPnrIDTdsKH5",
+              "label": "Laura - Enthusiast, Quirky Attitude",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Masculine Voices",
+          "options": [
+            {
+              "value": "pNInz6obpgDQGcFmaJgB",
+              "label": "Adam - Dominant, Firm (Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "IKne3meq5aSn9XLyUdCD",
+              "label": "Charlie - Deep, Confident, Energetic",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "JBFqnCBsd6RMkjVDRZzb",
+              "label": "George - Warm, Captivating Storyteller",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "N2lVS1w4EtoT3dr4eOWO",
+              "label": "Callum - Husky Trickster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "SOYHLrjzK2X1ezoPC6cr",
+              "label": "Harry - Fierce Warrior",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "TX3LPaxmHKxFdv7VOQHJ",
+              "label": "Liam - Energetic Creator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "bIHbv24MWmeRgasZH58o",
+              "label": "Will - Relaxed Optimist",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cjVigY5qzO86Huf0OWal",
+              "label": "Eric - Smooth, Trustworthy",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "iP95p4xoKVk53GoZ742B",
+              "label": "Chris - Charming, Down-to-Earth",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "nPczCjzI2devNBz1zQrb",
+              "label": "Brian - Deep, Resonant and Comforting",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "onwK4e9ZLuTAKqWW03F9",
+              "label": "Daniel - Steady Broadcaster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pqHfZKP75CvOlQylNhV4",
+              "label": "Bill - Wise, Mature, Balanced",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "CwhRBWXzGAHq8TQ4Fs17",
+              "label": "Roger - Laid-Back, Casual, Resonant",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Neutral Voices",
+          "options": [
+            {
+              "value": "SAz9YHcvj6GT2YYXdXww",
+              "label": "River - Relaxed, Neutral, Informative",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "elevenlabs",
+      "model": "eleven_v4_turbo",
+      "groups": [
+        {
+          "label": "Feminine Voices",
+          "options": [
+            {
+              "value": "EXAVITQu4vr4xnSDxMaL",
+              "label": "Sarah - Mature, Reassuring, Confident",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "hpp4J3VqNfWAUOO0d1Us",
+              "label": "Bella - Professional, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Xb7hH8MSUJpSbSDYk0k2",
+              "label": "Alice - Clear, Engaging Educator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "XrExE9yKIg1WjnnlVkGX",
+              "label": "Matilda - Knowledgable, Professional",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cgSgspJ2msm6clMCkdW9",
+              "label": "Jessica - Playful, Bright, Warm",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pFZP5JQG7iQjIQuC4Bku",
+              "label": "Lily - Velvety Actress",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "FGY2WhTYpPnrIDTdsKH5",
+              "label": "Laura - Enthusiast, Quirky Attitude",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Masculine Voices",
+          "options": [
+            {
+              "value": "pNInz6obpgDQGcFmaJgB",
+              "label": "Adam - Dominant, Firm (Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "IKne3meq5aSn9XLyUdCD",
+              "label": "Charlie - Deep, Confident, Energetic",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "JBFqnCBsd6RMkjVDRZzb",
+              "label": "George - Warm, Captivating Storyteller",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "N2lVS1w4EtoT3dr4eOWO",
+              "label": "Callum - Husky Trickster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "SOYHLrjzK2X1ezoPC6cr",
+              "label": "Harry - Fierce Warrior",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "TX3LPaxmHKxFdv7VOQHJ",
+              "label": "Liam - Energetic Creator",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "bIHbv24MWmeRgasZH58o",
+              "label": "Will - Relaxed Optimist",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cjVigY5qzO86Huf0OWal",
+              "label": "Eric - Smooth, Trustworthy",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "iP95p4xoKVk53GoZ742B",
+              "label": "Chris - Charming, Down-to-Earth",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "nPczCjzI2devNBz1zQrb",
+              "label": "Brian - Deep, Resonant and Comforting",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "onwK4e9ZLuTAKqWW03F9",
+              "label": "Daniel - Steady Broadcaster",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "pqHfZKP75CvOlQylNhV4",
+              "label": "Bill - Wise, Mature, Balanced",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "CwhRBWXzGAHq8TQ4Fs17",
+              "label": "Roger - Laid-Back, Casual, Resonant",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Neutral Voices",
+          "options": [
+            {
+              "value": "SAz9YHcvj6GT2YYXdXww",
+              "label": "River - Relaxed, Neutral, Informative",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "cartesia",
+      "model": "sonic-3",
+      "groups": [
+        {
+          "label": "English",
+          "options": [
+            {
+              "value": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+              "label": "Skylar (Friendly Guide - Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "47c38ca4-5f35-497b-b1a3-415245fb35e1",
+              "label": "Daniel (Modern Assistant)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "62ae83ad-4f6a-430b-af41-a9bede9286ca",
+              "label": "Gemma (Decisive Agent)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "30894953-bcce-41fe-892c-15ce19c843ff",
+              "label": "Parker (Supportive Pal)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
+              "label": "Jacqueline (Reassuring Agent)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "b24f41fd-00a3-4cd8-992a-a0c9f13f3ef1",
+              "label": "Clive (Measured Expert)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "f6ff7c0c-e396-40a9-a70b-f7607edb6937",
+              "label": "Emma (Customer Care Line)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "12e85709-099c-480a-ba3e-875c41a9611a",
+              "label": "Arlo (Service Specialist)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "c46cf1f6-49a1-4d67-9a57-ff859a4046d3",
+              "label": "Cora (Service Specialist)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "2f251ac3-89a9-4a77-a452-704b474ccd01",
+              "label": "Lucy (Capable Coordinator)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "French (Canada)",
+          "options": [
+            {
+              "value": "c6ccfe32-6bee-484a-a8a2-7a51bee93f99",
+              "label": "Étienne (Precise Specialist - Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "f5e6c270-2aa9-463f-b48b-579a39284ce2",
+              "label": "Félix (Helpful Professional - Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cc4276e6-1ebc-429a-8c7d-930993d51abc",
+              "label": "Julien (Polished Partner - Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "2590a84a-68cf-4b08-970d-b4ff824bf242",
+              "label": "Amelie (Warm Concierge - Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "3817fdb0-7ae1-42d2-b46e-734dd9601bf2",
+              "label": "Madeleine (Reliable Resident - Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "328e0683-d1a7-4cde-ad46-0ee69a3cbd6a",
+              "label": "Roxane (Problem-Solver - Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Spanish",
+          "options": [
+            {
+              "value": "3597a26f-80ef-4bd5-8101-9699bc764917",
+              "label": "Ximena (Calm Navigator)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "cartesia",
+      "model": "sonic-3.6",
+      "groups": [
+        {
+          "label": "English",
+          "options": [
+            {
+              "value": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+              "label": "Skylar (Friendly Guide - Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "47c38ca4-5f35-497b-b1a3-415245fb35e1",
+              "label": "Daniel (Modern Assistant)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "62ae83ad-4f6a-430b-af41-a9bede9286ca",
+              "label": "Gemma (Decisive Agent)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "30894953-bcce-41fe-892c-15ce19c843ff",
+              "label": "Parker (Supportive Pal)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
+              "label": "Jacqueline (Reassuring Agent)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "b24f41fd-00a3-4cd8-992a-a0c9f13f3ef1",
+              "label": "Clive (Measured Expert)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "f6ff7c0c-e396-40a9-a70b-f7607edb6937",
+              "label": "Emma (Customer Care Line)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "12e85709-099c-480a-ba3e-875c41a9611a",
+              "label": "Arlo (Service Specialist)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "c46cf1f6-49a1-4d67-9a57-ff859a4046d3",
+              "label": "Cora (Service Specialist)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "2f251ac3-89a9-4a77-a452-704b474ccd01",
+              "label": "Lucy (Capable Coordinator)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "French (Canada)",
+          "options": [
+            {
+              "value": "c6ccfe32-6bee-484a-a8a2-7a51bee93f99",
+              "label": "Étienne (Precise Specialist - Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "f5e6c270-2aa9-463f-b48b-579a39284ce2",
+              "label": "Félix (Helpful Professional - Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "cc4276e6-1ebc-429a-8c7d-930993d51abc",
+              "label": "Julien (Polished Partner - Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "2590a84a-68cf-4b08-970d-b4ff824bf242",
+              "label": "Amelie (Warm Concierge - Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "3817fdb0-7ae1-42d2-b46e-734dd9601bf2",
+              "label": "Madeleine (Reliable Resident - Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "328e0683-d1a7-4cde-ad46-0ee69a3cbd6a",
+              "label": "Roxane (Problem-Solver - Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Spanish",
+          "options": [
+            {
+              "value": "3597a26f-80ef-4bd5-8101-9699bc764917",
+              "label": "Ximena (Calm Navigator)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "inworld",
+      "model": "inworld-tts-2",
+      "groups": [
+        {
+          "label": "Feminine Voices",
+          "options": [
+            {
+              "value": "Ashley",
+              "label": "Ashley (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Olivia",
+              "label": "Olivia (UK English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Sarah",
+              "label": "Sarah (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Hana",
+              "label": "Hana (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Luna",
+              "label": "Luna (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Masculine Voices",
+          "options": [
+            {
+              "value": "Hades",
+              "label": "Hades (US English - Masculine - Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Diego",
+              "label": "Diego (Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Edward",
+              "label": "Edward (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Jason",
+              "label": "Jason (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Blake",
+              "label": "Blake (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Mark",
+              "label": "Mark (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Reed",
+              "label": "Reed (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Levi",
+              "label": "Levi (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Victor",
+              "label": "Victor (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "inworld",
+      "model": "inworld-tts-2-flash",
+      "groups": [
+        {
+          "label": "Feminine Voices",
+          "options": [
+            {
+              "value": "Ashley",
+              "label": "Ashley (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Olivia",
+              "label": "Olivia (UK English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Sarah",
+              "label": "Sarah (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Hana",
+              "label": "Hana (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Luna",
+              "label": "Luna (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Masculine Voices",
+          "options": [
+            {
+              "value": "Hades",
+              "label": "Hades (US English - Masculine - Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Diego",
+              "label": "Diego (Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Edward",
+              "label": "Edward (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Jason",
+              "label": "Jason (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Blake",
+              "label": "Blake (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Mark",
+              "label": "Mark (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Reed",
+              "label": "Reed (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Levi",
+              "label": "Levi (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Victor",
+              "label": "Victor (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "aws-polly",
+      "model": "neural",
+      "groups": [
+        {
+          "label": "English (Feminine)",
+          "options": [
+            {
+              "value": "Joanna",
+              "label": "Joanna (US English - Feminine - Default)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Danielle",
+              "label": "Danielle (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Ruth",
+              "label": "Ruth (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Kendra",
+              "label": "Kendra (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Salli",
+              "label": "Salli (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Amy",
+              "label": "Amy (UK English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Emma",
+              "label": "Emma (UK English - Feminine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "English (Masculine)",
+          "options": [
+            {
+              "value": "Matthew",
+              "label": "Matthew (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Stephen",
+              "label": "Stephen (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Gregory",
+              "label": "Gregory (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Joey",
+              "label": "Joey (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Arthur",
+              "label": "Arthur (UK English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Brian",
+              "label": "Brian (UK English - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "French (Canada)",
+          "options": [
+            {
+              "value": "Gabrielle",
+              "label": "Gabrielle (Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Liam",
+              "label": "Liam (Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Spanish",
+          "options": [
+            {
+              "value": "Lupe",
+              "label": "Lupe (US Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Pedro",
+              "label": "Pedro (US Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "aws-polly",
+      "model": "generative",
+      "groups": [
+        {
+          "label": "English",
+          "options": [
+            {
+              "value": "Joanna",
+              "label": "Joanna (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Danielle",
+              "label": "Danielle (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Ruth",
+              "label": "Ruth (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Salli",
+              "label": "Salli (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Tiffany",
+              "label": "Tiffany (US English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Matthew",
+              "label": "Matthew (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Stephen",
+              "label": "Stephen (US English - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Amy",
+              "label": "Amy (UK English - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Brian",
+              "label": "Brian (UK English - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "French (Canada)",
+          "options": [
+            {
+              "value": "Gabrielle",
+              "label": "Gabrielle (Canadian French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Liam",
+              "label": "Liam (Canadian French - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "French (France)",
+          "options": [
+            {
+              "value": "Ambre",
+              "label": "Ambre (French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Celine",
+              "label": "Céline (French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Lea",
+              "label": "Léa (French - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Florian",
+              "label": "Florian (French - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Remi",
+              "label": "Rémi (French - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Spanish",
+          "options": [
+            {
+              "value": "Lucia",
+              "label": "Lucia (Spain Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Sergio",
+              "label": "Sergio (Spain Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Lupe",
+              "label": "Lupe (US Spanish - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Pedro",
+              "label": "Pedro (US Spanish - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "German",
+          "options": [
+            {
+              "value": "Vicki",
+              "label": "Vicki (German - Feminine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Daniel",
+              "label": "Daniel (German - Masculine)",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Lennart",
+              "label": "Lennart (German - Masculine)",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tts",
+      "provider": "google-tts",
+      "model": "chirp-3-hd",
+      "groups": [
+        {
+          "label": "Feminine Voices",
+          "options": [
+            {
+              "value": "Achernar",
+              "label": "Achernar",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Aoede",
+              "label": "Aoede",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Autonoe",
+              "label": "Autonoe",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Callirrhoe",
+              "label": "Callirrhoe",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Despina",
+              "label": "Despina",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Erinome",
+              "label": "Erinome",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Gacrux",
+              "label": "Gacrux",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Kore",
+              "label": "Kore",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Laomedeia",
+              "label": "Laomedeia",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Leda",
+              "label": "Leda",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Pulcherrima",
+              "label": "Pulcherrima",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Sulafat",
+              "label": "Sulafat",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Vindemiatrix",
+              "label": "Vindemiatrix",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Zephyr",
+              "label": "Zephyr",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        },
+        {
+          "label": "Masculine Voices",
+          "options": [
+            {
+              "value": "Achird",
+              "label": "Achird",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Algenib",
+              "label": "Algenib",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Algieba",
+              "label": "Algieba",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Alnilam",
+              "label": "Alnilam",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Charon",
+              "label": "Charon",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Enceladus",
+              "label": "Enceladus",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Fenrir",
+              "label": "Fenrir",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Iapetus",
+              "label": "Iapetus",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Orus",
+              "label": "Orus",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Puck",
+              "label": "Puck",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Rasalgethi",
+              "label": "Rasalgethi",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Sadachbia",
+              "label": "Sadachbia",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Sadaltager",
+              "label": "Sadaltager",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Schedar",
+              "label": "Schedar",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Umbriel",
+              "label": "Umbriel",
+              "clip": null,
+              "p50": null
+            },
+            {
+              "value": "Zubenelgenubi",
+              "label": "Zubenelgenubi",
+              "clip": null,
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "realtime",
+      "provider": "",
+      "model": "gemini-3.8-live",
+      "groups": [
+        {
+          "label": "",
+          "options": [
+            {
+              "value": "Puck",
+              "label": "Puck (Professional Male)",
+              "clip": "/voice-clips/us/en/Puck.mp3",
+              "p50": null
+            },
+            {
+              "value": "Charon",
+              "label": "Charon (Warm Male)",
+              "clip": "/voice-clips/us/en/Charon.mp3",
+              "p50": null
+            },
+            {
+              "value": "Kore",
+              "label": "Kore (Friendly Female)",
+              "clip": "/voice-clips/us/en/Kore.mp3",
+              "p50": null
+            },
+            {
+              "value": "Fenrir",
+              "label": "Fenrir (Authoritative Male)",
+              "clip": "/voice-clips/us/en/Fenrir.mp3",
+              "p50": null
+            },
+            {
+              "value": "Aoede",
+              "label": "Aoede (Professional Female)",
+              "clip": "/voice-clips/us/en/Aoede.mp3",
+              "p50": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "realtime",
+      "provider": "",
+      "model": "gemini-live-2.5-flash-native-audio",
+      "groups": [
+        {
+          "label": "",
+          "options": [
+            {
+              "value": "Puck",
+              "label": "Puck (Professional Male)",
+              "clip": "/voice-clips/us/en/Puck.mp3",
+              "p50": null
+            },
+            {
+              "value": "Charon",
+              "label": "Charon (Warm Male)",
+              "clip": "/voice-clips/us/en/Charon.mp3",
+              "p50": null
+            },
+            {
+              "value": "Kore",
+              "label": "Kore (Friendly Female)",
+              "clip": "/voice-clips/us/en/Kore.mp3",
+              "p50": null
+            },
+            {
+              "value": "Fenrir",
+              "label": "Fenrir (Authoritative Male)",
+              "clip": "/voice-clips/us/en/Fenrir.mp3",
+              "p50": null
+            },
+            {
+              "value": "Aoede",
+              "label": "Aoede (Professional Female)",
+              "clip": "/voice-clips/us/en/Aoede.mp3",
+              "p50": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "advanced": [
+    {
+      "key": "engineMix.stt.keyterms",
+      "leg": "stt",
+      "section": "advanced",
+      "control": "lines",
+      "label": "Key terms",
+      "description": "Names and words to listen for, one per line (up to 50).",
+      "min": null,
+      "max": null,
+      "step": null,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": null,
+      "maxCount": 50,
+      "maxLength": 100,
+      "honouredBy": [
+        {
+          "provider": "deepgram",
+          "model": "nova-3-general",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "deepgram",
+          "model": "flux-general-en",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "deepgram",
+          "model": "flux-general-multi",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "assemblyai",
+          "model": "universal-3-5-pro",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "assemblyai",
+          "model": "universal-3-6-pro",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        }
+      ]
+    },
+    {
+      "key": "engineMix.preemptiveTts",
+      "leg": "turn",
+      "section": "main",
+      "control": "checkbox",
+      "label": "Speak sooner",
+      "description": "Starts preparing the reply before the caller has clearly finished. Faster, but a reply that changes is still billed.",
+      "min": null,
+      "max": null,
+      "step": null,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": false,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.turn.mode",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "select",
+      "label": "Endpointing",
+      "description": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": [
+        {
+          "value": "auto",
+          "label": "Automatic"
+        },
+        {
+          "value": "dynamic",
+          "label": "Dynamic"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed"
+        }
+      ],
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.turn.minDelay",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Shortest wait after the caller stops (s)",
+      "description": null,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "start": 0.3,
+      "default": 0.3,
+      "useDefaultLabel": "Use the default (0.30)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.turn.maxDelay",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Longest wait after the caller stops (s)",
+      "description": null,
+      "min": 0.5,
+      "max": 4,
+      "step": 0.05,
+      "start": 1.8,
+      "default": 1.8,
+      "useDefaultLabel": "Use the default (1.80)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.turn.eotThreshold",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "End-of-turn confidence",
+      "description": null,
+      "min": null,
+      "max": null,
+      "step": 0.05,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "deepgram",
+          "model": "flux-general-en",
+          "min": 0.5,
+          "max": 0.9,
+          "default": 0.7,
+          "useDefaultLabel": "Use the default (0.70)"
+        },
+        {
+          "provider": "deepgram",
+          "model": "flux-general-multi",
+          "min": 0.5,
+          "max": 0.9,
+          "default": 0.7,
+          "useDefaultLabel": "Use the default (0.70)"
+        }
+      ]
+    },
+    {
+      "key": "engineMix.turn.eagerEotThreshold",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Early reply confidence",
+      "description": null,
+      "min": 0.3,
+      "max": 0.9,
+      "step": 0.05,
+      "start": 0.5,
+      "default": null,
+      "useDefaultLabel": "Use the default (the model's own)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "deepgram",
+          "model": "flux-general-en",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "deepgram",
+          "model": "flux-general-multi",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        }
+      ]
+    },
+    {
+      "key": "engineMix.turn.eotTimeoutMs",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "End-of-turn timeout (ms)",
+      "description": null,
+      "min": 500,
+      "max": 10000,
+      "step": 100,
+      "start": 5000,
+      "default": 5000,
+      "useDefaultLabel": "Use the default (5,000)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "deepgram",
+          "model": "flux-general-en",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "deepgram",
+          "model": "flux-general-multi",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        }
+      ]
+    },
+    {
+      "key": "engineMix.turn.interruption.minDuration",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Speech needed to interrupt (s)",
+      "description": null,
+      "min": 0,
+      "max": 3,
+      "step": 0.05,
+      "start": 0.5,
+      "default": 0.5,
+      "useDefaultLabel": "Use the default (0.50)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.turn.interruption.minWords",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Words needed to interrupt",
+      "description": null,
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "start": 0,
+      "default": 0,
+      "useDefaultLabel": "Use the default (0)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.turn.interruption.falseTimeout",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "slider",
+      "label": "False interruption timeout (s)",
+      "description": null,
+      "min": 0.5,
+      "max": 10,
+      "step": 0.05,
+      "start": 2,
+      "default": 2,
+      "useDefaultLabel": "Use the default (2.00)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.turn.interruption.resume",
+      "leg": "turn",
+      "section": "advanced",
+      "control": "select",
+      "label": "Resume after a false interruption",
+      "description": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": [
+        {
+          "value": "default",
+          "label": "Default"
+        },
+        {
+          "value": "on",
+          "label": "On"
+        },
+        {
+          "value": "off",
+          "label": "Off"
+        }
+      ],
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.llm.thinking",
+      "leg": "llm",
+      "section": "advanced",
+      "control": "select",
+      "label": "Thinking",
+      "description": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": false,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "engineMix.llm.temperature",
+      "leg": "llm",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Temperature",
+      "description": "Higher gives more varied answers.",
+      "min": null,
+      "max": null,
+      "step": 0.05,
+      "start": 1,
+      "default": null,
+      "useDefaultLabel": "Use the default (the model's own)",
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "",
+          "model": "gemini-2.5-flash",
+          "min": 0,
+          "max": 2,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "",
+          "model": "gemini-3.5-flash",
+          "min": 0,
+          "max": 2,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "",
+          "model": "gemini-3.6-flash",
+          "min": 0,
+          "max": 2,
+          "default": null,
+          "useDefaultLabel": null
+        },
+        {
+          "provider": "",
+          "model": "gemini-3.8-flash",
+          "min": 0,
+          "max": 2,
+          "default": null,
+          "useDefaultLabel": null
+        }
+      ]
+    },
+    {
+      "key": "engineMix.tts.speed",
+      "leg": "tts",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Speed",
+      "description": null,
+      "min": null,
+      "max": null,
+      "step": 0.05,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "deepgram",
+          "model": "aura-2",
+          "min": 0.7,
+          "max": 1.5,
+          "default": 1,
+          "useDefaultLabel": "Use the default (1.00)"
+        },
+        {
+          "provider": "cartesia",
+          "model": "sonic-3",
+          "min": 0.6,
+          "max": 2,
+          "default": 1,
+          "useDefaultLabel": "Use the default (1.00)"
+        },
+        {
+          "provider": "cartesia",
+          "model": "sonic-3.6",
+          "min": 0.6,
+          "max": 2,
+          "default": 1,
+          "useDefaultLabel": "Use the default (1.00)"
+        },
+        {
+          "provider": "inworld",
+          "model": "inworld-tts-2",
+          "min": 0.5,
+          "max": 1.5,
+          "default": 1,
+          "useDefaultLabel": "Use the default (1.00)"
+        },
+        {
+          "provider": "inworld",
+          "model": "inworld-tts-2-flash",
+          "min": 0.5,
+          "max": 1.5,
+          "default": 1,
+          "useDefaultLabel": "Use the default (1.00)"
+        }
+      ]
+    },
+    {
+      "key": "engineMix.tts.stability",
+      "leg": "tts",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Stability",
+      "description": null,
+      "min": null,
+      "max": null,
+      "step": 0.05,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "elevenlabs",
+          "model": "eleven_flash_v2_5",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "useDefaultLabel": "Use the default (0.50)"
+        },
+        {
+          "provider": "elevenlabs",
+          "model": "eleven_multilingual_v2",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "useDefaultLabel": "Use the default (0.50)"
+        },
+        {
+          "provider": "elevenlabs",
+          "model": "eleven_v4",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "useDefaultLabel": "Use the default (0.50)"
+        },
+        {
+          "provider": "elevenlabs",
+          "model": "eleven_v4_turbo",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "useDefaultLabel": "Use the default (0.50)"
+        }
+      ]
+    },
+    {
+      "key": "engineMix.tts.expressivity",
+      "leg": "tts",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Expressivity",
+      "description": null,
+      "min": null,
+      "max": null,
+      "step": 0.05,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "elevenlabs",
+          "model": "eleven_flash_v2_5",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "useDefaultLabel": "Use the default (0.00)"
+        },
+        {
+          "provider": "elevenlabs",
+          "model": "eleven_multilingual_v2",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "useDefaultLabel": "Use the default (0.00)"
+        }
+      ]
+    },
+    {
+      "key": "temperature",
+      "leg": "realtime",
+      "section": "advanced",
+      "control": "slider",
+      "label": "Temperature",
+      "description": "Higher gives more varied answers.",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "start": 0.7,
+      "default": 0.7,
+      "useDefaultLabel": null,
+      "nullable": false,
+      "options": null,
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": null
+    },
+    {
+      "key": "voiceStyle",
+      "leg": "realtime",
+      "section": "advanced",
+      "control": "select",
+      "label": "Accent & Style Posturing (Voice Style)",
+      "description": "Select target vocal style posturing for the native audio generation.",
+      "min": null,
+      "max": null,
+      "step": null,
+      "start": null,
+      "default": null,
+      "useDefaultLabel": null,
+      "nullable": true,
+      "options": [
+        {
+          "value": "en-GB-Studio-B",
+          "label": "Studio British English - Male (Default)"
+        },
+        {
+          "value": "en-US-Journey-F",
+          "label": "Journey US English - Female"
+        },
+        {
+          "value": "en-US-Journey-O",
+          "label": "Journey US English - Male"
+        },
+        {
+          "value": "en-US-News-K",
+          "label": "News US English - Male"
+        },
+        {
+          "value": "en-US-Wavenet-D",
+          "label": "Wavenet US English - Male"
+        },
+        {
+          "value": "en-GB-Wavenet-C",
+          "label": "Wavenet British English - Female"
+        },
+        {
+          "value": "en-AU-Standard-B",
+          "label": "Standard Australian English - Male"
+        },
+        {
+          "value": "en-IN-Wavenet-D",
+          "label": "Wavenet Indian English - Male"
+        }
+      ],
+      "maxCount": null,
+      "maxLength": null,
+      "honouredBy": [
+        {
+          "provider": "",
+          "model": "gemini-live-2.5-flash-native-audio",
+          "min": null,
+          "max": null,
+          "default": null,
+          "useDefaultLabel": null
+        }
+      ]
+    }
+  ]
+}

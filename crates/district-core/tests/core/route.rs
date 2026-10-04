@@ -210,14 +210,15 @@ fn every_workspace_section_is_listed_once() {
     let place = |section: WorkspaceSection| match section {
         WorkspaceSection::Hub => 0,
         WorkspaceSection::Persona => 1,
-        WorkspaceSection::Tools => 2,
-        WorkspaceSection::Directory => 3,
-        WorkspaceSection::Routing => 4,
-        WorkspaceSection::CallHandling => 5,
-        WorkspaceSection::Knowledge => 6,
-        WorkspaceSection::Messaging => 7,
-        WorkspaceSection::Members => 8,
-        WorkspaceSection::Numbers => 9,
+        WorkspaceSection::VoiceStudio => 2,
+        WorkspaceSection::Tools => 3,
+        WorkspaceSection::Directory => 4,
+        WorkspaceSection::Routing => 5,
+        WorkspaceSection::CallHandling => 6,
+        WorkspaceSection::Knowledge => 7,
+        WorkspaceSection::Messaging => 8,
+        WorkspaceSection::Members => 9,
+        WorkspaceSection::Numbers => 10,
     };
     for (index, section) in WorkspaceSection::ALL.into_iter().enumerate() {
         assert_eq!(place(section), index, "{section:?}");

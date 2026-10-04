@@ -67,7 +67,8 @@
 //!   ([`ApiClient::save_tools`], [`ApiClient::save_directory`],
 //!   [`ApiClient::save_routing_rules`]), each to be built from that row read
 //!   just before; the persona ([`ApiClient::persona_options`],
-//!   [`ApiClient::save_persona`], and [`ApiClient::persona_preview_token`],
+//!   [`ApiClient::voice_studio`], [`ApiClient::save_persona`], and
+//!   [`ApiClient::persona_preview_token`],
 //!   a billed audition); the knowledge base
 //!   ([`ApiClient::knowledge_documents`], [`ApiClient::add_knowledge_document`]
 //!   and the rest); the carrier accounts ([`ApiClient::messaging`], a method

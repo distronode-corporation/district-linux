@@ -1,7 +1,7 @@
 {
   "generated_by": "scripts/sync-endpoints.py",
   "source": {
-    "commit": "68e95b13e28449a30ab8cdb6da0033bc4e58060d",
+    "commit": "e9368c272dfc320d79bd80362b84b763935fa27b",
     "uncommitted_changes": false
   },
   "endpoints": [
@@ -544,6 +544,12 @@
       "path": "/api/district/workspace/persona/preview-token",
       "auth": "bearer",
       "workspace": "body"
+    },
+    {
+      "method": "GET",
+      "path": "/api/district/workspace/persona/voice-studio",
+      "auth": "bearer",
+      "workspace": "query"
     },
     {
       "method": "GET",

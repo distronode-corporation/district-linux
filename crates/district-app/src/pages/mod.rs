@@ -44,6 +44,7 @@ mod support_request;
 mod thread;
 mod ticket_form;
 mod tools;
+mod voice_studio;
 mod workflows;
 
 pub(crate) use account::AccountPage;
@@ -126,7 +127,7 @@ mod tests {
     use super::*;
 
     /// Every template the window is built from.
-    const TEMPLATES: [(&str, &str); 42] = [
+    const TEMPLATES: [(&str, &str); 43] = [
         ("window.ui", include_str!("../../data/ui/window.ui")),
         (
             "session-page.ui",
@@ -226,6 +227,10 @@ mod tests {
         (
             "persona-view.ui",
             include_str!("../../data/ui/persona-view.ui"),
+        ),
+        (
+            "voice-studio-view.ui",
+            include_str!("../../data/ui/voice-studio-view.ui"),
         ),
         (
             "audition-dialog.ui",

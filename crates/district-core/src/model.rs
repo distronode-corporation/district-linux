@@ -52,9 +52,9 @@ use district_model::{
     SendMessageRequest, SendMessageResponse, SupportCloseResponse, SupportReplyResponse,
     SupportRequestCreateResponse, SupportRequestDraft, SupportRequestResponse,
     SupportRequestsResponse, ThreadRef, TimelineCursor, TimelineResponse, UnreadCountResponse,
-    UsageHistoryResponse, UsageResponse, WorkflowListResponse, WorkflowRunsResponse,
-    WorkflowToggleResponse, WorkspaceBillingResponse, WorkspaceConfigResponse,
-    WorkspaceListResponse,
+    UsageHistoryResponse, UsageResponse, VoiceStudioResponse, WorkflowListResponse,
+    WorkflowRunsResponse, WorkflowToggleResponse, WorkspaceBillingResponse,
+    WorkspaceConfigResponse, WorkspaceListResponse,
 };
 
 use crate::account::AccountView;
@@ -82,7 +82,7 @@ use crate::session::{
 };
 use crate::settings::{
     CallHandlingEvent, DirectoryEvent, KnowledgeEvent, MemberWrite, MembersEvent, MessagingEvent,
-    MessagingWrite, PersonaEvent, RoutingRulesEvent, ToolsEvent,
+    MessagingWrite, PersonaEvent, RoutingRulesEvent, ToolsEvent, VoiceStudioEvent,
 };
 use crate::signed_in::{Next, SignedIn};
 use crate::support::SupportEvent;
@@ -195,6 +195,8 @@ pub enum Event {
     Rooms(RoomsEvent),
     /// Something on the persona section.
     Persona(PersonaEvent),
+    /// Something in Voice Studio.
+    VoiceStudio(VoiceStudioEvent),
     /// Something on the capabilities section.
     Tools(ToolsEvent),
     /// Something on the transfer directory section.
@@ -723,6 +725,14 @@ pub enum Event {
         /// The service's answer.
         result: Result<PersonaOptionsResponse, ApiError>,
     },
+    /// Voice Studio was read: for the Studio, or for fitting the persona's
+    /// chain to a new language.
+    VoiceStudioLoaded {
+        /// The ticket of [`Effect::LoadVoiceStudio`].
+        ticket: Ticket,
+        /// The service's answer.
+        result: Result<Box<VoiceStudioResponse>, ApiError>,
+    },
     /// An audition's credential arrived, or was refused. Its `Debug` output
     /// leaves its secrets out.
     PersonaPreviewIssued {
@@ -1090,6 +1100,10 @@ impl Event {
                 result: Err(error),
             }
             | Event::PersonaPreviewIssued {
+                ticket,
+                result: Err(error),
+            }
+            | Event::VoiceStudioLoaded {
                 ticket,
                 result: Err(error),
             }
@@ -1806,6 +1820,13 @@ pub enum Effect {
         /// The workspace.
         workspace_id: String,
     },
+    /// Read Voice Studio.
+    LoadVoiceStudio {
+        /// Returned in [`Event::VoiceStudioLoaded`].
+        ticket: Ticket,
+        /// The workspace.
+        workspace_id: String,
+    },
     /// Ask for the credential of an audition of `form`. Billed, and sent once:
     /// only ever asked for by the member.
     RequestPersonaPreview {
@@ -2109,6 +2130,7 @@ impl Effect {
             | Self::SaveRoutingRules { ticket, .. }
             | Self::SavePersona { ticket, .. }
             | Self::LoadPersonaOptions { ticket, .. }
+            | Self::LoadVoiceStudio { ticket, .. }
             | Self::RequestPersonaPreview { ticket, .. }
             | Self::LoadKnowledge { ticket, .. }
             | Self::AddKnowledgeDocument { ticket, .. }
@@ -2236,6 +2258,10 @@ pub(crate) enum Slot {
     PersonaSave,
     PersonaPreview,
     PersonaCooldown,
+    PersonaStudio,
+    PersonaRefit,
+    VoiceStudio,
+    VoiceStudioSave,
     ToolsConfig,
     ToolsSave,
     DirectoryConfig,
@@ -2582,6 +2608,9 @@ impl Model {
             Event::Persona(event) => {
                 self.signed_in(|s, tickets, _| s.persona_event(event, tickets))
             }
+            Event::VoiceStudio(event) => {
+                self.signed_in(|s, tickets, _| s.voice_studio_event(event, tickets))
+            }
             Event::Tools(event) => self.signed_in(|s, tickets, _| s.tools_event(event, tickets)),
             Event::Directory(event) => {
                 self.signed_in(|s, tickets, _| s.directory_event(event, tickets))
@@ -2833,6 +2862,9 @@ impl Model {
             }
             Event::PersonaOptionsLoaded { ticket, result } => {
                 self.signed_in(|s, tickets, _| s.persona_options_loaded(ticket, result, tickets))
+            }
+            Event::VoiceStudioLoaded { ticket, result } => {
+                self.signed_in(|s, tickets, _| s.voice_studio_loaded(ticket, result, tickets))
             }
             Event::PersonaPreviewIssued { ticket, result } => {
                 self.signed_in(|s, tickets, _| s.persona_preview_issued(ticket, result, tickets))

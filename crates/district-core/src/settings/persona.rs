@@ -1,21 +1,37 @@
-//! The receptionist's persona: its three texts, the voice and engine it speaks
-//! with, and auditioning the form as it stands.
+//! The receptionist's persona: its three texts, the language it speaks and its
+//! answer length, and auditioning the form as it stands.
+//!
+//! The engine, the voice and their tuning are Voice Studio's
+//! ([`VoiceStudioSection`](crate::VoiceStudioSection)), a section of its own,
+//! so this form never sends an engine it did not change: a form opened before a
+//! Studio save would otherwise send the old engine back over it.
 //!
 //! Two reads, which fail apart: the settings row holds what is stored, and the
 //! options hold what may be offered to this workspace, which depends on its
-//! region. The texts are editable from the settings alone. The engine, language,
-//! voice, answer length, variation, voice style and early speech are editable
-//! only with the options too, and every value offered comes from them: the save
-//! accepts a value it does not know and stores something else in its place with
-//! a success, so a list of this app's own would drift silently. Without the
-//! options that half is read only; it never falls back.
+//! region. The texts are editable from the settings alone. The language and the
+//! answer length are editable only with the options too, and every value
+//! offered comes from them: the save accepts a value it does not know and
+//! stores something else in its place with a success, so a list of this app's
+//! own would drift silently. Without the options that half is read only; it
+//! never falls back.
 //!
 //! A save sends only what changed: the service keeps every field it is not sent,
 //! so sending the whole form would overwrite what this screen does not edit. An
-//! emptied text is sent empty, which clears it; an engine field is never sent
-//! empty, which would make the receptionist fall back to a choice nobody made. An
-//! answer length travels with its engine, because the service stores it under
-//! the engine sent with it and drops one sent alone.
+//! emptied text is sent empty, which clears it; a language is never sent empty.
+//! An answer length travels with the stored engine's id, because the service
+//! stores it under the engine sent with it and drops one sent alone; the same
+//! id as stored changes no engine.
+//!
+//! # A new language and a chain of the member's own
+//!
+//! The Deepgram engine's voices speak one language each, so a new language
+//! moves its voice to the language's own. A chain of the member's own
+//! ([`CUSTOM_PIPELINE`]) can have an ear or a voice that does not speak the new
+//! language, which the service then no longer accepts: after a save that
+//! changed the language of such a chain, Voice Studio's read for the new
+//! language is taken, and when it says the stored chain does not fit, the
+//! chain is moved to the nearest models that do ([`refit`]) and saved, as the
+//! web form does, and read again to see that it now fits.
 //!
 //! # The audition
 //!
@@ -37,9 +53,10 @@ use std::time::Duration;
 
 use district_api::ApiError;
 use district_model::{
-    AiPersona, PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX, PersonaEngineChoice,
-    PersonaEngineOption, PersonaLabelledValue, PersonaOptionsResponse, PersonaPatch,
-    PersonaPreviewForm, PersonaPreviewTokenResponse, PersonaVoiceGroup, WorkspaceConfigResponse,
+    AiPersona, CUSTOM_PIPELINE, EngineMix, PERSONA_LANGUAGE_KEYED_ENGINE, PREVIEW_ROOM_PREFIX,
+    PersonaEngineChoice, PersonaEngineOption, PersonaLabelledValue, PersonaOptionsResponse,
+    PersonaPatch, PersonaPreviewForm, PersonaPreviewTokenResponse, VoiceStudioResponse,
+    WorkspaceConfigResponse,
 };
 
 use super::{ConfigLoad, SaveState, after_save, read_config, settle};
@@ -47,20 +64,13 @@ use crate::failure::{FailureText, PREVIEW_UNENCRYPTED};
 use crate::media::{DisconnectReason, MediaCredential, MediaOwner};
 use crate::model::{Effect, Slot, Ticket, Tickets};
 use crate::signed_in::{Next, SignedIn, stay};
-
-/// The Gemini Live engine: the one that reads a voice style, and the one that
-/// does not speak early. Named rather than guessed from its label.
-pub const PERSONA_GEMINI_LIVE_ENGINE: &str = "gemini-live-2.5-flash-native-audio";
+use crate::studio::refit;
 
 /// How long after an audition ends, or fails to start, before another may start.
 pub const PREVIEW_COOLDOWN: Duration = Duration::from_secs(5);
 
 /// An audition whose room could not be joined.
 const PREVIEW_NOT_JOINED: &str = "The audition could not be joined. Try again in a moment.";
-
-/// The smallest change of the variation that counts as one: a number read back
-/// from the service is not always bit for bit the one sent.
-const TEMPERATURE_EPSILON: f64 = 0.0005;
 
 /// One of the persona's three texts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -80,53 +90,30 @@ pub enum PersonaOptionsLoad {
     Loading,
     /// Read.
     Ready(Box<PersonaOptionsResponse>),
-    /// The read failed: the engine half is read only.
+    /// The read failed: the language and answer length are read only.
     Failed(FailureText),
 }
 
-/// The seven engine fields, as one value.
-#[derive(Clone, Debug, PartialEq)]
+/// The language half, as one value.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PersonaEngineValues {
-    /// The engine's id; empty for a persona that never chose.
+    /// The stored engine's id; empty for a persona that never chose. Changed
+    /// in Voice Studio, never here.
     pub model_id: String,
     /// The language; empty when none is chosen.
     pub language: String,
-    /// The voice's id.
+    /// The voice: the stored one, or the language's own for the Deepgram
+    /// engine after a new language.
     pub voice: String,
-    /// The answer length for this engine.
+    /// The answer length for the stored engine.
     pub response_length: String,
-    /// How freely the model answers, from 0 to 1.
-    pub temperature: f64,
-    /// The speaking style, for Gemini Live.
-    pub voice_style: String,
-    /// Whether speech starts before the answer is complete, which is billed.
-    pub preemptive_tts: bool,
 }
 
-/// The engine half: what is on screen, what it started from, and each engine's
-/// stored answer length.
+/// The language half: what is on screen and what it started from.
 #[derive(Clone, Debug, PartialEq)]
 struct PersonaEngine {
     values: PersonaEngineValues,
     baseline: PersonaEngineValues,
-    stored_lengths: BTreeMap<String, String>,
-}
-
-/// The voice a form lands on for `engine` in `language`: for the engine whose
-/// voices depend on the language, the language's own, and for every other the
-/// engine's. `None` when the service names none, which leaves the voice alone.
-fn default_voice<'a>(
-    options: &'a PersonaOptionsResponse,
-    engine: &str,
-    language: &str,
-) -> Option<&'a str> {
-    let defaults = &options.defaults;
-    if engine == PERSONA_LANGUAGE_KEYED_ENGINE && !language.is_empty() {
-        defaults.voice_by_deepgram_language.get(language)
-    } else {
-        defaults.voice_by_engine.get(engine)
-    }
-    .map(String::as_str)
 }
 
 /// Whether `list` offers `value`.
@@ -134,8 +121,8 @@ fn offers(list: &[PersonaLabelledValue], value: &str) -> bool {
     list.iter().any(|choice| choice.value == value)
 }
 
-/// `value` when it changed from `baseline` and is not empty: an engine field is
-/// never sent empty.
+/// `value` when it changed from `baseline` and is not empty: a language or a
+/// voice is never sent empty.
 fn changed_text(value: &str, baseline: &str) -> Option<String> {
     (value != baseline && !value.is_empty()).then(|| value.to_owned())
 }
@@ -149,57 +136,32 @@ impl PersonaEngine {
     /// The starting values: what is stored, else what the service names as the
     /// starting value for a workspace that never chose.
     fn hydrate(persona: Option<&AiPersona>, options: &PersonaOptionsResponse) -> Self {
-        let stored_lengths = persona
-            .and_then(|persona| persona.response_length.clone())
-            .unwrap_or_default();
         let model_id = persona
             .and_then(|persona| persona.model_id.clone())
             .unwrap_or_default();
-        let language = persona
-            .and_then(|persona| persona.language.clone())
-            .unwrap_or_default();
-        let voice = persona
-            .and_then(|persona| persona.voice.clone())
-            .or_else(|| default_voice(options, &model_id, &language).map(str::to_owned))
-            .unwrap_or_default();
         let values = PersonaEngineValues {
-            response_length: stored_lengths
-                .get(&model_id)
-                .cloned()
+            response_length: persona
+                .and_then(|persona| persona.response_length.as_ref())
+                .and_then(|lengths| lengths.get(&model_id).cloned())
                 .unwrap_or_else(|| options.defaults.response_length.clone()),
-            temperature: persona
-                .and_then(|persona| persona.temperature)
-                .unwrap_or(options.defaults.temperature),
-            voice_style: persona
-                .and_then(|persona| persona.voice_style.clone())
+            language: persona
+                .and_then(|persona| persona.language.clone())
                 .unwrap_or_default(),
-            preemptive_tts: persona.and_then(|persona| persona.preemptive_tts) == Some(true),
+            voice: persona
+                .and_then(|persona| persona.voice.clone())
+                .unwrap_or_default(),
             model_id,
-            language,
-            voice,
         };
         Self {
             baseline: values.clone(),
             values,
-            stored_lengths,
         }
-    }
-
-    fn is_gemini_live(&self) -> bool {
-        self.values.model_id == PERSONA_GEMINI_LIVE_ENGINE
     }
 
     /// Applies one edit, when it is one the options offer.
     fn edit(&mut self, options: &PersonaOptionsResponse, edit: PersonaEngineEdit) {
         match edit {
-            PersonaEngineEdit::Engine(id) => self.select_engine(options, &id),
             PersonaEngineEdit::Language(language) => self.select_language(options, &language),
-            PersonaEngineEdit::Voice(voice) => {
-                let groups = options.voice_groups(&self.values.model_id, &self.values.language);
-                if groups.iter().any(|group| offers(&group.options, &voice)) {
-                    self.values.voice = voice;
-                }
-            }
             PersonaEngineEdit::ResponseLength(level) => {
                 if options
                     .engine(&self.values.model_id)
@@ -208,47 +170,7 @@ impl PersonaEngine {
                     self.values.response_length = level;
                 }
             }
-            PersonaEngineEdit::Temperature(temperature) => {
-                if temperature.is_finite() {
-                    self.values.temperature = temperature.clamp(0.0, 1.0);
-                }
-            }
-            PersonaEngineEdit::VoiceStyle(style) => {
-                if self.is_gemini_live() && offers(&options.voice_styles, &style) {
-                    self.values.voice_style = style;
-                }
-            }
-            PersonaEngineEdit::PreemptiveTts(on) => {
-                if !self.is_gemini_live() {
-                    self.values.preemptive_tts = on;
-                }
-            }
         }
-    }
-
-    /// Chooses an engine the workspace's region offers. A language the engine
-    /// does not speak is cleared, the voice moves to the engine's starting
-    /// voice (a voice belongs to one engine), and the answer length becomes the
-    /// one stored for that engine, which is also what counts as unchanged.
-    fn select_engine(&mut self, options: &PersonaOptionsResponse, id: &str) {
-        let offered = options.engine(id).is_some_and(|engine| engine.in_region);
-        if !offered || id == self.values.model_id {
-            return;
-        }
-        if !offers(options.languages_for(id), &self.values.language) {
-            self.values.language.clear();
-        }
-        if let Some(voice) = default_voice(options, id, &self.values.language) {
-            self.values.voice = voice.to_owned();
-        }
-        let level = self
-            .stored_lengths
-            .get(id)
-            .cloned()
-            .unwrap_or_else(|| options.defaults.response_length.clone());
-        self.values.model_id = id.to_owned();
-        self.values.response_length = level.clone();
-        self.baseline.response_length = level;
     }
 
     /// Chooses a language the engine speaks. For the engine whose voices depend
@@ -260,8 +182,9 @@ impl PersonaEngine {
         }
         self.values.language = language.to_owned();
         let moves_voice = self.values.model_id == PERSONA_LANGUAGE_KEYED_ENGINE;
-        if let Some(voice) =
-            default_voice(options, &self.values.model_id, language).filter(|_| moves_voice)
+        if let Some(voice) = options
+            .default_voice(&self.values.model_id, language)
+            .filter(|_| moves_voice)
         {
             self.values.voice = voice.to_owned();
         }
@@ -270,21 +193,69 @@ impl PersonaEngine {
     /// Adds what changed to `patch`.
     fn patch_into(&self, patch: &mut PersonaPatch) {
         let (values, baseline) = (&self.values, &self.baseline);
-        let level_changed = values.response_length != baseline.response_length;
-        if values.model_id != baseline.model_id || level_changed {
+        if values.response_length != baseline.response_length {
             patch.engine = Some(PersonaEngineChoice {
                 model_id: values.model_id.clone(),
-                response_length: level_changed.then(|| values.response_length.clone()),
+                response_length: Some(values.response_length.clone()),
             });
         }
         patch.language = changed_text(&values.language, &baseline.language);
         patch.voice = changed_text(&values.voice, &baseline.voice);
-        patch.voice_style = changed_text(&values.voice_style, &baseline.voice_style);
-        patch.temperature = ((values.temperature - baseline.temperature).abs()
-            > TEMPERATURE_EPSILON)
-            .then_some(values.temperature);
-        patch.preemptive_tts =
-            (values.preemptive_tts != baseline.preemptive_tts).then_some(values.preemptive_tts);
+    }
+}
+
+/// Fitting a chain of the member's own to a new language, after the save that
+/// changed it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PersonaRefit {
+    /// Reading Voice Studio for the new language.
+    Checking,
+    /// Saving the chain moved to models that speak it.
+    Saving,
+    /// Reading Voice Studio again, to see that it now fits.
+    Verifying,
+    /// Moved, and the service now accepts the chain.
+    Refitted,
+    /// No model this workspace may use speaks the new language for the ear or
+    /// the voice.
+    NoFit,
+    /// Could not be moved.
+    Failed(FailureText),
+    /// Saved, and the read after it does not show it fitting, or could not be
+    /// taken.
+    NotSeen,
+}
+
+impl PersonaRefit {
+    /// The line while it is under way.
+    pub const CHECKING: &'static str = "Checking that the voice chain speaks the new language.";
+    /// The line once moved.
+    pub const REFITTED: &'static str = "The voice chain was moved to models that speak the new \
+        language. Voice Studio shows it.";
+    /// The line when nothing fits.
+    pub const NO_FIT: &'static str = "No model this workspace may use speaks the new language \
+        for every part of the voice chain. Choose them in Voice Studio.";
+    /// The line when it failed.
+    pub const FAILED: &'static str = "The voice chain could not be moved to the new language. \
+        Fit it in Voice Studio.";
+    /// The line when the read after the move does not show it fitting.
+    pub const NOT_SEEN: &'static str = "The voice chain was saved, but Voice Studio does not \
+        show it fitting the new language. Check it there.";
+
+    /// Whether it is still under way.
+    pub fn is_running(&self) -> bool {
+        matches!(self, Self::Checking | Self::Saving | Self::Verifying)
+    }
+
+    /// What to say.
+    pub fn line(&self) -> String {
+        match self {
+            Self::Checking | Self::Saving | Self::Verifying => Self::CHECKING.to_owned(),
+            Self::Refitted => Self::REFITTED.to_owned(),
+            Self::NoFit => Self::NO_FIT.to_owned(),
+            Self::Failed(failure) => format!("{} {}", Self::FAILED, failure.message),
+            Self::NotSeen => Self::NOT_SEEN.to_owned(),
+        }
     }
 }
 
@@ -322,7 +293,7 @@ pub struct PersonaSection {
     pub options: PersonaOptionsLoad,
     /// The texts the member edited.
     edits: BTreeMap<PersonaText, String>,
-    /// The engine half, once both reads are in.
+    /// The language half, once both reads are in.
     engine: Option<PersonaEngine>,
     /// The save.
     pub save: SaveState,
@@ -330,6 +301,10 @@ pub struct PersonaSection {
     pub preview: Option<PersonaPreview>,
     /// Whether another audition must wait: see [`PREVIEW_COOLDOWN`].
     pub preview_cooling: bool,
+    /// Fitting the chain to a new language, after the save that changed it.
+    pub refit: Option<PersonaRefit>,
+    /// The chain as stored before a save that changed its language, to fit.
+    refit_from: Option<EngineMix>,
 }
 
 impl PersonaSection {
@@ -337,11 +312,11 @@ impl PersonaSection {
     pub const CLEAR_HINT: &'static str = "Clearing a box saves it as empty. Anything you do not \
         change is kept as it is.";
     /// The line when the options could not be read.
-    pub const ENGINE_READ_ONLY: &'static str = "The engines and voices this workspace may use \
-        could not be read, so they cannot be changed right now.";
-    /// The line for a stored voice the options no longer list.
-    pub const VOICE_OFF_CATALOGUE: &'static str = "The current voice is not in the list for this \
-        engine and language. It is kept until you choose another.";
+    pub const ENGINE_READ_ONLY: &'static str = "The languages and answer lengths this workspace \
+        may use could not be read, so they cannot be changed right now.";
+    /// Where the engine and the voice are changed.
+    pub const STUDIO_HINT: &'static str = "The voice, the engine and how it is tuned are \
+        changed in Voice Studio.";
     /// The audition dialog's heading.
     pub const PREVIEW_TITLE: &'static str = "Try this receptionist";
     /// What the audition is, shown before it starts.
@@ -357,15 +332,21 @@ impl PersonaSection {
             save: SaveState::Idle,
             preview: None,
             preview_cooling,
+            refit: None,
+            refit_from: None,
         }
+    }
+
+    /// The stored persona, once read.
+    fn persona(&self) -> Option<&AiPersona> {
+        self.config
+            .config()
+            .and_then(|config| config.ai_persona.as_ref())
     }
 
     /// The stored text, empty when none is stored or nothing is read.
     pub fn stored(&self, field: PersonaText) -> &str {
-        let persona = self
-            .config
-            .config()
-            .and_then(|config| config.ai_persona.as_ref());
+        let persona = self.persona();
         match field {
             PersonaText::Name => persona.and_then(|persona| persona.name.as_deref()),
             PersonaText::Greeting => persona.and_then(|persona| persona.greeting.as_deref()),
@@ -389,19 +370,18 @@ impl PersonaSection {
         }
     }
 
-    /// The engine fields on screen, once both reads are in.
+    /// The language half on screen, once both reads are in.
     pub fn engine(&self) -> Option<&PersonaEngineValues> {
         self.engine.as_ref().map(|engine| &engine.values)
     }
 
-    /// Every engine, those outside the region included: show those disabled,
-    /// with their labels, which say where their audio is processed.
+    /// Every engine, for the stored engine's name.
     pub fn engines(&self) -> &[PersonaEngineOption] {
         self.options()
             .map_or(&[], |options| options.engines.as_slice())
     }
 
-    /// The languages the chosen engine offers.
+    /// The languages the stored engine offers.
     pub fn languages(&self) -> &[PersonaLabelledValue] {
         match (self.options(), self.engine()) {
             (Some(options), Some(values)) => options.languages_for(&values.model_id),
@@ -409,18 +389,7 @@ impl PersonaSection {
         }
     }
 
-    /// The voices the chosen engine offers in the chosen language. Empty is an
-    /// answer: a stored persona can name a language its engine does not speak.
-    pub fn voice_groups(&self) -> &[PersonaVoiceGroup] {
-        match (self.options(), self.engine()) {
-            (Some(options), Some(values)) => {
-                options.voice_groups(&values.model_id, &values.language)
-            }
-            _ => &[],
-        }
-    }
-
-    /// The answer lengths the chosen engine offers.
+    /// The answer lengths the stored engine offers.
     pub fn response_lengths(&self) -> &[PersonaLabelledValue] {
         match (self.options(), self.engine()) {
             (Some(options), Some(values)) => options
@@ -430,46 +399,13 @@ impl PersonaSection {
         }
     }
 
-    /// The speaking styles, offered only for Gemini Live.
-    pub fn voice_styles(&self) -> &[PersonaLabelledValue] {
-        match (self.options(), self.shows_voice_style()) {
-            (Some(options), true) => &options.voice_styles,
-            _ => &[],
-        }
-    }
-
-    /// Whether the voice style picker is offered: Gemini Live only.
-    pub fn shows_voice_style(&self) -> bool {
-        self.engine
-            .as_ref()
-            .is_some_and(PersonaEngine::is_gemini_live)
-    }
-
-    /// Whether the early speech switch is offered: every engine but Gemini Live.
-    pub fn shows_preemptive_tts(&self) -> bool {
-        self.engine
-            .as_ref()
-            .is_some_and(|engine| !engine.is_gemini_live())
-    }
-
-    /// Whether the voice on screen is one the options no longer list for the
-    /// engine and language. It is kept, and said.
-    pub fn voice_off_catalogue(&self) -> bool {
-        self.engine().is_some_and(|values| {
-            !values.voice.is_empty()
-                && !self
-                    .voice_groups()
-                    .iter()
-                    .any(|group| offers(&group.options, &values.voice))
-        })
-    }
-
     /// Whether the texts can be edited: the settings read, nothing on its way.
     pub fn text_editable(&self) -> bool {
         self.config.config().is_some() && !self.save.is_busy()
     }
 
-    /// Whether the engine half can be edited: both reads in, nothing on its way.
+    /// Whether the language half can be edited: both reads in, nothing on its
+    /// way.
     pub fn engine_editable(&self) -> bool {
         self.engine.is_some() && !self.save.is_busy()
     }
@@ -505,7 +441,7 @@ impl PersonaSection {
     }
 
     /// Whether the audition can be offered: it needs the options too, or it
-    /// would run on an engine nobody chose.
+    /// would run on a language nobody chose.
     pub fn can_preview(&self) -> bool {
         self.engine.is_some()
     }
@@ -519,10 +455,22 @@ impl PersonaSection {
             )
     }
 
-    /// What an audition hears: the form on screen, changed or not, because the
-    /// audition stores nothing and merges with nothing.
+    /// The stored chain, when the stored engine is one of the member's own and
+    /// its chain can be read.
+    fn stored_mix(&self) -> Option<EngineMix> {
+        let persona = self.persona()?;
+        if persona.model_id.as_deref() != Some(CUSTOM_PIPELINE) {
+            return None;
+        }
+        serde_json::from_value(persona.engine_mix.clone()?).ok()
+    }
+
+    /// What an audition hears: the form on screen, changed or not, on the
+    /// stored engine, because the audition stores nothing and merges with
+    /// nothing.
     pub fn preview_form(&self) -> Option<PersonaPreviewForm> {
         let values = self.engine()?;
+        let persona = self.persona();
         Some(PersonaPreviewForm {
             name: non_empty(self.value(PersonaText::Name)),
             greeting: non_empty(self.value(PersonaText::Greeting)),
@@ -531,9 +479,10 @@ impl PersonaSection {
             language: non_empty(&values.language),
             model_id: non_empty(&values.model_id),
             response_length: non_empty(&values.response_length),
-            temperature: Some(values.temperature),
-            voice_style: non_empty(&values.voice_style),
-            preemptive_tts: Some(values.preemptive_tts),
+            temperature: persona.and_then(|persona| persona.temperature),
+            voice_style: persona.and_then(|persona| persona.voice_style.clone()),
+            preemptive_tts: persona.and_then(|persona| persona.preemptive_tts),
+            engine_mix: self.stored_mix(),
         })
     }
 
@@ -551,12 +500,14 @@ impl PersonaSection {
     }
 
     /// Whether the section has something on its way that a refresh must not
-    /// drop: a save, or an audition dialog.
+    /// drop: a save, fitting a chain, or an audition dialog.
     fn busy(&self) -> bool {
-        self.save.is_busy() || self.preview.is_some()
+        self.save.is_busy()
+            || self.preview.is_some()
+            || self.refit.as_ref().is_some_and(PersonaRefit::is_running)
     }
 
-    /// Builds the engine half once both reads are in, and drops it otherwise.
+    /// Builds the language half once both reads are in, and drops it otherwise.
     fn hydrate(&mut self) {
         self.engine = match (&self.config, &self.options) {
             (ConfigLoad::Ready(config), PersonaOptionsLoad::Ready(options)) => {
@@ -591,11 +542,16 @@ impl PersonaSection {
             }
             PersonaEvent::Engine(edit) => self.edit_engine(edit),
             PersonaEvent::Save if self.can_save() => {
+                let patch = self.patch();
+                // A chain of the member's own is fitted to a new language once
+                // the language is saved.
+                self.refit_from = self.stored_mix().filter(|_| patch.language.is_some());
+                self.refit = None;
                 self.save = SaveState::Saving;
                 return vec![Effect::SavePersona {
                     ticket: tickets.issue(Slot::PersonaSave),
                     workspace_id,
-                    patch: Box::new(self.patch()),
+                    patch: Box::new(patch),
                 }];
             }
             PersonaEvent::DismissSaveNotice if !self.save.is_busy() => self.save = SaveState::Idle,
@@ -677,13 +633,103 @@ impl PersonaSection {
         workspace_id: String,
         tickets: &mut Tickets,
     ) -> Vec<Effect> {
-        after_save(
+        let landed = result.is_ok();
+        let mut effects = after_save(
             &mut self.save,
             result,
             Slot::PersonaConfig,
-            workspace_id,
+            workspace_id.clone(),
             tickets,
-        )
+        );
+        if landed && self.refit_from.is_some() {
+            self.refit = Some(PersonaRefit::Checking);
+            effects.push(read_studio(workspace_id, tickets));
+        } else {
+            self.refit_from = None;
+        }
+        effects
+    }
+
+    /// Voice Studio was read for the new language: before fitting the chain,
+    /// or after.
+    pub(crate) fn studio_read(
+        &mut self,
+        result: Result<Box<VoiceStudioResponse>, ApiError>,
+        workspace_id: String,
+        tickets: &mut Tickets,
+    ) -> Vec<Effect> {
+        let verifying = self.refit == Some(PersonaRefit::Verifying);
+        let from = self.refit_from.take();
+        let studio = match result {
+            Ok(studio) => studio,
+            Err(_) if verifying => {
+                self.refit = Some(PersonaRefit::NotSeen);
+                return Vec::new();
+            }
+            Err(error) => {
+                self.refit = Some(PersonaRefit::Failed(FailureText::from_api_error(&error)));
+                return Vec::new();
+            }
+        };
+        let fits = studio.current.model_id.as_deref() != Some(CUSTOM_PIPELINE)
+            || studio.current.engine_mix.is_some();
+        if verifying {
+            self.refit = Some(if fits {
+                PersonaRefit::Refitted
+            } else {
+                PersonaRefit::NotSeen
+            });
+            return Vec::new();
+        }
+        if fits {
+            self.refit = None;
+            return Vec::new();
+        }
+        let Some(mix) = from.and_then(|from| refit(&from, &studio)) else {
+            self.refit = Some(PersonaRefit::NoFit);
+            return Vec::new();
+        };
+        self.refit = Some(PersonaRefit::Saving);
+        vec![Effect::SavePersona {
+            ticket: tickets.issue(Slot::PersonaRefit),
+            workspace_id,
+            patch: Box::new(PersonaPatch {
+                engine: Some(PersonaEngineChoice {
+                    model_id: CUSTOM_PIPELINE.to_owned(),
+                    response_length: None,
+                }),
+                voice: Some(mix.tts.voice.clone()),
+                engine_mix: Some(mix),
+                ..PersonaPatch::default()
+            }),
+        }]
+    }
+
+    /// The fitted chain's save was answered.
+    fn refit_saved(
+        &mut self,
+        result: Result<(), ApiError>,
+        workspace_id: String,
+        tickets: &mut Tickets,
+    ) -> Vec<Effect> {
+        match result {
+            Ok(()) => {
+                self.refit = Some(PersonaRefit::Verifying);
+                vec![read_studio(workspace_id, tickets)]
+            }
+            Err(error) => {
+                self.refit = Some(PersonaRefit::Failed(FailureText::from_api_error(&error)));
+                Vec::new()
+            }
+        }
+    }
+}
+
+/// Voice Studio's read, for fitting the persona's chain.
+fn read_studio(workspace_id: String, tickets: &mut Tickets) -> Effect {
+    Effect::LoadVoiceStudio {
+        ticket: tickets.issue(Slot::PersonaStudio),
+        workspace_id,
     }
 }
 
@@ -697,23 +743,13 @@ fn joinable(credential: &PersonaPreviewTokenResponse) -> bool {
             .is_some_and(|e2ee| !e2ee.key.trim().is_empty())
 }
 
-/// A change to the engine half. Each is refused unless the options offer it.
-#[derive(Clone, Debug, PartialEq)]
+/// A change to the language half. Each is refused unless the options offer it.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PersonaEngineEdit {
-    /// Choose an engine the region offers.
-    Engine(String),
-    /// Choose a language the engine speaks.
+    /// Choose a language the stored engine speaks.
     Language(String),
-    /// Choose a voice the engine offers in the language.
-    Voice(String),
-    /// Choose an answer length the engine offers.
+    /// Choose an answer length the stored engine offers.
     ResponseLength(String),
-    /// Set the variation; kept within 0 to 1.
-    Temperature(f64),
-    /// Choose a speaking style, for Gemini Live.
-    VoiceStyle(String),
-    /// Turn early speech on or off, for every engine but Gemini Live.
-    PreemptiveTts(bool),
 }
 
 /// What the member does on the persona section.
@@ -726,7 +762,7 @@ pub enum PersonaEvent {
         /// The text.
         value: String,
     },
-    /// The engine half changed.
+    /// The language half changed.
     Engine(PersonaEngineEdit),
     /// Save what changed.
     Save,
@@ -889,6 +925,18 @@ impl SignedIn {
         self.persona
             .as_mut()
             .map(|section| section.saved(result, workspace_id, tickets))
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn persona_refit_saved(
+        &mut self,
+        result: Result<(), ApiError>,
+        workspace_id: String,
+        tickets: &mut Tickets,
+    ) -> Vec<Effect> {
+        self.persona
+            .as_mut()
+            .map(|section| section.refit_saved(result, workspace_id, tickets))
             .unwrap_or_default()
     }
 

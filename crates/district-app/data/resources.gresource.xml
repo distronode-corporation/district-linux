@@ -36,6 +36,7 @@
     <file>ui/settings-page.ui</file>
     <file>ui/save-notice.ui</file>
     <file>ui/persona-view.ui</file>
+    <file>ui/voice-studio-view.ui</file>
     <file>ui/audition-dialog.ui</file>
     <file>ui/tools-view.ui</file>
     <file>ui/directory-view.ui</file>

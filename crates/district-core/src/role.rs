@@ -79,9 +79,10 @@ pub struct Capabilities {
     pub can_rename_workspace: bool,
     /// The four settings sections that read the workspace configuration (the
     /// receptionist's persona, its tools, the call directory and the routing
-    /// rules). The service refuses that read to a viewer, because it carries staff
-    /// phone numbers and the operator's own prompt, so for a viewer the sections
-    /// are not offered at all.
+    /// rules), and Voice Studio. The service refuses those reads to a viewer,
+    /// because the configuration carries staff phone numbers and the operator's
+    /// own prompt, and the Studio's read is the persona's, so for a viewer the
+    /// sections are not offered at all.
     pub can_read_configuration: bool,
     /// Placing a call from the desktop, and answering one rung here. The dial
     /// and answer routes both refuse a viewer, so the dialler is not offered at
@@ -129,7 +130,7 @@ impl Capabilities {
     /// viewer and whose screens withhold their own controls.
     ///
     /// What is closed is the dialler, to a viewer; the four sections backed by
-    /// the configuration read; the members and phone numbers settings
+    /// the configuration read, and Voice Studio; the members and phone numbers settings
     /// sections, which are kept from a viewer as a deliberate stopping point
     /// even though their reads would answer (each needs its controls audited
     /// before it is opened); and the help desk and support, every route of
@@ -138,6 +139,7 @@ impl Capabilities {
         match route {
             Route::Workspace(
                 WorkspaceSection::Persona
+                | WorkspaceSection::VoiceStudio
                 | WorkspaceSection::Tools
                 | WorkspaceSection::Directory
                 | WorkspaceSection::Routing,

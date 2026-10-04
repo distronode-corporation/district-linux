@@ -43,7 +43,7 @@ use crate::scheduling::SchedulingScreen;
 use crate::session::{Identity, Notice, SignOutScope};
 use crate::settings::{
     CallHandlingSection, DirectorySection, KnowledgeSection, MembersSection, MessagingSection,
-    PersonaSection, RoutingRulesSection, ToolsSection,
+    PersonaSection, RoutingRulesSection, ToolsSection, VoiceStudioSection,
 };
 use crate::support::{SupportList, SupportRequestScreen, SupportScreen};
 use crate::thread::{DraftWrites, ThreadScreen};
@@ -111,6 +111,8 @@ pub struct SignedIn {
     pub rooms: RoomsScreen,
     /// The persona section, while it shows.
     pub persona: Option<PersonaSection>,
+    /// Voice Studio, while it shows.
+    pub voice_studio: Option<VoiceStudioSection>,
     /// The capabilities section, while it shows.
     pub tools: Option<ToolsSection>,
     /// The transfer directory section, while it shows.
@@ -197,6 +199,7 @@ impl SignedIn {
             support_request: None,
             rooms: RoomsScreen::default(),
             persona: None,
+            voice_studio: None,
             tools: None,
             directory: None,
             routing_rules: None,

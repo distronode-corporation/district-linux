@@ -4,11 +4,11 @@
 use district_api::{ApiError, Endpoint};
 use district_model::{
     AVAILABILITY_REASON_NO_MEMBER_ROW, BlockTarget, CODE_LAST_AGENCY_MEMBER, CODE_MEMBER_EXISTS,
-    CallHandlingPatch, DeskBrandName, DeskSettingsPatch, DeskTicketDraft, DeskTicketStatus,
-    HqPendingWrite, MemberRole, MessagingAccountSave, MessagingCredentialSource,
-    MessagingCredentials, NumberSearch, PersonaPatch, RoutingRule, RoutingRuleField,
-    SinchCredentials, SupportRequestDraft, SupportRequestFiling, SupportRequestKind, ThreadRef,
-    TimelinePageInfo, TimelineResponse,
+    CUSTOM_PIPELINE, CallHandlingPatch, DeskBrandName, DeskSettingsPatch, DeskTicketDraft,
+    DeskTicketStatus, EngineMix, HqPendingWrite, MemberRole, MessagingAccountSave,
+    MessagingCredentialSource, MessagingCredentials, NumberSearch, PersonaEngineChoice,
+    PersonaPatch, RoutingRule, RoutingRuleField, SinchCredentials, SupportRequestDraft,
+    SupportRequestFiling, SupportRequestKind, ThreadRef, TimelinePageInfo, TimelineResponse,
 };
 use serde_json::{Value, json};
 use wiremock::matchers::any;
@@ -592,6 +592,49 @@ async fn the_research_switch_alone_sends_only_that_field() {
     assert_eq!(
         body(&only_request(&server).await),
         json!({"workspaceId": WS, "dgiEnabled": true})
+    );
+}
+
+/// A chain the service's catalogue refuses is a 400 whose code names it, and
+/// the chain travels inside the save beside its engine id.
+#[tokio::test]
+async fn a_refused_chain_is_a_coded_refusal_and_the_chain_travels_in_the_save() {
+    let server = answering(
+        400,
+        json!({
+            "success": false,
+            "error": "That voice chain cannot be saved: a model, voice or location in it is \
+                      not available for this workspace and language.",
+            "code": "invalid_engine_mix",
+        }),
+    )
+    .await;
+    let studio = fixture("district-voice-studio.json");
+    let mix: EngineMix =
+        serde_json::from_value(studio["catalog"]["presets"][0]["engineMix"].clone()).unwrap();
+    let patch = PersonaPatch {
+        engine: Some(PersonaEngineChoice {
+            model_id: CUSTOM_PIPELINE.to_owned(),
+            response_length: None,
+        }),
+        engine_mix: Some(mix),
+        bilingual: Some(true),
+        ..PersonaPatch::default()
+    };
+
+    let refused = client(&server).save_persona(WS, &patch).await.unwrap_err();
+
+    assert!(
+        matches!(&refused, ApiError::Envelope { status: 400, code, .. }
+            if code == "invalid_engine_mix"),
+        "{refused:?}"
+    );
+    assert_eq!(
+        body(&only_request(&server).await),
+        json!({
+            "workspaceId": WS, "modelId": CUSTOM_PIPELINE,
+            "engineMix": studio["catalog"]["presets"][0]["engineMix"], "bilingual": true,
+        })
     );
 }
 

@@ -46,8 +46,8 @@ use district_model::{
     MessagingCreatorCell, MessagingCredentials, MessagingDefaultResponse, MessagingDelete,
     MessagingMetaResponse, MessagingResponse, MessagingSetChannelDefault, MessagingSetDefault,
     MessagingTestResponse, PersonaOptionsResponse, PersonaPatch, PersonaPreviewForm,
-    PersonaPreviewTokenResponse, RenameResponse, RoutingRule, WorkspaceConfigResponse,
-    WorkspaceSaveResponse,
+    PersonaPreviewTokenResponse, RenameResponse, RoutingRule, VoiceStudioResponse,
+    WorkspaceConfigResponse, WorkspaceSaveResponse,
 };
 use district_model::{
     CallHandlingMode, MessagingChannel, MessagingCredentialSource, TwilioCredentials,
@@ -716,6 +716,11 @@ impl DistrictApi for FakeApi {
     ) -> Result<PersonaOptionsResponse, ApiError> {
         self.0.push(format!("persona options {workspace_id}"));
         Ok(fixture("district-persona-options.json"))
+    }
+
+    async fn voice_studio(&self, workspace_id: &str) -> Result<VoiceStudioResponse, ApiError> {
+        self.0.push(format!("voice studio {workspace_id}"));
+        Ok(fixture("district-voice-studio.json"))
     }
 
     async fn save_persona(
@@ -2399,6 +2404,16 @@ async fn each_settings_effect_calls_its_endpoint_and_reports_back() {
             },
         ),
         (
+            Effect::LoadVoiceStudio {
+                ticket,
+                workspace_id: ws(),
+            },
+            Event::VoiceStudioLoaded {
+                ticket,
+                result: Ok(Box::new(fixture("district-voice-studio.json"))),
+            },
+        ),
+        (
             Effect::RequestPersonaPreview {
                 ticket,
                 workspace_id: ws(),
@@ -2658,6 +2673,7 @@ async fn each_settings_effect_calls_its_endpoint_and_reports_back() {
             "save rules ws-contract-active 3",
             "save persona ws-contract-active {\"greeting\":\"\"}",
             "persona options ws-contract-active",
+            "voice studio ws-contract-active",
             "preview ws-contract-active Some(\"Hello\")",
             "knowledge ws-contract-active",
             "add document ws-contract-active Hours",
