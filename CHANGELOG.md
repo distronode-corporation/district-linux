@@ -13,6 +13,14 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Changed
+
+- The workspace settings group the receptionist's sections under District Studio, as
+  the web console now does, in the order of its pages and under their names: Persona,
+  Voice, Call handling (with the routing rules and the transfer directory, which the
+  web shows on its Call handling page), Skills and Knowledge. The workspace's own
+  sections (messaging accounts, members, phone numbers) follow under Workspace.
+
 ## [2.0.0] - 2026-10-04
 
 ### Added

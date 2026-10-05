@@ -115,23 +115,34 @@ pub enum Route {
 }
 
 /// The workspace settings hub and its sections.
+///
+/// The receptionist's sections are District Studio's, as on the web
+/// (`/dashboard/district/studio/*`): Persona, Voice, Call handling (with the
+/// routing rules and the transfer directory, which the web shows on the Call
+/// handling page), Skills and Knowledge. The workspace's own come after them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum WorkspaceSection {
     /// The list of sections.
     Hub,
-    /// What the receptionist says, and the language it speaks.
+    /// What the receptionist says, and the language it speaks. District
+    /// Studio's Persona.
     Persona,
-    /// The voice engine the receptionist speaks through.
+    /// The voice engine the receptionist speaks through. District Studio's
+    /// Voice.
     VoiceStudio,
-    /// Which tools the receptionist may use.
+    /// Which tools the receptionist may use. District Studio's Skills.
     Tools,
-    /// The staff the receptionist can transfer a call to.
+    /// The staff the receptionist can transfer a call to. Part of District
+    /// Studio's Call handling on the web.
     Directory,
-    /// Which calls go where.
+    /// Which calls go where. Part of District Studio's Call handling on the
+    /// web.
     Routing,
-    /// Who answers an inbound call, and whether this member is rung.
+    /// Who answers an inbound call, and whether this member is rung. District
+    /// Studio's Call handling.
     CallHandling,
-    /// The knowledge base the receptionist answers from.
+    /// The knowledge base the receptionist answers from. District Studio's
+    /// Knowledge.
     Knowledge,
     /// The workspace's messaging accounts.
     Messaging,
@@ -147,10 +158,10 @@ impl WorkspaceSection {
         WorkspaceSection::Hub,
         WorkspaceSection::Persona,
         WorkspaceSection::VoiceStudio,
-        WorkspaceSection::Tools,
-        WorkspaceSection::Directory,
-        WorkspaceSection::Routing,
         WorkspaceSection::CallHandling,
+        WorkspaceSection::Routing,
+        WorkspaceSection::Directory,
+        WorkspaceSection::Tools,
         WorkspaceSection::Knowledge,
         WorkspaceSection::Messaging,
         WorkspaceSection::Members,

@@ -157,13 +157,14 @@ pub(crate) fn title(route: &Route) -> &'static str {
         Route::Devices => "Devices",
         Route::Workspace(section) => match section {
             WorkspaceSection::Hub => "Workspace settings",
+            // District Studio's, named as the web's pages are.
             WorkspaceSection::Persona => "Persona",
-            WorkspaceSection::VoiceStudio => "Voice Studio",
-            WorkspaceSection::Tools => "Capabilities",
-            WorkspaceSection::Directory => "Transfer directory",
-            WorkspaceSection::Routing => "Routing rules",
+            WorkspaceSection::VoiceStudio => "Voice",
             WorkspaceSection::CallHandling => "Call handling",
-            WorkspaceSection::Knowledge => "Knowledge base",
+            WorkspaceSection::Routing => "Routing rules",
+            WorkspaceSection::Directory => "Transfer directory",
+            WorkspaceSection::Tools => "Skills",
+            WorkspaceSection::Knowledge => "Knowledge",
             WorkspaceSection::Messaging => "Messaging accounts",
             WorkspaceSection::Members => "Members",
             WorkspaceSection::Numbers => "Phone numbers",
@@ -226,6 +227,24 @@ mod tests {
         assert_eq!(highlighted(&Route::Dialer), Route::Calls);
         assert!(is_sidebar_row(&Route::Account));
         assert!(!is_sidebar_row(&Route::Devices));
+    }
+
+    /// District Studio's sections carry the web's page names, in the web's
+    /// order, on the hub's rows and on their screens alike.
+    #[test]
+    fn district_studio_sections_are_named_as_on_the_web() {
+        let web = ["Persona", "Voice", "Call handling", "Skills", "Knowledge"];
+        let rows = district_core::settings_rows(&Capabilities::for_role(Some("agency")));
+        let named: Vec<&str> = rows
+            .iter()
+            .filter(|row| row.group == district_core::SettingsGroup::Studio)
+            .filter(|row| web.contains(&row.title))
+            .map(|row| {
+                assert_eq!(row.title, title(&Route::Workspace(row.section)), "{row:?}");
+                row.title
+            })
+            .collect();
+        assert_eq!(named, web);
     }
 
     #[test]

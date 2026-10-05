@@ -218,74 +218,114 @@ pub(crate) fn read_config(slot: Slot, workspace_id: String, tickets: &mut Ticket
     }
 }
 
+/// The heading of the hub's first group, as the web's navigation names it.
+/// A name, never translated.
+pub const DISTRICT_STUDIO: &str = "District Studio";
+
+/// A group of rows in the settings hub.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SettingsGroup {
+    /// The AI receptionist's settings, in the order of the web's District
+    /// Studio pages (`/dashboard/district/studio/*`).
+    Studio,
+    /// The workspace's own: its carrier accounts, members and numbers.
+    Workspace,
+}
+
+impl SettingsGroup {
+    /// The heading above the group.
+    pub fn heading(self) -> &'static str {
+        match self {
+            Self::Studio => DISTRICT_STUDIO,
+            Self::Workspace => "Workspace",
+        }
+    }
+}
+
 /// One row of the settings hub.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct SettingsRow {
     /// The section it opens, as [`Route::Workspace`].
     pub section: WorkspaceSection,
+    /// The group it is listed in.
+    pub group: SettingsGroup,
     /// The row's title.
     pub title: &'static str,
     /// What the section holds.
     pub subtitle: &'static str,
 }
 
-/// Every row the hub can show, in its order.
+/// Every row the hub can show, in its order: District Studio's, as the web
+/// orders its pages (Persona, Voice, Call handling, Skills, Knowledge; the
+/// routing rules and the transfer directory sit on the web's Call handling
+/// page, so they follow it here), then the workspace's. The web's Studio
+/// home, Integrations and Video have no section in this app.
 const ROWS: [SettingsRow; 10] = [
     SettingsRow {
         section: WorkspaceSection::Persona,
-        title: "Receptionist persona",
-        subtitle: "Its name, greeting, character, language and answer length.",
+        group: SettingsGroup::Studio,
+        title: "Persona",
+        subtitle: "The receptionist's name, greeting, character, language and answer length.",
     },
     SettingsRow {
         section: WorkspaceSection::VoiceStudio,
-        title: "Voice Studio",
+        group: SettingsGroup::Studio,
+        title: "Voice",
         subtitle: "The voice and engine it speaks with, part by part, and how fast it answers.",
     },
     SettingsRow {
-        section: WorkspaceSection::Tools,
-        title: "Receptionist capabilities",
-        subtitle: "What it may do on a call, and outside research on contacts.",
-    },
-    SettingsRow {
-        section: WorkspaceSection::Directory,
-        title: "Transfer directory",
-        subtitle: "Who it can put a live caller through to.",
-    },
-    SettingsRow {
-        section: WorkspaceSection::Routing,
-        title: "Call routing rules",
-        subtitle: "Which callers get which voice and instruction.",
-    },
-    SettingsRow {
         section: WorkspaceSection::CallHandling,
+        group: SettingsGroup::Studio,
         title: "Call handling",
         subtitle: "Who answers first, how long your devices ring, and whether you are rung.",
     },
     SettingsRow {
+        section: WorkspaceSection::Routing,
+        group: SettingsGroup::Studio,
+        title: "Call routing rules",
+        subtitle: "Which callers get which voice and instruction.",
+    },
+    SettingsRow {
+        section: WorkspaceSection::Directory,
+        group: SettingsGroup::Studio,
+        title: "Transfer directory",
+        subtitle: "Who it can put a live caller through to.",
+    },
+    SettingsRow {
+        section: WorkspaceSection::Tools,
+        group: SettingsGroup::Studio,
+        title: "Skills",
+        subtitle: "What it may do on a call, and outside research on contacts.",
+    },
+    SettingsRow {
         section: WorkspaceSection::Knowledge,
-        title: "Knowledge base",
+        group: SettingsGroup::Studio,
+        title: "Knowledge",
         subtitle: "The documents it answers from, and where answers come from.",
     },
     SettingsRow {
         section: WorkspaceSection::Messaging,
+        group: SettingsGroup::Workspace,
         title: "Messaging accounts",
         subtitle: "The carrier accounts this workspace sends from.",
     },
     SettingsRow {
         section: WorkspaceSection::Members,
+        group: SettingsGroup::Workspace,
         title: "Members",
         subtitle: "Who belongs to this workspace, their roles, and its name.",
     },
     SettingsRow {
         section: WorkspaceSection::Numbers,
+        group: SettingsGroup::Workspace,
         title: "Phone numbers",
         subtitle: "The numbers this workspace uses.",
     },
 ];
 
 /// The note under the hub for a member who can change the settings.
-pub const SETTINGS_MORE_ON_WEB: &str =
-    "The outbound campaign and the video avatar are changed on the District AI website.";
+pub const SETTINGS_MORE_ON_WEB: &str = "District Studio's Integrations and Video, and the \
+    outbound campaign, are changed on the District AI website.";
 
 /// The note under the hub for a viewer, who sees three sections of ten.
 pub const SETTINGS_VIEWER_NOTE: &str = "You have read-only access to this workspace. These \
@@ -325,10 +365,10 @@ impl SignedIn {
         match section {
             WorkspaceSection::Persona => self.enter_persona(workspace_id, tickets),
             WorkspaceSection::VoiceStudio => self.enter_voice_studio(workspace_id, tickets),
-            WorkspaceSection::Tools => self.enter_tools(workspace_id, tickets),
-            WorkspaceSection::Directory => self.enter_directory(workspace_id, tickets),
-            WorkspaceSection::Routing => self.enter_routing(workspace_id, tickets),
             WorkspaceSection::CallHandling => self.enter_call_handling(workspace_id, tickets),
+            WorkspaceSection::Routing => self.enter_routing(workspace_id, tickets),
+            WorkspaceSection::Directory => self.enter_directory(workspace_id, tickets),
+            WorkspaceSection::Tools => self.enter_tools(workspace_id, tickets),
             WorkspaceSection::Knowledge => self.enter_knowledge(workspace_id, tickets),
             WorkspaceSection::Messaging => self.enter_messaging(workspace_id, tickets),
             WorkspaceSection::Members => self.enter_members(workspace_id, tickets),
