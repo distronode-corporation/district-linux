@@ -185,7 +185,9 @@ async fn research_refused_by_the_workspace_keeps_the_services_message() {
         panic!("{refused:?}");
     };
     assert!(
-        detail.display_message().contains("Skills & Integrations"),
+        detail
+            .display_message()
+            .contains("District Studio → Integrations"),
         "{detail:?}"
     );
     assert_eq!(detail.code, None, "a route's own refusal carries no code");

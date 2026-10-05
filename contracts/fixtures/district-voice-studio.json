@@ -5,7 +5,7 @@
   "language": "en-US",
   "previewAllowed": true,
   "labels": {
-    "heading": "Voice Studio",
+    "heading": "Voice",
     "description": "Pick a starting point, then fine-tune any part of the call.",
     "tierLabel": "Models",
     "tierStable": "Stable",
