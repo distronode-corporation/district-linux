@@ -57,8 +57,8 @@
 //!   [`DeskTicketScreen`], [`DeskSettingsView`]), support requests
 //!   ([`SupportScreen`], [`SupportRequestScreen`]) and the rooms lobby with its
 //!   meeting records ([`RoomsScreen`]).
-//! - The screens of the fourth: the workspace settings hub ([`settings_rows`])
-//!   and its sections, each read when it opens and saved only from what it read:
+//! - The screens of the fourth: the workspace settings hub ([`settings_rows`]),
+//!   District Studio's group first ([`SettingsGroup`]), and its sections, each read when it opens and saved only from what it read:
 //!   the persona with its audition ([`PersonaSection`]), Voice Studio, the
 //!   receptionist's voice engine as recipes and a signal chain
 //!   ([`VoiceStudioSection`], whose rules are in [`studio`]), the capabilities
@@ -209,16 +209,16 @@ pub use session::{
 };
 pub use settings::{
     AvailabilityView, CAPABILITY_CATALOG, CallHandlingEvent, CallHandlingSection, CallHandlingView,
-    CapabilityRow, ConfigLoad, CredentialField, CredentialTest, DirectoryConfirm, DirectoryEvent,
-    DirectoryField, DirectorySection, KnowledgeConfirm, KnowledgeDocuments, KnowledgeEvent,
-    KnowledgeModeView, KnowledgeSection, KnowledgeWrite, MESSAGING_CHANNELS, MemberList,
-    MemberWrite, MembersAction, MembersEvent, MembersSection, MessagingAccounts, MessagingAction,
-    MessagingDeleteConfirm, MessagingEvent, MessagingForm, MessagingFormEdit, MessagingSection,
-    MessagingWrite, PREVIEW_COOLDOWN, PersonaEngineEdit, PersonaEngineValues, PersonaEvent,
-    PersonaOptionsLoad, PersonaPreview, PersonaRefit, PersonaSection, PersonaText,
+    CapabilityRow, ConfigLoad, CredentialField, CredentialTest, DISTRICT_STUDIO, DirectoryConfirm,
+    DirectoryEvent, DirectoryField, DirectorySection, KnowledgeConfirm, KnowledgeDocuments,
+    KnowledgeEvent, KnowledgeModeView, KnowledgeSection, KnowledgeWrite, MESSAGING_CHANNELS,
+    MemberList, MemberWrite, MembersAction, MembersEvent, MembersSection, MessagingAccounts,
+    MessagingAction, MessagingDeleteConfirm, MessagingEvent, MessagingForm, MessagingFormEdit,
+    MessagingSection, MessagingWrite, PREVIEW_COOLDOWN, PersonaEngineEdit, PersonaEngineValues,
+    PersonaEvent, PersonaOptionsLoad, PersonaPreview, PersonaRefit, PersonaSection, PersonaText,
     RoutingRulesConfirm, RoutingRulesEvent, RoutingRulesSection, SCHEDULING_TOOLS,
-    SETTINGS_MORE_ON_WEB, SETTINGS_VIEWER_NOTE, SaveState, SecretText, SettingsRow, StudioEdit,
-    StudioSaveState, ToolsEvent, ToolsSection, VoiceStudioEvent, VoiceStudioLoad,
+    SETTINGS_MORE_ON_WEB, SETTINGS_VIEWER_NOTE, SaveState, SecretText, SettingsGroup, SettingsRow,
+    StudioEdit, StudioSaveState, ToolsEvent, ToolsSection, VoiceStudioEvent, VoiceStudioLoad,
     VoiceStudioSection, availability_reason_text, call_handling_mode, call_handling_mode_body,
     call_handling_mode_label, capability_label, channel_label, credential_source_label,
     default_allowed_tools, is_member_email, knowledge_mode_body, knowledge_mode_label,

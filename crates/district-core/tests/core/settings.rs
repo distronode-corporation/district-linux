@@ -2,9 +2,9 @@
 //! one reads, and what leaving one, or the workspace, drops.
 
 use district_core::{
-    Capabilities, ConfigLoad, Effect, Event, KnowledgeEvent, Model, PersonaEvent, PersonaText,
-    Route, SETTINGS_MORE_ON_WEB, SETTINGS_VIEWER_NOTE, SaveState, SignedIn, Ticket, ToolsEvent,
-    WorkspaceSection, settings_note, settings_rows,
+    Capabilities, ConfigLoad, DISTRICT_STUDIO, Effect, Event, KnowledgeEvent, Model, PersonaEvent,
+    PersonaText, Route, SETTINGS_MORE_ON_WEB, SETTINGS_VIEWER_NOTE, SaveState, SettingsGroup,
+    SignedIn, Ticket, ToolsEvent, WorkspaceSection, settings_note, settings_rows,
 };
 use district_model::WorkspaceConfigResponse;
 
@@ -90,6 +90,49 @@ fn the_hub_lists_what_the_role_may_open() {
             assert!(!text.contains(['\u{2013}', '\u{2014}']), "{text}");
         }
     }
+}
+
+/// District Studio comes first, holding the receptionist's sections in the
+/// order of the web's Studio pages and under their names; the workspace's own
+/// follow under a heading of their own.
+#[test]
+fn the_hub_groups_the_receptionist_under_district_studio() {
+    let rows = settings_rows(&Capabilities::for_role(Some("agency")));
+    let listed = |group: SettingsGroup| {
+        rows.iter()
+            .filter(|row| row.group == group)
+            .map(|row| (row.section, row.title))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        listed(SettingsGroup::Studio),
+        [
+            (WorkspaceSection::Persona, "Persona"),
+            (WorkspaceSection::VoiceStudio, "Voice"),
+            (WorkspaceSection::CallHandling, "Call handling"),
+            (WorkspaceSection::Routing, "Call routing rules"),
+            (WorkspaceSection::Directory, "Transfer directory"),
+            (WorkspaceSection::Tools, "Skills"),
+            (WorkspaceSection::Knowledge, "Knowledge"),
+        ]
+    );
+    assert_eq!(
+        listed(SettingsGroup::Workspace),
+        [
+            (WorkspaceSection::Messaging, "Messaging accounts"),
+            (WorkspaceSection::Members, "Members"),
+            (WorkspaceSection::Numbers, "Phone numbers"),
+        ]
+    );
+    assert!(
+        rows.windows(2)
+            .all(|pair| !(pair[0].group == SettingsGroup::Workspace
+                && pair[1].group == SettingsGroup::Studio)),
+        "each group is listed in one run"
+    );
+    assert_eq!(SettingsGroup::Studio.heading(), DISTRICT_STUDIO);
+    assert_eq!(DISTRICT_STUDIO, "District Studio");
+    assert_eq!(SettingsGroup::Workspace.heading(), "Workspace");
 }
 
 /// Each section's reads are sent on opening it, for the open workspace, and

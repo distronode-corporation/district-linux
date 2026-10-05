@@ -4435,19 +4435,22 @@ fn settings_screens(smoke: &Smoke) {
     smoke.activate("sidebar-settings");
     assert!(smoke.shown("hub_list"));
     for row in [
+        "settings-group-studio",
         "settings-persona",
         "settings-voice-studio",
-        "settings-tools",
-        "settings-directory",
-        "settings-routing",
         "settings-call-handling",
+        "settings-routing",
+        "settings-directory",
+        "settings-tools",
         "settings-knowledge",
+        "settings-group-workspace",
         "settings-messaging",
         "settings-members",
         "settings-numbers",
     ] {
         assert!(smoke.shown(row), "{row}");
     }
+    assert!(smoke.shows_text(district_core::DISTRICT_STUDIO));
     assert!(smoke.shows_text(district_core::SETTINGS_MORE_ON_WEB));
     assert!(smoke.shows_text("No section open"));
     assert!(!smoke.shown("refresh_button"), "the hub reads nothing");
@@ -5830,8 +5833,10 @@ fn viewer_settings(smoke: &Smoke) {
     smoke.activate("sidebar-settings");
     assert!(smoke.shows_text(district_core::SETTINGS_VIEWER_NOTE));
     for row in [
+        "settings-group-studio",
         "settings-call-handling",
         "settings-knowledge",
+        "settings-group-workspace",
         "settings-messaging",
     ] {
         assert!(smoke.shown(row), "{row}");

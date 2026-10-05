@@ -8,8 +8,8 @@
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    Capabilities, Event, Route, SettingsRow, SignedIn, WorkspaceSection, settings_note,
-    settings_rows,
+    Capabilities, Event, Route, SettingsGroup, SettingsRow, SignedIn, WorkspaceSection,
+    settings_note, settings_rows,
 };
 
 use crate::adw;
@@ -230,6 +230,7 @@ impl SettingsPage {
                 })
                 .collect();
             imp.rows.replace(built);
+            set_group_headings(&imp.hub_list, rows.iter().map(|row| row.group).collect());
             imp.listed.replace(rows);
         }
         imp.rows.select(&imp.hub_list, Some(&section));
@@ -268,6 +269,41 @@ impl SettingsPage {
     /// The settings are no longer showing: every section lets go.
     pub(crate) fn leave(&self) {
         self.leave_except(WorkspaceSection::Hub);
+    }
+}
+
+/// Puts each group's heading (District Studio, then the workspace's) above
+/// its first row in `list`, whose rows belong, in order, to `groups`.
+fn set_group_headings(list: &gtk::ListBox, groups: Vec<SettingsGroup>) {
+    list.set_header_func(move |row, before| {
+        let group = usize::try_from(row.index())
+            .ok()
+            .and_then(|index| groups.get(index).copied());
+        let earlier = before
+            .and_then(|before| usize::try_from(before.index()).ok())
+            .and_then(|index| groups.get(index).copied());
+        let heading = group.filter(|group| Some(*group) != earlier).map(|group| {
+            gtk::Label::builder()
+                .label(group.heading())
+                .xalign(0.0)
+                .margin_start(12)
+                .margin_end(12)
+                .margin_top(12)
+                .margin_bottom(6)
+                .name(format!("settings-group-{}", group_key(group)))
+                .css_classes(["heading"])
+                .build()
+        });
+        row.set_header(heading.as_ref());
+    });
+    list.invalidate_headers();
+}
+
+/// A group's name, for its heading.
+fn group_key(group: SettingsGroup) -> &'static str {
+    match group {
+        SettingsGroup::Studio => "studio",
+        SettingsGroup::Workspace => "workspace",
     }
 }
 
