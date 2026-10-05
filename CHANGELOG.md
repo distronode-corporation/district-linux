@@ -13,6 +13,8 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-05
+
 ### Changed
 
 - The workspace settings group the receptionist's sections under District Studio, as
@@ -20,6 +22,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   Voice, Call handling (with the routing rules and the transfer directory, which the
   web shows on its Call handling page), Skills and Knowledge. The workspace's own
   sections (messaging accounts, members, phone numbers) follow under Workspace.
+  District Studio's Integrations and Video stay on the web console, and the settings
+  say so.
+- Screen titles follow the service's words: Voice Studio is now Voice, Capabilities is
+  now Skills, and Knowledge base is now Knowledge.
+- Contracts follow the service's District Studio wording: when contact enrichment is
+  off, the service's message now points to District Studio, Integrations, and the
+  Voice read names its page Voice.
 
 ## [2.0.0] - 2026-10-04
 
@@ -165,6 +174,8 @@ The history of how it was built is in the repository's commits.
 - Calls link this project's own build of LiveKit's libwebrtc, which leaves out the
   H.264 and H.265 codecs and FFmpeg (NOTICE lists what it contains).
 
-[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/distronode-corporation/district-linux/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/distronode-corporation/district-linux/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/distronode-corporation/district-linux/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/distronode-corporation/district-linux/releases/tag/v0.1.0

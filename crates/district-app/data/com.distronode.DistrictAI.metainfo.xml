@@ -26,9 +26,9 @@
       <li>Meeting rooms, audio only, and each meeting's record</li>
       <li>District HQ, which answers questions about your workspace, and
         analytics of your calls</li>
-      <li>Your receptionist's settings: its greeting and language, its voice
-        engine part by part in Voice Studio, what it knows, and where it sends
-        calls</li>
+      <li>Your receptionist's settings in District Studio: its persona and
+        language, its voice part by part, its skills, what it knows, and where
+        it sends calls</li>
       <li>The help desk, support requests, workflows and booking pages</li>
     </ul>
     <p>
@@ -98,23 +98,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.0.0/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/call-log.png</image>
       <caption>The call log, with each call's summary and transcript</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.0.0/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/inbox.png</image>
       <caption>Your customers' text messages and emails in one inbox</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.0.0/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/call.png</image>
       <caption>A call placed from the desktop, with mute and hang up always in reach</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.0.0/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/contacts.png</image>
       <caption>Your contacts, with each customer's details</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.0.0/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/overview.png</image>
       <caption>The workspace at a glance, with its latest calls</caption>
     </screenshot>
   </screenshots>
@@ -125,6 +125,20 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="2.1.0" date="2026-10-05">
+      <description>
+        <p>
+          Your receptionist's settings are now grouped under District Studio, as
+          on the web console, in the same order and under the same names.
+        </p>
+        <ul>
+          <li>District Studio: Persona, Voice, Call handling (with the routing
+            rules and the transfer directory), Skills and Knowledge</li>
+          <li>Workspace: messaging accounts, members and phone numbers</li>
+          <li>Screen titles follow the service: Voice, Skills and Knowledge</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.0.0" date="2026-10-04"/>
     <release version="1.0.0" date="2026-10-02"/>
     <release version="0.1.0" date="2026-09-28"/>
