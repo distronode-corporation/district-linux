@@ -380,9 +380,10 @@ The workflow then refuses a tag that is not on main or that the versions do not
 match, builds the .deb and the Flatpak with deb.yml and flatpak.yml (read-only,
 no caches, from the committed Cargo.lock) and tests them as pull requests do,
 and publishes: it attests each package's build provenance, verifies the
-attestations, creates a draft release with the notes and the two packages,
-checks GitHub holds exactly `district-ai_X.Y.Z-1_amd64.deb` and
-`district-ai_X.Y.Z_x86_64.flatpak`, and only then makes it public. A failed run
+attestations, creates a draft release with the notes, the two packages and the
+attestation bundle, checks GitHub holds exactly `district-ai_X.Y.Z-1_amd64.deb`,
+`district-ai_X.Y.Z_x86_64.flatpak` and `district-ai_X.Y.Z.intoto.jsonl`, and
+only then makes it public. A failed run
 leaves a draft or nothing, and a re-run replaces a leftover draft but never
 touches a published release.
 

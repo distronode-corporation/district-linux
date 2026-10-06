@@ -104,6 +104,11 @@ you can check with the GitHub CLI:
 gh attestation verify district-ai_2.1.0-1_amd64.deb --repo distronode-corporation/district-linux
 ```
 
+The attestation is also attached to the release as
+`district-ai_<version>.intoto.jsonl`, so you can check a download against that
+file rather than GitHub's attestation store by adding
+`--bundle district-ai_<version>.intoto.jsonl` to that command.
+
 ## Build from source
 
 Requirements: Rust 1.92 or newer (via [rustup](https://rustup.rs); the repository
