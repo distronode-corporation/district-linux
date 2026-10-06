@@ -2,7 +2,9 @@ name: Release
 
 # Fires on a `vX.Y.Z` tag and publishes the two packages a user installs: the
 # .deb (Ubuntu 24.04, Debian 13 and newer) and the Flatpak bundle, both x86_64
-# and both built with calls.
+# and both built with calls. A third file, `district-ai_<version>.intoto.jsonl`,
+# is the signed provenance attestation over both, attached so it can be
+# verified offline and found by OpenSSF Scorecard.
 #
 # Three stages, and only the last can write anything:
 #
@@ -18,7 +20,8 @@ name: Release
 # - `publish` refuses unless libwebrtc's licensing has been cleared (below),
 #   then attests the packages' provenance, verifies the attestations, creates a
 #   DRAFT release with the notes from CHANGELOG.md, checks that GitHub holds
-#   exactly the two assets, and only then makes the release public.
+#   exactly the two packages and the provenance bundle, and only then makes the
+#   release public.
 #
 # ⛔ THE LICENCE GATE. A build with calls statically links libwebrtc, so
 # publishing it distributes the libwebrtc the pin names. The repository
@@ -186,13 +189,16 @@ jobs:
 
       # ⛔ BY NAME, NOT BY COUNT. A tree whose version drifted from the tag, or a
       # package built for the wrong architecture, still makes two files. These
-      # are the names README.md tells users to download.
+      # are the names README.md tells users to download. The list is written
+      # once here and re-read, with the provenance bundle added, by the check
+      # against GitHub below.
       - name: The two release assets are exactly what was expected
         run: |
           set -euo pipefail
-          expected="$(printf '%s\n' \
+          printf '%s\n' \
             "district-ai_${VERSION}-1_amd64.deb" \
-            "district-ai_${VERSION}_x86_64.flatpak" | sort)"
+            "district-ai_${VERSION}_x86_64.flatpak" | sort > "$RUNNER_TEMP/expected-assets.txt"
+          expected="$(cat "$RUNNER_TEMP/expected-assets.txt")"
           actual="$(cd assets && find . -type f -printf '%f\n' | sort)"
           if [ "$expected" != "$actual" ]; then
             echo "::error::the built assets are not the two names a release must carry"
@@ -204,9 +210,28 @@ jobs:
       # Signed provenance over the bytes a user downloads, verifiable with:
       #   gh attestation verify district-ai_0.1.0-1_amd64.deb --repo distronode-corporation/district-linux
       - name: Attest build provenance
+        id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: assets/*
+
+      # The attestation is ONE Sigstore bundle whose subjects are both packages
+      # (the action's `bundle-path`, one JSON line). It is attached to the
+      # release as `district-ai_<version>.intoto.jsonl`, so a user can verify
+      # offline with `gh attestation verify <package> --bundle <that file>
+      # --repo ...`, and so OpenSSF Scorecard's Signed-Releases check finds
+      # provenance on the release. It is kept out of assets/, which holds
+      # exactly the two files the name check above asserted.
+      - name: Stage the provenance bundle
+        env:
+          BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          [ -s "$BUNDLE_PATH" ] || { echo "::error::the attestation step wrote no bundle"; exit 1; }
+          mkdir -p provenance
+          cp "$BUNDLE_PATH" "provenance/district-ai_${VERSION}.intoto.jsonl"
+          echo "district-ai_${VERSION}.intoto.jsonl" >> "$RUNNER_TEMP/expected-assets.txt"
+          sort -o "$RUNNER_TEMP/expected-assets.txt" "$RUNNER_TEMP/expected-assets.txt"
 
       # README.md promises every asset carries an attestation, and this is where
       # that is tested, before anything is public.
@@ -216,6 +241,10 @@ jobs:
           for f in assets/*; do
             for attempt in 1 2 3 4 5; do
               if gh attestation verify "$f" --repo "$GITHUB_REPOSITORY"; then
+                # And against the file that will be attached, which is what a
+                # user verifying offline will hold.
+                gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" \
+                  --bundle "provenance/district-ai_${VERSION}.intoto.jsonl"
                 continue 2
               fi
               echo "attestation for $(basename "$f") not queryable yet (attempt $attempt)"
@@ -249,16 +278,17 @@ jobs:
           printf '%s\n' "$NOTES" > release-notes.md
           gh release create "$TAG" --draft --verify-tag \
             --title "District AI for Linux $TAG" \
-            --notes-file release-notes.md assets/*
+            --notes-file release-notes.md assets/* provenance/*
 
-      # The same names again, against what GitHub stored: the check above proves
-      # the files existed on this runner, this one that each upload succeeded.
-      - name: GitHub holds both assets
+      # The same names again, against what GitHub stored, with the provenance
+      # bundle added: the check above proves the files existed on this runner,
+      # this one that each of the three uploads succeeded.
+      - name: GitHub holds both packages and the provenance bundle
         run: |
           set -euo pipefail
-          expected="$(printf '%s\n' \
-            "district-ai_${VERSION}-1_amd64.deb" \
-            "district-ai_${VERSION}_x86_64.flatpak" | sort)"
+          expected="$(cat "$RUNNER_TEMP/expected-assets.txt")"
+          [ -n "$expected" ] || { echo "::error::the expected asset list is empty"; exit 1; }
+          [ "$(printf '%s\n' "$expected" | wc -l)" -eq 3 ] || { echo "::error::the expected asset list does not name three files"; exit 1; }
           actual="$(gh release view "$TAG" --json assets --jq '.assets[].name' | sort)"
           if [ "$expected" != "$actual" ]; then
             echo "::error::the draft does not hold the expected assets; leaving it as a draft"
