@@ -4,8 +4,8 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-/// The platform a desktop registers its presence as.
-pub const PRESENCE_PLATFORM: &str = "linux";
+use crate::client::Platform;
+
 /// The kind of registration a desktop makes: presence, not a push token.
 pub const PRESENCE_KIND: &str = "desktop";
 
@@ -16,7 +16,7 @@ pub const PRESENCE_KIND: &str = "desktop";
 /// answers `true` when there was nothing to remove too, but a failure means the
 /// registration may still be live. Neither route sends the registration back.
 ///
-/// A desktop registers its presence (`platform: "linux"`, `kind: "desktop"`) and
+/// A desktop registers its presence (`platform` its own, `kind: "desktop"`) and
 /// renews it every five minutes: the service rings a desktop only while its
 /// registration is under ten minutes old, so a machine that went to sleep stops
 /// holding a caller on a ring nobody hears.
@@ -30,7 +30,8 @@ pub struct PushRegistrationResponse {
 }
 
 /// The body of `POST /api/district/devices/register` for this desktop's
-/// presence: `{token, platform: "linux", kind: "desktop"}`.
+/// presence: `{token, platform, kind: "desktop"}`, where `platform` is the
+/// app's [`Platform::wire`] value.
 ///
 /// The desktop has no push service. What it registers is that it is awake and
 /// holding the live socket, so that the service counts it as a device a call
@@ -53,11 +54,12 @@ pub struct PresenceRegistration {
 }
 
 impl PresenceRegistration {
-    /// This desktop's presence, under the random `token` its installation made.
-    pub fn desktop(token: impl Into<String>) -> Self {
+    /// This desktop's presence on `platform`, under the random `token` its
+    /// installation made.
+    pub fn desktop(token: impl Into<String>, platform: Platform) -> Self {
         Self {
             token: token.into(),
-            platform: PRESENCE_PLATFORM,
+            platform: platform.wire(),
             kind: PRESENCE_KIND,
         }
     }
@@ -90,15 +92,26 @@ mod tests {
     }
 
     #[test]
-    fn presence_is_the_linux_desktop_pair_and_names_no_device() {
-        let registration = PresenceRegistration::desktop("install-nonce-1");
+    fn presence_is_the_platform_desktop_pair_and_names_no_device() {
+        for platform in Platform::ALL {
+            let registration = PresenceRegistration::desktop("install-nonce-1", platform);
+            assert_eq!(
+                serde_json::to_value(&registration).unwrap(),
+                json!({"token": "install-nonce-1", "platform": platform.wire(), "kind": "desktop"})
+            );
+            assert_eq!(registration.token(), "install-nonce-1");
+            let printed = format!("{registration:?}");
+            assert!(!printed.contains("install-nonce-1"), "{printed}");
+            assert!(printed.contains("desktop"));
+        }
+    }
+
+    #[test]
+    fn the_linux_presence_row_is_unchanged_on_the_wire() {
+        let registration = PresenceRegistration::desktop("install-nonce-1", Platform::Linux);
         assert_eq!(
             serde_json::to_value(&registration).unwrap(),
             json!({"token": "install-nonce-1", "platform": "linux", "kind": "desktop"})
         );
-        assert_eq!(registration.token(), "install-nonce-1");
-        let printed = format!("{registration:?}");
-        assert!(!printed.contains("install-nonce-1"), "{printed}");
-        assert!(printed.contains("desktop"));
     }
 }

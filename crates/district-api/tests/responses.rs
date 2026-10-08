@@ -10,9 +10,9 @@ use std::time::{Duration, SystemTime};
 use common::{client, client_for};
 use district_api::{
     ApiClient, ApiConfig, ApiError, CODE_REGIONS_DEGRADED, ConfigError, DEFAULT_BASE_URL, Endpoint,
-    ErrorDetail, FALLBACK_MESSAGE, RetryReason, TransportError, TransportKind, USER_AGENT,
-    UnauthorizedReason,
+    ErrorDetail, FALLBACK_MESSAGE, RetryReason, TransportError, TransportKind, UnauthorizedReason,
 };
+use district_model::Platform;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use wiremock::matchers::{any, path};
@@ -467,7 +467,9 @@ async fn a_slow_answer_times_out() {
     let config = ApiConfig {
         read_timeout: Duration::from_millis(200),
         request_timeout: Duration::from_millis(400),
-        ..ApiConfig::with_base_url(&server.uri()).unwrap()
+        ..ApiConfig::new(common::app())
+            .with_base_url(&server.uri())
+            .unwrap()
     };
     let client = ApiClient::new(config, common::ScriptedTokens::issuing(&["t1"])).unwrap();
     let error = client
@@ -654,17 +656,38 @@ fn every_error_describes_itself_without_secrets() {
 }
 
 #[test]
-fn the_default_config_points_at_the_service() {
-    let config = ApiConfig::default();
+fn a_new_config_points_at_the_service() {
+    let config = ApiConfig::new(common::app());
     assert_eq!(config.base_url.as_str(), format!("{DEFAULT_BASE_URL}/"));
     assert_eq!(config.connect_timeout, Duration::from_secs(10));
     assert_eq!(config.read_timeout, Duration::from_secs(20));
     assert_eq!(config.request_timeout, Duration::from_secs(30));
+    assert_eq!(config.client, common::app());
     assert_eq!(
-        USER_AGENT,
+        config.user_agent(),
         format!("DistrictAI-Linux/{}", env!("CARGO_PKG_VERSION"))
     );
     assert!(ApiClient::new(config, common::ScriptedTokens::issuing(&[])).is_ok());
+}
+
+/// The `User-Agent` carries the version the app passed in, not this crate's: once
+/// the crate is shared, its own version says nothing about which release of
+/// which app is in the field.
+#[tokio::test]
+async fn the_user_agent_is_the_apps_product_and_version() {
+    for platform in Platform::ALL {
+        let server = answering(ResponseTemplate::new(200).set_body_json(json!({}))).await;
+        let identity = common::app_on(platform);
+        let expected = format!("{}/{}", identity.product, identity.app_version);
+        let client = common::client_as(&server, identity, common::ScriptedTokens::issuing(&["t1"]));
+        let _: Value = client.request(Endpoint::AuthMe).send().await.unwrap();
+        let request = &server.received_requests().await.unwrap()[0];
+        let sent = request.headers.get("user-agent").unwrap().to_str().unwrap();
+        assert_eq!(sent, expected, "{platform:?}");
+    }
+    let windows = common::app_on(Platform::Windows);
+    assert_ne!(windows.app_version, env!("CARGO_PKG_VERSION"));
+    assert_eq!(windows.user_agent(), "DistrictAI-Windows/0.9.7");
 }
 
 #[test]
@@ -675,7 +698,9 @@ fn only_https_or_loopback_http_is_accepted() {
         "http://127.0.0.1:1",
         "http://[::1]:1",
     ] {
-        let config = ApiConfig::with_base_url(accepted).unwrap();
+        let config = ApiConfig::new(common::app())
+            .with_base_url(accepted)
+            .unwrap();
         assert!(config.http_client().is_ok(), "{accepted}");
         assert!(
             ApiClient::new(config, common::ScriptedTokens::issuing(&[])).is_ok(),
@@ -688,7 +713,9 @@ fn only_https_or_loopback_http_is_accepted() {
         "http://[2001:db8::1]",
         "file:///tmp/x",
     ] {
-        let config = ApiConfig::with_base_url(refused).unwrap();
+        let config = ApiConfig::new(common::app())
+            .with_base_url(refused)
+            .unwrap();
         // The bare HTTP client, which the sign-in crate builds its token calls on,
         // refuses exactly what the API client refuses.
         assert!(
@@ -704,7 +731,9 @@ fn only_https_or_loopback_http_is_accepted() {
         );
         assert!(error.to_string().contains("must use https"), "{error}");
     }
-    let error = ApiConfig::with_base_url("not a url").unwrap_err();
+    let error = ApiConfig::new(common::app())
+        .with_base_url("not a url")
+        .unwrap_err();
     assert!(matches!(error, ConfigError::InvalidBaseUrl(_)));
     assert!(
         error

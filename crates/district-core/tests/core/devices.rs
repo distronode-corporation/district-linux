@@ -6,7 +6,7 @@ use district_core::{
     Confirmation, DeviceRow, DevicesEvent, DevicesList, DevicesScreen, Effect, Event, FailureText,
     Model, Route, SessionState, SignOutScope, SigningOut,
 };
-use district_model::{DeviceListResponse, DeviceRevokeResponse, NativeDevice};
+use district_model::{DeviceListResponse, DeviceRevokeResponse, NativeDevice, Platform};
 
 use crate::support::{AGENCY, THIS_DEVICE, fixture, last_ticket, loaded, signed_in};
 
@@ -130,6 +130,14 @@ fn a_row_is_shown_by_its_name_platform_and_last_renewal() {
     assert_eq!(row(Some("   "), "").name(), "Unnamed device");
     assert_eq!(row(None, "").platform(), "Unknown platform");
     assert_eq!(row(None, "tvos").platform(), "tvos");
+    // Every desktop platform a shared-core app can sign in as is shown by its
+    // name, as that platform names itself.
+    for platform in Platform::ALL {
+        assert_eq!(row(None, platform.wire()).platform(), platform.display());
+    }
+    // As they have always read, byte for byte.
+    assert_eq!(row(None, "linux").platform(), "Linux");
+    assert_eq!(row(None, "windows").platform(), "Windows");
     assert_eq!(DeviceRow::THIS_DEVICE, "This device");
 }
 

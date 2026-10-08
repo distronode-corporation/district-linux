@@ -11,9 +11,10 @@ use std::time::Duration;
 use district_api::{ApiConfig, ConfigError, EXCLUDED, HttpMethod};
 use district_auth::{
     AccessToken, AuthorizationGrant, ExchangeOutcome, LoginFlow, MAX_DEVICE_NAME_UNITS,
-    NativeAuthApi, NativeTokens, PLATFORM, REDIRECT_URI, REFRESH_PATH, REVOKE_PATH, RefreshApi,
+    NativeAuthApi, NativeTokens, REDIRECT_URI, REFRESH_PATH, REVOKE_PATH, RefreshApi,
     RefreshOutcome, RefreshToken, RevokeApi, RevokeOutcome, TOKEN_PATH,
 };
+use district_model::{ClientIdentity, Platform};
 use serde_json::{Value, json};
 use tokio::net::TcpListener;
 use url::Url;
@@ -49,12 +50,37 @@ async fn answering(route: &str, response: ResponseTemplate) -> MockServer {
     server
 }
 
+/// The app on `platform`. The Linux one is the Linux app at this release.
+fn app_on(platform: Platform) -> ClientIdentity {
+    match platform {
+        Platform::Linux => ClientIdentity::new(
+            Platform::Linux,
+            "DistrictAI-Linux",
+            env!("CARGO_PKG_VERSION"),
+        ),
+        Platform::Windows => ClientIdentity::new(Platform::Windows, "DistrictAI-Windows", "0.9.7"),
+    }
+}
+
+fn config_for(base: &str) -> ApiConfig {
+    ApiConfig::new(app_on(Platform::Linux))
+        .with_base_url(base)
+        .unwrap()
+}
+
 fn api_for(base: &str) -> NativeAuthApi {
-    NativeAuthApi::new(&ApiConfig::with_base_url(base).unwrap()).unwrap()
+    NativeAuthApi::new(&config_for(base)).unwrap()
 }
 
 fn api(server: &MockServer) -> NativeAuthApi {
     api_for(&server.uri())
+}
+
+fn api_on(server: &MockServer, platform: Platform) -> NativeAuthApi {
+    let config = ApiConfig::new(app_on(platform))
+        .with_base_url(&server.uri())
+        .unwrap();
+    NativeAuthApi::new(&config).unwrap()
 }
 
 async fn only_request(server: &MockServer) -> Request {
@@ -65,7 +91,7 @@ async fn only_request(server: &MockServer) -> Request {
 
 /// A grant from a real sign-in attempt, and the verifier it carries.
 fn grant() -> (AuthorizationGrant, String) {
-    let mut flow = LoginFlow::new(&ApiConfig::default());
+    let mut flow = LoginFlow::new(&ApiConfig::new(app_on(Platform::Linux)));
     let url = flow.authorize_url();
     let state = url
         .query_pairs()
@@ -117,7 +143,7 @@ fn impatient(base: &str) -> NativeAuthApi {
     let config = ApiConfig {
         read_timeout: Duration::from_millis(200),
         request_timeout: Duration::from_millis(500),
-        ..ApiConfig::with_base_url(base).unwrap()
+        ..config_for(base)
     };
     NativeAuthApi::new(&config).unwrap()
 }
@@ -156,27 +182,36 @@ async fn the_exchange_sends_every_field_the_service_requires_and_no_null() {
             "platform": "linux",
         })
     );
-    assert_eq!(PLATFORM, "linux");
 }
 
 #[tokio::test]
 async fn the_exchange_leaves_out_a_missing_or_blank_device_name() {
-    let server = answering(
-        TOKEN_PATH,
-        ResponseTemplate::new(200).set_body_json(token_body(1)),
-    )
-    .await;
-    let (grant, _) = grant();
-    let api = api(&server);
-    api.exchange_code(&grant, "device-abcdefgh", None).await;
-    api.exchange_code(&grant, "device-abcdefgh", Some("   "))
+    for platform in Platform::ALL {
+        let server = answering(
+            TOKEN_PATH,
+            ResponseTemplate::new(200).set_body_json(token_body(1)),
+        )
         .await;
+        let (grant, _) = grant();
+        let api = api_on(&server, platform);
+        api.exchange_code(&grant, "device-abcdefgh", None).await;
+        api.exchange_code(&grant, "device-abcdefgh", Some("   "))
+            .await;
 
-    for request in server.received_requests().await.unwrap() {
-        let body: Value = serde_json::from_slice(&request.body).unwrap();
-        // The service accepts a missing name and refuses a null one.
-        assert!(body.get("deviceName").is_none(), "{body}");
-        assert_eq!(body["platform"], "linux");
+        let requests = server.received_requests().await.unwrap();
+        assert_eq!(requests.len(), 2);
+        for request in requests {
+            let body: Value = serde_json::from_slice(&request.body).unwrap();
+            // The service accepts a missing name and refuses a null one.
+            assert!(body.get("deviceName").is_none(), "{body}");
+            // The platform is the one the app configured.
+            assert_eq!(body["platform"], platform.wire());
+            // And so is the User-Agent: the app's product at the app's version.
+            assert_eq!(
+                request.headers["user-agent"].to_str().unwrap(),
+                app_on(platform).user_agent()
+            );
+        }
     }
 }
 
@@ -217,11 +252,9 @@ async fn the_exchange_carries_no_credential_but_the_code() {
     assert!(request.headers.get("cookie").is_none());
     assert_eq!(request.headers["content-type"], "application/json");
     assert_eq!(request.headers["accept"], "application/json");
-    assert!(
-        request.headers["user-agent"]
-            .to_str()
-            .unwrap()
-            .starts_with("DistrictAI-Linux/")
+    assert_eq!(
+        request.headers["user-agent"].to_str().unwrap(),
+        format!("DistrictAI-Linux/{}", env!("CARGO_PKG_VERSION"))
     );
 }
 
@@ -444,12 +477,12 @@ async fn requests_go_below_the_base_url_path_and_drop_its_query() {
 
 #[test]
 fn an_insecure_base_url_is_refused() {
-    let config = ApiConfig::with_base_url("http://sign-in.example.test").unwrap();
+    let config = config_for("http://sign-in.example.test");
     assert!(matches!(
         NativeAuthApi::new(&config),
         Err(ConfigError::InsecureBaseUrl(_))
     ));
-    assert!(NativeAuthApi::new(&ApiConfig::default()).is_ok());
+    assert!(NativeAuthApi::new(&ApiConfig::new(app_on(Platform::Linux))).is_ok());
 }
 
 /// The three routes this crate calls are the ones the API client's endpoint

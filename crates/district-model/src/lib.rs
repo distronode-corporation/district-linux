@@ -39,6 +39,7 @@ mod auth;
 mod billing;
 mod call_handling;
 mod calls;
+mod client;
 mod compose;
 mod contacts;
 mod desk;
@@ -84,6 +85,7 @@ pub use calls::{
     CallAnalysis, CallDetailResponse, CallFollowUp, CallHangUpResponse, CallSummary,
     CallTranscriptResponse,
 };
+pub use client::{ClientIdentity, Platform};
 pub use compose::{
     AiDraftResponse, DraftDeleteResponse, DraftListResponse, DraftResponse, DraftSaveRequest,
     MarkReadResponse, MediaUploadResponse, MessageDraft, SendMessageRequest, SendMessageResponse,
@@ -138,7 +140,7 @@ pub use persona::{
 };
 pub use phone::{PhoneIntel, PhoneRegion};
 pub use pkce::PkceVector;
-pub use push::{PRESENCE_KIND, PRESENCE_PLATFORM, PresenceRegistration, PushRegistrationResponse};
+pub use push::{PRESENCE_KIND, PresenceRegistration, PushRegistrationResponse};
 pub use rooms::{
     GuestInvite, MeetRoomName, MeetingDetail, MeetingSummary, RoomE2ee, RoomTokenResponse,
 };

@@ -81,8 +81,10 @@
 //! ```no_run
 //! # async fn example(tokens: impl district_api::TokenSource) -> Result<(), Box<dyn std::error::Error>> {
 //! use district_api::{ApiClient, ApiConfig, Endpoint};
+//! use district_model::{ClientIdentity, Platform};
 //!
-//! let client = ApiClient::new(ApiConfig::default(), tokens)?;
+//! let app = ClientIdentity::new(Platform::Linux, "DistrictAI-Linux", "2.1.0");
+//! let client = ApiClient::new(ApiConfig::new(app), tokens)?;
 //! let transcript: serde_json::Value = client
 //!     .request(Endpoint::CallTranscript)
 //!     .path_param("callId", "c_123")
@@ -126,7 +128,7 @@ mod workflows;
 
 pub use client::{ApiClient, Request};
 pub use clock::{Clock, SystemClock};
-pub use config::{ApiConfig, ConfigError, DEFAULT_BASE_URL, USER_AGENT};
+pub use config::{ApiConfig, ConfigError, DEFAULT_BASE_URL};
 pub use endpoints::{
     ALL_ENDPOINTS, Auth, BodyKind, Endpoint, EndpointSpec, HttpMethod, RetryPolicy, WorkspaceIn,
 };

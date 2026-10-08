@@ -19,7 +19,7 @@
 use std::future::Future;
 
 use district_api::{AccessToken, ApiConfig, ConfigError};
-use district_model::NativeRevokeResponse;
+use district_model::{NativeRevokeResponse, Platform};
 use reqwest::StatusCode;
 use reqwest::header::ACCEPT;
 use serde::{Deserialize, Serialize};
@@ -34,10 +34,6 @@ pub const TOKEN_PATH: &str = "/api/auth/native/token";
 pub const REFRESH_PATH: &str = "/api/auth/native/refresh";
 /// `POST`: end this installation's session on the service.
 pub const REVOKE_PATH: &str = "/api/auth/native/revoke";
-
-/// What this client tells the service it is, at sign-in. The service stores it
-/// on the session and shows it in every signed-in devices list.
-pub const PLATFORM: &str = "linux";
 
 /// The longest device name the service accepts, counted as it counts: in UTF-16
 /// code units.
@@ -145,6 +141,10 @@ pub enum RevokeOutcome {
 pub struct NativeAuthApi {
     http: reqwest::Client,
     base_url: Url,
+    /// What this client tells the service it is, at sign-in: the platform in
+    /// `config.client`. The service stores it on the session and shows it in
+    /// every signed-in devices list.
+    platform: Platform,
 }
 
 impl NativeAuthApi {
@@ -155,6 +155,7 @@ impl NativeAuthApi {
         Ok(Self {
             http: config.http_client()?,
             base_url: config.base_url.clone(),
+            platform: config.client.platform,
         })
     }
 
@@ -181,7 +182,7 @@ impl NativeAuthApi {
             redirect_uri: REDIRECT_URI,
             device_id,
             device_name: device_name.as_deref(),
-            platform: PLATFORM,
+            platform: self.platform.wire(),
         };
         let Ok(response) = self.post(TOKEN_PATH, &body).await else {
             return ExchangeOutcome::TransportFailure;

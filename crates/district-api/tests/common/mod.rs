@@ -9,6 +9,7 @@ use std::sync::Mutex;
 use district_api::{
     AccessToken, ApiClient, ApiConfig, ReauthReason, TokenCell, TokenError, TokenSource,
 };
+use district_model::{ClientIdentity, Platform};
 use wiremock::MockServer;
 
 /// A token source that hands out a scripted sequence of refresh results.
@@ -81,18 +82,49 @@ impl TokenSource for ScriptedTokens {
     }
 }
 
+/// The Linux app at this release, as the tests' clients name themselves.
+pub fn app() -> ClientIdentity {
+    app_on(Platform::Linux)
+}
+
+/// An app on `platform`, under a product name and version no crate has, so a
+/// test can tell they came from here.
+pub fn app_on(platform: Platform) -> ClientIdentity {
+    match platform {
+        Platform::Linux => ClientIdentity::new(
+            Platform::Linux,
+            "DistrictAI-Linux",
+            env!("CARGO_PKG_VERSION"),
+        ),
+        Platform::Windows => ClientIdentity::new(Platform::Windows, "DistrictAI-Windows", "0.9.7"),
+    }
+}
+
 /// A client for `server` whose first token is `t1`, then `t2`, and so on.
 pub fn client(server: &MockServer) -> ApiClient<ScriptedTokens> {
     client_with(server, ScriptedTokens::issuing(&["t1", "t2", "t3"]))
 }
 
 pub fn client_with(server: &MockServer, tokens: ScriptedTokens) -> ApiClient<ScriptedTokens> {
-    let config = ApiConfig::with_base_url(&server.uri()).expect("the mock server URI parses");
+    client_as(server, app(), tokens)
+}
+
+/// A client for `server` that names itself as `identity`.
+pub fn client_as(
+    server: &MockServer,
+    identity: ClientIdentity,
+    tokens: ScriptedTokens,
+) -> ApiClient<ScriptedTokens> {
+    let config = ApiConfig::new(identity)
+        .with_base_url(&server.uri())
+        .expect("the mock server URI parses");
     ApiClient::new(config, tokens).expect("a loopback http base URL is accepted")
 }
 
 /// A client for an arbitrary base URL, for the tests that need no mock server.
 pub fn client_for(base_url: &str) -> ApiClient<ScriptedTokens> {
-    let config = ApiConfig::with_base_url(base_url).expect("the base URL parses");
+    let config = ApiConfig::new(app())
+        .with_base_url(base_url)
+        .expect("the base URL parses");
     ApiClient::new(config, ScriptedTokens::issuing(&["t1"])).expect("the base URL is accepted")
 }

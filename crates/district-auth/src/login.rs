@@ -316,7 +316,12 @@ mod tests {
 
     #[test]
     fn debug_output_names_no_secret() {
-        let mut flow = LoginFlow::new(&ApiConfig::default());
+        let app = district_model::ClientIdentity::new(
+            district_model::Platform::Linux,
+            "DistrictAI-Linux",
+            "0.0.0",
+        );
+        let mut flow = LoginFlow::new(&ApiConfig::new(app));
         let url = flow.authorize_url();
         let state = url
             .query_pairs()

@@ -28,7 +28,7 @@ use std::time::Duration;
 
 use district_api::ApiError;
 use district_auth::PresenceHook;
-use district_model::{PresenceRegistration, PushRegistrationResponse};
+use district_model::{Platform, PresenceRegistration, PushRegistrationResponse};
 
 use crate::failure::FailureText;
 use crate::model::{Effect, Slot, Ticket, Tickets};
@@ -281,12 +281,14 @@ impl<A> fmt::Debug for DesktopPresence<A> {
 }
 
 impl<A: PresenceApi> DesktopPresence<A> {
-    /// Presence set through `api`, the API client.
-    pub fn new(api: Arc<A>) -> Self {
+    /// Presence set through `api`, the API client, registered as an app on
+    /// `platform`.
+    pub fn new(api: Arc<A>, platform: Platform) -> Self {
+        let token = uuid::Uuid::new_v4().to_string();
         Self {
             shared: Arc::new(Shared {
                 api,
-                registration: PresenceRegistration::desktop(uuid::Uuid::new_v4().to_string()),
+                registration: PresenceRegistration::desktop(token, platform),
                 applied: tokio::sync::Mutex::new(None),
             }),
         }

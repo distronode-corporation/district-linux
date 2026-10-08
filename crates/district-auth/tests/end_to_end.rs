@@ -13,6 +13,7 @@ use district_auth::{
     AccessToken, Clock, ExchangeOutcome, LoginFlow, NativeAuthApi, NoPresence, Persistence,
     REDIRECT_URI, RevokeStatus, SignOut, SystemClock, TokenRefreshCoordinator, TokenSource,
 };
+use district_model::{ClientIdentity, Platform};
 use serde_json::{Value, json};
 use url::Url;
 use wiremock::matchers::{header, method, path};
@@ -31,7 +32,12 @@ fn token_body(n: u32) -> Value {
 }
 
 fn config(server: &MockServer) -> ApiConfig {
-    ApiConfig::with_base_url(&server.uri()).unwrap()
+    let app = ClientIdentity::new(
+        Platform::Linux,
+        "DistrictAI-Linux",
+        env!("CARGO_PKG_VERSION"),
+    );
+    ApiConfig::new(app).with_base_url(&server.uri()).unwrap()
 }
 
 async fn signed_in(

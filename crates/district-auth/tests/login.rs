@@ -11,7 +11,17 @@ use district_auth::{
     AUTHORIZE_PATH, CODE_CHALLENGE_METHOD, LoginError, LoginFlow, REDIRECT_SCHEME, REDIRECT_URI,
     challenge_for, is_valid_challenge,
 };
+use district_model::{ClientIdentity, Platform};
 use url::Url;
+
+/// The settings for the service, as the Linux app makes them.
+fn service() -> ApiConfig {
+    ApiConfig::new(ClientIdentity::new(
+        Platform::Linux,
+        "DistrictAI-Linux",
+        env!("CARGO_PKG_VERSION"),
+    ))
+}
 
 fn param(url: &Url, name: &str) -> String {
     url.query_pairs()
@@ -22,7 +32,7 @@ fn param(url: &Url, name: &str) -> String {
 
 /// A flow with an attempt in progress, and that attempt's state.
 fn started() -> (LoginFlow, String) {
-    let mut flow = LoginFlow::new(&ApiConfig::default());
+    let mut flow = LoginFlow::new(&service());
     let state = param(&flow.authorize_url(), "state");
     (flow, state)
 }
@@ -33,7 +43,7 @@ fn callback(query: &str) -> Url {
 
 #[test]
 fn the_authorize_url_carries_exactly_what_the_service_reads() {
-    let mut flow = LoginFlow::new(&ApiConfig::default());
+    let mut flow = LoginFlow::new(&service());
     assert!(!flow.is_pending());
     let url = flow.authorize_url();
     assert!(flow.is_pending());
@@ -65,7 +75,9 @@ fn the_authorize_url_carries_exactly_what_the_service_reads() {
 
 #[test]
 fn the_authorize_url_keeps_the_base_path_and_drops_its_query() {
-    let config = ApiConfig::with_base_url("https://sign-in.example.test/base/?leak=1#f").unwrap();
+    let config = service()
+        .with_base_url("https://sign-in.example.test/base/?leak=1#f")
+        .unwrap();
     let url = LoginFlow::new(&config).authorize_url();
     assert_eq!(url.path(), "/base/auth/native");
     assert!(!url.as_str().contains("leak"));
@@ -74,7 +86,7 @@ fn the_authorize_url_keeps_the_base_path_and_drops_its_query() {
 
 #[test]
 fn a_matching_callback_yields_the_code_and_this_attempts_verifier() {
-    let mut flow = LoginFlow::new(&ApiConfig::default());
+    let mut flow = LoginFlow::new(&service());
     let url = flow.authorize_url();
     let state = param(&url, "state");
 
@@ -112,7 +124,7 @@ fn a_callback_is_used_once() {
 
 #[test]
 fn a_callback_with_no_attempt_in_progress_is_refused() {
-    let mut flow = LoginFlow::new(&ApiConfig::default());
+    let mut flow = LoginFlow::new(&service());
     assert_eq!(
         flow.complete(&callback("code=c&state=s")).unwrap_err(),
         LoginError::NoAttemptInProgress
@@ -130,7 +142,7 @@ fn a_callback_with_no_attempt_in_progress_is_refused() {
 
 #[test]
 fn a_new_attempt_replaces_the_old_one() {
-    let mut flow = LoginFlow::new(&ApiConfig::default());
+    let mut flow = LoginFlow::new(&service());
     let first = flow.authorize_url();
     let second = flow.authorize_url();
     assert_ne!(param(&first, "state"), param(&second, "state"));
@@ -182,7 +194,7 @@ fn a_state_that_is_not_this_attempts_is_refused_before_anything_else() {
         // An error from the page is not believed without the right state either.
         "error=access_denied&state=attacker-chosen".to_owned(),
     ] {
-        let mut flow = LoginFlow::new(&ApiConfig::default());
+        let mut flow = LoginFlow::new(&service());
         let url = flow.authorize_url();
         let query = query.replace(&state, &param(&url, "state"));
         let outcome = flow.complete(&callback(&query));

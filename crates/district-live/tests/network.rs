@@ -16,12 +16,23 @@ use district_live::{
     Disconnect, LiveConfig, LiveUpdate, SystemClock, TELEMETRY_SUBPROTOCOL, TelemetryConnection,
     TokenMinter,
 };
+use district_model::{ClientIdentity, Platform};
 use serde_json::json;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
+
+/// The settings for the service, as the Linux app makes them.
+fn service() -> ApiConfig {
+    let app = ClientIdentity::new(
+        Platform::Linux,
+        "DistrictAI-Linux",
+        env!("CARGO_PKG_VERSION"),
+    );
+    ApiConfig::new(app)
+}
 
 async fn listener() -> (TcpListener, u16) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -149,7 +160,7 @@ async fn the_api_client_mints_through_the_telemetry_route() {
         })))
         .mount(&server)
         .await;
-    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let config = service().with_base_url(&server.uri()).unwrap();
     let client = ApiClient::new(config, FixedToken).unwrap();
 
     let token = client.mint(WORKSPACE).await.unwrap();
@@ -171,7 +182,7 @@ async fn a_member_refused_by_the_api_ends_the_connection() {
         })))
         .mount(&server)
         .await;
-    let api = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let api = service().with_base_url(&server.uri()).unwrap();
     let client = Arc::new(ApiClient::new(api, FixedToken).unwrap());
     let (_connection, mut updates) =
         TelemetryConnection::start(WORKSPACE, client, LiveConfig::network().unwrap());
