@@ -9,7 +9,7 @@ use district_core::{Effect, Event, Model, SessionState, SignedOut, SignedOutWhy}
 
 use crate::adw;
 use crate::adw::prelude::*;
-use crate::app::{APP_ID, Parts, is_sign_in_callback};
+use crate::app::{APP_ID, Parts};
 use crate::bridge::UiCommand;
 use crate::effects::Effects;
 use crate::gtk::{self, gdk, gio, glib};
@@ -130,13 +130,13 @@ impl Controller {
     }
 
     /// The desktop handed the app `files`. A `districtai:` link is the
-    /// browser's answer to a sign-in and goes to the model as it arrived; the
-    /// core checks it against the attempt. Anything else is not for this app.
+    /// browser's answer to a sign-in or to a hand-off to the web, and goes to
+    /// the model as it arrived ([`Event::from_link`]); the core checks it
+    /// against what it is waiting for. Anything else is not for this app.
     pub(crate) fn open(self: &Rc<Self>, files: &[gio::File]) {
         for file in files {
-            let uri = file.uri();
-            if is_sign_in_callback(&uri) {
-                self.events.try_send(Event::SignInCallback(uri.into())).ok();
+            if let Some(event) = Event::from_link(&file.uri()) {
+                self.events.try_send(event).ok();
             }
         }
         self.present();

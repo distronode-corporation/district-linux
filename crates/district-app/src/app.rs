@@ -4,7 +4,6 @@
 use std::rc::Rc;
 use std::sync::Once;
 
-use district_auth::REDIRECT_SCHEME;
 use district_core::{CoreConfig, Event};
 
 use crate::adw;
@@ -42,8 +41,9 @@ pub struct Parts {
 /// The application, built from `parts`. Run it with `run`, or, in a test,
 /// register it and activate it by hand.
 ///
-/// It handles `open`: a `districtai://auth` link, from the browser through the
-/// desktop, reaches the running instance, which holds the sign-in attempt.
+/// It handles `open`: a `districtai://auth` or `districtai://handoff` link, from
+/// the browser through the desktop, reaches the running instance, which holds
+/// the sign-in attempt or the hand-off to the web.
 pub fn application(parts: Parts) -> adw::Application {
     register_resources();
     let app = adw::Application::builder()
@@ -61,13 +61,6 @@ pub fn application(parts: Parts) -> adw::Application {
     app
 }
 
-/// Whether `uri` is the browser's answer to a sign-in: a link in the
-/// `districtai` scheme. The core checks everything else about it.
-pub(crate) fn is_sign_in_callback(uri: &str) -> bool {
-    uri.split_once(':')
-        .is_some_and(|(scheme, _)| scheme.eq_ignore_ascii_case(REDIRECT_SCHEME))
-}
-
 /// Puts the resources built into the binary where GTK looks: the templates,
 /// the stylesheet, the ringtone and the icons. Once per process.
 fn register_resources() {
@@ -80,6 +73,8 @@ fn register_resources() {
 
 #[cfg(test)]
 mod tests {
+    use district_auth::{HAND_OFF_HOST, REDIRECT_SCHEME};
+
     use super::*;
 
     /// GLib refuses to register an application whose id it considers invalid,
@@ -90,7 +85,10 @@ mod tests {
     }
 
     /// The desktop entry, the D-Bus service and the AppStream metadata name
-    /// this app, its binary, and the link scheme sign-in answers on.
+    /// this app, its binary, and the link scheme the browser answers on. A
+    /// scheme handler claims the whole scheme, so the one `MimeType` line hands
+    /// the app both the sign-in's `districtai://auth` and the hand-off's
+    /// `districtai://handoff`.
     #[test]
     fn the_files_the_desktop_reads_name_this_app() {
         let desktop = include_str!("../data/com.distronode.DistrictAI.desktop");
@@ -103,6 +101,7 @@ mod tests {
             assert!(desktop.lines().any(|l| l == line), "{line}");
         }
         assert_eq!(REDIRECT_SCHEME, "districtai");
+        assert_eq!(HAND_OFF_HOST, "handoff");
         // A template: each package writes its own binary's directory over
         // `@bindir@` (the .deb `/usr/bin`, the Flatpak `/app/bin`), because the
         // desktop starts what `Exec` names without searching `PATH`.
@@ -136,12 +135,26 @@ mod tests {
         )));
     }
 
+    /// Every link the desktop hands over goes through `Event::from_link`: the
+    /// sign-in's answer and the hand-off's by their host, as they arrived, and
+    /// nothing outside the app's scheme.
     #[test]
-    fn only_the_sign_in_scheme_is_a_sign_in_callback() {
-        assert!(is_sign_in_callback("districtai://auth?code=c&state=s"));
-        assert!(is_sign_in_callback("DistrictAI://auth"));
-        assert!(!is_sign_in_callback("https://www.distronode.com/"));
-        assert!(!is_sign_in_callback("file:///home/ada/districtai:x"));
-        assert!(!is_sign_in_callback("districtai"));
+    fn links_in_the_app_scheme_reach_the_model_by_their_host() {
+        let sign_in = "districtai://auth?code=c&state=s";
+        assert_eq!(
+            Event::from_link(sign_in),
+            Some(Event::SignInCallback(sign_in.to_owned()))
+        );
+        assert!(matches!(
+            Event::from_link("DistrictAI://auth"),
+            Some(Event::SignInCallback(_))
+        ));
+        assert!(matches!(
+            Event::from_link("districtai://handoff?state=s&nonce=n"),
+            Some(Event::HandOffCallback(_))
+        ));
+        assert_eq!(Event::from_link("https://www.distronode.com/"), None);
+        assert_eq!(Event::from_link("file:///home/ada/districtai:x"), None);
+        assert_eq!(Event::from_link("districtai"), None);
     }
 }

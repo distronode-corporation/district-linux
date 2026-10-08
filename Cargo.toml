@@ -45,13 +45,13 @@ publish = false
 # The core also sets `log`'s `max_level_warn` (district-live and district-call
 # do), which compiles every log line below warn out of the whole build, this
 # workspace's crates included; the core's SECURITY.md says why.
-district-model = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
-district-api = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
-district-auth = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
-district-live = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
-district-core = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
-district-host = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
-district-call = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+district-model = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.2.0", version = "=1.2.0" }
+district-api = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.2.0", version = "=1.2.0" }
+district-auth = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.2.0", version = "=1.2.0" }
+district-live = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.2.0", version = "=1.2.0" }
+district-core = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.2.0", version = "=1.2.0" }
+district-host = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.2.0", version = "=1.2.0" }
+district-call = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.2.0", version = "=1.2.0" }
 # This workspace's own crate besides the app. Path only: it is not published, so
 # there is no registry version to keep in step (deny.toml's `allow-wildcard-paths`
 # relies on `publish = false` above).
