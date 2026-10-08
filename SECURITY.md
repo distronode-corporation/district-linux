@@ -160,6 +160,19 @@ How the app is built, so a report can say which part of it breaks.
   address over HTTPS (the host is compared up to the `/` after it), and a link
   that arrives after the user opened another workspace or signed out is not opened
   at all.
+- That link is bound to the browser the app opened. The press first opens the
+  service's hand-off start page with a fresh `state`; the browser answers through a
+  `districtai://handoff` link, which the desktop hands to the app as it hands the
+  sign-in's `districtai://auth`, carrying a one-time nonce that the service also
+  keeps in that browser as a short-lived cookie; and the link is asked for with that
+  nonce, so it signs in only the browser holding the cookie. A `districtai://handoff`
+  link that does not answer the hand-off under way (another `state`, a malformed
+  nonce, or none awaited) is dropped and leaves it waiting, so a stray or forged
+  link cannot cancel or complete one. If the browser does not answer within ten
+  seconds the link is asked for unbound, which the service accepts until it
+  requires the binding; if no browser took the start page, the hand-off is given
+  up. The `state` and the nonce are kept in memory only, never logged, and
+  redacted from `Debug`.
 - A meeting room is named only by `meet_<workspace>_<name>`, built in one place.
   The service mints credentials for one other kind of room, an AI video avatar
   session that is billed, and the client has no way to name one.
