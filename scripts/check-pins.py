@@ -2,10 +2,11 @@
 """Fail when a value this repository writes down in more than one place has
 drifted between the copies.
 
-    python3 scripts/check-pins.py              # check the tree
+    python3 scripts/check-pins.py              # check the tree (needs the network)
+    python3 scripts/check-pins.py --offline    # ...all but what only GitHub knows
     python3 scripts/check-pins.py --self-test  # prove each check works
 
-Two sets of copies, each with one file that is the source:
+Three sets of copies, each with one source:
 
     libwebrtc   scripts/fetch-libwebrtc.sh pins the archive a build with calls
                 links: webrtc-sys-build's version, the WebRTC tag, the release of
@@ -23,17 +24,41 @@ Two sets of copies, each with one file that is the source:
                 packages' THIRD-PARTY-LICENSES.txt only when a package is built,
                 so a licence allowed in one and not the other would pass review
                 and fail the release.
+    core        District AI core for Rust, whose seven crates Cargo.toml pins by
+                git tag with the exact version beside it. Every one names the
+                same repository, tag and version, and nothing else (no branch, no
+                rev, no path, and no [patch] or [replace] table anywhere in
+                Cargo.toml); Cargo.lock holds each at that version and tag, all at
+                one commit; deny.toml's `[sources] allow-git` names the
+                repository; and packaging/flatpak/cargo-sources.json fetches that
+                commit and points Cargo at it for that tag, so the offline
+                Flatpak build compiles what every other build does.
+                Then, from GitHub (skipped by --offline): the tag still names
+                that commit, so a tag moved or recreated upstream fails here
+                instead of being followed quietly by the next `cargo update`;
+                scripts/check-public-hygiene.py and scripts/check-coverage.py are
+                byte for byte the core's at that commit, whose copies are the
+                source (this repository keeps its own so that both run offline
+                and before anything is built); and the core's
+                scripts/fetch-libwebrtc.sh pins the same libwebrtc as this one,
+                because the core's engine tests and this app's packages must
+                link the same archive.
 
 `--self-test` plants a drift in each copy and fails unless every one is caught,
-and checks that the files as committed pass. Run by the `repo` job in
-.github/workflows/ci.yml. Python 3.11 or newer, standard library only.
+and checks that the files as committed pass. It needs no network: the core's
+files it compares with are this repository's copies, planted with drifts too.
+Run by the `repo` job in .github/workflows/ci.yml, and by release.yml before a
+release is built. Python 3.11 or newer, standard library only.
 """
 
 from __future__ import annotations
 
+import json
 import re
+import subprocess
 import sys
 import tomllib
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,6 +68,28 @@ MANIFEST = "packaging/flatpak/com.distronode.DistrictAI.yml"
 NOTICE = "NOTICE"
 ABOUT = "about.toml"
 DENY = "deny.toml"
+CARGO = "Cargo.toml"
+LOCK = "Cargo.lock"
+SOURCES = "packaging/flatpak/cargo-sources.json"
+HYGIENE = "scripts/check-public-hygiene.py"
+COVERAGE = "scripts/check-coverage.py"
+
+CORE_URL = "https://github.com/distronode-corporation/district-core-rust"
+CORE_RAW = "https://raw.githubusercontent.com/distronode-corporation/district-core-rust"
+CORE_CRATES = (
+    "district-model",
+    "district-api",
+    "district-auth",
+    "district-live",
+    "district-core",
+    "district-host",
+    "district-call",
+)
+# The files this repository keeps as copies of the core's, compared byte for
+# byte with the core's at the locked commit.
+CORE_COPIES = (HYGIENE, COVERAGE)
+# A full commit id, as Cargo.lock records it.
+COMMIT = re.compile(r"[0-9a-f]{40}")
 
 # `NAME="value"` at the start of a line, the way both shell scripts set a pin.
 ASSIGNMENT = re.compile(r'^([A-Z][A-Z0-9_]*)="([^"]*)"$', re.MULTILINE)
@@ -130,18 +177,138 @@ def licence_errors(about: str, deny: str) -> list[str]:
     return errors
 
 
+def core_pin(cargo: str, lock: str) -> tuple[list[str], tuple[str, str, str] | None]:
+    """The core's tag, version and locked commit, or why there is no one pin."""
+    errors = []
+    manifest = tomllib.loads(cargo)
+    for table in ("patch", "replace"):
+        if table in manifest:
+            errors.append(f"{CARGO} has a [{table}] table; the core is pinned by tag and Cargo.lock alone")
+    deps = manifest.get("workspace", {}).get("dependencies", {})
+    tags, versions = set(), set()
+    for name in CORE_CRATES:
+        spec = deps.get(name)
+        if not isinstance(spec, dict):
+            errors.append(f"{CARGO} [workspace.dependencies] does not pin {name} as a table")
+            continue
+        if sorted(spec) != ["git", "tag", "version"]:
+            errors.append(f"{CARGO} pins {name} with {sorted(spec)}, not exactly git, tag and version")
+        if spec.get("git") != CORE_URL:
+            errors.append(f"{CARGO} takes {name} from {spec.get('git')!r}, not {CORE_URL}")
+        tag, version = spec.get("tag", ""), spec.get("version", "")
+        if not version.startswith("=") or tag != "v" + version[1:]:
+            errors.append(f"{CARGO} pins {name} at tag {tag!r} with version {version!r}; want tag vX.Y.Z and version =X.Y.Z")
+        tags.add(tag)
+        versions.add(version)
+    if len(tags) > 1:
+        errors.append(f"{CARGO} pins the core's crates at more than one tag: {sorted(tags)}")
+    if errors:
+        return errors, None
+    tag, version = tags.pop(), versions.pop()[1:]
+
+    packages = tomllib.loads(lock).get("package", [])
+    commits = set()
+    for name in CORE_CRATES:
+        found = [p for p in packages if p.get("name") == name]
+        if len(found) != 1:
+            errors.append(f"{LOCK} has {len(found)} packages named {name}, not one")
+            continue
+        package = found[0]
+        if package.get("version") != version:
+            errors.append(f"{LOCK} has {name} {package.get('version')}, {CARGO} pins ={version}")
+        source = package.get("source", "")
+        prefix = f"git+{CORE_URL}?tag={tag}#"
+        if not source.startswith(prefix) or not COMMIT.fullmatch(source[len(prefix):]):
+            errors.append(f"{LOCK} takes {name} from {source!r}, not {prefix}<commit>")
+            continue
+        commits.add(source[len(prefix):])
+    if len(commits) > 1:
+        errors.append(f"{LOCK} holds the core's crates at more than one commit: {sorted(commits)}")
+    if errors or not commits:
+        return errors, None
+    return [], (tag, version, commits.pop())
+
+
+def core_errors(cargo: str, lock: str, deny: str, sources: str) -> list[str]:
+    errors, pin = core_pin(cargo, lock)
+    if pin is None:
+        return errors
+    tag, _, commit = pin
+    allowed = tomllib.loads(deny).get("sources", {}).get("allow-git", [])
+    if CORE_URL not in allowed:
+        errors.append(f"{DENY} [sources] allow-git does not name {CORE_URL}")
+    entries = json.loads(sources)
+    gits = [e for e in entries if e.get("type") == "git" and e.get("url") == CORE_URL]
+    if [e.get("commit") for e in gits] != [commit]:
+        errors.append(
+            f"{SOURCES} fetches the core at {[e.get('commit') for e in gits]}, not once at {commit}"
+            " (run scripts/flatpak-cargo-sources.sh)"
+        )
+    config = "\n".join(e.get("contents", "") for e in entries if e.get("dest-filename") == "config")
+    if f'[source."{CORE_URL}"]' not in config or f'tag = "{tag}"' not in config:
+        errors.append(f"{SOURCES} does not point Cargo's {CORE_URL} at tag {tag} to the vendored sources")
+    return errors
+
+
+def tag_commit(refs: str, tag: str) -> str | None:
+    """The commit `tag` names, from `git ls-remote` output: the peeled line of an
+    annotated tag, or the tag's own line for a lightweight one."""
+    lines = dict(reversed(line.split("\t", 1)) for line in refs.splitlines() if "\t" in line)
+    return lines.get(f"refs/tags/{tag}^{{}}") or lines.get(f"refs/tags/{tag}")
+
+
+def core_remote_errors(pin: tuple[str, str, str], refs: str, core: dict[str, str], texts: dict[str, str]) -> list[str]:
+    """What only GitHub can answer: the tag against the locked commit, and the
+    copies against the core's files at that commit (`core`, by path)."""
+    tag, _, commit = pin
+    errors = []
+    named = tag_commit(refs, tag)
+    if named != commit:
+        errors.append(f"{CORE_URL} tag {tag} names {named}, but {LOCK} holds {commit}")
+    for path in CORE_COPIES:
+        if texts[path] != core[path]:
+            errors.append(f"{path} is not the core's at {commit[:12]}; copy it from there")
+    ours, theirs = shell_pins(texts[FETCH]), shell_pins(core[FETCH])
+    for name in ("WEBRTC_SYS_BUILD_VERSION", "WEBRTC_TAG", "RELEASE", "ARCHIVE", "SHA256", "URL", "UNPACKED"):
+        if ours.get(name) != theirs.get(name):
+            errors.append(f"{FETCH} has {name}={ours.get(name)!r}, the core's at {commit[:12]} has {theirs.get(name)!r}")
+    return errors
+
+
+def fetch_core(pin: tuple[str, str, str]) -> tuple[str, dict[str, str]]:
+    """`git ls-remote` for the tag, and the core's copies at the locked commit."""
+    tag, _, commit = pin
+    refs = subprocess.run(
+        ["git", "ls-remote", CORE_URL, f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    ).stdout
+    core = {}
+    for path in (*CORE_COPIES, FETCH):
+        with urllib.request.urlopen(f"{CORE_RAW}/{commit}/{path}", timeout=60) as response:
+            core[path] = response.read().decode("utf-8")
+    return refs, core
+
+
 def read(name: str) -> str:
     return (ROOT / name).read_text(encoding="utf-8")
 
 
+FILES = (FETCH, BUILD, MANIFEST, NOTICE, ABOUT, DENY, CARGO, LOCK, SOURCES, HYGIENE, COVERAGE)
+
+
 def check(texts: dict[str, str]) -> list[str]:
-    return libwebrtc_errors(texts[FETCH], texts[BUILD], texts[MANIFEST], texts[NOTICE]) + licence_errors(
-        texts[ABOUT], texts[DENY]
+    return (
+        libwebrtc_errors(texts[FETCH], texts[BUILD], texts[MANIFEST], texts[NOTICE])
+        + licence_errors(texts[ABOUT], texts[DENY])
+        + core_errors(texts[CARGO], texts[LOCK], texts[DENY], texts[SOURCES])
     )
 
 
 def self_test() -> int:
-    tree = {name: read(name) for name in (FETCH, BUILD, MANIFEST, NOTICE, ABOUT, DENY)}
+    tree = {name: read(name) for name in FILES}
     pins = shell_pins(tree[FETCH])
     digest, release, tag = pins["SHA256"], pins["RELEASE"], pins["WEBRTC_TAG"]
     other_digest = ("0" if digest[0] != "0" else "1") + digest[1:]
@@ -175,6 +342,40 @@ def self_test() -> int:
         ("about.toml dropped a licence", changed(ABOUT, '  "ISC",\n', ""), True),
         ("about.toml judges another target", changed(ABOUT, 'targets = ["x86_64', 'targets = ["aarch64'), True),
     ]
+
+    # The core: the committed pin, then each copy of it moved alone.
+    errors, pin = core_pin(tree[CARGO], tree[LOCK])
+    assert pin is not None, f"the committed tree has no core pin: {errors}"
+    core_tag, core_version, commit = pin
+    other_commit = ("0" if commit[0] != "0" else "1") + commit[1:]
+    spec = f'git = "{CORE_URL}", tag = "{core_tag}", version = "={core_version}"'
+    later = f'git = "{CORE_URL}", tag = "{core_tag}9", version = "={core_version}9"'
+    cases += [
+        ("one core crate on another tag and version", changed(CARGO, spec, later), True),
+        (
+            "one core crate's tag without its version",
+            changed(CARGO, spec, spec.replace(f'tag = "{core_tag}"', f'tag = "{core_tag}9"')),
+            True,
+        ),
+        ("one core crate without the exact version", changed(CARGO, f'version = "={core_version}"', f'version = "{core_version}"'), True),
+        (
+            "one core crate from a branch",
+            changed(CARGO, spec, f'git = "{CORE_URL}", branch = "main", version = "={core_version}"'),
+            True,
+        ),
+        ("one core crate from a fork", changed(CARGO, f'git = "{CORE_URL}"', f'git = "{CORE_URL}-fork"'), True),
+        (
+            "a [patch] table",
+            changed(CARGO, "[workspace.lints.rust]", f'[patch."{CORE_URL}"]\ndistrict-model = {{ path = "../core" }}\n\n[workspace.lints.rust]'),
+            True,
+        ),
+        ("Cargo.lock holds one core crate at another commit", changed(LOCK, commit, other_commit), True),
+        ("Cargo.lock holds every core crate at another commit", changed(LOCK, commit, other_commit, 7), True),
+        ("Cargo.lock holds the core at another tag", changed(LOCK, f"?tag={core_tag}#", f"?tag={core_tag}9#"), True),
+        ("deny.toml does not allow the core's repository", changed(DENY, f'allow-git = ["{CORE_URL}"]', "allow-git = []"), True),
+        ("cargo-sources.json fetches another commit", changed(SOURCES, f'"commit": "{commit}"', f'"commit": "{other_commit}"'), True),
+        ("cargo-sources.json points Cargo at another tag", changed(SOURCES, f'tag = \\"{core_tag}\\"', f'tag = \\"{core_tag}9\\"'), True),
+    ]
     failures = 0
     for name, texts, should_fail in cases:
         errors = check(texts)
@@ -182,6 +383,32 @@ def self_test() -> int:
         failures += not ok
         got = errors[0] if errors else "no error"
         print(f"  {'pass' if ok else 'FAIL'}  {name}: {got}")
+
+    # What only GitHub answers, planted: the core's files are this tree's
+    # copies, and `git ls-remote` output is written here.
+    core = {path: tree[path] for path in (*CORE_COPIES, FETCH)}
+    annotated = f"{'a' * 40}\trefs/tags/{core_tag}\n{commit}\trefs/tags/{core_tag}^{{}}\n"
+    remote_cases: list[tuple[str, str, dict[str, str], bool]] = [
+        ("the tag names the locked commit (annotated)", annotated, core, False),
+        ("the tag names the locked commit (lightweight)", f"{commit}\trefs/tags/{core_tag}\n", core, False),
+        ("the tag was moved", annotated.replace(commit, other_commit), core, True),
+        ("the tag is gone", "", core, True),
+        ("the hygiene script differs from the core's", annotated, {**core, HYGIENE: core[HYGIENE] + "\n"}, True),
+        ("the coverage script differs from the core's", annotated, {**core, COVERAGE: core[COVERAGE] + "\n"}, True),
+        (
+            "the core pins another libwebrtc",
+            annotated,
+            {**core, FETCH: core[FETCH].replace(digest, other_digest)},
+            True,
+        ),
+    ]
+    for name, refs, files, should_fail in remote_cases:
+        errors = core_remote_errors(pin, refs, files, tree)
+        ok = bool(errors) == should_fail
+        failures += not ok
+        got = errors[0] if errors else "no error"
+        print(f"  {'pass' if ok else 'FAIL'}  {name}: {got}")
+    cases += [(name, {}, fail) for name, _, _, fail in remote_cases]
     if failures:
         print(f"\nself-test FAILED: {failures} case(s) did not answer as expected", file=sys.stderr)
         return 1
@@ -192,15 +419,24 @@ def self_test() -> int:
 def main(argv: list[str]) -> int:
     if argv[1:] == ["--self-test"]:
         return self_test()
-    if len(argv) > 1:
+    if argv[1:] not in ([], ["--offline"]):
         print(__doc__, file=sys.stderr)
         return 2
-    errors = check({name: read(name) for name in (FETCH, BUILD, MANIFEST, NOTICE, ABOUT, DENY)})
+    texts = {name: read(name) for name in FILES}
+    errors = check(texts)
+    _, pin = core_pin(texts[CARGO], texts[LOCK])
+    if pin is not None and argv[1:] != ["--offline"]:
+        refs, core = fetch_core(pin)
+        errors += core_remote_errors(pin, refs, core, texts)
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
     if errors:
         return 1
-    print("libwebrtc's pin and the licence lists agree everywhere they are written")
+    print("libwebrtc's pin, the licence lists and the core's pin agree everywhere they are written")
+    if argv[1:] == ["--offline"]:
+        print("(offline: the core's tag and the copies of its files were not compared with GitHub)")
+    else:
+        print(f"the core's tag {pin[0]} names {pin[2]}, and the copies of its files match it")
     return 0
 
 

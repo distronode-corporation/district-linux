@@ -3,7 +3,8 @@
 //!
 //! The script plays the service: it keeps every effect the app hands over and
 //! answers the ones it wants to with the recorded responses under
-//! `contracts/fixtures/`. Buttons are clicked and rows activated for real, a
+//! `contracts/fixtures/` in District AI core for Rust (tests/contracts/ finds
+//! them). Buttons are clicked and rows activated for real, a
 //! sign-in link reaches the app through `open` as it does from the desktop,
 //! and each screen is drawn to a texture, light and dark. Nothing touches a
 //! network, a keyring or the user's session.
@@ -25,6 +26,7 @@
 //! there as a PNG.
 
 mod common;
+mod contracts;
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -113,21 +115,11 @@ struct Smoke {
 }
 
 fn fixture<T: DeserializeOwned>(name: &str) -> T {
-    let file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../contracts/fixtures")
-        .join(name);
-    let text = fs::read_to_string(&file)
-        .unwrap_or_else(|error| panic!("cannot read {}: {error}", file.display()));
-    serde_json::from_str(&text).unwrap_or_else(|error| panic!("{name}: {error}"))
+    contracts::read("fixtures", name)
 }
 
 fn desktop_fixture<T: DeserializeOwned>(name: &str) -> T {
-    let file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../contracts/desktop")
-        .join(name);
-    let text = fs::read_to_string(&file)
-        .unwrap_or_else(|error| panic!("cannot read {}: {error}", file.display()));
-    serde_json::from_str(&text).unwrap_or_else(|error| panic!("{name}: {error}"))
+    contracts::read("desktop", name)
 }
 
 impl Smoke {

@@ -1,8 +1,0 @@
-{
-  "error": "Your workspaces could not be listed because one or more regions are unreachable right now. This is not a change to your account.",
-  "code": "REGIONS_DEGRADED",
-  "degradedRegions": [
-    "eu",
-    "apac"
-  ]
-}

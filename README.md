@@ -133,6 +133,11 @@ cargo build --release --locked
 ./target/release/district-ai
 ```
 
+The build fetches the app's shared core,
+[District AI core for Rust](https://github.com/distronode-corporation/district-core-rust),
+from GitHub at the tag and commit Cargo.toml and Cargo.lock pin, as it fetches
+every other crate.
+
 That build has no calls. Building with them (the `voice` feature) links
 libwebrtc and needs clang 21 or newer; [CONTRIBUTING.md](CONTRIBUTING.md#building-with-calls)
 has the steps.
@@ -149,7 +154,10 @@ works but keeps your sign-in only until it quits, and says so.
 ## Contributing, security and conduct
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): the layout, the local checks CI runs, and
-  the commit message rule.
+  the commit message rule. The data types, the API client, sign-in, the
+  application state and the call engine live in
+  [District AI core for Rust](https://github.com/distronode-corporation/district-core-rust),
+  which this app pins by tag; changes to them go there.
 - [SECURITY.md](SECURITY.md): report vulnerabilities privately through
   [GitHub's private vulnerability reporting](https://github.com/distronode-corporation/district-linux/security/advisories/new),
   not in a public issue. It also describes the sign-in and token design.

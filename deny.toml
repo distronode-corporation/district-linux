@@ -56,6 +56,8 @@ confidence-threshold = 0.9
 
 [licenses.private]
 # The workspace's own crates are not published to crates.io (`publish = false`).
+# The core's crates are not workspace members, so their licence (Apache-2.0) is
+# checked like any dependency's.
 ignore = true
 
 [bans]
@@ -68,3 +70,6 @@ allow-wildcard-paths = true
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# District AI core for Rust, the one git source: Cargo.toml pins it by tag and
+# Cargo.lock by commit, and scripts/check-pins.py holds the two together.
+allow-git = ["https://github.com/distronode-corporation/district-core-rust"]

@@ -1,14 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-  "crates/district-model",
-  "crates/district-api",
-  "crates/district-auth",
-  "crates/district-live",
-  "crates/district-core",
-  "crates/district-host",
   "crates/district-desktop",
-  "crates/district-call",
   "crates/district-app",
 ]
 
@@ -33,88 +26,47 @@ rust-version = "1.92"
 license = "Apache-2.0"
 repository = "https://github.com/distronode-corporation/district-linux"
 authors = ["Distronode Corporation"]
-# None of these crates is published to crates.io. They are one application split
-# along its seams, and their APIs change whenever the application needs them to.
+# Neither crate is published to crates.io. They are one application split along
+# its seams, and their APIs change whenever the application needs them to.
 publish = false
 
 [workspace.dependencies]
-# The workspace's own crates. Path only: nothing here is published, so there is no
-# registry version to keep in step (deny.toml's `allow-wildcard-paths` relies on
-# `publish = false` above).
-district-model = { path = "crates/district-model" }
-district-api = { path = "crates/district-api" }
-district-auth = { path = "crates/district-auth" }
-district-live = { path = "crates/district-live" }
-district-core = { path = "crates/district-core" }
-district-host = { path = "crates/district-host" }
+# District AI core for Rust: the shared crates both desktop apps build on (the
+# data types, the HTTP client, sign-in, live updates, the application state, the
+# call engine and what a desktop app keeps on the machine), in their own
+# repository since 2.2.0. Pinned by tag, with the exact version beside it so that
+# Cargo refuses a tag that does not hold that version; Cargo.lock records the
+# commit the tag named, and `--locked` holds every build to it. All seven move
+# together, in one change: scripts/check-pins.py fails CI while any of them names
+# another tag, while Cargo.lock's commit is not the one the tag names, or while
+# packaging/flatpak/cargo-sources.json lacks that commit. deny.toml's
+# `[sources] allow-git` names this repository and no other.
+#
+# The core also sets `log`'s `max_level_warn` (district-live and district-call
+# do), which compiles every log line below warn out of the whole build, this
+# workspace's crates included; the core's SECURITY.md says why.
+district-model = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+district-api = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+district-auth = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+district-live = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+district-core = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+district-host = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+district-call = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v1.0.0", version = "=1.0.0" }
+# This workspace's own crate besides the app. Path only: it is not published, so
+# there is no registry version to keep in step (deny.toml's `allow-wildcard-paths`
+# relies on `publish = false` above).
 district-desktop = { path = "crates/district-desktop" }
-district-call = { path = "crates/district-call" }
 
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-# Test-only, both of them. sha2 checks contracts/SHA256SUMS; syn reads
-# district-model's own source to prove every type it decodes honours the
-# `strict-contracts` feature.
-sha2 = "0.10.9"
-syn = { version = "3.0.6", features = ["full", "visit"] }
-# rustls, not native-tls: no OpenSSL at build time or at run time. No `cookies`
-# feature, so the client has no cookie store at all; the session is the bearer
-# token and nothing else. `multipart` is for the two uploads (a message
-# attachment and the help desk logo).
-reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "multipart"] }
-url = "2.5.8"
 thiserror = "2.0.21"
-# Reads the date form of a `Retry-After` header (RFC 9110 allows seconds or a date).
-httpdate = "1.0.3"
-# Sign-in. base64url without padding for the PKCE verifier, its challenge and the
-# `state` value, and to read an access token's payload; the operating system's
-# random source for the verifier and the state; a constant-time comparison for the
-# state the browser hands back.
-base64 = "0.22.1"
-getrandom = "0.4.3"
-subtle = { version = "2.6.1", default-features = false }
-# The settings file's format. Already in the tree (the GTK -sys crates' build
-# scripts read their metadata with it), so it brings no new crate.
-toml = "1.1.6"
-# This installation's device id, a random (version 4) UUID.
-uuid = { version = "1.26.1", default-features = false, features = ["std", "v4"] }
 # Test only: temporary directories, so no test reads or writes the real user's
 # XDG directories or keyring.
 tempfile = "3.27.0"
 # No default features: each crate turns on the parts of the runtime it uses, so a
 # library crate does not quietly pull in the multi-threaded scheduler.
 tokio = { version = "1.53.1", default-features = false }
-# Test only: an HTTP server the tests point the API client at.
-wiremock = "0.6.5"
-# The live telemetry socket. tokio-tungstenite is the WebSocket protocol only (the
-# `handshake` feature, none of its TLS or connect features): district-live opens
-# the connection itself, with TLS from rustls through tokio-rustls and the
-# operating system's trust store through rustls-platform-verifier, which is what
-# reqwest's `rustls` feature uses, so the socket and the API client trust exactly
-# the same certificates. rustls is named directly only to pick the same crypto
-# provider reqwest does (aws-lc-rs).
-tokio-tungstenite = { version = "0.30.0", default-features = false, features = ["handshake"] }
-tokio-rustls = { version = "0.26.5", default-features = false, features = ["tls12"] }
-rustls = { version = "0.23.45", default-features = false, features = ["aws_lc_rs", "std", "tls12"] }
-rustls-platform-verifier = "0.7.1"
 futures-util = { version = "0.3.34", default-features = false }
-# NOT for logging: nothing in this workspace logs. `max_level_warn` compiles every
-# `info!`, `debug!` and `trace!` in every crate of the build out of the binary, so
-# no logger, however it is configured, can bring any of them back:
-#
-# - tungstenite logs the whole handshake request (which carries the telemetry
-#   token in Sec-WebSocket-Protocol) and the text of every message it receives
-#   (call events are customer data) at trace level;
-# - with the call engine, the LiveKit SDK forwards every line libwebrtc logs, at
-#   debug level, and libwebrtc logs an encrypted room's key (the passphrase's
-#   bytes and the key derived from them) when it derives it, and participants'
-#   identities (which can be a caller's phone number) when it has no key for
-#   them; the SDK itself logs identities at info level.
-#
-# What is left, warn and error, carries none of those (read, for the LiveKit
-# crates, at the versions in Cargo.lock). Set by district-live and district-call,
-# the two crates that bring those lines in.
-log = { version = "0.4.34", features = ["max_level_warn"] }
 # The Secret Service client, which inside a Flatpak sandbox goes through the
 # secret portal instead. Features are spelled out rather than inherited from
 # `default`, so a change of upstream defaults cannot swap in another async runtime
@@ -137,19 +89,6 @@ glib-build-tools = "0.22.8"
 # threads: the core's events, and the few calls only the main thread may make
 # (opening a link, a notification, the ringtone, the window).
 async-channel = "2.5.0"
-# The call engine's media library, and only behind district-call's optional
-# `livekit` feature: a default build compiles no WebRTC. `native` is the Tokio
-# transport; `rustls-tls-native-roots` gives the signalling socket rustls and the
-# operating system's certificates (no OpenSSL, and no bundled root list).
-# Its build script links libwebrtc, a prebuilt static library; see
-# scripts/fetch-libwebrtc.sh, which is pinned to the libwebrtc this version's
-# webrtc-sys-build names, and CONTRIBUTING.md for building with calls.
-livekit = { version = "0.9.3", default-features = false, features = ["native", "rustls-tls-native-roots"] }
-# Test only, both already in the tree through oo7: the call engine's tests sign
-# their media server credentials (HS256) and derive the room key the way
-# libwebrtc does, to look for it in what the engine logs.
-hmac = "0.12.1"
-pbkdf2 = { version = "0.12.2", default-features = false, features = ["hmac"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

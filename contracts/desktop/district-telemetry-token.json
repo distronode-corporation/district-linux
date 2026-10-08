@@ -1,6 +1,0 @@
-{
-  "success": true,
-  "token": "contract-telemetry-token",
-  "expiresAt": 1790433900000,
-  "wsUrl": "wss://telemetry.example.com/ws/telemetry"
-}

@@ -1,31 +1,27 @@
 name: Voice
 
-# The LiveKit call engine: district-call's `livekit` feature, which the app's
-# `voice` feature turns on. It links libwebrtc, a prebuilt static library, so the
-# default jobs in ci.yml never build it and never download it; this workflow is
-# where it is built, linted and tested, and where district-call's coverage with
-# the feature is held to its floor ([features."district-call/livekit"] in
-# coverage-floors.toml).
+# The app with calls: the app's `voice` feature, which turns on the LiveKit call
+# engine (district-call's `livekit`, in District AI core for Rust). It links
+# libwebrtc, a prebuilt static library, so the default jobs in ci.yml never
+# build it and never download it; this workflow is where the app is linted and
+# built with it, against the archive scripts/fetch-libwebrtc.sh pins, and where
+# the built binary is run to show it says it has calls.
 #
-# The tests run the engine against a real `livekit-server` on the runner's
-# loopback, two engines in one room: the tone one sends and the other hears,
-# encryption with the same passphrase and with different ones, the people in the
-# room, the microphone off and on, leaving, a server that goes and one that comes
-# back, and what reaches stderr and a logger. The desktop's own audio path is
-# tested against a private PulseAudio server with a null sink and a sine source,
-# so nothing is heard and no real device is touched.
+# The engine itself, with its tests against a real `livekit-server` and its
+# coverage floor, moved to District AI core for Rust with the crate, and its
+# voice.yml runs them on the same archive (scripts/check-pins.py holds the two
+# fetch scripts to the same pins).
 #
-# Started by hand with the id of a libwebrtc.yml run, it tests that run's build
-# of libwebrtc instead of the pinned archive, which is how a new build is proved
-# before it is published and pinned.
+# Started by hand with the id of a libwebrtc.yml run, it builds against that
+# run's libwebrtc instead of the pinned archive, which is how a new build is
+# shown to link with the app before it is published and pinned.
 #
-# Run by hand, weekly (a new libwebrtc or livekit-server behaviour shows up
-# without a change here), and on changes to what the engine is made of. Minutes
-# are metered while the repository is private, so it is one job, and its paths
-# are the engine's: district-call, and what its tests drive through it (the core
-# model and session, the data types, sign-in, and the contract fixtures they
-# read). The list is written once, under `pull_request`, and `push` reuses it
-# with a YAML anchor, which GitHub Actions has accepted since September 2025.
+# Run by hand, weekly (a new libwebrtc or runner image shows up without a change
+# here), and on changes to what a build with calls is made of: the core's pin
+# (Cargo.toml and Cargo.lock), the app's manifest and the start-up wiring that
+# picks the engine, libwebrtc's pin and the toolchain that compiles against it.
+# The list is written once, under `pull_request`, and `push` reuses it with a
+# YAML anchor, which GitHub Actions has accepted since September 2025.
 on:
   workflow_dispatch:
     inputs:
@@ -38,20 +34,12 @@ on:
     - cron: "23 6 * * 1"
   pull_request:
     paths: &engine-paths
-      - "crates/district-call/**"
-      - "crates/district-core/**"
-      - "crates/district-model/**"
-      - "crates/district-auth/**"
-      - "contracts/**"
       - "crates/district-app/Cargo.toml"
       - "crates/district-app/src/startup.rs"
       - "Cargo.toml"
       - "Cargo.lock"
-      - "coverage-floors.toml"
-      - "scripts/check-coverage.py"
       - "scripts/fetch-libwebrtc.sh"
       - ".github/actions/install-clang-21/**"
-      - ".github/actions/install-cargo-llvm-cov/**"
       - ".github/workflows/voice.yml"
   push:
     branches: [main]
@@ -82,15 +70,13 @@ jobs:
 
       - name: Install the stable toolchain
         run: |
-          rustup toolchain install stable --profile minimal -c clippy -c llvm-tools-preview
+          rustup toolchain install stable --profile minimal -c clippy
           rustc --version
 
       # clang 21 from the LLVM project's apt repository, against a pinned key,
       # GTK 4 and libadwaita, and the headers webrtc-sys compiles against (the
-      # action says why each), with PulseAudio and its tools for the device test.
+      # action says why each).
       - uses: $/.github/actions/install-clang-21
-        with:
-          packages: pulseaudio pulseaudio-utils
 
       # The archive is checked against its pinned SHA-256 on every run, cached or
       # not, so the cache saves the download and vouches for nothing.
@@ -145,50 +131,27 @@ jobs:
           chmod -R u+rwX "$RUNNER_TEMP/libwebrtc-built"
           echo "LK_CUSTOM_WEBRTC=$RUNNER_TEMP/libwebrtc-built/linux-x64-release" >> "$GITHUB_ENV"
 
-      # The media server the tests start their own copies of. The upstream
-      # release, checked against a pinned SHA-256.
-      - name: Install livekit-server
-        env:
-          LIVEKIT_SERVER_VERSION: 1.13.7
-          LIVEKIT_SERVER_SHA256: 6634aeeb2fb1366b6723708ae4320b9d5408106a4c63457c5e845ae3979c90e2
-        run: |
-          set -euo pipefail
-          archive="$RUNNER_TEMP/livekit-server.tar.gz"
-          curl -fsSL -o "$archive" \
-            "https://github.com/livekit/livekit/releases/download/v${LIVEKIT_SERVER_VERSION}/livekit_${LIVEKIT_SERVER_VERSION}_linux_amd64.tar.gz"
-          echo "${LIVEKIT_SERVER_SHA256}  $archive" | sha256sum -c -
-          mkdir -p "$RUNNER_TEMP/livekit"
-          tar xzf "$archive" -C "$RUNNER_TEMP/livekit" livekit-server
-          echo "LIVEKIT_SERVER=$RUNNER_TEMP/livekit/livekit-server" >> "$GITHUB_ENV"
-          "$RUNNER_TEMP/livekit/livekit-server" --version
-
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           key: voice
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
-      # The same install as ci.yml's: the upstream release against a pinned
-      # SHA-256, from one action.
-      - uses: $/.github/actions/install-cargo-llvm-cov
-
-      # The app with `voice` (its smoke test included, so it is linted too) and
-      # the engine's own tests.
+      # The app with `voice` (its smoke test included, so it is linted too).
       - name: cargo clippy with voice
-        run: cargo clippy -p district-call -p district-app --all-targets --locked --features district-app/voice,district-app/gtk-tests -- -D warnings
+        run: cargo clippy -p district-app --all-targets --locked --features district-app/voice,district-app/gtk-tests -- -D warnings
 
-      # One test at a time: each starts its own media server and measures real
-      # time audio, and four cores shared by several calls would measure the
-      # runner rather than the engine.
-      - name: cargo test with the LiveKit engine, measuring line coverage
+      # The binary with calls, linked against that libwebrtc, and run: its
+      # --version touches no display, keyring or network, and says whether the
+      # build has calls, which this one must.
+      - name: cargo build with voice, and the binary says it has calls
         run: |
           set -euo pipefail
-          cargo llvm-cov show-env --sh > "$RUNNER_TEMP/llvm-cov.env"
-          # shellcheck source=/dev/null # generated by the line above
-          . "$RUNNER_TEMP/llvm-cov.env"
-          cargo llvm-cov clean --workspace
-          cargo test -p district-call --features livekit --locked -- --test-threads=1 --nocapture
-          cargo llvm-cov report --show-missing-lines
-          cargo llvm-cov report --json --summary-only --output-path "$RUNNER_TEMP/coverage.json"
-
-      - name: Line coverage meets the LiveKit engine's floor
-        run: python3 scripts/check-coverage.py --feature district-call/livekit "$RUNNER_TEMP/coverage.json"
+          cargo build -p district-app --locked --features voice
+          version="$(python3 -c 'import tomllib;print(tomllib.load(open("Cargo.toml","rb"))["workspace"]["package"]["version"])')"
+          got="$(target/debug/district-ai --version)"
+          want="district-ai $version (with calls)"
+          echo "$got"
+          if [ "$got" != "$want" ]; then
+            echo "::error::--version said \"$got\", not \"$want\""
+            exit 1
+          fi

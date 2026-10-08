@@ -1,7 +1,0 @@
-{
-  "success": true,
-  "callId": "CAabababababababababababababababab",
-  "roomName": "direct_ws-contract-test-CAabababababababababababababababab",
-  "token": "contract-livekit-dial-jwt",
-  "url": "wss://media.example.com"
-}

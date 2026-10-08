@@ -1,7 +1,0 @@
-{
-  "success": true,
-  "channelDefaults": {
-    "sms": "acct-twilio",
-    "voice": "acct-telnyx"
-  }
-}

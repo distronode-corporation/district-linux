@@ -57,13 +57,16 @@ pub use startup::run;
 /// The app's exit status.
 pub use gtk::glib::ExitCode;
 
+/// The core's contract fixtures, read where Cargo checked the core out; the
+/// smoke test reads them through the same file.
+#[cfg(test)]
+#[path = "../tests/contracts/mod.rs"]
+mod contracts;
+
 /// What the unit tests share: a configuration, a signed-in session, and the
 /// recorded server responses.
 #[cfg(test)]
 pub(crate) mod testing {
-    use std::fs;
-    use std::path::PathBuf;
-
     use district_api::{ApiError, ErrorDetail};
     use district_auth::AccessClaims;
     use district_core::{CoreConfig, Effect, Event, Model, SessionState, SignedIn};
@@ -87,12 +90,7 @@ pub(crate) mod testing {
     }
 
     pub(crate) fn fixture<T: DeserializeOwned>(name: &str) -> T {
-        let file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../contracts/fixtures")
-            .join(name);
-        let text = fs::read_to_string(&file)
-            .unwrap_or_else(|error| panic!("cannot read {}: {error}", file.display()));
-        serde_json::from_str(&text).unwrap_or_else(|error| panic!("{name}: {error}"))
+        crate::contracts::read("fixtures", name)
     }
 
     /// What a screen says about a failure: `message`, with a retry when

@@ -10,36 +10,11 @@ the issue tracker is for reproducible bugs.
 ## Layout
 
 ```
-crates/district-model/    Serde data types for the District AI API, mirroring the
-                          Android app's core model (district-android, public),
-                          and the live telemetry
-                          envelopes. No IO.
-crates/district-api/      The HTTP client and the endpoint table. A bearer token and
-                          an explicit workspace on every call, no cookie store,
-                          redirects never followed.
-crates/district-auth/     Sign-in with OAuth 2.0 and PKCE through the system
-                          browser, the token exchange, single-flight refresh-token
-                          rotation, sign-out.
-crates/district-live/     The live telemetry WebSocket client.
-crates/district-core/     App state with no GTK and no IO of its own: the session,
-                          routes, role capabilities, a model per screen, and the
-                          effect runner with the traits the app implements,
-                          `CallEngine` among them.
-crates/district-host/     What a desktop app keeps on the machine and how it
-                          hears the machine sleep, on any operating system: the
-                          device id, the refresh marker, the settings file and
-                          the sleep protocol. Nothing Linux-only, so a Windows
-                          app can build on it too.
 crates/district-desktop/  Linux adapters with no GTK in them: secret storage (oo7),
                           the XDG directories district-host's files live in, the
                           device name, and the machine going to sleep and waking
                           (logind, on the system bus); autostart through the
                           portals to come.
-crates/district-call/     The call engine: `LiveKitCallEngine`, behind the
-                          optional `livekit` feature (the app's `voice`), off by
-                          default because it links libwebrtc; without it a build
-                          has `UnavailableCallEngine`, which joins nothing and says
-                          so. See "Building with calls" below.
 crates/district-app/      The GTK 4 and libadwaita app, `district-ai`, and the only
                           crate that links GTK: a library the binary and the smoke
                           test share. data/ holds the .ui templates, the
@@ -47,12 +22,6 @@ crates/district-app/      The GTK 4 and libadwaita app, `district-ai`, and the o
                           the D-Bus service template, the AppStream metadata and
                           the store screenshots it names; its Cargo.toml also
                           holds the .deb's metadata.
-contracts/                What this client is checked against: the server's recorded
-                          responses, the Android set and the desktop-only set
-                          (vendored and sanitised by sync-contracts.py), the
-                          Android app's endpoint snapshot (sync-endpoints.py), and
-                          the brand colours from the design tokens
-                          (sync-palette.py).
 packaging/flatpak/        The Flatpak manifest and cargo-sources.json, the crates it
                           builds from (see Packaging below).
 scripts/                  check-version.py, check-pins.py,
@@ -62,17 +31,26 @@ scripts/                  check-version.py, check-pins.py,
                           with calls; build-deb.sh, third-party-licenses.sh and
                           flatpak-cargo-sources.sh, run by the packaging
                           workflows, CI and by hand; build-libwebrtc.sh, run by
-                          libwebrtc.yml and by hand; sync-contracts.py,
-                          sync-endpoints.py, sync-palette.py (which share
-                          _common.py) and make-ringtone.py, run by hand, and
-                          sync-endpoints.py weekly by endpoints.yml.
+                          libwebrtc.yml and by hand; make-ringtone.py, run by
+                          hand.
 coverage-floors.toml      Each crate's line coverage floor (see Coverage below).
 ```
 
-Dependencies point one way: `district-app` sits on top, `district-model` at the
-bottom, and nothing below `district-app` depends on GTK. That is what lets every
-crate except the app be built and tested on a machine without the GTK development
-files, and without a display.
+Everything below the app that has no Linux in it lives in
+[District AI core for Rust](https://github.com/distronode-corporation/district-core-rust),
+which District AI for Windows builds on too, and which this workspace pins by
+tag (see "District AI core for Rust" below): `district-model` (the data types),
+`district-api` (the HTTP client and the endpoint table), `district-auth`
+(sign-in), `district-live` (the live telemetry socket), `district-core` (the
+application state and the effect runner, with the traits the app implements),
+`district-host` (the files a desktop app keeps and the sleep protocol) and
+`district-call` (the call engine). So do the contract fixtures they are tested
+against and the scripts that vendor them.
+
+Dependencies point one way: `district-app` sits on top, the core's
+`district-model` at the bottom, and nothing below `district-app` depends on GTK.
+That is what lets `district-desktop` (and every crate of the core) be built and
+tested on a machine without the GTK development files, and without a display.
 
 ## Setup
 
@@ -121,11 +99,9 @@ keyring, and without a keyring it keeps the sign-in in memory until it quits.
 The icon and the ringtone are built into the binary from `data/`. The icons were
 traced from the Distronode mark; the ringtone is written by
 `python3 scripts/make-ringtone.py` (and `--check` says whether the committed file
-is what it writes). The brand colours come from the design tokens in the
-website's repository: a maintainer with access refreshes
-`contracts/palette.snapshot.json` with
-`python3 scripts/sync-palette.py --monorepo <checkout>`, and a test in
-`district-core` then holds `district_core::palette` to it.
+is what it writes). The brand colours are `district_core::palette`, which the
+core holds to the design tokens; the charts draw with it, and a test here holds
+the AppStream metadata's branding colours to it.
 
 ## Building with calls
 
@@ -164,34 +140,11 @@ At run time the engine needs a PulseAudio server (PipeWire's `pipewire-pulse` on
 most desktops) for the microphone and the speakers; without one the call joins,
 nobody hears you, and the app says the microphone could not be used.
 
-The engine's tests (`crates/district-call/tests/engine/`) run it against a real
-media server on this machine, so they also need `livekit-server` (voice.yml
-downloads a pinned release; `LIVEKIT_SERVER` names the binary) and, for the test
-of the desktop's own audio path, `pulseaudio` and its tools (`pactl`, `parec`),
-which the test starts privately with a null sink and a sine source, so nothing is
-heard and no real device is touched:
-
-```
-LIVEKIT_SERVER=/path/to/livekit-server \
-  cargo test -p district-call --features livekit --locked -- --test-threads=1
-```
-
-One at a time, because each test measures audio in real time. They print what
-they measure with `--nocapture`. libwebrtc never gathers network candidates on
-loopback, so the machine needs a network interface other than `lo`, even though
-every test stays on it: an ordinary desktop or CI runner has one, and a container
-started with `--network none` needs a dummy interface added
-(`ip link add lan0 type dummy`, an address, `up`).
-
-A process never holds the desktop's devices and a frame microphone at once, or one
-after the other: the engine refuses whichever comes second, because of defects in
-the libwebrtc the LiveKit SDK links that have been reported privately upstream
-(SECURITY.md says what is refused; details will be published once upstream has
-published a fix). The tests keep to it: each test of the devices runs in a child
-process of its own, and whoever it talks to is a `FarEnd`, the test binary run
-again as an engine on frame audio in a third process, which prints what it hears
-for the test to read. A test that put a frame microphone in the child would be
-refused, as the last two `devices::` tests show.
+The engine's own tests, which run it against a real media server, live with
+the engine in District AI core for Rust (its CONTRIBUTING.md, "Building with
+calls"), and its voice.yml runs them on the same libwebrtc this repository pins.
+Here, `.github/workflows/voice.yml` lints the app with `voice`, builds it, and
+runs the binary to check that it says it has calls.
 
 ### Rebuilding libwebrtc
 
@@ -211,15 +164,19 @@ with its SHA-256.
 The build downloads about 15 GB, needs about 40 GB of free disk and takes hours,
 so it runs on a GitHub runner: start `.github/workflows/libwebrtc.yml` by hand,
 and the run keeps the zip, its digest and the library's symbol list as an
-artifact. To try that build with the call engine before anything is published,
-start `.github/workflows/voice.yml` by hand with the libwebrtc run's id as
+artifact. To try that build with the app before anything is published, start
+`.github/workflows/voice.yml` by hand with the libwebrtc run's id as
 `libwebrtc_run`. Once it passes, publish the zip as a release of this
 repository named `libwebrtc-<webrtc tag>-audio-<n>` (the number counts builds
 for the same LiveKit tag), with the digest from the run beside it, and move
 `RELEASE` and `SHA256` in `scripts/fetch-libwebrtc.sh`, the `url` and `sha256`
 in the Flatpak manifest, and the release and digest in NOTICE, in one change;
 `scripts/check-pins.py` fails CI while any copy differs from
-`scripts/fetch-libwebrtc.sh`. Compare the published asset's digest with the
+`scripts/fetch-libwebrtc.sh`. District AI core for Rust has its own copy of
+that script, for its engine tests, and must name the same archive: move its
+pins in a core release first, then move the core's tag here with this
+repository's pins, because `check-pins.py` also fails while the two scripts
+disagree. Compare the published asset's digest with the
 run's before pinning it. To build it locally instead, on Linux x86_64 with git, curl,
 python3 and setuptools, ninja, pkg-config, cpio and zip:
 
@@ -303,7 +260,10 @@ with the rust-stable SDK extension and the llvm22 one, whose clang (LLVM 22.1)
 is new enough for libwebrtc; the SDK itself has no clang to run. The build is
 offline. The crates come from
 `packaging/flatpak/cargo-sources.json`, each checked against the SHA-256
-Cargo.lock records, and libwebrtc from the same pinned archive
+Cargo.lock records, except District AI core for Rust, which is a git source
+there: flatpak-builder fetches the commit Cargo.lock holds, and the Cargo
+configuration in the same file points the core's tag at that checkout. And
+libwebrtc comes from the same pinned archive
 `scripts/fetch-libwebrtc.sh` names, which the build unpacks with that script.
 After any change to Cargo.lock, a Dependabot bump included, regenerate the
 sources and commit them with it:
@@ -504,7 +464,7 @@ cargo test --workspace --locked --exclude district-app
 # then the app's tests, the smoke test and the store screenshots included, as "The smoke test" says
 python3 scripts/check-version.py
 python3 scripts/check-pins.py --self-test
-python3 scripts/check-pins.py
+python3 scripts/check-pins.py      # asks GitHub about the core's tag; --offline skips that
 python3 scripts/check-public-hygiene.py --self-test
 python3 scripts/check-public-hygiene.py
 python3 scripts/check-coverage.py --self-test
@@ -515,9 +475,9 @@ appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictA
 scripts/flatpak-cargo-sources.sh --check
 ```
 
-The call engine is built and tested by its own workflow,
-`.github/workflows/voice.yml`, when what it is made of changes, weekly, and by
-hand (see "Building with calls"); the default jobs never download libwebrtc.
+The app with calls is built by its own workflow, `.github/workflows/voice.yml`,
+when what it is made of changes, weekly, and by hand (see "Building with
+calls"); the default jobs never download libwebrtc.
 The packages have theirs too, `deb.yml` and `flatpak.yml` (see "Packaging").
 
 CI runs those tests with line coverage measured and checks it against the floors;
@@ -567,27 +527,22 @@ What the floors mean:
   tests must run; 100 means every line. Integration tests under `tests/` are not
   measured. Unit tests inside `src/` are, because stable Rust has no way to leave
   them out. Only lines: branch coverage needs a nightly compiler.
-- `district-model`, `district-api`, `district-auth`, `district-live`,
-  `district-core` and `district-host` are held at 100, because every line in
-  them can be made to run in a test without a desktop session, a display or a
-  live call.
-- `district-desktop`, `district-call` and `district-app` have measured floors:
-  Secret Service and portal calls, live media and the GTK main loop cannot all run
-  in CI, so each floor is what the tests reached when it was set, rounded down.
+- Only this workspace's two crates are measured. The core's crates are
+  dependencies here, and District AI core for Rust holds them to their own
+  floors (100, and 97 for the call engine's build).
+- `district-desktop` and `district-app` have measured floors: Secret Service and
+  portal calls and the GTK main loop cannot all run in CI, so each floor is what
+  the tests reached when it was set, rounded down.
   The app's is measured by its smoke test under Xvfb; what it cannot reach is the
   start-up wiring (the keyring, the network, the runtime, logind's sleep signal)
   and the effect runner's thread, which only the real app runs.
 - There is no exclusion list. Code CI cannot run stays in the measurement and
   holds its crate's floor down, where everyone can see it.
-- A crate whose optional feature builds code the default build does not has a
-  second floor for that build: `[features."district-call/livekit"]` is the
-  LiveKit engine's, measured by voice.yml and checked with
-  `python3 scripts/check-coverage.py --feature district-call/livekit <report>`.
-  The two measure different code and are not combined: `[crates.district-call]`
-  holds the default build (the crate root and `UnavailableCallEngine`), the
-  feature's entry the build with the engine. What the engine's tests cannot reach
-  is races (a room left in the instant its join ends, a report racing a hang-up)
-  and states libwebrtc never reports with the web client's key settings.
+- A crate whose optional feature builds code the default build does not can
+  have a second floor for that build, `[features."<crate>/<feature>"]`, checked
+  with `python3 scripts/check-coverage.py --feature <crate>/<feature> <report>`
+  by the workflow that builds it. No crate here has one: the call engine's moved
+  to the core with `district-call`.
 - A crate missing from the report fails whatever its floor, and a floor above 0
   with no measurable lines fails too, so a run that skipped a crate can never
   read as covered. A new crate needs its entry in the change that adds it.
@@ -602,7 +557,12 @@ it should, and CI runs it with the other repository checks.
 ## Public hygiene
 
 This repository is public, and `scripts/check-public-hygiene.py` fails CI on four
-things in any tracked or new file:
+things in any tracked or new file. The script is District AI core for Rust's,
+copied here byte for byte so that it runs offline and before anything is built;
+`scripts/check-pins.py` fails CI while the copy differs from the core's at the
+commit Cargo.lock holds, so a change to a rule is made in the core first and
+copied here when the core's tag moves (the same holds for
+`scripts/check-coverage.py`). The four things:
 
 - An em dash or an en dash. Use commas, periods or parentheses.
 - A phone number in E.164 form. Use the fictional range +1 NPA 555-0100 to
@@ -617,57 +577,46 @@ things in any tracked or new file:
 the way of a legitimate change, change the rule in the same pull request and say
 why.
 
-## Contract fixtures
+## District AI core for Rust
 
-`contracts/` holds JSON bodies recorded from the District AI server by tests in the
-server repository, in two sets. `contracts/fixtures/` is the Android app's set,
-recorded from the server's own route handlers, which this client reads too.
-`contracts/desktop/` holds the shapes only this client reads and no Android fixture
-records: the live telemetry credential, one frame of the telemetry socket per event
-type, the call hang-up, the booking-pages hand-off and the desktop's presence
-registration.
+The app is built on
+[District AI core for Rust](https://github.com/distronode-corporation/district-core-rust),
+which this workspace pins in Cargo.toml's `[workspace.dependencies]`: each of
+its seven crates by `git`, `tag` and the exact `version` the tag holds, all at
+the same tag. Cargo.lock records the commit the tag named, and `--locked` holds
+every build to it. There is no `[patch]`: the pin is the tag and the lock file,
+nothing else. deny.toml's `[sources] allow-git` names the core's repository and
+no other git source.
 
-`crates/district-model` decodes every file in both sets in its tests with unknown
-fields refused (the `strict-contracts` feature, which its tests always enable), so
-a field the server renames or adds fails here rather than in the app. The files
-are a snapshot: `contracts/SOURCE.toml` says which server commit they came from,
-with a `[sets.<name>]` table for each set, and lists every substitution made to
-keep real-looking data out of this public repository; `contracts/SHA256SUMS` pins
-the bytes of both sets. Do not edit them by hand; maintainers with access to the
-server repository re-run
+`scripts/check-pins.py` holds the pin together: every crate at one tag and
+version, Cargo.lock at that tag and one commit, deny.toml allowing the source,
+cargo-sources.json fetching that commit for the Flatpak, and (asking GitHub)
+the tag still naming that commit, the copied scripts matching the core's at
+that commit, and the two copies of `fetch-libwebrtc.sh` pinning the same
+libwebrtc.
 
-```
-python3 scripts/sync-contracts.py --monorepo <path to the server repository>
-```
+To move to a new release of the core, in one pull request:
 
-which vendors both sets from the one commit, and refuses while either source
-directory there has changes that commit does not hold.
+1. Change `tag` and `version` on all seven lines in Cargo.toml.
+2. `cargo update -p district-model -p district-api -p district-auth -p district-live -p district-core -p district-host -p district-call`,
+   which moves those crates in Cargo.lock, and other crates only where the new
+   core's manifests require it.
+3. `scripts/flatpak-cargo-sources.sh`, for the Flatpak's sources.
+4. Copy `scripts/check-public-hygiene.py` and `scripts/check-coverage.py` from
+   the core at the new tag if they changed there.
+5. `python3 scripts/check-pins.py`, then the whole local gate above.
 
-The fixture manifest in `crates/district-model/tests/contracts/manifest.rs`
-accounts for every file, each set against its own pinned count: each is decoded
-by a data type, recorded as not yet modelled (a list that may only shrink), or
-excluded by a stated decision.
+A new major version of the core changes something the app calls or implements,
+so it comes with the app's side of that change. To try a change to the core
+before it is released, point the seven lines at a local checkout with `path`
+in your own tree; never commit that, and CI refuses it.
 
-## The endpoint table
-
-`crates/district-api` calls the same endpoints as the District AI Android app, which
-is the reference client, apart from a named list of exclusions and desktop-only
-additions, each with its reason. `contracts/endpoints.snapshot.json` is the Android
-app's endpoint list, and `crates/district-api/tests/endpoint_parity.rs` fails on any
-difference that is not on one of those two lists.
-
-The Android app is public, at
-[district-android](https://github.com/distronode-corporation/district-android), and
-the snapshot is read from its
-[`core/core-network/src/main/kotlin/com/distronode/districtai/core/network`](https://github.com/distronode-corporation/district-android/tree/main/core/core-network/src/main/kotlin/com/distronode/districtai/core/network)
-directory (with the auth API and the core model beside it). Anyone can refresh it
-from a checkout of that repository with
-`python3 scripts/sync-endpoints.py --android <checkout>` and commit the result
-together with whatever change to the table it calls for; like the other sync
-scripts it refuses a checkout with changes its commit does not hold, unless
-`--allow-dirty`. The snapshot is committed and CI never regenerates it, but
-`.github/workflows/endpoints.yml` checks it against the Android app's main branch
-every week, with `--check`, and fails when it is stale.
+The contract fixtures the core is tested against (the server's recorded
+responses, in `contracts/` there) are what this app's tests answer the app's
+effects with too. The tests read them from the checkout of the core that Cargo
+made, found through `cargo metadata` (`crates/district-app/tests/contracts/`),
+so the app is tested against the same bytes as the core, at the same commit,
+and no fixture is copied here.
 
 ## Commits and pull requests
 

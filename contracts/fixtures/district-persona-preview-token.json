@@ -1,9 +1,0 @@
-{
-  "success": true,
-  "token": "contract-livekit-preview-jwt",
-  "url": "wss://media.example.com",
-  "roomName": "preview_ws-contract-test_00000000-0000-4000-8000-000000000000",
-  "e2ee": {
-    "key": "YfxKDUkaaGp2WrLLGHCHbe2nn5ArCWBd+x+k7EzDr/8="
-  }
-}

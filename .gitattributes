@@ -2,10 +2,6 @@
 # Windows included, because tests and scripts compare committed files byte for
 # byte, and a CRLF checkout (Git for Windows' default) would change the bytes.
 * text=auto eol=lf
-# The contract fixtures are pinned by the digests in contracts/SHA256SUMS, which
-# a CRLF checkout would break: they are never converted, whatever a checkout's
-# settings say.
-contracts/** -text
 # Binary, said outright rather than left to detection.
 *.png binary
 *.wav binary

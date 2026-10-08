@@ -24,6 +24,7 @@
 - [ ] Every crate at or above its coverage floor (`python3 scripts/check-coverage.py`
       on the report; the commands are under "Coverage" in CONTRIBUTING.md)
 - [ ] `python3 scripts/check-version.py`
+- [ ] `python3 scripts/check-pins.py --self-test` and `python3 scripts/check-pins.py`
 - [ ] `scripts/flatpak-cargo-sources.sh --check`
 - [ ] `python3 scripts/check-public-hygiene.py --self-test` and
       `python3 scripts/check-public-hygiene.py`

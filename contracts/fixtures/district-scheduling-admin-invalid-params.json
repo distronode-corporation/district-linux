@@ -1,7 +1,0 @@
-{
-  "error": "invalid_params",
-  "fields": [
-    "time_format",
-    "week_start"
-  ]
-}

@@ -86,15 +86,13 @@ jobs:
       - name: Versions agree with the tag
         run: python3 scripts/check-version.py "$GITHUB_REF_NAME"
 
-      # The server responses the app was tested against, and where they came
-      # from. A release built from a tree without them was built from a tree
-      # whose contract tests could not have run.
-      - name: The contract snapshot is present
-        run: |
-          if [ ! -s contracts/SOURCE.toml ]; then
-            echo "::error::contracts/SOURCE.toml is missing or empty"
-            exit 1
-          fi
+      # District AI core for Rust, which the app is built on: one tag for all
+      # seven crates, Cargo.lock at the commit that tag names on GitHub now,
+      # the Flatpak's sources at that commit, and the copied scripts matching
+      # the core's. A release built while the tag and the lock file disagreed
+      # would ship a core nobody can find again by its tag.
+      - name: The core's pin agrees with Cargo.lock and with its tag
+        run: python3 scripts/check-pins.py
 
       - name: Expose the bare version
         id: version

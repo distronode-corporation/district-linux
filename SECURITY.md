@@ -246,7 +246,8 @@ desktop's devices through a sound server, and reconnecting.
   arrives during one is shown without a sound and cannot be answered until it
   ends.
 
-What the call engine itself does (district-call, with its `livekit` feature):
+What the call engine itself does (district-call, with its `livekit` feature, in
+District AI core for Rust):
 
 - The media server is the one the service names, used exactly as named, and the
   credential goes to it only over TLS (`wss`), with rustls and the operating
