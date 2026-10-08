@@ -10,7 +10,7 @@
 use std::fmt;
 
 use district_core::{Notification, Notifier, RingSurface, UrlOpener};
-use district_desktop::SleepHandler;
+use district_host::SleepHandler;
 use tokio::sync::oneshot;
 
 /// Something only the main thread may do.

@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 
 use district_auth::TokenFingerprint;
 
-use crate::dirs::XdgDirs;
 use crate::files;
 
 /// The marker's file name inside the app's state directory.
@@ -32,11 +31,6 @@ impl RefreshMarkerFile {
     /// A marker in `dir`, which is created when the marker is first written.
     pub fn new(dir: impl Into<PathBuf>) -> Self {
         Self { dir: dir.into() }
-    }
-
-    /// The marker at `$XDG_STATE_HOME/com.distronode.DistrictAI/refresh-pending`.
-    pub fn in_state_home(dirs: &XdgDirs) -> Self {
-        Self::new(dirs.app_state_dir())
     }
 
     /// The directory the marker lives in.

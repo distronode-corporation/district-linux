@@ -17,8 +17,9 @@ use std::time::Duration;
 
 use district_desktop::{
     INHIBIT_MODE, INHIBIT_WHAT, INHIBIT_WHO, INHIBIT_WHY, LOGIN1_MANAGER, LOGIN1_PATH,
-    LOGIN1_SERVICE, Logind, SleepSource,
+    LOGIN1_SERVICE, Logind,
 };
+use district_host::SleepSource;
 
 /// The variable that tells a child test it runs where its parent made it.
 const CHILD: &str = "DISTRICT_DESKTOP_LOGIND_CHILD";

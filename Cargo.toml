@@ -6,6 +6,7 @@ members = [
   "crates/district-auth",
   "crates/district-live",
   "crates/district-core",
+  "crates/district-host",
   "crates/district-desktop",
   "crates/district-call",
   "crates/district-app",
@@ -45,6 +46,7 @@ district-api = { path = "crates/district-api" }
 district-auth = { path = "crates/district-auth" }
 district-live = { path = "crates/district-live" }
 district-core = { path = "crates/district-core" }
+district-host = { path = "crates/district-host" }
 district-desktop = { path = "crates/district-desktop" }
 district-call = { path = "crates/district-call" }
 

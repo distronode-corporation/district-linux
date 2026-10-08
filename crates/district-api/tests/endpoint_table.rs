@@ -4,7 +4,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use district_api::{
-    ALL_ENDPOINTS, Auth, BodyKind, EXCLUDED, Endpoint, HttpMethod, LINUX_ONLY, PathMatch,
+    ALL_ENDPOINTS, Auth, BodyKind, DESKTOP_ONLY, EXCLUDED, Endpoint, HttpMethod, PathMatch,
     RetryPolicy, WorkspaceIn, normalize_template,
 };
 
@@ -240,8 +240,8 @@ fn every_exclusion_says_why() {
 }
 
 #[test]
-fn linux_only_additions_are_in_the_table_and_say_why() {
-    for addition in LINUX_ONLY {
+fn desktop_only_additions_are_in_the_table_and_say_why() {
+    for addition in DESKTOP_ONLY {
         assert!(
             ALL_ENDPOINTS
                 .iter()

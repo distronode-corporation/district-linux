@@ -49,6 +49,7 @@ district-auth = { workspace = true }
 district-call = { workspace = true }
 district-core = { workspace = true }
 district-desktop = { workspace = true }
+district-host = { workspace = true }
 district-live = { workspace = true }
 district-model = { workspace = true }
 gtk4 = { workspace = true }

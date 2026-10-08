@@ -25,10 +25,16 @@ crates/district-core/     App state with no GTK and no IO of its own: the sessio
                           routes, role capabilities, a model per screen, and the
                           effect runner with the traits the app implements,
                           `CallEngine` among them.
+crates/district-host/     What a desktop app keeps on the machine and how it
+                          hears the machine sleep, on any operating system: the
+                          device id, the refresh marker, the settings file and
+                          the sleep protocol. Nothing Linux-only, so a Windows
+                          app can build on it too.
 crates/district-desktop/  Linux adapters with no GTK in them: secret storage (oo7),
-                          device id, the settings file, and the machine going to
-                          sleep and waking (logind, on the system bus); autostart
-                          through the portals to come.
+                          the XDG directories district-host's files live in, the
+                          device name, and the machine going to sleep and waking
+                          (logind, on the system bus); autostart through the
+                          portals to come.
 crates/district-call/     The call engine: `LiveKitCallEngine`, behind the
                           optional `livekit` feature (the app's `voice`), off by
                           default because it links libwebrtc; without it a build
@@ -561,9 +567,10 @@ What the floors mean:
   tests must run; 100 means every line. Integration tests under `tests/` are not
   measured. Unit tests inside `src/` are, because stable Rust has no way to leave
   them out. Only lines: branch coverage needs a nightly compiler.
-- `district-model`, `district-api`, `district-auth`, `district-live` and
-  `district-core` are held at 100, because every line in them can be made to run
-  in a test without a desktop session, a display or a live call.
+- `district-model`, `district-api`, `district-auth`, `district-live`,
+  `district-core` and `district-host` are held at 100, because every line in
+  them can be made to run in a test without a desktop session, a display or a
+  live call.
 - `district-desktop`, `district-call` and `district-app` have measured floors:
   Secret Service and portal calls, live media and the GTK main loop cannot all run
   in CI, so each floor is what the tests reached when it was set, rounded down.
@@ -644,7 +651,7 @@ excluded by a stated decision.
 ## The endpoint table
 
 `crates/district-api` calls the same endpoints as the District AI Android app, which
-is the reference client, apart from a named list of exclusions and Linux-only
+is the reference client, apart from a named list of exclusions and desktop-only
 additions, each with its reason. `contracts/endpoints.snapshot.json` is the Android
 app's endpoint list, and `crates/district-api/tests/endpoint_parity.rs` fails on any
 difference that is not on one of those two lists.

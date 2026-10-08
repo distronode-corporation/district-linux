@@ -47,7 +47,7 @@ use district_core::{
     Participant, PresenceState, RING_DEADLINE, RestoreError, RingSurface, Route, SignedInSession,
     Ticket, Urgency, UrlOpener,
 };
-use district_desktop::SleepHandler;
+use district_host::SleepHandler;
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
 use district_model::{
     AiDraftResponse, AvailabilityResponse, BlockedContact, BlockedContactsResponse,
