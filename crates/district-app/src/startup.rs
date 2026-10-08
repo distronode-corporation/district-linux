@@ -17,6 +17,7 @@ use district_desktop::{
     device_name, watch_sleep,
 };
 use district_live::LiveConfig;
+use district_model::{ClientIdentity, Platform};
 use tokio::sync::mpsc::UnboundedReceiver;
 
 use crate::adw::prelude::*;
@@ -25,6 +26,9 @@ use crate::bridge::UiBridge;
 use crate::effects::RuntimeEffects;
 use crate::gtk::glib;
 use crate::store::{AppStore, MEMORY_ONLY};
+
+/// The product token this app's `User-Agent` starts with.
+const PRODUCT: &str = "DistrictAI-Linux";
 
 /// How long the runtime's tasks get to finish after the window has gone.
 const RUNTIME_SHUTDOWN: Duration = Duration::from_secs(2);
@@ -56,7 +60,7 @@ fn launch() -> Result<glib::ExitCode, String> {
     let device_name = device_name();
     let settings = SettingsFile::in_config_home(&dirs);
     let marker = RefreshMarkerFile::in_state_home(&dirs);
-    let api_config = ApiConfig::default();
+    let api_config = ApiConfig::new(client_identity());
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_name("district-runtime")
@@ -99,7 +103,10 @@ fn launch() -> Result<glib::ExitCode, String> {
         let coordinator = TokenRefreshCoordinator::new(store, sign_in.clone());
         let client = || ApiClient::new(api_config.clone(), coordinator.clone());
         let api = client().map_err(config_error)?;
-        let presence = DesktopPresence::new(Arc::new(client().map_err(config_error)?));
+        let presence = DesktopPresence::new(
+            Arc::new(client().map_err(config_error)?),
+            api_config.client.platform,
+        );
         // The live updates' credential states its expiry by the service's
         // clock, so it is compared with the service's time as the sign-in has
         // learned it, not with this machine's, which may run fast or slow.
@@ -166,6 +173,13 @@ fn version_requested(args: impl IntoIterator<Item = OsString>) -> bool {
     args.next().is_some_and(|arg| arg == "--version") && args.next().is_none()
 }
 
+/// This app as the service sees it: the Linux platform, and this crate's own
+/// version, which is the release's (the workspace shares one version), not the
+/// version of whichever library crate builds the request.
+fn client_identity() -> ClientIdentity {
+    ClientIdentity::new(Platform::Linux, PRODUCT, env!("CARGO_PKG_VERSION"))
+}
+
 /// What `district-ai --version` prints: the version, and whether this build
 /// carries calls (the `voice` feature), which is what tells a package built
 /// with them from one built without.
@@ -219,6 +233,18 @@ mod tests {
             "district-ai",
             "districtai://auth?x=--version"
         ])));
+    }
+
+    /// The app names itself exactly as it always has on the wire: the
+    /// `linux` platform, and `DistrictAI-Linux/` with the release's version.
+    #[test]
+    fn the_client_identity_is_the_linux_app_at_this_version() {
+        let identity = client_identity();
+        assert_eq!(identity.platform.wire(), "linux");
+        assert_eq!(
+            ApiConfig::new(identity).user_agent(),
+            format!("DistrictAI-Linux/{}", env!("CARGO_PKG_VERSION"))
+        );
     }
 
     /// The line names the crate's version and says whether this build has

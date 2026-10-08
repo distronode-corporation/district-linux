@@ -55,8 +55,8 @@ mod store;
 mod tokens;
 
 pub use api::{
-    ExchangeOutcome, MAX_DEVICE_NAME_UNITS, NativeAuthApi, PLATFORM, REFRESH_PATH, REVOKE_PATH,
-    RefreshApi, RefreshOutcome, RevokeApi, RevokeOutcome, TOKEN_PATH,
+    ExchangeOutcome, MAX_DEVICE_NAME_UNITS, NativeAuthApi, REFRESH_PATH, REVOKE_PATH, RefreshApi,
+    RefreshOutcome, RevokeApi, RevokeOutcome, TOKEN_PATH,
 };
 pub use claims::{AccessClaims, ClaimsError};
 pub use coordinator::{EARLY_REFRESH_MARGIN_MS, Persistence, ServerClock, TokenRefreshCoordinator};

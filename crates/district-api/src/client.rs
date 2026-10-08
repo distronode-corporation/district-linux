@@ -6,6 +6,7 @@
 //! That keeps the compiled size down, and it means the checks and the error
 //! mapping are one piece of code rather than one copy per type.
 
+use district_model::Platform;
 use reqwest::Response;
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use serde::Serialize;
@@ -43,6 +44,11 @@ impl<S: TokenSource> ApiClient<S> {
     pub fn new(config: ApiConfig, tokens: S) -> Result<Self, ConfigError> {
         let transport = Transport::new(config)?;
         Ok(Self { transport, tokens })
+    }
+
+    /// The platform this client names itself as, from its configuration.
+    pub(crate) fn platform(&self) -> Platform {
+        self.transport.platform
     }
 
     /// The token source this client asks for access tokens.
@@ -106,10 +112,12 @@ impl<S: TokenSource> ApiClient<S> {
     }
 }
 
-/// The HTTP half of the client: the connection pool and where it points.
+/// The HTTP half of the client: the connection pool, where it points, and the
+/// platform the app said it runs on.
 struct Transport {
     http: reqwest::Client,
     base_url: Url,
+    platform: Platform,
 }
 
 impl Transport {
@@ -117,6 +125,7 @@ impl Transport {
         Ok(Self {
             http: config.http_client()?,
             base_url: config.base_url,
+            platform: config.client.platform,
         })
     }
 

@@ -4,26 +4,27 @@ use std::fmt;
 use std::net::IpAddr;
 use std::time::Duration;
 
+use district_model::ClientIdentity;
 use url::{Host, Url};
 
 /// The District AI service. One host for every region: the service routes each
 /// request to the right regional origin itself, so the client never picks one.
 pub const DEFAULT_BASE_URL: &str = "https://www.distronode.com";
 
-/// The `User-Agent` on every request: `DistrictAI-Linux/` and the app version.
-///
-/// It lets the service tell this client's traffic from the web dashboard's and
-/// the mobile apps', which matters when a change on the server has to be rolled
-/// out knowing which clients are still in the field.
-pub const USER_AGENT: &str = concat!("DistrictAI-Linux/", env!("CARGO_PKG_VERSION"));
-
 /// Connection settings for [`ApiClient`](crate::ApiClient).
 ///
 /// The timeouts match the Android app's. Each phase has its own bound, and
 /// `request_timeout` bounds the whole exchange, because a response that trickles
 /// in just inside the read timeout would otherwise never finish.
+///
+/// There is no `Default`: every configuration starts from [`ApiConfig::new`],
+/// which takes the app's [`ClientIdentity`], so an app cannot forget to say which
+/// one it is and be counted as another.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ApiConfig {
+    /// Which app this is. It names the client in the `User-Agent`, at sign-in, in
+    /// the presence row and as a meeting room's identity.
+    pub client: ClientIdentity,
     /// The service's origin. Must be `https`; plain `http` is accepted only for a
     /// loopback address, which is what tests and a local server use.
     pub base_url: Url,
@@ -36,18 +37,33 @@ pub struct ApiConfig {
 }
 
 impl ApiConfig {
-    /// The default settings, pointed at `base_url` instead of the service.
-    pub fn with_base_url(base_url: &str) -> Result<Self, ConfigError> {
+    /// The settings for `client` talking to the District AI service, with the
+    /// standard timeouts.
+    pub fn new(client: ClientIdentity) -> Self {
+        Self {
+            client,
+            base_url: Url::parse(DEFAULT_BASE_URL).expect("the default base URL is valid"),
+            connect_timeout: Duration::from_secs(10),
+            read_timeout: Duration::from_secs(20),
+            request_timeout: Duration::from_secs(30),
+        }
+    }
+
+    /// These settings, pointed at `base_url` instead.
+    pub fn with_base_url(self, base_url: &str) -> Result<Self, ConfigError> {
         let base_url =
             Url::parse(base_url).map_err(ConfigError::described(ConfigError::InvalidBaseUrl))?;
-        Ok(Self {
-            base_url,
-            ..Self::default()
-        })
+        Ok(Self { base_url, ..self })
+    }
+
+    /// The `User-Agent` on every request: the app's product and its own version,
+    /// as [`ClientIdentity::user_agent`] spells them.
+    pub fn user_agent(&self) -> String {
+        self.client.user_agent()
     }
 
     /// The HTTP client these settings describe: no cookie store, redirects never
-    /// followed, the HTTP stack's own retries off, this crate's `User-Agent`, and
+    /// followed, the HTTP stack's own retries off, the app's `User-Agent`, and
     /// the three timeouts above. [`ApiClient`](crate::ApiClient) is built on it,
     /// and so are the few calls made outside the endpoint table (the sign-in
     /// crate's unauthenticated token calls), so that every request to the service
@@ -56,7 +72,7 @@ impl ApiConfig {
     pub fn http_client(&self) -> Result<reqwest::Client, ConfigError> {
         self.check()?;
         reqwest::Client::builder()
-            .user_agent(USER_AGENT)
+            .user_agent(self.user_agent())
             .redirect(reqwest::redirect::Policy::none())
             .retry(reqwest::retry::never())
             .connect_timeout(self.connect_timeout)
@@ -78,17 +94,6 @@ impl ApiConfig {
             "https" => Ok(()),
             "http" if loopback => Ok(()),
             _ => Err(ConfigError::InsecureBaseUrl(self.base_url.to_string())),
-        }
-    }
-}
-
-impl Default for ApiConfig {
-    fn default() -> Self {
-        Self {
-            base_url: Url::parse(DEFAULT_BASE_URL).expect("the default base URL is valid"),
-            connect_timeout: Duration::from_secs(10),
-            read_timeout: Duration::from_secs(20),
-            request_timeout: Duration::from_secs(30),
         }
     }
 }

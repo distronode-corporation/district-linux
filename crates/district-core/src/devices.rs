@@ -4,7 +4,7 @@
 //! losing a laptop, and a remembered row would answer "is it still signed in?"
 //! with a value from before they asked.
 
-use district_model::NativeDevice;
+use district_model::{NativeDevice, Platform};
 
 use crate::failure::FailureText;
 
@@ -87,14 +87,17 @@ impl DeviceRow {
         }
     }
 
-    /// The platform to show.
+    /// The platform to show. A desktop platform is named as the shared
+    /// [`Platform`] names it, so a platform added there is shown here too.
     pub fn platform(&self) -> &str {
         match self.device.platform.as_str() {
             "android" => "Android",
             "ios" => "iOS",
-            "linux" => "Linux",
             "" => "Unknown platform",
-            other => other,
+            other => Platform::ALL
+                .into_iter()
+                .find(|platform| platform.wire() == other)
+                .map_or(other, |platform| platform.display()),
         }
     }
 

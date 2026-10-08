@@ -15,11 +15,6 @@ use crate::error::ApiError;
 use crate::methods::confirm;
 use crate::token::TokenSource;
 
-/// The `identity` the room credential route requires and ignores: the service
-/// makes the participant's identity from the session. This names the platform,
-/// as the Android app sends `android`.
-const ROOM_IDENTITY: &str = "linux";
-
 impl<S: TokenSource> ApiClient<S> {
     /// A credential to join the meeting room `room`, the media server that holds
     /// it and, for an encrypted room, its passphrase.
@@ -37,7 +32,10 @@ impl<S: TokenSource> ApiClient<S> {
         let credential: RoomTokenResponse = self
             .request(Endpoint::CallRoomToken)
             .field("roomName", room.as_str())
-            .field("identity", ROOM_IDENTITY)
+            // The route requires an `identity` and ignores it: the service makes
+            // the participant's identity from the session. It names the
+            // platform, as the Android app sends `android`.
+            .field("identity", self.platform().wire())
             .send()
             .await?;
         confirm(Endpoint::CallRoomToken, credential.success)?;

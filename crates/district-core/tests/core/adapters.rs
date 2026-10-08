@@ -30,12 +30,32 @@ use district_model::{
     MessagingDelete, MessagingSetChannelDefault, MessagingSetDefault, PersonaPatch,
     PersonaPreviewForm, TelnyxCredentials,
 };
+use district_model::{ClientIdentity, Platform};
 use serde_json::json;
 use url::Url;
 use wiremock::matchers::{body_string_contains, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{THIS_DEVICE, USER, claims, desktop_fixture, fixture, listed, ticket};
+
+/// The app on `platform`; the Linux one is the Linux app at this release.
+fn app_on(platform: Platform) -> ClientIdentity {
+    let product = match platform {
+        Platform::Linux => "DistrictAI-Linux",
+        Platform::Windows => "DistrictAI-Windows",
+    };
+    ClientIdentity::new(platform, product, env!("CARGO_PKG_VERSION"))
+}
+
+/// The settings for the service, as the Linux app makes them.
+fn service() -> ApiConfig {
+    ApiConfig::new(app_on(Platform::Linux))
+}
+
+/// The Linux app's settings, pointed at `server`.
+fn local(server: &MockServer) -> ApiConfig {
+    service().with_base_url(&server.uri()).unwrap()
+}
 
 /// A compact JWT whose payload carries `sub`, `did` and `exp`. Unsigned, which
 /// is all the app ever reads of one.
@@ -113,7 +133,7 @@ async fn the_api_client_is_the_runners_api() {
         fixture("district-revoke-all.json"),
     )
     .await;
-    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let config = local(&server);
     let client = ApiClient::new(config, OneToken).unwrap();
 
     assert_eq!(
@@ -300,7 +320,7 @@ async fn the_api_client_serves_the_screens_of_the_inbox_calls_and_contacts() {
             .mount(&server)
             .await;
     }
-    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let config = local(&server);
     let client = ApiClient::new(config, OneToken).unwrap();
     let ws = "ws-contract-test";
     let thread = ThreadRef::Contact("contact_contract_1".to_owned());
@@ -675,7 +695,7 @@ async fn the_api_client_serves_the_workspaces_other_sections() {
     for (verb, route, body) in routes {
         serve(&server, verb, route, body).await;
     }
-    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let config = local(&server);
     let client = ApiClient::new(config, OneToken).unwrap();
     let ws = "ws-contract-test";
     let key = Some("7a1c4b52-0d8e-4f3a-9b6c-2e5d8f1a3c70");
@@ -1147,7 +1167,7 @@ async fn a_sign_in_in_the_browser_is_exchanged_kept_and_signed_out() {
     let exchange =
         FakeExchange::answering(ExchangeOutcome::Success(tokens(jwt(USER, THIS_DEVICE))));
     let asked = Arc::clone(&exchange.asked);
-    let (auth, _) = native_auth(&ApiConfig::default(), exchange);
+    let (auth, _) = native_auth(&service(), exchange);
     assert_eq!(auth.restore().await, no_session());
 
     let authorize = auth.begin_sign_in();
@@ -1187,7 +1207,7 @@ async fn a_sign_in_in_the_browser_is_exchanged_kept_and_signed_out() {
 #[tokio::test]
 async fn an_answer_that_is_not_a_link_leaves_the_attempt_waiting() {
     let exchange = FakeExchange::answering(ExchangeOutcome::Rejected);
-    let (auth, _) = native_auth(&ApiConfig::default(), exchange);
+    let (auth, _) = native_auth(&service(), exchange);
     let authorize = auth.begin_sign_in();
     assert_eq!(
         auth.complete_sign_in("not a link").await,
@@ -1202,7 +1222,7 @@ async fn an_answer_that_is_not_a_link_leaves_the_attempt_waiting() {
 #[tokio::test]
 async fn an_answer_to_another_attempt_or_a_cancelled_one_is_refused() {
     let exchange = FakeExchange::answering(ExchangeOutcome::Rejected);
-    let (auth, _) = native_auth(&ApiConfig::default(), exchange);
+    let (auth, _) = native_auth(&service(), exchange);
     let first = auth.begin_sign_in();
     auth.begin_sign_in();
     assert_eq!(
@@ -1229,7 +1249,7 @@ async fn a_failed_exchange_says_why_and_keeps_nothing() {
         ),
     ];
     for (outcome, failure) in cases {
-        let (auth, _) = native_auth(&ApiConfig::default(), FakeExchange::answering(outcome));
+        let (auth, _) = native_auth(&service(), FakeExchange::answering(outcome));
         let authorize = auth.begin_sign_in();
         assert_eq!(
             auth.complete_sign_in(&answer_to(&authorize)).await,
@@ -1245,7 +1265,7 @@ async fn a_token_whose_claims_cannot_be_read_is_not_kept() {
     let exchange = FakeExchange::answering(ExchangeOutcome::Success(tokens(AccessToken::new(
         "opaque-token",
     ))));
-    let (auth, _) = native_auth(&ApiConfig::default(), exchange);
+    let (auth, _) = native_auth(&service(), exchange);
     let authorize = auth.begin_sign_in();
     assert_eq!(
         auth.complete_sign_in(&answer_to(&authorize)).await,
@@ -1257,7 +1277,7 @@ async fn a_token_whose_claims_cannot_be_read_is_not_kept() {
 #[tokio::test]
 async fn a_stored_session_whose_token_cannot_be_read_says_so() {
     let (auth, coordinator) = native_auth(
-        &ApiConfig::default(),
+        &service(),
         FakeExchange::answering(ExchangeOutcome::Rejected),
     );
     let _ = coordinator
@@ -1266,9 +1286,16 @@ async fn a_stored_session_whose_token_cannot_be_read_says_so() {
     assert_eq!(auth.restore().await, Err(RestoreError::UnreadableToken));
 }
 
-/// The exchange as the app makes it: to the token route, as this installation.
+/// The exchange as the app makes it: to the token route, as this installation,
+/// on the platform the app configured.
 #[tokio::test]
 async fn the_real_exchange_goes_to_the_token_route() {
+    for platform in Platform::ALL {
+        exchange_on(platform).await;
+    }
+}
+
+async fn exchange_on(platform: Platform) {
     let server = MockServer::start().await;
     let access = jwt(USER, THIS_DEVICE);
     Mock::given(method("POST"))
@@ -1282,7 +1309,9 @@ async fn the_real_exchange_goes_to_the_token_route() {
         })))
         .mount(&server)
         .await;
-    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let config = ApiConfig::new(app_on(platform))
+        .with_base_url(&server.uri())
+        .unwrap();
     let (auth, _) = native_auth(&config, NativeAuthApi::new(&config).unwrap());
 
     let authorize = auth.begin_sign_in();
@@ -1294,7 +1323,7 @@ async fn the_real_exchange_goes_to_the_token_route() {
     let body: serde_json::Value = serde_json::from_slice(&requests[0].body).unwrap();
     assert_eq!(body["deviceId"], THIS_DEVICE);
     assert_eq!(body["deviceName"], "Ubuntu 24.04.1 LTS");
-    assert_eq!(body["platform"], "linux");
+    assert_eq!(body["platform"], platform.wire());
     assert_eq!(body["code"], "code-1");
 }
 
@@ -1448,7 +1477,7 @@ async fn the_api_client_serves_the_workspace_settings() {
     for (verb, route, body) in routes {
         serve(&server, verb, route, body).await;
     }
-    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let config = local(&server);
     let client = ApiClient::new(config, OneToken).unwrap();
     let ws = "ws-contract-test";
 
@@ -1717,7 +1746,7 @@ async fn the_api_client_places_answers_and_ends_calls_and_sets_presence() {
         fixture("district-device-unregister.json"),
     )
     .await;
-    let config = ApiConfig::with_base_url(&server.uri()).unwrap();
+    let config = local(&server);
     let client = Arc::new(ApiClient::new(config, OneToken).unwrap());
     let ws = "ws-contract-test";
 
@@ -1736,7 +1765,7 @@ async fn the_api_client_places_answers_and_ends_calls_and_sets_presence() {
             .ended
     );
 
-    let presence = DesktopPresence::new(Arc::clone(&client));
+    let presence = DesktopPresence::new(Arc::clone(&client), Platform::Linux);
     let [first, second, _] = revisions();
     presence.set(first, true).await.unwrap();
     presence.set(second, false).await.unwrap();
@@ -1752,12 +1781,14 @@ async fn the_api_client_places_answers_and_ends_calls_and_sets_presence() {
     assert_eq!(requests[4].url.path(), "/api/district/devices/unregister");
     assert!(requests[4].body.is_empty());
 
-    // Each presence makes its own value.
-    let other = DesktopPresence::new(Arc::clone(&client));
+    // Each presence makes its own value, and registers as the platform it was
+    // given.
+    let other = DesktopPresence::new(Arc::clone(&client), Platform::Windows);
     other.set(first, true).await.unwrap();
     let requests = server.received_requests().await.unwrap();
     let again: serde_json::Value = serde_json::from_slice(&requests[5].body).unwrap();
     assert_ne!(again["token"], body["token"]);
+    assert_eq!(again["platform"], "windows");
 
     // The client is the presence's API as it is.
     PresenceApi::unregister_presence(&*client).await.unwrap();
@@ -1815,7 +1846,7 @@ impl PresenceApi for ScriptedPresenceApi {
 async fn presence_changes_go_one_at_a_time_and_a_late_older_one_is_dropped() {
     let [older, newer, newest] = revisions();
     let api = ScriptedPresenceApi::new(false, false);
-    let presence = DesktopPresence::new(Arc::clone(&api));
+    let presence = DesktopPresence::new(Arc::clone(&api), Platform::Linux);
     presence.set(newer, false).await.unwrap();
     presence.set(older, true).await.unwrap();
     presence.set(newer, true).await.unwrap();
@@ -1824,7 +1855,7 @@ async fn presence_changes_go_one_at_a_time_and_a_late_older_one_is_dropped() {
     // A register held on its way: the unregistration asked for meanwhile
     // waits for it, and goes after it.
     let api = ScriptedPresenceApi::new(true, false);
-    let presence = DesktopPresence::new(Arc::clone(&api));
+    let presence = DesktopPresence::new(Arc::clone(&api), Platform::Linux);
     let registering = {
         let presence = presence.clone();
         tokio::spawn(async move { presence.set(older, true).await })
@@ -1848,7 +1879,7 @@ async fn presence_changes_go_one_at_a_time_and_a_late_older_one_is_dropped() {
 
     // A refusal comes back as the error it is.
     let api = ScriptedPresenceApi::new(false, true);
-    let presence = DesktopPresence::new(Arc::clone(&api));
+    let presence = DesktopPresence::new(Arc::clone(&api), Platform::Linux);
     assert!(matches!(
         presence.set(older, true).await,
         Err(ApiError::Forbidden(_))
@@ -1884,7 +1915,7 @@ async fn signing_out_unregisters_the_presence_first_as_its_own_change() {
     let timeline = Timeline::default();
     let coordinator = TokenRefreshCoordinator::new(MemorySessionStore::new(), NoRefresh);
     let auth = NativeAuth::new(
-        &ApiConfig::default(),
+        &service(),
         FakeExchange::answering(ExchangeOutcome::Success(tokens(jwt(USER, THIS_DEVICE)))),
         coordinator,
         LoggedRevokes(timeline.clone()),
@@ -1906,7 +1937,7 @@ async fn signing_out_unregisters_the_presence_first_as_its_own_change() {
     // A presence that could not be unregistered is reported, and the sign-out
     // goes on.
     let (auth, _) = native_auth_with(
-        &ApiConfig::default(),
+        &service(),
         FakeExchange::answering(ExchangeOutcome::Rejected),
         FailingPresence,
     );

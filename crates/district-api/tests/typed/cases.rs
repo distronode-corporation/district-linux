@@ -13,9 +13,9 @@ use district_model::{
     KnowledgeMode, MeetRoomName, MemberRole, MessagingAccountSave, MessagingChannel,
     MessagingCreatorCell, MessagingCredentialSource, MessagingCredentials, MessagingDelete,
     MessagingSetChannelDefault, MessagingSetDefault, NumberSearch, PersonaEngineChoice,
-    PersonaPatch, PersonaPreviewForm, PresenceRegistration, RoutingRule, RoutingRuleField,
-    SendMessageRequest, SupportRequestDraft, SupportRequestKind, ThreadRef, TwilioCredentials,
-    UpdateContactRequest, WorkspaceConfig, WorkspaceConfigResponse,
+    PersonaPatch, PersonaPreviewForm, Platform, PresenceRegistration, RoutingRule,
+    RoutingRuleField, SendMessageRequest, SupportRequestDraft, SupportRequestKind, ThreadRef,
+    TwilioCredentials, UpdateContactRequest, WorkspaceConfig, WorkspaceConfigResponse,
 };
 use serde_json::{Value, json};
 
@@ -1594,7 +1594,7 @@ pub fn cases() -> Vec<Case> {
             endpoint: Endpoint::PushRegister,
             retried: false,
             answer: desktop_fixture("district-device-register-desktop.json"),
-            call: call!(c => c.register_presence(&PresenceRegistration::desktop("install-nonce-contract"))),
+            call: call!(c => c.register_presence(&PresenceRegistration::desktop("install-nonce-contract", Platform::Linux))),
             method: "POST",
             path: "/api/district/devices/register",
             query: vec![],

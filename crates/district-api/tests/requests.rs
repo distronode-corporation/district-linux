@@ -8,8 +8,7 @@ use std::collections::HashMap;
 
 use common::{ScriptedTokens, client, client_for, client_with};
 use district_api::{
-    ALL_ENDPOINTS, ApiClient, ApiError, BodyKind, Endpoint, EndpointSpec, Request, USER_AGENT,
-    WorkspaceIn,
+    ALL_ENDPOINTS, ApiClient, ApiError, BodyKind, Endpoint, EndpointSpec, Request, WorkspaceIn,
 };
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -98,6 +97,8 @@ async fn every_endpoint_is_sent_as_its_spec_says() {
 
     let received = server.received_requests().await.expect("recording is on");
     assert_eq!(received.len(), ALL_ENDPOINTS.len());
+    // The Linux app's User-Agent, byte for byte what it has always been.
+    let user_agent = format!("DistrictAI-Linux/{}", env!("CARGO_PKG_VERSION"));
     for (spec, request) in ALL_ENDPOINTS.iter().zip(&received) {
         let name = spec.id.name();
         assert_eq!(request.method.as_str(), spec.method.as_str(), "{name}");
@@ -114,7 +115,11 @@ async fn every_endpoint_is_sent_as_its_spec_says() {
             "{name}"
         );
         assert_eq!(header(request, "cookie"), None, "{name}: a cookie was sent");
-        assert_eq!(header(request, "user-agent"), Some(USER_AGENT), "{name}");
+        assert_eq!(
+            header(request, "user-agent"),
+            Some(user_agent.as_str()),
+            "{name}"
+        );
         assert_eq!(
             header(request, "accept"),
             Some("application/json"),
@@ -285,9 +290,9 @@ async fn path_values_stay_inside_their_segment() {
 #[tokio::test]
 async fn a_base_url_path_is_kept_and_its_query_is_not() {
     let server = ok_server().await;
-    let config =
-        district_api::ApiConfig::with_base_url(&format!("{}/prefix/?leak=1#frag", server.uri()))
-            .unwrap();
+    let config = district_api::ApiConfig::new(common::app())
+        .with_base_url(&format!("{}/prefix/?leak=1#frag", server.uri()))
+        .unwrap();
     let client = ApiClient::new(config, ScriptedTokens::issuing(&["t1"])).unwrap();
     let _: Value = client.request(Endpoint::AuthMe).send().await.unwrap();
     let request = &server.received_requests().await.unwrap()[0];

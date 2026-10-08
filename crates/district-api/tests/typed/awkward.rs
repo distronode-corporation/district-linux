@@ -7,15 +7,16 @@ use district_model::{
     CUSTOM_PIPELINE, CallHandlingPatch, DeskBrandName, DeskSettingsPatch, DeskTicketDraft,
     DeskTicketStatus, EngineMix, HqPendingWrite, MemberRole, MessagingAccountSave,
     MessagingCredentialSource, MessagingCredentials, NumberSearch, PersonaEngineChoice,
-    PersonaPatch, RoutingRule, RoutingRuleField, SinchCredentials, SupportRequestDraft,
-    SupportRequestFiling, SupportRequestKind, ThreadRef, TimelinePageInfo, TimelineResponse,
+    PersonaPatch, Platform, PresenceRegistration, RoutingRule, RoutingRuleField, SinchCredentials,
+    SupportRequestDraft, SupportRequestFiling, SupportRequestKind, ThreadRef, TimelinePageInfo,
+    TimelineResponse,
 };
 use serde_json::{Value, json};
 use wiremock::matchers::any;
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::cases::{WS, desktop_fixture, fixture, typed_twilio};
-use crate::common::client;
+use crate::common::{ScriptedTokens, app_on, client, client_as};
 
 async fn answering(status: u16, body: Value) -> MockServer {
     let server = MockServer::start().await;
@@ -491,6 +492,39 @@ async fn a_meeting_elsewhere_is_not_found_and_a_viewer_gets_no_invitation() {
         body(&only_request(&server).await),
         json!({"roomName": "meet_ws-contract-test_standup", "identity": "linux"})
     );
+}
+
+/// The room credential's `identity` and the presence row's `platform` are the
+/// platform the app configured, for each platform: neither is fixed in the
+/// shared crates. (The table pins the Linux app's values.)
+#[tokio::test]
+async fn the_room_identity_and_the_presence_platform_are_the_apps() {
+    for platform in Platform::ALL {
+        let server = answering(200, fixture("district-room-token-viewer.json")).await;
+        let room = district_model::MeetRoomName::new(WS, "standup").unwrap();
+        let tokens = ScriptedTokens::issuing(&["t1"]);
+        client_as(&server, app_on(platform), tokens)
+            .room_token(&room)
+            .await
+            .unwrap();
+        assert_eq!(
+            body(&only_request(&server).await),
+            json!({"roomName": "meet_ws-contract-test_standup", "identity": platform.wire()})
+        );
+
+        let answer = desktop_fixture("district-device-register-desktop.json");
+        let server = answering(200, answer).await;
+        let tokens = ScriptedTokens::issuing(&["t1"]);
+        let registration = PresenceRegistration::desktop("install-nonce-1", platform);
+        client_as(&server, app_on(platform), tokens)
+            .register_presence(&registration)
+            .await
+            .unwrap();
+        assert_eq!(
+            body(&only_request(&server).await),
+            json!({"token": "install-nonce-1", "platform": platform.wire(), "kind": "desktop"})
+        );
+    }
 }
 
 /// The two recorded refusals of the member writes are conflicts, each with its
