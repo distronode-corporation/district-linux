@@ -20,7 +20,8 @@ use std::process::{Command, Output};
 use std::time::{Duration, Instant};
 
 use district_auth::{PersistedSession, RefreshToken, SessionStore, StoreErrorKind};
-use district_desktop::{Oo7SessionStore, RefreshMarkerFile};
+use district_desktop::Oo7SessionStore;
+use district_host::RefreshMarkerFile;
 
 /// The variable that tells a child test it is running in the environment its
 /// parent made, and which one.

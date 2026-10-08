@@ -19,8 +19,9 @@ use district_auth::{
 };
 use district_desktop::{
     ATTRIBUTE_APPLICATION, ATTRIBUTE_FINGERPRINT, ATTRIBUTE_KIND, KIND_REVOKE_OUTBOX, KIND_SESSION,
-    MARKER_FILE, Oo7SessionStore, RefreshMarkerFile, kind_of,
+    Oo7SessionStore, kind_of,
 };
+use district_host::{MARKER_FILE, RefreshMarkerFile};
 use oo7::{Keyring, Secret};
 use serde_json::{Value, json};
 use tempfile::TempDir;

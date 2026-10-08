@@ -17,7 +17,7 @@
 //!   where it names its workspace, what body it takes and whether it may be
 //!   repeated after a refused token ([`RetryPolicy`]). It mirrors the District
 //!   AI Android app, minus the endpoints in [`EXCLUDED`] and plus those in
-//!   [`LINUX_ONLY`], and a test holds it to that.
+//!   [`DESKTOP_ONLY`], and a test holds it to that.
 //! - [`ApiClient`] sends requests built from the table. The caller supplies path
 //!   values, the workspace, query parameters and the body; the client decides
 //!   where each goes, so a call site cannot put the workspace in the wrong place.
@@ -136,5 +136,5 @@ pub use error::{
     ApiError, CODE_REGIONS_DEGRADED, ERROR_CODE_HEADER, ErrorDetail, FALLBACK_MESSAGE,
     TransportError, TransportKind, UnauthorizedReason,
 };
-pub use exclusions::{Addition, EXCLUDED, Exclusion, LINUX_ONLY, PathMatch, normalize_template};
+pub use exclusions::{Addition, DESKTOP_ONLY, EXCLUDED, Exclusion, PathMatch, normalize_template};
 pub use token::{AccessToken, ReauthReason, RetryReason, TokenCell, TokenError, TokenSource};

@@ -722,6 +722,7 @@ dependencies = [
  "district-call",
  "district-core",
  "district-desktop",
+ "district-host",
  "district-live",
  "district-model",
  "glib-build-tools",
@@ -795,6 +796,8 @@ version = "2.1.0"
 dependencies = [
  "district-auth",
  "district-core",
+ "district-host",
+ "district-model",
  "futures-util",
  "oo7",
  "serde",
@@ -802,9 +805,21 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "tokio",
+ "zbus",
+]
+
+[[package]]
+name = "district-host"
+version = "2.1.0"
+dependencies = [
+ "district-auth",
+ "district-core",
+ "district-model",
+ "serde",
+ "tempfile",
+ "tokio",
  "toml",
  "uuid",
- "zbus",
 ]
 
 [[package]]

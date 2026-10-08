@@ -12,10 +12,8 @@ use district_call::CALLS_AVAILABLE;
 use district_core::{
     CoreConfig, DesktopPresence, EffectRunner, Event, LiveHub, NativeAuth, TokioClock,
 };
-use district_desktop::{
-    DeviceIdentity, Logind, Oo7SessionStore, RefreshMarkerFile, SLEEP_HOLD, SettingsFile, XdgDirs,
-    device_name, watch_sleep,
-};
+use district_desktop::{Logind, Oo7SessionStore, SLEEP_HOLD, XdgDirs, device_name};
+use district_host::watch_sleep;
 use district_live::LiveConfig;
 use district_model::{ClientIdentity, Platform};
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -54,12 +52,13 @@ pub fn run() -> glib::ExitCode {
 
 fn launch() -> Result<glib::ExitCode, String> {
     let dirs = XdgDirs::from_env().map_err(|error| error.to_string())?;
-    let device_id = DeviceIdentity::in_data_home(&dirs)
+    let device_id = dirs
+        .device_identity()
         .load_or_create()
         .map_err(|error| format!("this installation's id could not be kept: {error}"))?;
     let device_name = device_name();
-    let settings = SettingsFile::in_config_home(&dirs);
-    let marker = RefreshMarkerFile::in_state_home(&dirs);
+    let settings = dirs.settings_file();
+    let marker = dirs.refresh_marker();
     let api_config = ApiConfig::new(client_identity());
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

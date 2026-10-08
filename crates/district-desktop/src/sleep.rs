@@ -12,18 +12,20 @@
 //! wakes (`PrepareForSleep(false)`), the inhibitor is taken again, and the app
 //! registers again.
 //!
-//! [`watch_sleep`] is that protocol, over two small traits: [`SleepSource`],
-//! the system's side (logind's, [`Logind`]), and [`SleepHandler`], the app's.
-//! Everything [`Logind`] does is one call and one signal on the system bus.
+//! [`district_host::watch_sleep`] is that protocol, over two small traits:
+//! [`SleepSource`], the system's side, and
+//! [`SleepHandler`](district_host::SleepHandler), the app's. [`Logind`]
+//! is the system's side on Linux, and everything it does is one call and one
+//! signal on the system bus.
 //!
 //! Inside a Flatpak sandbox the system bus is filtered: the app's manifest
 //! needs `--system-talk-name=org.freedesktop.login1`. Without it, or without
 //! logind, no inhibitor can be held and nothing is announced, so a desktop
 //! that sleeps stops ringing only when its registration lapses.
 
-use std::future::Future;
 use std::time::Duration;
 
+use district_host::SleepSource;
 use futures_util::StreamExt;
 use zbus::zvariant::OwnedFd;
 
@@ -45,66 +47,16 @@ pub const INHIBIT_WHY: &str =
 /// refuses to sleep because of it.
 pub const INHIBIT_MODE: &str = "delay";
 
-/// The longest the app holds the sleep: under logind's default limit of five
+/// The longest the app holds the sleep, the limit it gives
+/// [`district_host::watch_sleep`]: under logind's default limit of five
 /// seconds, so the app, not logind, decides when it gives up.
 pub const SLEEP_HOLD: Duration = Duration::from_secs(3);
-
-/// The system's side of sleeping: an inhibitor to hold, and the signal that
-/// the machine is about to sleep or has woken.
-pub trait SleepSource: Send + Sync {
-    /// Holds the sleep for as long as the value lives.
-    type Lock: Send;
-
-    /// Takes a delay inhibitor.
-    fn hold(&self) -> impl Future<Output = Result<Self::Lock, SleepError>> + Send;
-
-    /// The next announcement: `true` before sleeping, `false` after waking.
-    /// `None` when there will be no more.
-    fn next(&mut self) -> impl Future<Output = Option<bool>> + Send;
-}
-
-/// The app's side of sleeping.
-pub trait SleepHandler: Send + Sync {
-    /// The machine is about to sleep. Resolves once the app is ready for it;
-    /// [`watch_sleep`] waits at most its limit.
-    fn suspending(&self) -> impl Future<Output = ()> + Send;
-
-    /// The machine woke up.
-    fn resumed(&self);
-}
 
 /// The sleep signals could not be read, or no inhibitor could be held: no
 /// system bus, no logind, or a sandbox that does not let the app talk to it.
 #[derive(Debug, thiserror::Error)]
 #[error("the system's sleep signals could not be read: {0}")]
 pub struct SleepError(#[from] zbus::Error);
-
-/// Tells `handler` about every sleep and wake `source` announces, holding a
-/// delay inhibitor while the machine is awake and releasing it once the
-/// handler is ready to sleep, or `limit` has passed, whichever comes first.
-/// Returns when `source` has nothing more to say.
-///
-/// An inhibitor that cannot be taken is not a reason to stop: the handler is
-/// still told, and the machine simply does not wait for it.
-pub async fn watch_sleep<S: SleepSource, H: SleepHandler>(
-    mut source: S,
-    handler: H,
-    limit: Duration,
-) {
-    let mut lock = source.hold().await.ok();
-    while let Some(sleeping) = source.next().await {
-        if sleeping {
-            // A handler that takes too long is not waited for: the machine
-            // sleeps either way, and logind would stop waiting soon after.
-            tokio::time::timeout(limit, handler.suspending()).await.ok();
-            drop(lock.take());
-        } else {
-            // Taken again before the app is told, so the next sleep finds it.
-            lock = source.hold().await.ok();
-            handler.resumed();
-        }
-    }
-}
 
 /// [`SleepSource`] over logind on the system bus.
 pub struct Logind {
@@ -146,6 +98,7 @@ impl SleepSource for Logind {
     /// logind's inhibitor is a file descriptor: the sleep waits until every
     /// copy of it is closed.
     type Lock = OwnedFd;
+    type Error = SleepError;
 
     async fn hold(&self) -> Result<OwnedFd, SleepError> {
         let arguments = (INHIBIT_WHAT, INHIBIT_WHO, INHIBIT_WHY, INHIBIT_MODE);

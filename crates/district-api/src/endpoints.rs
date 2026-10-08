@@ -5,7 +5,7 @@
 //! `tests/endpoint_parity.rs` holds it to that. It compares the table
 //! with `contracts/endpoints.snapshot.json`, a list extracted from the Android
 //! sources by `scripts/sync-endpoints.py`, and fails unless the two are equal once
-//! [`EXCLUDED`](crate::EXCLUDED) is taken out and [`LINUX_ONLY`](crate::LINUX_ONLY)
+//! [`EXCLUDED`](crate::EXCLUDED) is taken out and [`DESKTOP_ONLY`](crate::DESKTOP_ONLY)
 //! is put in.
 //!
 //! The one place this client deliberately differs from Android is

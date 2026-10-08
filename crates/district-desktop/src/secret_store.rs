@@ -5,11 +5,11 @@ use std::io;
 use district_auth::{
     PersistedSession, RefreshToken, SessionStore, StoreError, StoreErrorKind, TokenFingerprint,
 };
+use district_host::RefreshMarkerFile;
 use oo7::{Keyring, Secret};
 use serde::Deserialize;
 
 use crate::dirs::APP_ID;
-use crate::marker::RefreshMarkerFile;
 
 /// The attribute every item this app stores carries, with [`APP_ID`] as its
 /// value.

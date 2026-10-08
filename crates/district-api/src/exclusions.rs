@@ -1,7 +1,7 @@
 //! Where this client's endpoint table departs from the Android app's, on purpose.
 //!
 //! [`EXCLUDED`] names every endpoint the Android app calls (or could be expected
-//! to) that this client does not, each with the reason. [`LINUX_ONLY`] names the
+//! to) that this client does not, each with the reason. [`DESKTOP_ONLY`] names the
 //! endpoints this client calls and the Android app does not. Nothing else may
 //! differ: `tests/endpoint_parity.rs` fails on any other difference between
 //! [`ALL_ENDPOINTS`](crate::ALL_ENDPOINTS) and the snapshot of the Android app's
@@ -138,8 +138,10 @@ pub struct Addition {
     pub reason: &'static str,
 }
 
-/// Endpoints only this client calls, and why.
-pub const LINUX_ONLY: &[Addition] = &[
+/// Endpoints the desktop apps call and the Android app does not, and why. Named
+/// for the desktop, not for Linux, because a desktop app on another system shares
+/// this table.
+pub const DESKTOP_ONLY: &[Addition] = &[
     Addition {
         endpoint: Endpoint::TelemetryToken,
         reason: "A desktop has no mobile push service, so live calls and messages arrive over the \

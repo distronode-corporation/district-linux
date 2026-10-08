@@ -1,8 +1,19 @@
 //! Small files written so that a crash at any moment leaves either the old
 //! content or the new, never a mix, and never an unwritten buffer.
+//!
+//! On Unix the directory is private to its owner (0700) and each file readable
+//! by its owner only (0600), and the directory is flushed after a rename or a
+//! removal so that the change itself survives a power cut. Elsewhere the files
+//! take the permissions of the directory they are in (on Windows, a packaged
+//! app's data folder inside the user's profile, which other ordinary users
+//! cannot open), and the directory is
+//! not flushed, because Windows cannot open a directory as a file to flush it:
+//! the rename is still atomic, so a power cut can lose the newest change but
+//! never leave a half-written file.
 
-use std::fs::{self, DirBuilder, File, OpenOptions};
+use std::fs::{self, DirBuilder, OpenOptions};
 use std::io::{self, Write};
+#[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::Path;
 
@@ -11,7 +22,11 @@ use std::path::Path;
 /// rename itself survives a power cut. The directory is created (only its owner
 /// may enter it) if it is missing, and the file is readable by its owner only.
 pub(crate) fn replace(dir: &Path, name: &str, contents: &[u8]) -> io::Result<()> {
-    DirBuilder::new().recursive(true).mode(0o700).create(dir)?;
+    let mut builder = DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    builder.mode(0o700);
+    builder.create(dir)?;
     let temporary = dir.join(format!(".{name}.{}.tmp", uuid::Uuid::new_v4().simple()));
     let written =
         write_new(&temporary, contents).and_then(|()| fs::rename(&temporary, dir.join(name)));
@@ -42,15 +57,23 @@ pub(crate) fn read(dir: &Path, name: &str) -> io::Result<Option<String>> {
 }
 
 fn write_new(path: &Path, contents: &[u8]) -> io::Result<()> {
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(path)?;
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    options.mode(0o600);
+    let mut file = options.open(path)?;
     file.write_all(contents)?;
     file.sync_all()
 }
 
+/// Flushes `dir` itself, so a rename or removal in it is on disk.
+#[cfg(unix)]
 fn sync_dir(dir: &Path) -> io::Result<()> {
-    File::open(dir)?.sync_all()
+    fs::File::open(dir)?.sync_all()
+}
+
+/// Nothing to do: see the module's documentation.
+#[cfg(not(unix))]
+fn sync_dir(_dir: &Path) -> io::Result<()> {
+    Ok(())
 }

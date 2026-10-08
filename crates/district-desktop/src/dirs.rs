@@ -4,6 +4,9 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+use district_host::{DeviceIdentity, RefreshMarkerFile, SettingsFile};
+use district_model::Platform;
+
 /// The application id. Every per-app directory and every secret this crate
 /// stores is named after it.
 pub const APP_ID: &str = "com.distronode.DistrictAI";
@@ -73,5 +76,22 @@ impl XdgDirs {
     /// `$XDG_STATE_HOME/com.distronode.DistrictAI`.
     pub fn app_state_dir(&self) -> PathBuf {
         self.state_home.join(APP_ID)
+    }
+
+    /// The device id at `$XDG_DATA_HOME/com.distronode.DistrictAI/device-id`.
+    pub fn device_identity(&self) -> DeviceIdentity {
+        DeviceIdentity::new(self.app_data_dir())
+    }
+
+    /// The refresh-pending marker at
+    /// `$XDG_STATE_HOME/com.distronode.DistrictAI/refresh-pending`.
+    pub fn refresh_marker(&self) -> RefreshMarkerFile {
+        RefreshMarkerFile::new(self.app_state_dir())
+    }
+
+    /// The Linux app's settings in
+    /// `$XDG_CONFIG_HOME/com.distronode.DistrictAI/settings.toml`, read now.
+    pub fn settings_file(&self) -> SettingsFile {
+        SettingsFile::load(self.app_config_dir(), Platform::Linux)
     }
 }

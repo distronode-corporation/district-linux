@@ -40,6 +40,10 @@ reason = "A local test server can drive the telemetry client through every state
 floor = 100
 reason = "App state with no GTK and no IO: plain functions the tests call directly."
 
+[crates.district-host]
+floor = 100
+reason = "Files in a temporary directory and a scripted sleep source, so the tests reach every line on any machine."
+
 [crates.district-desktop]
 floor = 100
 reason = "Measured, not a target: the Secret Service and XDG portal calls need a desktop session CI does not have."

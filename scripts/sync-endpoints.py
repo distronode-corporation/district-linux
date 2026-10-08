@@ -17,7 +17,7 @@ while the sources it reads have changes that commit does not hold (unless
 
 `crates/district-api/tests/endpoint_parity.rs` compares that snapshot with this
 client's endpoint table. The two must be equal once the table's named exclusions
-are taken out and its named Linux-only additions are put in, so an endpoint the
+are taken out and its named desktop-only additions are put in, so an endpoint the
 Android client gains, loses or moves shows up as a failing test with a diff after
 the next sync, instead of as a drifted table nobody re-derived.
 

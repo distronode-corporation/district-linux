@@ -3,17 +3,17 @@
 //! `contracts/endpoints.snapshot.json` is the list of endpoints the District AI
 //! Android app calls, extracted from its sources by `scripts/sync-endpoints.py`.
 //! This test requires the table to equal that list, minus [`EXCLUDED`], plus
-//! [`LINUX_ONLY`], down to where each endpoint names its workspace. Every
+//! [`DESKTOP_ONLY`], down to where each endpoint names its workspace. Every
 //! difference is printed at once, so one run says everything that has to change.
 //!
 //! After re-running the sync script, a failure here is the Android app having
 //! changed: an endpoint gained, dropped or moved. Either follow it in the table,
-//! or record the difference in [`EXCLUDED`] or [`LINUX_ONLY`] with its reason.
+//! or record the difference in [`EXCLUDED`] or [`DESKTOP_ONLY`] with its reason.
 
 use std::collections::BTreeMap;
 
 use district_api::{
-    ALL_ENDPOINTS, EXCLUDED, HttpMethod, LINUX_ONLY, WorkspaceIn, normalize_template,
+    ALL_ENDPOINTS, DESKTOP_ONLY, EXCLUDED, HttpMethod, WorkspaceIn, normalize_template,
 };
 use serde::Deserialize;
 
@@ -124,9 +124,9 @@ fn every_exclusion_matches_what_the_android_app_does() {
 }
 
 #[test]
-fn linux_only_additions_are_not_in_the_android_app() {
+fn desktop_only_additions_are_not_in_the_android_app() {
     let snapshot = snapshot();
-    for addition in LINUX_ONLY {
+    for addition in DESKTOP_ONLY {
         let spec = addition.endpoint.spec();
         let in_android = snapshot.endpoints.iter().any(|e| {
             method(&e.method) == spec.method
@@ -134,8 +134,8 @@ fn linux_only_additions_are_not_in_the_android_app() {
         });
         assert!(
             !in_android,
-            "{} is listed as Linux-only, but the Android app calls it now; take it out of \
-             LINUX_ONLY",
+            "{} is listed as desktop-only, but the Android app calls it now; take it out of \
+             DESKTOP_ONLY",
             addition.endpoint.name()
         );
     }
@@ -157,7 +157,7 @@ fn the_table_is_the_android_app_minus_exclusions_plus_additions() {
             );
         }
     }
-    for addition in LINUX_ONLY {
+    for addition in DESKTOP_ONLY {
         let spec = addition.endpoint.spec();
         expected.insert(
             (
@@ -205,7 +205,7 @@ fn the_table_is_the_android_app_minus_exclusions_plus_additions() {
     }
     for key in actual.keys().filter(|key| !expected.contains_key(*key)) {
         diff.push(format!(
-            "  in the table but not in the Android app: {} {} ({}); add it to LINUX_ONLY with a \
+            "  in the table but not in the Android app: {} {} ({}); add it to DESKTOP_ONLY with a \
              reason, or remove it",
             key.0, key.1, names[key]
         ));
