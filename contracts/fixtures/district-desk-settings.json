@@ -1,9 +1,0 @@
-{
-  "success": true,
-  "settings": {
-    "enabled": true,
-    "notifyCustomersByEmail": true,
-    "publicBrandName": "Contract Test Desk",
-    "publicLogoUrl": "https://desk-assets.distronode.test/ws-contract-test/logo-abc123.png"
-  }
-}

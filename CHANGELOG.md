@@ -13,6 +13,18 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Changed
+
+- The crates the app is built on (district-model, district-api, district-auth,
+  district-live, district-core, district-host and district-call), the contract fixtures
+  they are tested against and the scripts that vendor those fixtures moved, with their
+  history, to [District AI core for Rust](https://github.com/distronode-corporation/district-core-rust),
+  which District AI for Windows builds on too. This app pins it at 1.0.0 by git tag,
+  with the exact version beside the tag; Cargo.lock holds the commit, the Flatpak's
+  offline build fetches that commit, and `scripts/check-pins.py` fails CI while the
+  tag, the lock file and the Flatpak's sources disagree. Nothing the app does changes,
+  and what it sends the service is the same, byte for byte.
+
 ## [2.1.0] - 2026-10-05
 
 ### Changed

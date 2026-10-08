@@ -1,5 +1,0 @@
-{
-  "success": false,
-  "error": "This workspace has not sent anything for 100 days, so outbound calling and messaging are paused pending an account review. Request reactivation from your dashboard and we will re-enable it.",
-  "code": "workspace_dormant"
-}

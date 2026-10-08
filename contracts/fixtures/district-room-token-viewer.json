@@ -1,8 +1,0 @@
-{
-  "success": true,
-  "token": "contract-livekit-room-jwt",
-  "url": "wss://media.example.com",
-  "e2ee": {
-    "key": "cUwBK6pBSbabCBfQZ8VZW+bW5dOg2dwb3JG8q7E4Jc4="
-  }
-}

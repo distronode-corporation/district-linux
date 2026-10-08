@@ -3,6 +3,10 @@ Copyright 2026 Distronode Corporation
 
 This product includes software developed by Distronode Corporation, licensed
 under the Apache License, Version 2.0. The full licence text is in LICENSE.
+That includes District AI core for Rust
+(github.com/distronode-corporation/district-core-rust), the crates this app is
+built on, which are Distronode Corporation's under the same licence and are
+not listed in THIRD-PARTY-LICENSES.txt for that reason.
 
 The distributed binaries statically link a number of third-party Rust crates.
 Third-party dependencies keep their own licences. Both packages carry the
@@ -20,9 +24,9 @@ a Flatpak or a .deb) are listed in this file when such a library is added.
 libwebrtc
 ---------
 
-A build with calls (district-call's `livekit` feature, which the app's `voice`
-feature turns on) statically links libwebrtc, as this project builds it for the
-LiveKit Rust SDK: LiveKit's own recipe and pinned sources for release
+A build with calls (district-call's `livekit` feature, in District AI core for
+Rust, which the app's `voice` feature turns on) statically links libwebrtc, as
+this project builds it for the LiveKit Rust SDK: LiveKit's own recipe and pinned sources for release
 webrtc-89d790b of github.com/livekit/rust-sdks, with every patch LiveKit
 applies, built by scripts/build-libwebrtc.sh without the H.264 and H.265 codecs
 or FFmpeg. The archive is webrtc-linux-x64-release.zip in release

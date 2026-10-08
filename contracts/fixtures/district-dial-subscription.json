@@ -1,6 +1,0 @@
-{
-  "success": false,
-  "error": "This workspace's subscription is not active. Please update billing to resume calls and messaging.",
-  "code": "subscription_inactive",
-  "status": "past_due"
-}

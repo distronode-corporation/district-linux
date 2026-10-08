@@ -62,6 +62,11 @@ updates:
       cargo-minor:
         update-types: [minor, patch]
     ignore:
+      # District AI core for Rust, pinned by tag with the exact version beside
+      # it. Moving it is a change to the app (CONTRIBUTING.md, "District AI core
+      # for Rust"), made by hand with the version, the Flatpak's sources and
+      # the copied scripts, never a tag bump alone.
+      - dependency-name: "district-*"
       # These are the versions the rest of the tree already uses: sha2, hmac
       # and pbkdf2 through oo7, base64 through reqwest 0.12 (the LiveKit SDK's),
       # pbjson and wiremock. Moving only ours to the next generation compiles a

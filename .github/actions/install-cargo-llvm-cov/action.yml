@@ -1,8 +1,8 @@
 name: Install cargo-llvm-cov
 description: >-
   The upstream release of cargo-llvm-cov, checked against a pinned SHA-256,
-  into ~/.cargo/bin. Used by ci.yml and voice.yml, so a bump changes the
-  version and the digest here, once.
+  into ~/.cargo/bin. Used by ci.yml; a bump changes the version and the
+  digest here, once.
 
 # The version and digest are step env, not job env, because rust-cache hashes
 # every CARGO* variable in the job into its cache key, and a tool bump should

@@ -221,12 +221,18 @@ jobs:
         run: python3 scripts/check-version.py
 
       # libwebrtc's pin, written in fetch-libwebrtc.sh, build-libwebrtc.sh, the
-      # Flatpak manifest and NOTICE, and the licence allow-list, written in
-      # deny.toml and about.toml. Each copy must agree with its source.
+      # Flatpak manifest and NOTICE; the licence allow-list, written in
+      # deny.toml and about.toml; and District AI core for Rust's pin, written
+      # in Cargo.toml, Cargo.lock, deny.toml and cargo-sources.json. Each copy
+      # must agree with its source. The check also asks GitHub whether the
+      # core's tag still names the commit Cargo.lock holds, and compares
+      # check-public-hygiene.py, check-coverage.py and fetch-libwebrtc.sh's pins
+      # with the core's at that commit: the hygiene and coverage scripts here are
+      # copies of the core's, kept so that they run offline and before a build.
       - name: The pin check still catches what it claims to
         run: python3 scripts/check-pins.py --self-test
 
-      - name: Every copy of a pin agrees with its source
+      - name: Every copy of a pin agrees with its source, and the core's tag with Cargo.lock
         run: python3 scripts/check-pins.py
 
       # The Flatpak build's crates are listed in cargo-sources.json, written
@@ -236,8 +242,10 @@ jobs:
       - name: packaging/flatpak/cargo-sources.json is current with Cargo.lock
         run: scripts/flatpak-cargo-sources.sh --check
 
-      # Before the scan, so that a rule which has stopped matching anything fails
-      # here instead of letting the scan pass quietly.
+      # The script is the core's, copied (the pin check above holds the copy to
+      # the core's at the locked commit). Before the scan, so that a rule which
+      # has stopped matching anything fails here instead of letting the scan
+      # pass quietly.
       - name: The public-hygiene rules still catch what they claim to
         run: python3 scripts/check-public-hygiene.py --self-test
 

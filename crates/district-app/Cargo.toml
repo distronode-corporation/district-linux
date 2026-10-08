@@ -66,7 +66,8 @@ glib-build-tools = { workspace = true }
 
 [dev-dependencies]
 # Test only: the smoke test answers the app's effects with the recorded server
-# responses under contracts/.
+# responses under the core's contracts/, found with `cargo metadata` and read
+# as JSON (tests/contracts/).
 serde = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
 
