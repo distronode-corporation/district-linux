@@ -27,6 +27,13 @@ path = "tests/smoke.rs"
 harness = false
 required-features = ["gtk-tests"]
 
+# SPIKE (v3.0 W0): French from a compiled catalog, under a virtual display.
+[[test]]
+name = "l10n"
+path = "tests/l10n.rs"
+harness = false
+required-features = ["gtk-tests"]
+
 [[test]]
 name = "store_screenshots"
 path = "tests/store_screenshots.rs"
@@ -41,6 +48,10 @@ gtk-tests = []
 # CONTRIBUTING.md); a build without it rings nothing, dials nothing and says
 # so.
 voice = ["district-call/livekit"]
+# SPIKE (v3.0 W0, do not merge): background mode. A StatusNotifierItem tray
+# (ksni, pure D-Bus) and the Background portal's start-at-login (ashpd), with
+# the application held after its last window closes.
+background = ["dep:ksni", "dep:ashpd"]
 
 [dependencies]
 async-channel = { workspace = true }
@@ -52,7 +63,12 @@ district-desktop = { workspace = true }
 district-host = { workspace = true }
 district-live = { workspace = true }
 district-model = { workspace = true }
+# SPIKE: gettext from glibc (gettext-system), so nothing of GNU gettext is
+# compiled or linked statically.
+gettext-rs = { version = "0.8.0", features = ["gettext-system"] }
 gtk4 = { workspace = true }
+ksni = { version = "0.3.6", default-features = false, features = ["tokio"], optional = true }
+ashpd = { version = "0.13.13", default-features = false, features = ["tokio", "background"], optional = true }
 libadwaita = { workspace = true }
 # A contact's research dossier is free-form JSON, shown as the text it holds.
 serde_json = { workspace = true }
@@ -122,4 +138,6 @@ assets = [
   ["target/release/libwebrtc-LICENSE.md", "usr/share/doc/district-ai/", "644"],
   ["target/release/THIRD-PARTY-LICENSES.txt", "usr/share/doc/district-ai/", "644"],
   ["../../NOTICE", "usr/share/doc/district-ai/", "644"],
+  # SPIKE (v3.0 W0): the French catalog, written by scripts/build-deb.sh.
+  ["target/release/locale/fr/LC_MESSAGES/district-ai.mo", "usr/share/locale/fr/LC_MESSAGES/", "644"],
 ]

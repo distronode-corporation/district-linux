@@ -48,4 +48,10 @@ cp "$LK_CUSTOM_WEBRTC/LICENSE.md" "$target/release/libwebrtc-LICENSE.md"
 
 scripts/third-party-licenses.sh "$target/release/THIRD-PARTY-LICENSES.txt" > /dev/null
 
+# SPIKE (v3.0 W0): the French catalog, installed as
+# /usr/share/locale/fr/LC_MESSAGES/district-ai.mo (Cargo.toml's assets).
+mkdir -p "$target/release/locale/fr/LC_MESSAGES"
+msgfmt --check -o "$target/release/locale/fr/LC_MESSAGES/district-ai.mo" \
+  crates/district-app/po/fr.po
+
 exec cargo deb -p district-app --locked "$@"

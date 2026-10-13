@@ -72,7 +72,8 @@ jobs:
       # shared-library half of Depends.
       - uses: $/.github/actions/install-clang-21
         with:
-          packages: dpkg-dev
+          # SPIKE: gettext for msgfmt (scripts/build-deb.sh).
+          packages: dpkg-dev gettext
 
       # The upstream release, checked against a pinned SHA-256, as the other
       # tools are installed.
@@ -182,7 +183,8 @@ jobs:
             ./usr/share/doc/district-ai/copyright \
             ./usr/share/doc/district-ai/NOTICE \
             ./usr/share/doc/district-ai/libwebrtc-LICENSE.md \
-            ./usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt; do
+            ./usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt \
+            ./usr/share/locale/fr/LC_MESSAGES/district-ai.mo; do
             if ! dpkg-deb --contents "$deb" | awk '{ print $6 }' | grep -qxF "$path"; then
               echo "::error::the package has no $path"
               fail=1
@@ -245,6 +247,18 @@ jobs:
               exit 1
             fi
             ldconfig -p | grep -F "libpulse.so.0 " || { echo "::error::no libpulse.so.0"; exit 1; }
+            # SPIKE (v3.0 W0): the catalog the package installed, found by the
+            # binary. glibc ignores LANGUAGE in the C locale (and in C.UTF-8,
+            # recorded below), so French needs a real locale: generated here,
+            # as any French desktop has it.
+            echo "C.UTF-8 + LANGUAGE=fr: $(LANG=C.UTF-8 LANGUAGE=fr district-ai --l10n-probe 2>/dev/null)"
+            apt-get install -y -qq --no-install-recommends locales > /dev/null
+            localedef -i fr_CA -f UTF-8 fr_CA.UTF-8
+            localedef -i en_US -f UTF-8 en_US.UTF-8
+            echo "en_US.UTF-8 + LANGUAGE=fr: $(LANG=en_US.UTF-8 LANGUAGE=fr district-ai --l10n-probe 2>/dev/null)"
+            got="$(LANG=fr_CA.UTF-8 district-ai --l10n-probe 2>/dev/null)"
+            echo "fr_CA.UTF-8: $got"
+            [ "$got" = "Assistance" ] || { echo "::error::--l10n-probe under fr_CA.UTF-8 said \"$got\""; exit 1; }
           '
             echo "::endgroup::"
           done

@@ -77,7 +77,13 @@ jobs:
         run: |
           sudo apt-get update
           # shellcheck disable=SC2086 # deliberate word splitting into one package per arg
-          sudo apt-get install -y --no-install-recommends $LINUX_DEPS xvfb xauth dbus
+          sudo apt-get install -y --no-install-recommends $LINUX_DEPS xvfb xauth dbus gettext locales
+          # SPIKE (v3.0 W0): tests/l10n.rs compiles a catalog with msgfmt and
+          # runs under these locales (glibc ignores LANGUAGE in C and C.UTF-8).
+          ldd --version | head -n 1
+          sudo localedef -i fr_CA -f UTF-8 fr_CA.UTF-8
+          sudo localedef -i en_US -f UTF-8 en_US.UTF-8
+          locale -a
 
       # Caches are written from main only. A pull request still restores main's
       # cache, but does not spend time uploading one of its own that nothing else
@@ -90,7 +96,7 @@ jobs:
       # have to change. `--all-targets` so the tests are linted too, and the
       # `gtk-tests` feature so the app's smoke test is among them.
       - name: cargo clippy
-        run: cargo clippy --workspace --all-targets --locked --features district-app/gtk-tests -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked --features district-app/gtk-tests,district-app/background -- -D warnings
 
       # The upstream release, checked against a pinned SHA-256. The action holds
       # the version and digest for this job and voice.yml's.
@@ -203,7 +209,7 @@ jobs:
       # dependency manifests, and `--all-targets` extends it to the tests, the
       # app's smoke test included.
       - name: cargo check at the MSRV
-        run: cargo check --workspace --all-targets --locked --features district-app/gtk-tests
+        run: cargo check --workspace --all-targets --locked --features district-app/gtk-tests,district-app/background
 
   # Seconds of runtime. The scripts need Python 3.11 or newer (tomllib), which
   # ubuntu-24.04 ships.

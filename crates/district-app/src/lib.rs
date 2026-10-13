@@ -34,11 +34,14 @@ use gtk4 as gtk;
 use libadwaita as adw;
 
 mod app;
+#[cfg(feature = "background")]
+mod background;
 mod bridge;
 mod charts;
 mod controller;
 mod effects;
 mod guard;
+pub mod l10n;
 mod markdown;
 mod notifications;
 mod pages;

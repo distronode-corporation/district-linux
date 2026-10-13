@@ -23,7 +23,7 @@
             <property name="sidebar-width-fraction">0.4</property>
             <property name="sidebar">
               <object class="AdwNavigationPage">
-                <property name="title">Support</property>
+                <property name="title" translatable="yes" context="support-page">Support</property>
                 <property name="tag">requests</property>
                 <property name="child">
                   <object class="GtkBox">

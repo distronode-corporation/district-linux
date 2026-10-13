@@ -1,0 +1,17 @@
+# SPIKE (v3.0 W0, do not merge): French for the district-ai text domain.
+msgid ""
+msgstr ""
+"Project-Id-Version: district-ai\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgctxt "support-page"
+msgid "Support"
+msgstr "Assistance"
+
+msgctxt "spike"
+msgid "Settings"
+msgstr "Paramètres"

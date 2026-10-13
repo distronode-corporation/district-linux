@@ -41,6 +41,12 @@ pub fn run() -> glib::ExitCode {
         println!("{}", version_line());
         return glib::ExitCode::SUCCESS;
     }
+    crate::l10n::init();
+    // SPIKE: one catalog lookup, for the package tests (deb.yml, flatpak.yml).
+    if lone_flag(std::env::args_os(), "--l10n-probe") {
+        println!("{}", crate::l10n::probe_line());
+        return glib::ExitCode::SUCCESS;
+    }
     match launch() {
         Ok(code) => code,
         Err(problem) => {
@@ -161,6 +167,9 @@ fn launch() -> Result<glib::ExitCode, String> {
         commands: command_receiver,
         startup_notice,
     });
+    // SPIKE: background mode holds the app past its last window.
+    #[cfg(feature = "background")]
+    let _background = crate::background::install(&app, runtime.handle());
     let code = app.run();
     drop(app);
     runtime.shutdown_timeout(RUNTIME_SHUTDOWN);
@@ -171,8 +180,13 @@ fn launch() -> Result<glib::ExitCode, String> {
 /// and nothing else. Anything more is left to the application, which refuses
 /// an option it does not know.
 fn version_requested(args: impl IntoIterator<Item = OsString>) -> bool {
+    lone_flag(args, "--version")
+}
+
+/// Whether the command line, program name first, is the program and `flag`.
+fn lone_flag(args: impl IntoIterator<Item = OsString>, flag: &str) -> bool {
     let mut args = args.into_iter().skip(1);
-    args.next().is_some_and(|arg| arg == "--version") && args.next().is_none()
+    args.next().is_some_and(|arg| arg == flag) && args.next().is_none()
 }
 
 /// This app as the service sees it: the Linux platform, and this crate's own

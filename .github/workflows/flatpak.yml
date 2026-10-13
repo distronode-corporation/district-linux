@@ -125,6 +125,12 @@ jobs:
               --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
               repo district-ai.flatpak com.distronode.DistrictAI
             ls -l district-ai.flatpak
+            # SPIKE (v3.0 W0): with separate-locales: false the catalog stays in
+            # the app (files/share/locale) and the repository holds no .Locale ref.
+            echo "--- refs in the repository the bundle is built from:"
+            flatpak repo --branches repo
+            echo "--- locale files in the build directory:"
+            find flatpak_app/files/share/locale flatpak_app/files/share/runtime/locale -type f 2>/dev/null || true
           '
           df -h /
 
@@ -174,6 +180,33 @@ jobs:
               fail=1
             fi
             exit "$fail"
+          '
+
+      # SPIKE (v3.0 W0): the French catalog came in with the single-file
+      # bundle (nothing else was installed from this build), and the app finds
+      # it inside the sandbox. The probe looks one string up the way the app
+      # does; the locales the runtime carries decide which settings work.
+      - name: The installed bundle holds the French catalog, and the app finds it
+        run: |
+          docker exec flatpak bash -uo pipefail -c '
+            app="$(flatpak info --system --show-location com.distronode.DistrictAI)"
+            echo "--- every file of the installed app under share/locale:"
+            find "$app/files/share/locale" -type f -exec ls -l {} + || true
+            flatpak list --system --runtime --columns=application,branch
+            echo "--- locales inside the sandbox:"
+            XDG_RUNTIME_DIR="$(mktemp -d)"
+            export XDG_RUNTIME_DIR
+            flatpak run --system --command=sh com.distronode.DistrictAI -c "locale -a" || true
+            for env in "LANG=fr_CA.UTF-8" "LANG=fr_FR.UTF-8" "LANG=en_US.UTF-8 LANGUAGE=fr" "LANG=C.UTF-8 LANGUAGE=fr"; do
+              args=()
+              for pair in $env; do args+=("--env=$pair"); done
+              got="$(flatpak run --system "${args[@]}" com.distronode.DistrictAI --l10n-probe 2>/dev/null)"
+              echo "probe with $env: $got"
+            done
+            if [ ! -s "$app/files/share/locale/fr/LC_MESSAGES/district-ai.mo" ]; then
+              echo "::error::the installed bundle has no /app/share/locale/fr/LC_MESSAGES/district-ai.mo"
+              exit 1
+            fi
           '
 
       - name: Name the bundle for the release

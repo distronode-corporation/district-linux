@@ -27,6 +27,11 @@ sdk-extensions:
   # newer may do (its build checks, and refuses GCC). This is LLVM 22.1.
   - org.freedesktop.Sdk.Extension.llvm22
 command: district-ai
+# SPIKE (v3.0 W0): keep /app/share/locale in the app itself. By default
+# flatpak-builder moves it into a separate com.distronode.DistrictAI.Locale
+# extension, which `flatpak build-bundle` does not put in the single-file
+# bundle, so a bundle install would have no French.
+separate-locales: false
 finish-args:
   # The District AI service, its live updates socket and a call's media.
   - --share=network
@@ -72,6 +77,10 @@ modules:
         LK_CUSTOM_WEBRTC="$webrtc" cargo build --release --locked --offline \
           -p district-app --features voice
         install -Dm755 target/release/district-ai -t "$FLATPAK_DEST/bin"
+        # SPIKE: the French catalog, from the SDK's msgfmt.
+        install -d "$FLATPAK_DEST/share/locale/fr/LC_MESSAGES"
+        msgfmt --check -o "$FLATPAK_DEST/share/locale/fr/LC_MESSAGES/district-ai.mo" \
+          crates/district-app/po/fr.po
         data=crates/district-app/data
         install -Dm644 "$data/$FLATPAK_ID.desktop" -t "$FLATPAK_DEST/share/applications"
         install -Dm644 "$data/$FLATPAK_ID.metainfo.xml" -t "$FLATPAK_DEST/share/metainfo"
