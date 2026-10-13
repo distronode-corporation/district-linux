@@ -14,6 +14,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::reply_box::{ReplyBox, ReplyEvents, ReplyState};
 use crate::pages::shared::{
     Ask, Asking, Landing, clear_box, conversation_message, draw_line, draw_spinner, failure_text,
@@ -22,14 +23,14 @@ use crate::pages::shared::{
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
-/// The heading when a request could not be read.
-pub(crate) const FAILED_TITLE: &str = "Could not load this request";
-
 /// The line over a request's subject: its reference, and where it stands.
 pub(crate) fn reference(request: &SupportRequestDetail) -> String {
     format!(
         "{} \u{b7} {}",
-        request.issue_key.as_deref().unwrap_or("Not filed yet"),
+        request
+            .issue_key
+            .as_deref()
+            .unwrap_or(text::support_not_filed(lang())),
         request.status_name
     )
 }
@@ -94,7 +95,7 @@ mod imp {
             self.parent_constructed();
             let view = self.obj();
             self.close_button
-                .set_label(SupportRequestScreen::CLOSE_ACTION);
+                .set_label(core_text::support_close_action(lang()));
             on_click(&self.retry_button, &*view, || Event::Refresh);
             on_click(&self.close_button, &*view, || {
                 Event::Support(SupportEvent::AskClose)
@@ -143,7 +144,8 @@ impl SupportRequestView {
             SupportRequestRead::Loading => imp.stack.set_visible_child_name("loading"),
             SupportRequestRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(FAILED_TITLE);
+                imp.status
+                    .set_title(text::support_request_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
@@ -184,8 +186,8 @@ impl SupportRequestView {
             screen.confirming_close.then(|| Ask {
                 key: "close".to_owned(),
                 heading: None,
-                question: SupportRequestScreen::CLOSE_QUESTION,
-                action: SupportRequestScreen::CLOSE_ACTION,
+                question: core_text::support_close_question(lang()),
+                action: core_text::support_close_action(lang()),
                 destructive: false,
             }),
             move |yes| {
@@ -203,7 +205,7 @@ impl SupportRequestView {
             .landed(&screen.key, screen.sending.then_some(()));
         landed
             .filter(|()| screen.send_failure.is_none())
-            .map(|()| "Reply sent.")
+            .map(|()| text::common_reply_sent(lang()))
     }
 
     fn draw(&self, detail: &SupportRequestDetail) {

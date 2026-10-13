@@ -15,6 +15,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::notifications::open_workspace_id;
 use crate::pages::desk_settings::DeskSettingsView;
 use crate::pages::desk_ticket::DeskTicketView;
@@ -47,7 +48,10 @@ pub(crate) fn filter_labels(queue: Option<&DeskTickets>) -> Vec<String> {
         .iter()
         .map(|filter| {
             let (words, count) = match filter {
-                None => ("Every ticket", queue.map(|queue| queue.tickets.len())),
+                None => (
+                    text::desk_every_ticket(lang()),
+                    queue.map(|queue| queue.tickets.len()),
+                ),
                 Some(status) => (
                     desk_status_label(*status),
                     queue.map(|queue| queue.count(*status)),
@@ -80,7 +84,7 @@ pub(crate) fn status_badge(status: &str) -> (String, &'static str) {
 /// wait is the customer's, which the ticket itself says in full.
 pub(crate) fn short_badge(status: &str) -> (String, &'static str) {
     match desk_status(status) {
-        Some(DeskTicketStatus::Waiting) => ("Waiting".to_owned(), "dim-label"),
+        Some(DeskTicketStatus::Waiting) => (text::desk_waiting(lang()).to_owned(), "dim-label"),
         _ => status_badge(status),
     }
 }
@@ -96,7 +100,7 @@ pub(crate) fn requester(ticket: &DeskTicketSummary) -> String {
     .flatten()
     .find(|value| !value.trim().is_empty())
     .map_or_else(
-        || "No customer details".to_owned(),
+        || text::desk_no_customer_details(lang()).to_owned(),
         |value| district_core::format_phone_number(value),
     )
 }
@@ -178,7 +182,8 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.turn_on_button.set_label(DeskQueue::TURN_ON);
+            self.turn_on_button
+                .set_label(core_text::desk_turn_on(lang()));
             on_click(&self.list_retry, &*page, || Event::Refresh);
             on_click(&self.turn_on_button, &*page, || {
                 Event::Desk(DeskEvent::TurnOn)
@@ -337,16 +342,24 @@ impl DeskPage {
             DeskQueue::NotLoaded | DeskQueue::Loading => {
                 imp.list_stack.set_visible_child_name("loading");
             }
-            DeskQueue::Off => status(DeskQueue::OFF_TITLE, DeskQueue::OFF_BODY, false),
+            DeskQueue::Off => status(
+                core_text::desk_off_title(lang()),
+                core_text::desk_off_body(lang()),
+                false,
+            ),
             DeskQueue::Failed(failure) => {
                 status(
-                    DeskQueue::FAILED_TITLE,
+                    core_text::desk_failed_title(lang()),
                     &failure_text(failure),
                     failure.retryable,
                 );
             }
             DeskQueue::Ready(queue) if queue.tickets.is_empty() => {
-                status(DeskQueue::EMPTY_TITLE, DeskQueue::EMPTY_BODY, false);
+                status(
+                    core_text::desk_empty_title(lang()),
+                    core_text::desk_empty_body(lang()),
+                    false,
+                );
             }
             DeskQueue::Ready(_) => {
                 imp.list_stack.set_visible_child_name("list");
@@ -357,7 +370,8 @@ impl DeskPage {
                     .cloned()
                     .collect();
                 imp.none_matching.set_visible(visible.is_empty());
-                imp.none_matching.set_label(DeskQueue::NONE_MATCHING);
+                imp.none_matching
+                    .set_label(core_text::desk_none_matching(lang()));
                 self.draw_rows(visible);
             }
         }

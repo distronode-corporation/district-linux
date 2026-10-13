@@ -9,17 +9,17 @@
       <object class="AdwPreferencesPage">
         <child>
           <object class="AdwPreferencesGroup">
-            <property name="title">This computer</property>
+            <property name="title" translatable="yes" context="account_page.computer">This computer</property>
             <child>
               <object class="AdwActionRow" id="device_row">
-                <property name="title">Device name</property>
+                <property name="title" translatable="yes" context="account_page.device_name">Device name</property>
                 <property name="use-markup">False</property>
                 <property name="subtitle-selectable">True</property>
               </object>
             </child>
             <child>
               <object class="AdwActionRow" id="version_row">
-                <property name="title">District AI for Linux</property>
+                <property name="title" translatable="yes" context="account_page.district_ai_linux">District AI for Linux</property>
                 <property name="use-markup">False</property>
                 <property name="subtitle-selectable">True</property>
               </object>
@@ -28,7 +28,7 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup" id="calls_group">
-            <property name="title">Calls</property>
+            <property name="title" translatable="yes" context="common.calls">Calls</property>
             <property name="visible">False</property>
             <child>
               <object class="AdwSwitchRow" id="ring_here_row">
@@ -52,10 +52,10 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup">
-            <property name="title">Your account</property>
+            <property name="title" translatable="yes" context="account_page.account">Your account</property>
             <child>
               <object class="AdwActionRow" id="devices_row">
-                <property name="title">Devices</property>
+                <property name="title" translatable="yes" context="account_page.devices">Devices</property>
                 <property name="use-markup">False</property>
                 <property name="activatable">True</property>
                 <child type="suffix">
@@ -67,14 +67,14 @@
             </child>
             <child>
               <object class="AdwActionRow" id="sign_out_row">
-                <property name="title">Sign out</property>
+                <property name="title" translatable="yes" context="account_page.sign_out">Sign out</property>
                 <property name="use-markup">False</property>
                 <property name="activatable">True</property>
               </object>
             </child>
             <child>
               <object class="AdwActionRow" id="delete_row">
-                <property name="title">Delete your account</property>
+                <property name="title" translatable="yes" context="account_page.delete_account">Delete your account</property>
                 <property name="use-markup">False</property>
                 <property name="activatable">True</property>
                 <child type="suffix">

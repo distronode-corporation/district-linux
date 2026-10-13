@@ -28,7 +28,7 @@
                 <property name="icon-name">go-home-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -127,7 +127,7 @@
                         </child>
                         <child>
                           <object class="AdwPreferencesGroup" id="recent_group">
-                            <property name="title">Recent calls</property>
+                            <property name="title" translatable="yes" context="overview_page.recent_calls">Recent calls</property>
                             <child>
                               <object class="GtkListBox" id="recent_list">
                                 <property name="selection-mode">none</property>
@@ -138,7 +138,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel" id="recent_empty">
-                                <property name="label">No calls yet. They appear here as your receptionist answers them.</property>
+                                <property name="label" translatable="yes" context="overview_page.no_calls_yet_they_appear">No calls yet. They appear here as your receptionist answers them.</property>
                                 <property name="xalign">0</property>
                                 <property name="wrap">True</property>
                                 <style>

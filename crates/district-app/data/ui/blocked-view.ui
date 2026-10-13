@@ -28,7 +28,7 @@
                 <property name="icon-name">action-unavailable-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -46,8 +46,8 @@
               <object class="AdwPreferencesPage">
                 <child>
                   <object class="AdwPreferencesGroup">
-                    <property name="title">Blocked callers</property>
-                    <property name="description">Their conversations and calls do not appear in this workspace.</property>
+                    <property name="title" translatable="yes" context="blocked_view.blocked_callers">Blocked callers</property>
+                    <property name="description" translatable="yes" context="blocked_view.their_conversations_calls_do_not">Their conversations and calls do not appear in this workspace.</property>
                     <child>
                       <object class="GtkBox" id="failure_box">
                         <property name="spacing">6</property>
@@ -71,11 +71,11 @@
                         <child>
                           <object class="GtkButton" id="failure_dismiss">
                             <property name="icon-name">window-close-symbolic</property>
-                            <property name="tooltip-text">Dismiss</property>
+                            <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
                             <property name="valign">center</property>
                             <property name="margin-end">6</property>
                             <accessibility>
-                              <property name="label">Dismiss</property>
+                              <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
                             </accessibility>
                             <style>
                               <class name="flat"/>
@@ -89,7 +89,7 @@
                       <object class="GtkListBox" id="blocked_list">
                         <property name="selection-mode">none</property>
                         <accessibility>
-                          <property name="label">Blocked callers</property>
+                          <property name="label" translatable="yes" context="blocked_view.blocked_callers_a11y">Blocked callers</property>
                         </accessibility>
                         <style>
                           <class name="boxed-list"/>

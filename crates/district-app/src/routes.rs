@@ -1,6 +1,7 @@
 //! The sidebar, and each screen's title: presentation only. Which screens a
 //! member may open is the core's decision ([`Capabilities::allows`]).
 
+use crate::l10n::{lang, text};
 use district_core::{Capabilities, Route, WorkspaceSection};
 
 /// A group of sidebar rows.
@@ -21,7 +22,7 @@ impl Section {
     /// alone.
     pub(crate) fn heading(self) -> Option<&'static str> {
         match self {
-            Self::Workspace => Some("Workspace"),
+            Self::Workspace => Some(text::route_workspace(lang())),
             Self::Main | Self::Account => None,
         }
     }
@@ -132,42 +133,42 @@ pub(crate) fn is_sidebar_row(route: &Route) -> bool {
 /// The screen's title, for the header bar and the sidebar.
 pub(crate) fn title(route: &Route) -> &'static str {
     match route {
-        Route::Overview => "Overview",
-        Route::Inbox => "Inbox",
-        Route::Thread { .. } => "Conversation",
-        Route::Calls => "Calls",
-        Route::CallDetail { .. } => "Call",
-        Route::Contacts => "Contacts",
-        Route::ContactDetail { .. } => "Contact",
-        Route::BlockedContacts => "Blocked callers",
-        Route::Hq => "District HQ",
-        Route::Analytics => "Analytics",
-        Route::Marketplace => "Phone numbers",
-        Route::Billing => "Billing",
-        Route::Workflows => "Workflows",
-        Route::Scheduling => "Booking pages",
-        Route::Desk => "Help desk",
-        Route::DeskTicket { .. } => "Ticket",
-        Route::DeskSettings => "Help desk settings",
-        Route::Support => "Support",
-        Route::SupportRequest { .. } => "Support request",
-        Route::Rooms => "Meeting rooms",
-        Route::Dialer => "Dialler",
-        Route::Account => "Account",
-        Route::Devices => "Devices",
+        Route::Overview => text::route_overview(lang()),
+        Route::Inbox => text::route_inbox(lang()),
+        Route::Thread { .. } => text::route_conversation(lang()),
+        Route::Calls => text::route_calls(lang()),
+        Route::CallDetail { .. } => text::route_call(lang()),
+        Route::Contacts => text::route_contacts(lang()),
+        Route::ContactDetail { .. } => text::route_contact(lang()),
+        Route::BlockedContacts => text::route_blocked_callers(lang()),
+        Route::Hq => text::route_district_hq(lang()),
+        Route::Analytics => text::route_analytics(lang()),
+        Route::Marketplace => text::route_phone_numbers(lang()),
+        Route::Billing => text::route_billing(lang()),
+        Route::Workflows => text::route_workflows(lang()),
+        Route::Scheduling => text::route_booking_pages(lang()),
+        Route::Desk => text::route_help_desk(lang()),
+        Route::DeskTicket { .. } => text::route_ticket(lang()),
+        Route::DeskSettings => text::route_help_desk_settings(lang()),
+        Route::Support => text::route_support(lang()),
+        Route::SupportRequest { .. } => text::route_support_request(lang()),
+        Route::Rooms => text::route_meeting_rooms(lang()),
+        Route::Dialer => text::route_dialler(lang()),
+        Route::Account => text::route_account(lang()),
+        Route::Devices => text::route_devices(lang()),
         Route::Workspace(section) => match section {
-            WorkspaceSection::Hub => "Workspace settings",
+            WorkspaceSection::Hub => text::route_workspace_settings(lang()),
             // District Studio's, named as the web's pages are.
-            WorkspaceSection::Persona => "Persona",
-            WorkspaceSection::VoiceStudio => "Voice",
-            WorkspaceSection::CallHandling => "Call handling",
-            WorkspaceSection::Routing => "Routing rules",
-            WorkspaceSection::Directory => "Transfer directory",
-            WorkspaceSection::Tools => "Skills",
-            WorkspaceSection::Knowledge => "Knowledge",
-            WorkspaceSection::Messaging => "Messaging accounts",
-            WorkspaceSection::Members => "Members",
-            WorkspaceSection::Numbers => "Phone numbers",
+            WorkspaceSection::Persona => text::route_persona(lang()),
+            WorkspaceSection::VoiceStudio => text::route_voice(lang()),
+            WorkspaceSection::CallHandling => text::route_call_handling(lang()),
+            WorkspaceSection::Routing => text::route_routing_rules(lang()),
+            WorkspaceSection::Directory => text::route_transfer_directory(lang()),
+            WorkspaceSection::Tools => text::route_skills(lang()),
+            WorkspaceSection::Knowledge => text::route_knowledge(lang()),
+            WorkspaceSection::Messaging => text::route_messaging_accounts(lang()),
+            WorkspaceSection::Members => text::route_members(lang()),
+            WorkspaceSection::Numbers => text::route_phone_numbers(lang()),
         },
     }
 }

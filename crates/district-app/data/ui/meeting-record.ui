@@ -8,7 +8,7 @@
   <template class="DistrictMeetingRecord" parent="AdwDialog">
     <property name="content-width">560</property>
     <property name="content-height">640</property>
-    <property name="title">Meeting</property>
+    <property name="title" translatable="yes" context="meeting_record.meeting">Meeting</property>
     <property name="can-close">False</property>
     <property name="child">
       <object class="AdwToolbarView">
@@ -36,7 +36,7 @@
                 <property name="child">
                   <object class="AdwStatusPage" id="status">
                     <property name="icon-name">camera-web-symbolic</property>
-                    <property name="title">Could not load this meeting</property>
+                    <property name="title" translatable="yes" context="meeting_record.could_not_load_meeting">Could not load this meeting</property>
                   </object>
                 </property>
               </object>
@@ -51,7 +51,7 @@
                     </child>
                     <child>
                       <object class="AdwPreferencesGroup">
-                        <property name="title">Minutes</property>
+                        <property name="title" translatable="yes" context="meeting_record.minutes">Minutes</property>
                         <child>
                           <object class="GtkLabel" id="minutes">
                             <property name="xalign">0</property>
@@ -69,7 +69,7 @@
                     </child>
                     <child>
                       <object class="AdwPreferencesGroup" id="actions_group">
-                        <property name="title">Action items</property>
+                        <property name="title" translatable="yes" context="meeting_record.action_items">Action items</property>
                         <child>
                           <object class="GtkLabel" id="actions">
                             <property name="xalign">0</property>
@@ -86,7 +86,7 @@
                     </child>
                     <child>
                       <object class="AdwPreferencesGroup" id="transcript_group">
-                        <property name="title">Transcript</property>
+                        <property name="title" translatable="yes" context="common.transcript">Transcript</property>
                         <child>
                           <object class="GtkLabel" id="transcript">
                             <property name="xalign">0</property>

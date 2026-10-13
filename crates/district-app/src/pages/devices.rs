@@ -9,12 +9,10 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
-
-/// The heading of the question before a sign-out.
-pub(crate) const QUESTION_TITLE: &str = "Sign out?";
 
 /// When `row` was last active, in this computer's time zone, or the core's
 /// words for a device that has not renewed yet.
@@ -27,7 +25,7 @@ pub(crate) fn last_active(row: &DeviceRow) -> String {
         .and_then(|when| when.to_local().ok())
         .map(|when| crate::pages::shared::long_local(&when));
     match local {
-        Some(when) => format!("Last active {when}"),
+        Some(when) => text::devices_last_active(lang(), &when),
         // Not yet renewed, or a time this build cannot read: the core's words.
         None => row.last_active(),
     }
@@ -45,7 +43,7 @@ pub(crate) fn notice(screen: &DevicesScreen) -> Option<String> {
         Some(failure) => Some(failure_text(failure).into_owned()),
         None => screen
             .nothing_revoked
-            .then(|| DevicesScreen::NOTHING_REVOKED.to_owned()),
+            .then(|| core_text::devices_nothing_revoked(lang()).to_owned()),
     }
 }
 
@@ -145,13 +143,17 @@ impl DevicesPage {
             DevicesList::Loading => imp.stack.set_visible_child_name("loading"),
             DevicesList::Failed(failure) => {
                 self.status(
-                    DevicesList::FAILED_TITLE,
+                    core_text::devices_failed_title(lang()),
                     &failure_text(failure),
                     failure.retryable,
                 );
             }
             DevicesList::Ready(rows) if rows.is_empty() => {
-                self.status(DevicesList::EMPTY_TITLE, DevicesList::EMPTY_BODY, false);
+                self.status(
+                    core_text::devices_empty_title(lang()),
+                    core_text::devices_empty_body(lang()),
+                    false,
+                );
             }
             DevicesList::Ready(rows) => {
                 imp.stack.set_visible_child_name("list");
@@ -196,14 +198,14 @@ impl DevicesPage {
             if row.is_this_device {
                 shown.add_suffix(
                     &gtk::Label::builder()
-                        .label(DeviceRow::THIS_DEVICE)
+                        .label(core_text::devices_this_device(lang()))
                         .valign(gtk::Align::Center)
                         .css_classes(["this-device", "caption"])
                         .build(),
                 );
             }
             let button = gtk::Button::builder()
-                .label("Sign out")
+                .label(text::devices_sign_out(lang()))
                 .valign(gtk::Align::Center)
                 .name(if row.is_this_device {
                     "sign-out-this-device"
@@ -234,7 +236,7 @@ impl DevicesPage {
             self,
             confirming.map(|confirmation| Ask {
                 key: format!("{confirmation:?}"),
-                heading: Some(QUESTION_TITLE),
+                heading: Some(text::devices_sign_out_question(lang())),
                 question: confirmation.question(),
                 action: confirmation.action(),
                 destructive: true,

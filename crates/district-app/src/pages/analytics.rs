@@ -23,6 +23,7 @@ use crate::charts::{
     sentiment_summary, swatch,
 };
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{clear_box, clear_list, draw_spinner, failure_text, metric_tile};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -38,26 +39,40 @@ const RANGES: [AnalyticsRange; 3] = [
 pub(crate) fn tiles(report: &AnalyticsReport) -> [(String, &'static str); 5] {
     let metrics = &report.response.metrics;
     [
-        (metrics.total_calls.to_string(), "Calls"),
-        (report.average_call(), "Average call"),
-        (report.conversion(), "Converted"),
-        (metrics.missed_calls.to_string(), "Missed"),
-        (metrics.abandoned_calls.to_string(), "Abandoned"),
+        (
+            metrics.total_calls.to_string(),
+            text::analytics_tile_calls(lang()),
+        ),
+        (
+            report.average_call(),
+            text::analytics_tile_average_call(lang()),
+        ),
+        (report.conversion(), text::analytics_tile_converted(lang())),
+        (
+            metrics.missed_calls.to_string(),
+            text::analytics_tile_missed(lang()),
+        ),
+        (
+            metrics.abandoned_calls.to_string(),
+            text::analytics_tile_abandoned(lang()),
+        ),
     ]
 }
 
 /// The report's heading: which window its figures are for, which is not the
 /// window picked while the new one's figures are on their way.
 pub(crate) fn report_title(range: AnalyticsRange) -> String {
-    format!("Calls over {}", AnalyticsScreen::range_label(range))
+    text::analytics_report_title(lang(), AnalyticsScreen::range_label(range))
 }
 
 /// What a bar of the trend stands for: a day, or a week in the longest
 /// window.
 pub(crate) fn trend_title(range: AnalyticsRange) -> &'static str {
     match range {
-        AnalyticsRange::NinetyDays => "Calls per week",
-        AnalyticsRange::SevenDays | AnalyticsRange::ThirtyDays => "Calls per day",
+        AnalyticsRange::NinetyDays => text::analytics_calls_per_week(lang()),
+        AnalyticsRange::SevenDays | AnalyticsRange::ThirtyDays => {
+            text::analytics_calls_per_day(lang())
+        }
     }
 }
 
@@ -195,7 +210,7 @@ mod imp {
                 });
             }
             self.history_group
-                .set_description(Some(HistoryCard::CAPTION));
+                .set_description(Some(core_text::analytics_history_caption(lang())));
             let mut values = self.values.borrow_mut();
             for _ in 0..5 {
                 let (tile, value, caption) = metric_tile("title-2");
@@ -257,7 +272,8 @@ impl AnalyticsPage {
         let imp = self.imp();
         if let Some(failure) = screen.failure() {
             imp.stack.set_visible_child_name("status");
-            imp.status.set_title(AnalyticsScreen::FAILED_TITLE);
+            imp.status
+                .set_title(core_text::analytics_failed_title(lang()));
             imp.status
                 .set_description(Some(&escape(&failure_text(failure))));
             imp.retry_button.set_visible(failure.retryable);
@@ -280,15 +296,17 @@ impl AnalyticsPage {
         draw_spinner(&imp.report_spinner, refreshing);
         match card {
             AnalyticsCard::NotLoaded | AnalyticsCard::Loading => {
-                imp.report_group.set_title("Calls");
+                imp.report_group
+                    .set_title(text::analytics_tile_calls(lang()));
                 imp.report_stack.set_visible_child_name("loading");
             }
             AnalyticsCard::Failed(failure) => {
-                imp.report_group.set_title("Calls");
+                imp.report_group
+                    .set_title(text::analytics_tile_calls(lang()));
                 imp.report_stack.set_visible_child_name("failed");
                 imp.report_failure.set_label(&format!(
                     "{}. {}",
-                    AnalyticsCard::FAILED_TITLE,
+                    core_text::analytics_report_failed_title(lang()),
                     failure_text(failure)
                 ));
             }
@@ -324,7 +342,7 @@ impl AnalyticsPage {
         clear_box(&imp.trend_box);
         if report.trend_is_empty() {
             imp.trend_box
-                .append(&caption(AnalyticsReport::NO_CALLS, 0.0));
+                .append(&caption(core_text::analytics_no_calls(lang()), 0.0));
             return;
         }
         let bars = report.trend();
@@ -383,7 +401,7 @@ impl AnalyticsPage {
         let bands = report.sentiment();
         if bands.iter().all(|band| band.value <= 0) {
             imp.sentiment_box
-                .append(&caption(AnalyticsReport::NO_SENTIMENT, 0.0));
+                .append(&caption(core_text::analytics_no_sentiment(lang()), 0.0));
             return;
         }
         let shares: Vec<(f64, usize)> = bands
@@ -423,7 +441,11 @@ impl AnalyticsPage {
             UsageCard::NotLoaded | UsageCard::Loading => ("loading", String::new(), "dim-label"),
             UsageCard::Failed(failure) => (
                 "note",
-                format!("{}. {}", UsageCard::FAILED_TITLE, failure_text(failure)),
+                format!(
+                    "{}. {}",
+                    core_text::analytics_usage_failed_title(lang()),
+                    failure_text(failure)
+                ),
                 "error",
             ),
             UsageCard::Ready {
@@ -432,7 +454,11 @@ impl AnalyticsPage {
                 self.draw_month(month);
                 ("ready", String::new(), "dim-label")
             }
-            UsageCard::Ready { .. } => ("note", UsageCard::NONE.to_owned(), "dim-label"),
+            UsageCard::Ready { .. } => (
+                "note",
+                core_text::analytics_usage_none(lang()).to_owned(),
+                "dim-label",
+            ),
         };
         imp.usage_stack.set_visible_child_name(page);
         imp.usage_note.set_label(&note);
@@ -470,12 +496,18 @@ impl AnalyticsPage {
             }
             HistoryCard::Failed(failure) => (
                 "note",
-                format!("{}. {}", HistoryCard::FAILED_TITLE, failure_text(failure)),
+                format!(
+                    "{}. {}",
+                    core_text::analytics_history_failed_title(lang()),
+                    failure_text(failure)
+                ),
                 "error",
             ),
-            HistoryCard::Ready { months, .. } if months.is_empty() => {
-                ("note", HistoryCard::NONE.to_owned(), "dim-label")
-            }
+            HistoryCard::Ready { months, .. } if months.is_empty() => (
+                "note",
+                core_text::analytics_history_none(lang()).to_owned(),
+                "dim-label",
+            ),
             HistoryCard::Ready { months, .. } => {
                 self.draw_months(months);
                 ("ready", String::new(), "dim-label")
@@ -495,9 +527,14 @@ impl AnalyticsPage {
         }
         let grid = &imp.history_grid;
         clear_grid(grid);
-        for (column, heading) in ["Month", "", "Call minutes", "Messages"]
-            .into_iter()
-            .enumerate()
+        for (column, heading) in [
+            text::analytics_history_month(lang()),
+            "",
+            text::analytics_history_call_minutes(lang()),
+            text::analytics_history_messages(lang()),
+        ]
+        .into_iter()
+        .enumerate()
         {
             grid.attach(
                 &caption(heading, if column < 2 { 0.0 } else { 1.0 }),
@@ -511,9 +548,11 @@ impl AnalyticsPage {
             let fraction = month.fraction;
             let bar = chart(
                 14,
-                &format!(
-                    "{}: {} call minutes, {} messages",
-                    month.month, month.minutes_text, month.messages_text
+                &text::analytics_history_row(
+                    lang(),
+                    &month.month,
+                    &month.minutes_text,
+                    &month.messages_text,
                 ),
                 move |cr, width, height, colors| draw_meter(cr, width, height, fraction, colors),
             );

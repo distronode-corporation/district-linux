@@ -22,7 +22,7 @@
             <property name="sidebar-width-fraction">0.3</property>
             <property name="sidebar">
               <object class="AdwNavigationPage">
-                <property name="title">Workspace settings</property>
+                <property name="title" translatable="yes" context="settings_page.workspace_settings">Workspace settings</property>
                 <property name="tag">hub</property>
                 <property name="child">
                   <object class="GtkScrolledWindow">
@@ -39,7 +39,7 @@
                           <object class="GtkListBox" id="hub_list">
                             <property name="selection-mode">single</property>
                             <accessibility>
-                              <property name="label">Settings sections</property>
+                              <property name="label" translatable="yes" context="settings_page.settings_sections">Settings sections</property>
                             </accessibility>
                             <style>
                               <class name="boxed-list"/>
@@ -65,7 +65,7 @@
             </property>
             <property name="content">
               <object class="AdwNavigationPage" id="section_page">
-                <property name="title">Section</property>
+                <property name="title" translatable="yes" context="settings_page.section">Section</property>
                 <property name="tag">section</property>
                 <property name="child">
                   <object class="GtkStack" id="section_stack">
@@ -75,8 +75,8 @@
                         <property name="child">
                           <object class="AdwStatusPage">
                             <property name="icon-name">emblem-system-symbolic</property>
-                            <property name="title">No section open</property>
-                            <property name="description">Choose a section to read its settings.</property>
+                            <property name="title" translatable="yes" context="settings_page.no_section_open">No section open</property>
+                            <property name="description" translatable="yes" context="settings_page.choose_section_read_settings">Choose a section to read its settings.</property>
                             <style>
                               <class name="compact"/>
                             </style>

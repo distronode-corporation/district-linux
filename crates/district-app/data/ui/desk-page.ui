@@ -23,7 +23,7 @@
             <property name="sidebar-width-fraction">0.4</property>
             <property name="sidebar">
               <object class="AdwNavigationPage">
-                <property name="title">Help desk</property>
+                <property name="title" translatable="yes" context="common.help_desk">Help desk</property>
                 <property name="tag">queue</property>
                 <property name="child">
                   <object class="GtkBox">
@@ -41,7 +41,7 @@
                             <property name="child">
                               <object class="AdwButtonContent">
                                 <property name="icon-name">list-add-symbolic</property>
-                                <property name="label">New ticket</property>
+                                <property name="label" translatable="yes" context="desk_page.new_ticket">New ticket</property>
                               </object>
                             </property>
                           </object>
@@ -52,7 +52,7 @@
                             <property name="child">
                               <object class="AdwButtonContent">
                                 <property name="icon-name">emblem-system-symbolic</property>
-                                <property name="label">Settings</property>
+                                <property name="label" translatable="yes" context="desk_page.settings">Settings</property>
                               </object>
                             </property>
                           </object>
@@ -64,9 +64,9 @@
                         <property name="margin-start">12</property>
                         <property name="margin-end">12</property>
                         <property name="margin-bottom">6</property>
-                        <property name="tooltip-text">Which tickets to show</property>
+                        <property name="tooltip-text" translatable="yes" context="desk_page.which_tickets_show">Which tickets to show</property>
                         <accessibility>
-                          <property name="label">Which tickets to show</property>
+                          <property name="label" translatable="yes" context="desk_page.which_tickets_show_a11y">Which tickets to show</property>
                         </accessibility>
                       </object>
                     </child>
@@ -95,7 +95,7 @@
                         <child>
                           <object class="GtkButton" id="submitted_dismiss">
                             <property name="icon-name">window-close-symbolic</property>
-                            <property name="tooltip-text">Dismiss</property>
+                            <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
                             <property name="valign">center</property>
                             <property name="margin-end">6</property>
                             <style>
@@ -103,7 +103,7 @@
                               <class name="circular"/>
                             </style>
                             <accessibility>
-                              <property name="label">Dismiss</property>
+                              <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
                             </accessibility>
                           </object>
                         </child>
@@ -141,7 +141,7 @@
                                     <property name="halign">center</property>
                                     <child>
                                       <object class="GtkButton" id="list_retry">
-                                        <property name="label">Try again</property>
+                                        <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                         <style>
                                           <class name="pill"/>
                                         </style>
@@ -194,7 +194,7 @@
                                       <object class="GtkListBox" id="ticket_list">
                                         <property name="selection-mode">single</property>
                                         <accessibility>
-                                          <property name="label">Tickets</property>
+                                          <property name="label" translatable="yes" context="desk_page.tickets">Tickets</property>
                                         </accessibility>
                                         <style>
                                           <class name="boxed-list"/>
@@ -224,7 +224,7 @@
             </property>
             <property name="content">
               <object class="AdwNavigationPage">
-                <property name="title">Ticket</property>
+                <property name="title" translatable="yes" context="desk_page.ticket">Ticket</property>
                 <property name="tag">ticket</property>
                 <property name="child">
                   <object class="GtkStack" id="detail_stack">
@@ -234,8 +234,8 @@
                         <property name="child">
                           <object class="AdwStatusPage">
                             <property name="icon-name">help-browser-symbolic</property>
-                            <property name="title">No ticket open</property>
-                            <property name="description">Choose a ticket to read it and reply.</property>
+                            <property name="title" translatable="yes" context="desk_page.no_ticket_open">No ticket open</property>
+                            <property name="description" translatable="yes" context="desk_page.choose_ticket_read_reply">Choose a ticket to read it and reply.</property>
                             <style>
                               <class name="compact"/>
                             </style>

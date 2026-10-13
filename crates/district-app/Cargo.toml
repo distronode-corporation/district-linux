@@ -27,6 +27,15 @@ path = "tests/smoke.rs"
 harness = false
 required-features = ["gtk-tests"]
 
+# French from a compiled catalog, under a virtual display: a template's string
+# looked up by its key, and the language gettext and the core each resolve.
+# Needs msgfmt and the fr_CA.UTF-8 and en_US.UTF-8 locales (tests/l10n.rs).
+[[test]]
+name = "l10n"
+path = "tests/l10n.rs"
+harness = false
+required-features = ["gtk-tests"]
+
 [[test]]
 name = "store_screenshots"
 path = "tests/store_screenshots.rs"
@@ -41,6 +50,14 @@ gtk-tests = []
 # CONTRIBUTING.md); a build without it rings nothing, dials nothing and says
 # so.
 voice = ["district-call/livekit"]
+# Canadian French: the app follows a French desktop (src/l10n.rs), and the
+# packages carry the compiled catalog (po/fr.po as district-ai.mo). Off until
+# the 3.0 release, so that nobody sees French before it is reviewed: without it
+# the app writes English whatever the desktop's language and binds no catalog.
+# Turned on by adding it to `default`, the one switch the packages follow
+# (scripts/french-enabled.py); deb.yml and flatpak.yml, which release.yml
+# runs, fail a package that holds a catalog while it is off.
+fr-ca = []
 
 [dependencies]
 async-channel = { workspace = true }
@@ -52,6 +69,11 @@ district-desktop = { workspace = true }
 district-host = { workspace = true }
 district-live = { workspace = true }
 district-model = { workspace = true }
+# The .ui templates' strings, looked up by GtkBuilder in the `district-ai` text
+# domain (src/l10n.rs). `gettext-system` takes gettext from glibc, so nothing of
+# GNU gettext is compiled or linked statically; without it the crate builds
+# GNU gettext from source (LGPL).
+gettext-rs = { version = "0.8.0", features = ["gettext-system"] }
 gtk4 = { workspace = true }
 libadwaita = { workspace = true }
 # A contact's research dossier is free-form JSON, shown as the text it holds.
@@ -122,4 +144,13 @@ assets = [
   ["target/release/libwebrtc-LICENSE.md", "usr/share/doc/district-ai/", "644"],
   ["target/release/THIRD-PARTY-LICENSES.txt", "usr/share/doc/district-ai/", "644"],
   ["../../NOTICE", "usr/share/doc/district-ai/", "644"],
+]
+
+# The .deb with French, built by scripts/build-deb.sh when the `fr-ca` feature
+# is on: the same package and the same assets, and the French catalog, which
+# the script compiles from po/fr.po first.
+[package.metadata.deb.variants.fr-ca]
+name = "district-ai"
+merge-assets.append = [
+  ["target/release/locale/fr/LC_MESSAGES/district-ai.mo", "usr/share/locale/fr/LC_MESSAGES/", "644"],
 ]

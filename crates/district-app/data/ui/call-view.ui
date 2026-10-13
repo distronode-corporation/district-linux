@@ -28,7 +28,7 @@
                 <property name="icon-name">call-start-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -105,7 +105,7 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="summary_group">
-                    <property name="title">Summary</property>
+                    <property name="title" translatable="yes" context="call_view.summary">Summary</property>
                     <child>
                       <object class="GtkLabel" id="summary">
                         <property name="xalign">0</property>
@@ -123,7 +123,7 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="transcript_group">
-                    <property name="title">Transcript</property>
+                    <property name="title" translatable="yes" context="common.transcript">Transcript</property>
                     <child>
                       <object class="GtkStack" id="transcript_stack">
                         <property name="vhomogeneous">False</property>
@@ -177,17 +177,17 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="analysis_group">
-                    <property name="title">Analysis</property>
+                    <property name="title" translatable="yes" context="call_view.analysis">Analysis</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="facts_group">
-                    <property name="title">Details</property>
+                    <property name="title" translatable="yes" context="common.details">Details</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="follow_up_group">
-                    <property name="title">Follow-up sent</property>
+                    <property name="title" translatable="yes" context="call_view.follow_up_sent">Follow-up sent</property>
                   </object>
                 </child>
               </object>

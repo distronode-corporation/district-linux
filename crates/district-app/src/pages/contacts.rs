@@ -15,6 +15,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::blocked::BlockedView;
 use crate::pages::contact::ContactView;
 use crate::pages::contact_form::{ContactFormDialog, FormKind};
@@ -48,13 +49,13 @@ pub(crate) fn list_shown(list: &ContactList) -> ListShown<'_> {
     match list {
         ContactList::NotLoaded | ContactList::Loading => ListShown::Loading,
         ContactList::Failed(failure) => ListShown::Status {
-            title: ContactList::FAILED_TITLE,
+            title: core_text::contacts_failed_title(lang()),
             body: failure_text(failure),
             retry: failure.retryable,
         },
         ContactList::Ready(rows) if rows.contacts.is_empty() => ListShown::Status {
-            title: ContactList::EMPTY_TITLE,
-            body: ContactList::EMPTY_BODY.into(),
+            title: core_text::contacts_empty_title(lang()),
+            body: core_text::contacts_empty_body(lang()).into(),
             retry: false,
         },
         ContactList::Ready(rows) => ListShown::Contacts(rows),
@@ -63,10 +64,7 @@ pub(crate) fn list_shown(list: &ContactList) -> ListShown<'_> {
 
 /// How many contacts the workspace has, in words.
 pub(crate) fn count(total: i64) -> String {
-    match total {
-        1 => "1 contact".to_owned(),
-        total => format!("{total} contacts"),
-    }
+    text::contacts_count(lang(), total)
 }
 
 /// The line under a contact's name in the list: how to reach them, without
@@ -296,7 +294,7 @@ impl ContactsPage {
                 && matches!(&signed_in.contacts.list, ContactList::Ready(rows)
                     if !rows.contacts.iter().any(|contact| contact.id == *id))
         });
-        gone.map(|_| "Contact deleted.")
+        gone.map(|_| text::contacts_deleted(lang()))
     }
 
     fn draw_create(&self, create: Option<&CreateContact>) -> Option<&'static str> {
@@ -306,7 +304,7 @@ impl ContactsPage {
             if let Some(open) = imp.create.take() {
                 open.force_close();
             }
-            return was_saving.then_some("Contact added.");
+            return was_saving.then_some(text::contacts_added(lang()));
         };
         let mut open = imp.create.borrow_mut();
         let dialog = open.get_or_insert_with(|| {

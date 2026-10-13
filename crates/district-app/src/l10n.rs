@@ -1,0 +1,364 @@
+//! The app's words, in English and Canadian French, and the language it
+//! writes in.
+//!
+//! One catalog, `l10n/linux.toml`, holds every string the app writes itself,
+//! keyed. `tools/l10n/l10n.py` generates it two ways (`scripts/gen-l10n.py`,
+//! which CI runs with `--check`):
+//!
+//! - `po/district-ai.pot` and `po/fr.po`, for the `.ui` templates. Each of
+//!   their strings is marked `translatable="yes"` with its catalog key as the
+//!   `context`, and GtkBuilder looks it up in the [`DOMAIN`] text domain.
+//! - [`text`], an accessor per key for the strings the Rust code writes, in
+//!   the core's [`Locale`].
+//!
+//! The language is the desktop's: the first of `glib::language_names()` that
+//! is French or English decides ([`Locale::from_tags`]), and the core writes
+//! in it too (`CoreConfig::locale`). Only with the `fr-ca` feature, which is
+//! off until the French is reviewed: without it the app writes English
+//! whatever the desktop's language, and binds no catalog.
+//!
+//! `setlocale` is not called here: it is `unsafe` in gettext-rs 0.8 (it races
+//! any other thread reading the locale) and the workspace forbids unsafe code.
+//! GTK calls `setlocale(LC_ALL, "")` itself as it initialises, before any
+//! template is built, and every lookup reads the locale at call time.
+
+use std::path::{Path, PathBuf};
+
+pub use district_core::Locale;
+/// The core's own words, an accessor per key of its catalog, for the
+/// constants it keeps in English (`AnalyticsCard::FAILED_TITLE` is
+/// `core_text::analytics_report_failed_title`).
+pub use district_core::l10n::strings as core_text;
+
+use crate::gtk::glib;
+
+/// The accessors generated from `l10n/linux.toml`, one per key (`call.status`
+/// is `call_status`), each a function of the [`Locale`].
+#[rustfmt::skip]
+#[path = "l10n/text.rs"]
+pub mod text;
+
+/// The text domain: the catalogs are `<locale dir>/<lang>/LC_MESSAGES/district-ai.mo`.
+pub const DOMAIN: &str = "district-ai";
+
+/// Whether this build follows a French desktop: the `fr-ca` feature.
+pub const FRENCH_ENABLED: bool = cfg!(feature = "fr-ca");
+
+/// The language the app writes in now: the core's, which the app set from
+/// [`desktop_locale`] when it started.
+pub fn lang() -> Locale {
+    district_core::l10n::current()
+}
+
+/// The language the desktop asks for: French for a first preferred language
+/// that is any French, else English. Always English without the `fr-ca`
+/// feature.
+pub fn desktop_locale() -> Locale {
+    if FRENCH_ENABLED {
+        Locale::from_tags(&glib::language_names())
+    } else {
+        Locale::En
+    }
+}
+
+/// Binds [`DOMAIN`] to the catalogs installed beside the binary
+/// (`<prefix>/bin/district-ai` reads `<prefix>/share/locale`: `/usr` for the
+/// .deb, `/app` in the Flatpak) and makes it the default domain. Nothing
+/// without the `fr-ca` feature, so no catalog is ever read.
+pub fn init() {
+    if !FRENCH_ENABLED {
+        return;
+    }
+    let dir = std::env::current_exe()
+        .ok()
+        .and_then(|exe| locale_dir_for(&exe))
+        .unwrap_or_else(|| PathBuf::from("/usr/share/locale"));
+    init_at(&dir);
+}
+
+/// Binds [`DOMAIN`] to the catalogs under `dir` and makes it the default
+/// domain, so GtkBuilder's lookups (which pass no domain) find it.
+pub fn init_at(dir: &Path) {
+    // Each fails only on an allocation failure or an interior NUL, neither of
+    // which a path from the file system or the constant can hold.
+    gettextrs::bindtextdomain(DOMAIN, dir).ok();
+    gettextrs::bind_textdomain_codeset(DOMAIN, "UTF-8").ok();
+    gettextrs::textdomain(DOMAIN).ok();
+}
+
+/// `<prefix>/share/locale` for a binary at `<prefix>/bin/<name>`.
+fn locale_dir_for(exe: &Path) -> Option<PathBuf> {
+    Some(exe.parent()?.parent()?.join("share/locale"))
+}
+
+/// The translation of `msgid` under the key `context`, or `msgid` itself, as
+/// GtkBuilder looks a template's string up.
+pub fn pgettext(context: &str, msgid: &str) -> String {
+    gettextrs::pgettext(context, msgid)
+}
+
+/// The language of the catalog gettext found for [`DOMAIN`], read from its
+/// header's `Language:` line; English when it found none, which is what the
+/// templates then show.
+pub fn gettext_locale() -> Locale {
+    catalog_language(&gettextrs::gettext(""))
+}
+
+/// The language a catalog header names (`Language: fr_CA`); English for none.
+fn catalog_language(header: &str) -> Locale {
+    let tag = header
+        .lines()
+        .find_map(|line| line.strip_prefix("Language:"))
+        .map(str::trim)
+        .unwrap_or_default();
+    Locale::from_tags(&[tag])
+}
+
+/// What to say when the templates (gettext) and the Rust code (the core)
+/// would write in different languages, or `None` when they agree. The core
+/// is followed: its language is the one [`desktop_locale`] chose.
+pub fn disagreement(core: Locale, gettext: Locale) -> Option<String> {
+    (core != gettext).then(|| {
+        format!(
+            "the templates' catalog is in {} but the app writes in {}; the screens built \
+             from templates stay in {}",
+            gettext.tag(),
+            core.tag(),
+            gettext.tag(),
+        )
+    })
+}
+
+/// At start-up, after GTK has set the locale: with the `fr-ca` feature,
+/// writes to standard error when gettext resolved another language than the
+/// core did (a French desktop without the catalog installed, or `LANGUAGE`
+/// under the C locale, which gettext ignores). The core's language stands.
+pub fn report_disagreement() {
+    if !FRENCH_ENABLED {
+        return;
+    }
+    if let Some(problem) = disagreement(lang(), gettext_locale()) {
+        eprintln!("district-ai: {problem}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_catalogs_sit_under_the_prefix_the_binary_is_in() {
+        assert_eq!(
+            locale_dir_for(Path::new("/app/bin/district-ai")),
+            Some(PathBuf::from("/app/share/locale"))
+        );
+        assert_eq!(
+            locale_dir_for(Path::new("/usr/bin/district-ai")),
+            Some(PathBuf::from("/usr/share/locale"))
+        );
+        assert_eq!(locale_dir_for(Path::new("/")), None);
+    }
+
+    /// Without a catalog for the language, the English text comes back.
+    #[test]
+    fn a_string_with_no_translation_is_itself() {
+        assert_eq!(pgettext("no.such_key", "No such string"), "No such string");
+    }
+
+    #[test]
+    fn a_catalog_header_names_its_language() {
+        let french = "Project-Id-Version: linux\nLanguage: fr_CA\nMIME-Version: 1.0\n";
+        assert_eq!(catalog_language(french), Locale::FrCa);
+        assert_eq!(catalog_language("Language: \n"), Locale::En);
+        assert_eq!(catalog_language(""), Locale::En);
+    }
+
+    #[test]
+    fn the_two_lookups_disagreeing_is_said() {
+        assert_eq!(disagreement(Locale::En, Locale::En), None);
+        assert_eq!(disagreement(Locale::FrCa, Locale::FrCa), None);
+        let said = disagreement(Locale::FrCa, Locale::En).unwrap();
+        assert!(said.contains("catalog is in en"), "{said}");
+        assert!(said.contains("writes in fr-CA"), "{said}");
+    }
+
+    /// Without the feature nothing French is chosen, whatever the desktop
+    /// says, and the process's language is English.
+    #[test]
+    fn without_the_feature_the_language_is_english() {
+        if !FRENCH_ENABLED {
+            assert_eq!(desktop_locale(), Locale::En);
+        }
+        assert_eq!(lang(), Locale::En);
+    }
+}
+
+/// Every string of the `.ui` templates is in the catalog, under the key its
+/// `context` names, with the catalog's English: the templates and the Rust
+/// code are written from one catalog, and the `.pot` is what it generates for
+/// the templates (`scripts/gen-l10n.py --check` holds it to the catalog).
+#[cfg(test)]
+mod templates {
+    use std::collections::BTreeMap;
+    use std::path::Path;
+
+    /// The properties whose text a person reads or hears.
+    const WORDS: [&str; 8] = [
+        r#"<property name="label""#,
+        r#"<property name="title""#,
+        r#"<property name="subtitle""#,
+        r#"<property name="description""#,
+        r#"<property name="tooltip-text""#,
+        r#"<property name="placeholder-text""#,
+        r#"<property name="button-label""#,
+        r#"<attribute name="label""#,
+    ];
+
+    fn manifest() -> &'static Path {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+    }
+
+    /// A `.po` string's text, from between its quotes.
+    fn po_text(quoted: &str) -> String {
+        let inner = quoted
+            .trim()
+            .strip_prefix('"')
+            .and_then(|rest| rest.strip_suffix('"'))
+            .expect("a quoted string");
+        let mut text = String::new();
+        let mut chars = inner.chars();
+        while let Some(c) = chars.next() {
+            if c != '\\' {
+                text.push(c);
+                continue;
+            }
+            match chars.next() {
+                Some('n') => text.push('\n'),
+                Some('t') => text.push('\t'),
+                Some('r') => text.push('\r'),
+                Some(other) => text.push(other),
+                None => {}
+            }
+        }
+        text
+    }
+
+    /// The template catalog: each key's English.
+    fn pot() -> BTreeMap<String, String> {
+        let pot = std::fs::read_to_string(manifest().join("po/district-ai.pot")).unwrap();
+        let mut entries = BTreeMap::new();
+        let mut context = None;
+        for line in pot.lines() {
+            if let Some(quoted) = line.strip_prefix("msgctxt ") {
+                context = Some(po_text(quoted));
+            } else if let Some(quoted) = line.strip_prefix("msgid ")
+                && let Some(key) = context.take()
+            {
+                entries.insert(key, po_text(quoted));
+            }
+        }
+        entries
+    }
+
+    /// Text as an XML parser reads it.
+    fn unescape(xml: &str) -> String {
+        let mut text = String::new();
+        let mut rest = xml;
+        while let Some(at) = rest.find('&') {
+            text.push_str(&rest[..at]);
+            let end = rest[at..].find(';').map(|end| at + end).expect("an entity");
+            let entity = &rest[at + 1..end];
+            match entity {
+                "amp" => text.push('&'),
+                "lt" => text.push('<'),
+                "gt" => text.push('>'),
+                "quot" => text.push('"'),
+                "apos" => text.push('\''),
+                _ => {
+                    let code = entity
+                        .strip_prefix("#x")
+                        .map(|hex| u32::from_str_radix(hex, 16))
+                        .or_else(|| entity.strip_prefix('#').map(str::parse))
+                        .expect("a known entity")
+                        .expect("a number");
+                    text.push(char::from_u32(code).expect("a character"));
+                }
+            }
+            rest = &rest[end + 1..];
+        }
+        text.push_str(rest);
+        text
+    }
+
+    /// Each template string as `(file, opening tag, text)`.
+    fn strings() -> Vec<(String, String, String)> {
+        let mut found = Vec::new();
+        let dir = manifest().join("data/ui");
+        let mut files: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|ext| ext == "ui"))
+            .collect();
+        files.sort();
+        for path in files {
+            let ui = std::fs::read_to_string(&path).unwrap();
+            let file = path.file_name().unwrap().to_string_lossy().into_owned();
+            for open in WORDS {
+                let mut from = 0;
+                while let Some(start) = ui[from..].find(open).map(|at| from + at) {
+                    let tag_end = start + ui[start..].find('>').unwrap();
+                    let text_end = tag_end + ui[tag_end..].find('<').unwrap();
+                    from = text_end;
+                    let text = unescape(&ui[tag_end + 1..text_end]);
+                    if !text.trim().is_empty() {
+                        found.push((file.clone(), ui[start..=tag_end].to_owned(), text));
+                    }
+                }
+            }
+        }
+        found
+    }
+
+    /// `name="value"` of `tag`.
+    fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+        let marker = format!(r#" {name}=""#);
+        let start = tag.find(&marker)? + marker.len();
+        Some(&tag[start..start + tag[start..].find('"')?])
+    }
+
+    #[test]
+    fn every_template_string_is_the_catalogs_english_for_its_key() {
+        let catalog = pot();
+        let strings = strings();
+        assert!(
+            strings.len() > 300,
+            "the scan found the strings: {}",
+            strings.len()
+        );
+        for (file, tag, text) in strings {
+            assert_eq!(
+                attribute(&tag, "translatable"),
+                Some("yes"),
+                "{file}: not translatable: {tag}{text}"
+            );
+            let key = attribute(&tag, "context")
+                .unwrap_or_else(|| panic!("{file}: no context: {tag}{text}"));
+            let english = catalog
+                .get(key)
+                .unwrap_or_else(|| panic!("{file}: {key} is not in the catalog"));
+            assert_eq!(*english, text, "{file}: {key}");
+        }
+    }
+
+    #[test]
+    fn the_scan_reads_entities_and_po_escapes() {
+        assert_eq!(
+            unescape("a &amp; b &lt;i&gt; &#8217; &#x2019;"),
+            "a & b <i> \u{2019} \u{2019}"
+        );
+        assert_eq!(po_text(r#""say \"hi\"\n""#), "say \"hi\"\n");
+        let tag = r#"<property name="label" translatable="yes" context="a.b">"#;
+        assert_eq!(attribute(tag, "context"), Some("a.b"));
+        assert_eq!(attribute(tag, "comments"), None);
+    }
+}

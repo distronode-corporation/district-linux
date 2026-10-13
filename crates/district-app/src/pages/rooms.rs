@@ -16,14 +16,12 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::meeting_record::{MeetingRecordDialog, meeting_title};
 use crate::pages::shared::{Echo, RowIds, clear_list, draw_spinner, failure_text, when_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 use crate::window::DistrictWindow;
-
-/// What the toast says once the guest link is on the clipboard.
-pub(crate) const GUEST_LINK_COPIED: &str = "Guest link copied.";
 
 /// The line under a meeting: when it started, how long it was and how many
 /// were there, and its minutes' start, or that they come when it ends.
@@ -33,14 +31,12 @@ pub(crate) fn meeting_line(meeting: &MeetingSummary) -> String {
     if meeting.duration_sec > 0 {
         parts.push(format_duration(meeting.duration_sec));
     }
-    match meeting.participant_count {
-        0 => {}
-        1 => parts.push("1 person".to_owned()),
-        count => parts.push(format!("{count} people")),
+    if meeting.participant_count != 0 {
+        parts.push(text::rooms_people(lang(), meeting.participant_count));
     }
     let first = parts.join(" \u{b7} ");
     let minutes = if is_in_progress(meeting) {
-        Some(MeetingList::NO_MINUTES_YET)
+        Some(core_text::rooms_no_minutes_yet(lang()))
     } else {
         meeting.summary_preview.as_deref()
     };
@@ -57,9 +53,9 @@ pub(crate) fn meeting_line(meeting: &MeetingSummary) -> String {
 /// Where the room's connection stands, in words.
 pub(crate) fn connection_words(connection: MediaConnection) -> &'static str {
     match connection {
-        MediaConnection::Connecting => "Joining the room.",
-        MediaConnection::Connected => "In the room.",
-        MediaConnection::Reconnecting => MediaSession::RECONNECTING,
+        MediaConnection::Connecting => text::rooms_joining(lang()),
+        MediaConnection::Connected => text::rooms_in_room(lang()),
+        MediaConnection::Reconnecting => core_text::media_reconnecting(lang()),
     }
 }
 
@@ -68,16 +64,21 @@ pub(crate) fn people_line(session: &MediaSession) -> String {
     let names: Vec<String> = session
         .people()
         .iter()
-        .map(|person| person.name.clone().unwrap_or_else(|| "A guest".to_owned()))
+        .map(|person| {
+            person
+                .name
+                .clone()
+                .unwrap_or_else(|| text::rooms_a_guest(lang()).to_owned())
+        })
         .collect();
     let mut line = if names.is_empty() {
-        "Nobody else is here yet.".to_owned()
+        text::rooms_nobody_else(lang()).to_owned()
     } else {
-        format!("With {}.", names.join(", "))
+        text::rooms_with(lang(), &names.join(", "))
     };
     if session.service_present() {
         line.push(' ');
-        line.push_str(RoomsScreen::COMPANION_NOTE);
+        line.push_str(core_text::rooms_companion_note(lang()));
     }
     line
 }
@@ -168,8 +169,9 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.start_group.set_title(RoomsScreen::START_TITLE);
-            self.busy_note.set_label(RoomsScreen::BUSY_NOTE);
+            self.start_group
+                .set_title(core_text::rooms_start_title(lang()));
+            self.busy_note.set_label(core_text::rooms_busy_note(lang()));
             let rooms = |event: RoomsEvent| move || Event::Rooms(event.clone());
             on_click(&self.join_button, &*page, rooms(RoomsEvent::Start));
             on_click(&self.leave_button, &*page, rooms(RoomsEvent::LeaveRoom));
@@ -277,12 +279,12 @@ impl RoomsPage {
             rooms
                 .name_preview()
                 .as_deref()
-                .unwrap_or(RoomsScreen::NAME_HINT),
+                .unwrap_or(core_text::rooms_name_hint(lang())),
         );
         imp.role_note.set_label(if speaker {
-            RoomsScreen::COMPANION_NOTE
+            core_text::rooms_companion_note(lang())
         } else {
-            RoomsScreen::LISTENER_NOTE
+            core_text::rooms_listener_note(lang())
         });
         imp.busy_note
             .set_visible(busy && rooms.joining.is_none() && rooms.room.is_none());
@@ -311,9 +313,9 @@ impl RoomsPage {
         let Some(room) = room else {
             return;
         };
-        imp.room_title.set_label(&format!(
-            "Room \"{}\"",
-            MeetRoomName::display_name(room.room.as_str())
+        imp.room_title.set_label(&text::rooms_room_title(
+            lang(),
+            MeetRoomName::display_name(room.room.as_str()),
         ));
         let session = signed_in.room_session();
         let state = session.map_or_else(
@@ -325,10 +327,13 @@ impl RoomsPage {
                     people_line(session)
                 );
                 if session.microphone == MicrophoneState::Unavailable {
-                    state = format!("{state} {}", MediaSession::MICROPHONE_UNAVAILABLE);
+                    state = format!(
+                        "{state} {}",
+                        core_text::media_microphone_unavailable(lang())
+                    );
                 }
                 if session.encryption_failed {
-                    state = format!("{state} {}", MediaSession::ENCRYPTION_FAILED);
+                    state = format!("{state} {}", core_text::media_encryption_failed(lang()));
                 }
                 state
             },
@@ -337,8 +342,11 @@ impl RoomsPage {
         let on = session.is_some_and(|session| session.microphone == MicrophoneState::On);
         imp.microphone_on.set(on);
         imp.mute_button.set_visible(speaker);
-        imp.mute_button
-            .set_label(if on { "Mute" } else { "Unmute" });
+        imp.mute_button.set_label(if on {
+            text::common_mute(lang())
+        } else {
+            text::common_unmute(lang())
+        });
     }
 
     /// Copies the room's guest link to the clipboard, and says so. The
@@ -348,7 +356,7 @@ impl RoomsPage {
             self.clipboard().set_text(link);
         }
         if let Some(window) = self.root().and_downcast::<DistrictWindow>() {
-            window.toast(GUEST_LINK_COPIED);
+            window.toast(text::rooms_guest_link_copied(lang()));
         }
     }
 
@@ -378,13 +386,17 @@ impl RoomsPage {
             }
             MeetingList::Failed(failure) => {
                 status(
-                    MeetingList::FAILED_TITLE,
+                    core_text::rooms_failed_title(lang()),
                     &failure_text(failure),
                     failure.retryable,
                 );
             }
             MeetingList::Ready { meetings, .. } if meetings.is_empty() => {
-                status(MeetingList::EMPTY_TITLE, MeetingList::EMPTY_BODY, false);
+                status(
+                    core_text::rooms_empty_title(lang()),
+                    core_text::rooms_empty_body(lang()),
+                    false,
+                );
             }
             MeetingList::Ready { meetings, .. } => {
                 imp.meetings_stack.set_visible_child_name("list");
@@ -418,13 +430,13 @@ impl RoomsPage {
             if is_in_progress(meeting) {
                 row.add_suffix(
                     &gtk::Label::builder()
-                        .label("In progress")
+                        .label(text::rooms_in_progress(lang()))
                         .valign(gtk::Align::Center)
                         .css_classes(["status-badge", "caption-heading", "success"])
                         .build(),
                 );
                 let rejoin = gtk::Button::builder()
-                    .label("Rejoin")
+                    .label(text::rooms_rejoin(lang()))
                     .valign(gtk::Align::Center)
                     .sensitive(can_join)
                     .name("rejoin-button")

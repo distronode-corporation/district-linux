@@ -22,7 +22,7 @@
               <class name="call-strip"/>
             </style>
             <accessibility>
-              <property name="label">Incoming call</property>
+              <property name="label" translatable="yes" context="call_bar.incoming_call">Incoming call</property>
             </accessibility>
             <child>
               <object class="GtkImage" id="ring_icon">
@@ -79,7 +79,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="decline_button">
-                    <property name="label">Decline</property>
+                    <property name="label" translatable="yes" context="call_bar.decline">Decline</property>
                     <style>
                       <class name="pill"/>
                       <class name="call-decline"/>
@@ -91,7 +91,7 @@
                     <property name="child">
                       <object class="AdwButtonContent">
                         <property name="icon-name">call-start-symbolic</property>
-                        <property name="label">Answer</property>
+                        <property name="label" translatable="yes" context="call_bar.answer">Answer</property>
                       </object>
                     </property>
                     <style>
@@ -103,9 +103,9 @@
                 <child>
                   <object class="GtkButton" id="ring_dismiss">
                     <property name="icon-name">window-close-symbolic</property>
-                    <property name="tooltip-text">Dismiss</property>
+                    <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
                     <accessibility>
-                      <property name="label">Dismiss</property>
+                      <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
                     </accessibility>
                     <style>
                       <class name="flat"/>
@@ -131,7 +131,7 @@
               <class name="call-strip"/>
             </style>
             <accessibility>
-              <property name="label">Call</property>
+              <property name="label" translatable="yes" context="call_bar.call">Call</property>
             </accessibility>
             <child>
               <object class="GtkImage" id="call_icon">
@@ -188,9 +188,9 @@
                 <child>
                   <object class="GtkButton" id="call_mute_button">
                     <property name="icon-name">audio-input-microphone-symbolic</property>
-                    <property name="tooltip-text">Mute (Ctrl+D)</property>
+                    <property name="tooltip-text" translatable="yes" context="call_bar.mute_ctrl_d">Mute (Ctrl+D)</property>
                     <accessibility>
-                      <property name="label">Mute</property>
+                      <property name="label" translatable="yes" context="call_bar.mute">Mute</property>
                       <property name="key-shortcuts">Control+D</property>
                     </accessibility>
                     <style>
@@ -202,9 +202,9 @@
                 <child>
                   <object class="GtkButton" id="hang_up_button">
                     <property name="icon-name">call-stop-symbolic</property>
-                    <property name="tooltip-text">Hang up (Ctrl+Shift+H)</property>
+                    <property name="tooltip-text" translatable="yes" context="call_bar.hang_up_ctrl_shift_h">Hang up (Ctrl+Shift+H)</property>
                     <accessibility>
-                      <property name="label">Hang up</property>
+                      <property name="label" translatable="yes" context="call_bar.hang_up">Hang up</property>
                       <property name="key-shortcuts">Control+Shift+H</property>
                     </accessibility>
                     <style>
@@ -217,9 +217,9 @@
                 <child>
                   <object class="GtkButton" id="call_dismiss">
                     <property name="icon-name">window-close-symbolic</property>
-                    <property name="tooltip-text">Dismiss</property>
+                    <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
                     <accessibility>
-                      <property name="label">Dismiss</property>
+                      <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
                     </accessibility>
                     <style>
                       <class name="flat"/>

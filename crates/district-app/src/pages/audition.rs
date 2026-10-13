@@ -17,6 +17,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -39,9 +40,9 @@ pub(crate) struct AuditionShown<'a> {
 /// the call engine has a session for it.
 pub(crate) fn connection_words(connection: Option<MediaConnection>) -> &'static str {
     match connection {
-        None | Some(MediaConnection::Connecting) => "Connecting to your receptionist.",
-        Some(MediaConnection::Connected) => "On the call with your receptionist.",
-        Some(MediaConnection::Reconnecting) => MediaSession::RECONNECTING,
+        None | Some(MediaConnection::Connecting) => text::audition_connecting(lang()),
+        Some(MediaConnection::Connected) => text::audition_connected(lang()),
+        Some(MediaConnection::Reconnecting) => core_text::media_reconnecting(lang()),
     }
 }
 
@@ -61,7 +62,7 @@ pub(crate) fn audition_shown(
     match preview {
         PersonaPreview::Idle => idle,
         PersonaPreview::Minting => AuditionShown {
-            state: Some("Starting the call."),
+            state: Some(text::audition_starting(lang())),
             waiting: true,
             start: false,
             stop: true,
@@ -79,7 +80,7 @@ pub(crate) fn audition_shown(
             ..idle
         },
         PersonaPreview::Ended => AuditionShown {
-            state: Some("The audition ended."),
+            state: Some(text::audition_ended(lang())),
             ..idle
         },
     }
@@ -127,10 +128,11 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let dialog = self.obj();
-            dialog.set_title(PersonaSection::PREVIEW_TITLE);
-            self.status.set_title(PersonaSection::PREVIEW_TITLE);
+            dialog.set_title(core_text::persona_preview_title(lang()));
             self.status
-                .set_description(Some(&escape(PersonaSection::PREVIEW_BILLED)));
+                .set_title(core_text::persona_preview_title(lang()));
+            self.status
+                .set_description(Some(&escape(core_text::persona_preview_billed(lang()))));
             let persona = |event: PersonaEvent| move || Event::Persona(event.clone());
             on_click(
                 &self.start_button,

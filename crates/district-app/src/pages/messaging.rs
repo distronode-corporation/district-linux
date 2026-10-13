@@ -9,9 +9,9 @@ use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
 use district_core::{
-    Event, MESSAGING_CHANNELS, MessagingAccounts, MessagingAction, MessagingDeleteConfirm,
-    MessagingEvent, MessagingSection, SignedIn, channel_label, credential_source_label,
-    format_phone_number, provider_label,
+    Event, MESSAGING_CHANNELS, MessagingAccounts, MessagingAction, MessagingEvent,
+    MessagingSection, SignedIn, channel_label, credential_source_label, format_phone_number,
+    provider_label,
 };
 use district_model::{
     MessagingAccount, MessagingChannel, MessagingCredentialSource, MessagingResponse,
@@ -21,15 +21,13 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::messaging_form::{MessagingFormDialog, PROVIDERS};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed};
 use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text, humanize, icon_button};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
-
-/// What a channel's picker shows when the channel has no sender of its own.
-pub(crate) const DEFAULT_SENDER: &str = "The default account";
 
 /// A channel as its sender is stored: its name on the wire.
 pub(crate) fn channel_key(channel: MessagingChannel) -> String {
@@ -43,10 +41,10 @@ pub(crate) fn channel_key(channel: MessagingChannel) -> String {
 /// when the channel has none of its own.
 pub(crate) fn sender_words(accounts: &[(String, String)], stored: &str) -> String {
     if stored.is_empty() {
-        return DEFAULT_SENDER.to_owned();
+        return text::messaging_default_sender(lang()).to_owned();
     }
     accounts.iter().find(|(id, _)| id == stored).map_or_else(
-        || "An account that is not listed".to_owned(),
+        || text::messaging_unlisted_account(lang()).to_owned(),
         |(_, label)| label.clone(),
     )
 }
@@ -78,7 +76,7 @@ pub(crate) fn source_words(stored: &str) -> String {
 /// Numbers, grouped for reading.
 pub(crate) fn numbers_words(numbers: &[String]) -> String {
     if numbers.is_empty() {
-        return "No numbers".to_owned();
+        return text::messaging_no_numbers(lang()).to_owned();
     }
     numbers
         .iter()
@@ -190,13 +188,16 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let view = self.obj();
-            self.viewer_note.set_label(MessagingSection::VIEWER);
+            self.viewer_note
+                .set_label(core_text::messaging_viewer(lang()));
             self.accounts_failed
-                .set_title("Could not load the carrier accounts");
-            self.empty_row.set_title(MessagingSection::EMPTY_TITLE);
-            self.empty_row.set_subtitle(MessagingSection::EMPTY_BODY);
+                .set_title(text::messaging_accounts_failed(lang()));
+            self.empty_row
+                .set_title(core_text::messaging_empty_title(lang()));
+            self.empty_row
+                .set_subtitle(core_text::messaging_empty_body(lang()));
             self.creator_group
-                .set_description(Some(MessagingSection::CREATOR_CELL_HELP));
+                .set_description(Some(core_text::messaging_creator_cell_help(lang())));
             let messaging = |event: MessagingEvent| move || Event::Messaging(event.clone());
             on_click(&self.accounts_retry, &*view, || Event::Refresh);
             on_click(
@@ -317,7 +318,7 @@ impl MessagingView {
                 &managed
                     .provider
                     .as_deref()
-                    .map_or_else(|| "Distronode".to_owned(), carrier_words),
+                    .map_or_else(|| text::common_distronode(lang()).to_owned(), carrier_words),
             );
             imp.managed_row
                 .set_subtitle(&numbers_words(&managed.phone_numbers));
@@ -385,7 +386,7 @@ impl MessagingView {
         if default {
             row.add_suffix(
                 &gtk::Label::builder()
-                    .label("Default")
+                    .label(text::messaging_default(lang()))
                     .valign(gtk::Align::Center)
                     .css_classes(["status-badge", "caption-heading", "accent"])
                     .build(),
@@ -401,7 +402,7 @@ impl MessagingView {
         };
         if !default {
             let make_default = gtk::Button::builder()
-                .label("Make default")
+                .label(text::messaging_make_default(lang()))
                 .valign(gtk::Align::Center)
                 .css_classes(["flat"])
                 .sensitive(can_edit)
@@ -415,7 +416,10 @@ impl MessagingView {
             row.add_suffix(&make_default);
         }
         if editable_here(account) {
-            let edit = icon_button("document-edit-symbolic", "Edit this account");
+            let edit = icon_button(
+                "document-edit-symbolic",
+                text::messaging_edit_account(lang()),
+            );
             edit.add_css_class("flat");
             edit.set_widget_name("account-edit");
             edit.set_sensitive(can_edit);
@@ -426,7 +430,10 @@ impl MessagingView {
             );
             row.add_suffix(&edit);
         }
-        let remove = icon_button("user-trash-symbolic", "Remove this account");
+        let remove = icon_button(
+            "user-trash-symbolic",
+            text::messaging_remove_account(lang()),
+        );
         remove.add_css_class("flat");
         remove.set_widget_name("account-remove");
         remove.set_sensitive(can_edit);
@@ -476,7 +483,11 @@ impl MessagingView {
         let asked = section.confirming.as_ref().map(|confirm| {
             (
                 confirm,
-                format!("{} {}", MessagingDeleteConfirm::TITLE, confirm.body()),
+                format!(
+                    "{} {}",
+                    core_text::messaging_delete_title(lang()),
+                    confirm.body()
+                ),
             )
         });
         let weak = self.downgrade();
@@ -486,7 +497,7 @@ impl MessagingView {
                 key: format!("remove-{}", confirm.account_id),
                 heading: None,
                 question,
-                action: MessagingDeleteConfirm::ACTION,
+                action: core_text::messaging_delete_action(lang()),
                 destructive: true,
             }),
             move |yes| {
@@ -567,7 +578,10 @@ mod tests {
         assert_eq!(channel_key(MessagingChannel::Whatsapp), "whatsapp");
         assert_eq!(source_words("managed"), "Managed by Distronode");
         let accounts = [("acct-1".to_owned(), "Main".to_owned())];
-        assert_eq!(sender_words(&accounts, ""), DEFAULT_SENDER);
+        assert_eq!(
+            sender_words(&accounts, ""),
+            text::messaging_default_sender(lang())
+        );
         assert_eq!(sender_words(&accounts, "acct-1"), "Main");
         assert_eq!(
             sender_words(&accounts, "acct-9"),

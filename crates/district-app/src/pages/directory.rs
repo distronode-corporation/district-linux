@@ -18,6 +18,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Echoed, Frame, draw_config};
 use crate::pages::shared::{Ask, Asking, draw_busy, draw_line, icon_button};
@@ -27,7 +28,7 @@ use crate::sink::EventSink;
 /// An entry's heading: its name, or that it has none.
 pub(crate) fn entry_title(entry: &DirectoryEntry) -> String {
     match entry.name().trim() {
-        "" => "No name".to_owned(),
+        "" => text::directory_no_name(lang()).to_owned(),
         name => name.to_owned(),
     }
 }
@@ -36,7 +37,7 @@ pub(crate) fn entry_title(entry: &DirectoryEntry) -> String {
 /// none.
 pub(crate) fn entry_line(entry: &DirectoryEntry) -> String {
     match entry.phone_number().trim() {
-        "" => "No phone number, so nobody can be put through".to_owned(),
+        "" => text::directory_no_phone_number(lang()).to_owned(),
         number => format_phone_number(number),
     }
 }
@@ -129,8 +130,10 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let view = self.obj();
-            self.empty_row.set_title(DirectorySection::EMPTY_TITLE);
-            self.empty_row.set_subtitle(DirectorySection::EMPTY_BODY);
+            self.empty_row
+                .set_title(core_text::directory_empty_title(lang()));
+            self.empty_row
+                .set_subtitle(core_text::directory_empty_body(lang()));
             let directory = |event: DirectoryEvent| move || Event::Directory(event.clone());
             on_click(&self.retry_button, &*view, || Event::Refresh);
             on_click(&self.add_button, &*view, directory(DirectoryEvent::Add));
@@ -226,8 +229,8 @@ impl DirectoryView {
         if section.unmodellable() {
             frame.status(
                 "action-unavailable-symbolic",
-                DirectorySection::UNMODELLABLE_TITLE,
-                DirectorySection::UNMODELLABLE_BODY,
+                core_text::directory_unmodellable_title(lang()),
+                core_text::directory_unmodellable_body(lang()),
                 None,
             );
             return;
@@ -253,7 +256,7 @@ impl DirectoryView {
             &imp.add_rejected,
             section
                 .add_rejected
-                .then_some(DirectorySection::ADD_REJECTED),
+                .then_some(core_text::directory_add_rejected(lang())),
         );
         imp.notice.update(&section.save);
         draw_busy(
@@ -310,12 +313,12 @@ impl DirectoryView {
             }
         };
         let name = adw::EntryRow::builder()
-            .title("Name")
+            .title(text::common_name(lang()))
             .use_markup(false)
             .name("directory-name")
             .build();
         let number = adw::EntryRow::builder()
-            .title("Phone number")
+            .title(text::common_phone_number(lang()))
             .use_markup(false)
             .input_purpose(gtk::InputPurpose::Phone)
             .name("directory-number")
@@ -324,7 +327,7 @@ impl DirectoryView {
         let number_echo = Echoed::text(&number, self, edit(DirectoryField::PhoneNumber));
         row.add_row(&name);
         row.add_row(&number);
-        let remove = icon_button("user-trash-symbolic", "Remove from the directory");
+        let remove = icon_button("user-trash-symbolic", text::directory_remove(lang()));
         remove.add_css_class("flat");
         remove.set_widget_name("directory-remove");
         on_click(&remove, self, move || {

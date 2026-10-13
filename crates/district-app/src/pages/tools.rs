@@ -11,6 +11,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Frame, draw_config};
 use crate::pages::shared::draw_busy;
@@ -75,9 +76,9 @@ mod imp {
             self.parent_constructed();
             let view = self.obj();
             self.research_group
-                .set_title(ToolsSection::ENRICHMENT_TITLE);
+                .set_title(core_text::tools_enrichment_title(lang()));
             self.research_row
-                .set_subtitle(ToolsSection::ENRICHMENT_BODY);
+                .set_subtitle(core_text::tools_enrichment_body(lang()));
             on_click(&self.retry_button, &*view, || Event::Refresh);
             on_click(&self.save_tools_button, &*view, || {
                 Event::Tools(ToolsEvent::SaveTools)

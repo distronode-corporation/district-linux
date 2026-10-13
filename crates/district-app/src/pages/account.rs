@@ -12,6 +12,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::{Sends, on_activate};
 use crate::sink::EventSink;
 
@@ -59,18 +60,21 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.devices_row.set_subtitle(AccountView::DEVICES_CAPTION);
+            self.devices_row
+                .set_subtitle(core_text::account_devices_caption(lang()));
             self.sign_out_row
-                .set_subtitle(AccountView::SIGN_OUT_CAPTION);
+                .set_subtitle(core_text::account_sign_out_caption(lang()));
             self.delete_row
-                .set_subtitle(AccountView::DELETE_ACCOUNT_CAPTION);
+                .set_subtitle(core_text::account_delete_account_caption(lang()));
             on_activate(&self.devices_row, &*page, || {
                 Event::Navigate(Route::Devices)
             });
             on_activate(&self.sign_out_row, &*page, || Event::SignOut);
             on_activate(&self.delete_row, &*page, || Event::DeleteAccount);
-            self.ring_here_row.set_title(PresenceState::SETTING_LABEL);
-            self.ring_here_row.set_subtitle(PresenceState::SETTING_BODY);
+            self.ring_here_row
+                .set_title(core_text::presence_setting_label(lang()));
+            self.ring_here_row
+                .set_subtitle(core_text::presence_setting_body(lang()));
             let weak = page.downgrade();
             self.ring_here_row.connect_active_notify(move |row| {
                 if let Some(page) = weak.upgrade() {
@@ -116,7 +120,7 @@ impl AccountPage {
         imp.device_row.set_subtitle(device_name);
         if let Some(account) = account {
             imp.version_row
-                .set_subtitle(&format!("Version {}", account.app_version));
+                .set_subtitle(&text::account_version(lang(), &account.app_version));
         }
         imp.calls_group.set_visible(presence.ring_here.is_some());
         imp.ring_here_row

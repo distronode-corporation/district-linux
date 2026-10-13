@@ -14,13 +14,10 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{Ask, Asking, clear_list, failure_text, long_time, now};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
-
-/// The body of the empty list.
-pub(crate) const EMPTY_BODY: &str =
-    "Callers you block from a contact's page are listed here, where you can unblock them.";
 
 /// The line under a blocked caller's name: the number, when the name is not
 /// the number already, and when they were blocked.
@@ -40,7 +37,7 @@ pub(crate) fn blocked_line(caller: &BlockedContact, now: Option<&glib::DateTime>
         .as_deref()
         .and_then(|iso| now.and_then(|now| long_time(iso, now)))
     {
-        parts.push(format!("Blocked {when}"));
+        parts.push(text::blocked_when(lang(), &when));
     }
     parts.join(" \u{b7} ")
 }
@@ -147,13 +144,17 @@ impl BlockedView {
             }
             BlockedList::Failed(failure) => {
                 self.status(
-                    BlockedList::FAILED_TITLE,
+                    core_text::contacts_blocked_failed_title(lang()),
                     &failure_text(failure),
                     failure.retryable,
                 );
             }
             BlockedList::Ready(rows) if rows.is_empty() => {
-                self.status(BlockedList::EMPTY_TITLE, EMPTY_BODY, false);
+                self.status(
+                    core_text::contacts_blocked_empty_title(lang()),
+                    text::blocked_empty_body(lang()),
+                    false,
+                );
             }
             BlockedList::Ready(rows) => {
                 imp.stack.set_visible_child_name("list");
@@ -186,7 +187,7 @@ impl BlockedView {
         );
         let before = imp.unblocking.replace(screen.unblocking.clone());
         let landed = before.iter().any(|id| !screen.unblocking.contains(id));
-        (landed && screen.failure.is_none()).then_some("Caller unblocked.")
+        (landed && screen.failure.is_none()).then_some(text::contact_caller_unblocked(lang()))
     }
 
     fn status(&self, title: &str, body: &str, retry: bool) {
@@ -224,7 +225,7 @@ impl BlockedView {
                 row.add_suffix(&spinner);
             } else if can_change {
                 let button = gtk::Button::builder()
-                    .label("Unblock")
+                    .label(text::contact_unblock(lang()))
                     .valign(gtk::Align::Center)
                     .name("unblock-button")
                     .build();

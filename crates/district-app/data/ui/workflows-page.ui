@@ -71,7 +71,7 @@
                                     </style>
                                     <child>
                                       <object class="AdwActionRow" id="batch_row">
-                                        <property name="title">Batch size</property>
+                                        <property name="title" translatable="yes" context="workflows_page.batch_size">Batch size</property>
                                         <property name="use-markup">False</property>
                                         <style>
                                           <class name="property"/>
@@ -80,7 +80,7 @@
                                     </child>
                                     <child>
                                       <object class="AdwActionRow" id="goal_row">
-                                        <property name="title">Goal</property>
+                                        <property name="title" translatable="yes" context="workflows_page.goal">Goal</property>
                                         <property name="use-markup">False</property>
                                         <property name="subtitle-selectable">True</property>
                                         <style>
@@ -115,7 +115,7 @@
                                     <property name="spacing">8</property>
                                     <child>
                                       <object class="GtkButton" id="pause_button">
-                                        <property name="label">Pause campaign</property>
+                                        <property name="label" translatable="yes" context="workflows_page.pause_campaign">Pause campaign</property>
                                         <style>
                                           <class name="pill"/>
                                         </style>
@@ -123,7 +123,7 @@
                                     </child>
                                     <child>
                                       <object class="GtkButton" id="resume_button">
-                                        <property name="label">Resume campaign</property>
+                                        <property name="label" translatable="yes" context="workflows_page.resume_campaign">Resume campaign</property>
                                         <style>
                                           <class name="pill"/>
                                           <class name="suggested-action"/>
@@ -166,7 +166,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="toggle_dismiss">
-                        <property name="label">Dismiss</property>
+                        <property name="label" translatable="yes" context="common.dismiss_button">Dismiss</property>
                         <property name="valign">center</property>
                         <property name="margin-end">10</property>
                       </object>
@@ -175,8 +175,8 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup">
-                    <property name="title">Workflows</property>
-                    <property name="description">Workflows are built and edited on the District AI website. Here you can turn each on or off and see what its runs did.</property>
+                    <property name="title" translatable="yes" context="workflows_page.workflows">Workflows</property>
+                    <property name="description" translatable="yes" context="workflows_page.workflows_built_edited_district_ai">Workflows are built and edited on the District AI website. Here you can turn each on or off and see what its runs did.</property>
                     <child>
                       <object class="GtkStack" id="list_stack">
                         <property name="vhomogeneous">False</property>
@@ -203,7 +203,7 @@
                                 </style>
                                 <property name="child">
                                   <object class="GtkButton" id="list_retry">
-                                    <property name="label">Try again</property>
+                                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                     <property name="halign">center</property>
                                     <style>
                                       <class name="pill"/>
@@ -221,7 +221,7 @@
                               <object class="GtkListBox" id="workflow_list">
                                 <property name="selection-mode">none</property>
                                 <accessibility>
-                                  <property name="label">Workflows</property>
+                                  <property name="label" translatable="yes" context="workflows_page.workflows_a11y">Workflows</property>
                                 </accessibility>
                                 <style>
                                   <class name="boxed-list"/>

@@ -12,16 +12,10 @@ use district_model::WorkspaceConfig;
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk;
+use crate::l10n::{core_text, lang, text};
 use crate::pages::Sends;
 use crate::pages::escape;
 use crate::pages::shared::{Echo, failure_text};
-
-/// The heading of a section whose save landed and whose settings could not be
-/// read back. Not a failure: the save is done.
-pub(crate) const STALE_TITLE: &str = "Saved";
-
-/// What a picker shows for a stored value that is empty.
-pub(crate) const NOT_CHOSEN: &str = "Not chosen";
 
 /// The page of a section, each part named by its template.
 #[derive(Clone, Copy, Debug)]
@@ -61,7 +55,7 @@ impl Frame<'_> {
             "dialog-warning-symbolic",
             title,
             &failure_text(failure),
-            failure.retryable.then_some("Try again"),
+            failure.retryable.then_some(text::common_try_again(lang())),
         );
     }
 
@@ -88,14 +82,14 @@ pub(crate) fn draw_config<'a>(
         (ConfigLoad::Failed(_), SaveState::SavedButStale(_)) => {
             frame.status(
                 "object-select-symbolic",
-                STALE_TITLE,
-                SaveState::SAVED_STALE,
-                Some("Read them again"),
+                text::settings_stale_title(lang()),
+                core_text::settings_saved_stale(lang()),
+                Some(text::settings_read_again(lang())),
             );
             None
         }
         (ConfigLoad::Failed(failure), _) => {
-            frame.failed(ConfigLoad::FAILED_TITLE, failure);
+            frame.failed(core_text::settings_failed_title(lang()), failure);
             None
         }
         (ConfigLoad::Ready(config), _) => {
@@ -306,10 +300,10 @@ impl<T: Clone + PartialEq + 'static> Choices<T> {
 }
 
 /// What a picker shows for a stored `value` its choices do not list: the value
-/// as stored, or [`NOT_CHOSEN`] when nothing is.
+/// as stored, or that none is chosen when nothing is.
 pub(crate) fn unlisted(value: &str) -> String {
     if value.trim().is_empty() {
-        NOT_CHOSEN.to_owned()
+        text::settings_not_chosen(lang()).to_owned()
     } else {
         value.to_owned()
     }
@@ -321,8 +315,8 @@ mod tests {
 
     #[test]
     fn a_stored_value_is_named_as_it_is_stored() {
-        assert_eq!(unlisted(""), NOT_CHOSEN);
-        assert_eq!(unlisted(" "), NOT_CHOSEN);
+        assert_eq!(unlisted(""), text::settings_not_chosen(lang()));
+        assert_eq!(unlisted(" "), text::settings_not_chosen(lang()));
         assert_eq!(unlisted("aura-2-asteria-en"), "aura-2-asteria-en");
         assert_eq!(number(0.7), "0.700");
         assert_eq!(number(20.0), "20.000");

@@ -18,12 +18,12 @@
             <property name="show-end-title-buttons">False</property>
             <child type="start">
               <object class="GtkButton" id="cancel_button">
-                <property name="label">Cancel</property>
+                <property name="label" translatable="yes" context="common.cancel">Cancel</property>
               </object>
             </child>
             <child type="end">
               <object class="GtkButton" id="save_button">
-                <property name="label">Save</property>
+                <property name="label" translatable="yes" context="common.save">Save</property>
                 <style>
                   <class name="suggested-action"/>
                 </style>
@@ -43,18 +43,18 @@
                 <child>
                   <object class="AdwComboRow" id="provider_row">
                     <property name="use-markup">False</property>
-                    <property name="title">Carrier</property>
+                    <property name="title" translatable="yes" context="messaging_form.carrier">Carrier</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwComboRow" id="source_row">
                     <property name="use-markup">False</property>
-                    <property name="title">Whose account</property>
+                    <property name="title" translatable="yes" context="messaging_form.whose_account">Whose account</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwEntryRow" id="label_row">
-                    <property name="title">Name</property>
+                    <property name="title" translatable="yes" context="common.name">Name</property>
                     <property name="use-markup">False</property>
                   </object>
                 </child>
@@ -73,7 +73,7 @@
             </child>
             <child>
               <object class="AdwPreferencesGroup" id="keys_group">
-                <property name="title">Keys</property>
+                <property name="title" translatable="yes" context="messaging_form.keys">Keys</property>
                 <child>
                   <object class="GtkBox">
                     <property name="orientation">vertical</property>
@@ -84,7 +84,7 @@
                         <property name="spacing">10</property>
                         <child>
                           <object class="GtkButton" id="test_button">
-                            <property name="label">Check these keys</property>
+                            <property name="label" translatable="yes" context="messaging_form.check_these_keys">Check these keys</property>
                           </object>
                         </child>
                         <child>
@@ -118,7 +118,7 @@
             </child>
             <child>
               <object class="AdwPreferencesGroup" id="numbers_group">
-                <property name="title">Phone numbers</property>
+                <property name="title" translatable="yes" context="messaging_form.phone_numbers">Phone numbers</property>
                 <child>
                   <object class="GtkScrolledWindow">
                     <property name="hscrollbar-policy">never</property>
@@ -137,7 +137,7 @@
                         <property name="left-margin">12</property>
                         <property name="right-margin">12</property>
                         <accessibility>
-                          <property name="label">Phone numbers, one per line</property>
+                          <property name="label" translatable="yes" context="messaging_form.phone_numbers_one_per_line">Phone numbers, one per line</property>
                         </accessibility>
                       </object>
                     </property>
@@ -149,7 +149,7 @@
               <object class="AdwPreferencesGroup">
                 <child>
                   <object class="AdwSwitchRow" id="default_row">
-                    <property name="title">Make it the default sender</property>
+                    <property name="title" translatable="yes" context="messaging_form.make_default_sender">Make it the default sender</property>
                   </object>
                 </child>
                 <child>

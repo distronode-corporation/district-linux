@@ -17,6 +17,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::Echoed;
 use crate::pages::shared::{
@@ -32,12 +33,13 @@ pub(crate) const MODES: [KnowledgeMode; 2] = [KnowledgeMode::Internal, Knowledge
 /// into, when it was added, and where it was read from.
 pub(crate) fn document_line(document: &KnowledgeDocument) -> String {
     let mut parts = vec![humanize(&document.status)];
-    match document.chunk_count {
-        0 => {}
-        1 => parts.push("1 piece".to_owned()),
-        count => parts.push(format!("{count} pieces")),
+    if document.chunk_count != 0 {
+        parts.push(text::knowledge_pieces(lang(), document.chunk_count));
     }
-    parts.push(format!("Added {}", short_text(&document.created_at)));
+    parts.push(text::knowledge_added(
+        lang(),
+        &short_text(&document.created_at),
+    ));
     parts.extend(document.source_url.clone());
     parts.join(" \u{b7} ")
 }
@@ -126,15 +128,18 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let view = self.obj();
-            self.viewer_note.set_label(KnowledgeSection::VIEWER);
+            self.viewer_note
+                .set_label(core_text::knowledge_viewer(lang()));
             self.mode_failed
-                .set_title(KnowledgeSection::MODE_UNAVAILABLE);
+                .set_title(core_text::knowledge_mode_unavailable(lang()));
             self.documents_failed
-                .set_title("Could not load the documents");
+                .set_title(text::knowledge_documents_failed(lang()));
             self.add_group
-                .set_description(Some(KnowledgeSection::ADD_BILLED));
-            self.empty_row.set_title(KnowledgeSection::EMPTY_TITLE);
-            self.empty_row.set_subtitle(KnowledgeSection::EMPTY_BODY);
+                .set_description(Some(core_text::knowledge_add_billed(lang())));
+            self.empty_row
+                .set_title(core_text::knowledge_empty_title(lang()));
+            self.empty_row
+                .set_subtitle(core_text::knowledge_empty_body(lang()));
             on_click(&self.mode_retry, &*view, || Event::Refresh);
             on_click(&self.documents_retry, &*view, || Event::Refresh);
             on_click(&self.add_button, &*view, || {
@@ -244,7 +249,7 @@ impl KnowledgeView {
         let known = MODES.iter().any(|mode| stored == Some(mode.as_str()));
         imp.mode_unknown_row.set_visible(stored.is_some() && !known);
         imp.mode_unknown_row
-            .set_subtitle(&format!("Stored as \"{}\".", stored.unwrap_or_default()));
+            .set_subtitle(&text::common_stored_as(lang(), stored.unwrap_or_default()));
     }
 
     fn draw_add(&self, section: &KnowledgeSection, can_change: bool) {
@@ -265,7 +270,7 @@ impl KnowledgeView {
             &imp.add_rejected,
             section
                 .add_rejected
-                .then_some(KnowledgeSection::ADD_REJECTED),
+                .then_some(core_text::knowledge_add_rejected(lang())),
         );
         let adding = busy && section.last_write == Some(KnowledgeWrite::Add);
         draw_spinner(&imp.add_spinner, adding);
@@ -307,7 +312,10 @@ impl KnowledgeView {
                 .name("document-row")
                 .build();
             if can_change {
-                let delete = icon_button("user-trash-symbolic", "Delete this document");
+                let delete = icon_button(
+                    "user-trash-symbolic",
+                    text::knowledge_delete_document(lang()),
+                );
                 delete.add_css_class("flat");
                 delete.set_widget_name("document-delete");
                 delete.set_sensitive(!wanted.2);

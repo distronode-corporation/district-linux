@@ -4,7 +4,7 @@
 
 use std::cell::OnceCell;
 
-use district_core::{Event, MeetingList, MeetingRecord, RoomsEvent, format_duration};
+use district_core::{Event, MeetingRecord, RoomsEvent, format_duration};
 use district_model::{MeetRoomName, MeetingDetail};
 use serde_json::Value;
 
@@ -12,6 +12,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{add_value_row, clear_group, failure_text, humanize, when_text};
 use crate::pages::{Sends, escape};
 use crate::sink::EventSink;
@@ -79,14 +80,26 @@ pub(crate) fn participant_names(people: Option<&Value>) -> Vec<String> {
 pub(crate) fn facts(meeting: &MeetingDetail) -> Vec<(&'static str, Option<String>)> {
     let people = participant_names(meeting.participants.as_ref());
     vec![
-        ("Status", Some(humanize(&meeting.status))),
-        ("Started", meeting.started_at.as_deref().map(when_text)),
-        ("Ended", meeting.ended_at.as_deref().map(when_text)),
         (
-            "Length",
+            text::meeting_status(lang()),
+            Some(humanize(&meeting.status)),
+        ),
+        (
+            text::meeting_started(lang()),
+            meeting.started_at.as_deref().map(when_text),
+        ),
+        (
+            text::meeting_ended(lang()),
+            meeting.ended_at.as_deref().map(when_text),
+        ),
+        (
+            text::meeting_length(lang()),
             (meeting.duration_sec > 0).then(|| format_duration(meeting.duration_sec)),
         ),
-        ("People", (!people.is_empty()).then(|| people.join(", "))),
+        (
+            text::meeting_people(lang()),
+            (!people.is_empty()).then(|| people.join(", ")),
+        ),
     ]
 }
 
@@ -99,8 +112,8 @@ pub(crate) fn minutes(meeting: &MeetingDetail) -> String {
         .filter(|text| !text.trim().is_empty())
     {
         Some(summary) => summary.to_owned(),
-        None if meeting.ended_at.is_none() => MeetingList::NO_MINUTES_YET.to_owned(),
-        None => MeetingRecord::NO_MINUTES.to_owned(),
+        None if meeting.ended_at.is_none() => core_text::rooms_no_minutes_yet(lang()).to_owned(),
+        None => core_text::rooms_no_minutes(lang()).to_owned(),
     }
 }
 
@@ -217,6 +230,7 @@ impl MeetingRecordDialog {
 
 #[cfg(test)]
 mod tests {
+    use district_core::MeetingList;
     use serde_json::json;
 
     use super::*;

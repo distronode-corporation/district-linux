@@ -6,6 +6,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
+use district_core::l10n::WireCategory;
 use district_core::{
     Capabilities, Event, MemberList, MembersAction, MembersEvent, MembersSection, SignedIn,
     WorkspacesState, member_role_label,
@@ -18,20 +19,15 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed, Frame};
-use crate::pages::shared::{Ask, Asking, draw_line, draw_spinner, humanize};
+use crate::pages::shared::{Ask, Asking, draw_line, draw_spinner, wire_text};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
+
+use crate::l10n::{core_text, lang, text};
 
 /// The roles, in the order offered.
 pub(crate) const ROLES: [MemberRole; 3] =
     [MemberRole::Agency, MemberRole::Client, MemberRole::Viewer];
-
-/// The note for a member who may not change who belongs here.
-pub(crate) const AGENCY_ONLY: &str =
-    "Only an agency member can add members, change their roles or remove them.";
-
-/// The heading of a failed read of the members.
-pub(crate) const FAILED_TITLE: &str = "Could not load the members";
 
 /// The role a member holds, when it is one of the three: stored as free text,
 /// in any case.
@@ -48,10 +44,7 @@ pub(crate) fn role_line(raw: &str) -> String {
             let (name, does) = member_role_label(role);
             format!("{name} \u{b7} {does}")
         }
-        None => format!(
-            "{} \u{b7} A role this app does not know, which it treats as no access.",
-            humanize(raw)
-        ),
+        None => text::members_unknown_role(lang(), &wire_text(WireCategory::MemberRole, raw)),
     }
 }
 
@@ -155,9 +148,9 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let view = self.obj();
-            self.role_note.set_label(AGENCY_ONLY);
+            self.role_note.set_label(text::members_agency_only(lang()));
             self.add_group
-                .set_description(Some(MembersSection::NO_INVITATION));
+                .set_description(Some(core_text::members_no_invitation(lang())));
             let members = |event: MembersEvent| move || Event::Members(event.clone());
             on_click(&self.retry_button, &*view, || Event::Refresh);
             on_click(&self.add_button, &*view, members(MembersEvent::Add));
@@ -237,7 +230,9 @@ impl MembersView {
         self.draw_question(section);
         let members = match &section.members {
             MemberList::Loading => return frame.loading(),
-            MemberList::Failed(failure) => return frame.failed(FAILED_TITLE, failure),
+            MemberList::Failed(failure) => {
+                return frame.failed(text::members_failed_title(lang()), failure);
+            }
             MemberList::Ready(members) => members,
         };
         frame.form();
@@ -265,7 +260,9 @@ impl MembersView {
         imp.add_button.set_sensitive(!busy);
         draw_line(
             &imp.add_rejected,
-            section.add_rejected.then_some(MembersSection::ADD_REJECTED),
+            section
+                .add_rejected
+                .then_some(core_text::members_add_rejected(lang())),
         );
         imp.rename_group
             .set_visible(capabilities.can_rename_workspace);
@@ -332,7 +329,7 @@ impl MembersView {
             .name("member-row")
             .build();
         let picker = adw::ComboRow::builder()
-            .title("Role")
+            .title(text::members_role(lang()))
             .use_markup(false)
             .sensitive(!busy)
             .name("member-role")
@@ -346,7 +343,7 @@ impl MembersView {
         });
         row.add_row(&picker);
         let remove = gtk::Button::builder()
-            .label("Remove from this workspace")
+            .label(text::members_remove(lang()))
             .valign(gtk::Align::Center)
             .sensitive(!busy)
             .css_classes(["destructive-action"])
@@ -374,7 +371,7 @@ impl MembersView {
                 email,
                 format!(
                     "{} {}",
-                    MembersSection::REMOVE_TITLE,
+                    core_text::members_remove_title(lang()),
                     MembersSection::remove_body(email)
                 ),
             )
@@ -386,7 +383,7 @@ impl MembersView {
                 key: format!("remove-{email}"),
                 heading: None,
                 question,
-                action: MembersSection::REMOVE_ACTION,
+                action: core_text::members_remove_action(lang()),
                 destructive: true,
             }),
             move |yes| {

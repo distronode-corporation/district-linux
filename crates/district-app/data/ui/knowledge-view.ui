@@ -33,7 +33,7 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup" id="mode_group">
-            <property name="title">Where answers come from</property>
+            <property name="title" translatable="yes" context="knowledge_view.where_answers_come_from">Where answers come from</property>
             <property name="header-suffix">
               <object class="GtkSpinner" id="mode_spinner">
                 <property name="visible">False</property>
@@ -44,7 +44,7 @@
                 <property name="use-markup">False</property>
                 <child type="suffix">
                   <object class="GtkButton" id="mode_retry">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="valign">center</property>
                   </object>
                 </child>
@@ -76,7 +76,7 @@
             <child>
               <object class="AdwActionRow" id="mode_unknown_row">
                 <property name="use-markup">False</property>
-                <property name="title">A setting this app does not know</property>
+                <property name="title" translatable="yes" context="common.setting_app_does_not_know">A setting this app does not know</property>
                 <style>
                   <class name="dim-label"/>
                 </style>
@@ -86,10 +86,10 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup" id="add_group">
-            <property name="title">Add a document</property>
+            <property name="title" translatable="yes" context="knowledge_view.add_document">Add a document</property>
             <child>
               <object class="AdwEntryRow" id="title_row">
-                <property name="title">Title</property>
+                <property name="title" translatable="yes" context="knowledge_view.title">Title</property>
                 <property name="use-markup">False</property>
               </object>
             </child>
@@ -111,7 +111,7 @@
                     <property name="left-margin">12</property>
                     <property name="right-margin">12</property>
                     <accessibility>
-                      <property name="label">The document's text</property>
+                      <property name="label" translatable="yes" context="knowledge_view.documents_text">The document's text</property>
                     </accessibility>
                   </object>
                 </property>
@@ -139,7 +139,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="add_button">
-                    <property name="label">Add document</property>
+                    <property name="label" translatable="yes" context="knowledge_view.add_document_button">Add document</property>
                     <property name="halign">end</property>
                     <property name="hexpand">True</property>
                     <style>
@@ -154,7 +154,7 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup" id="documents_group">
-            <property name="title">Documents</property>
+            <property name="title" translatable="yes" context="knowledge_view.documents">Documents</property>
             <property name="header-suffix">
               <object class="GtkSpinner" id="documents_spinner">
                 <property name="visible">False</property>
@@ -165,7 +165,7 @@
                 <property name="use-markup">False</property>
                 <child type="suffix">
                   <object class="GtkButton" id="documents_retry">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="valign">center</property>
                   </object>
                 </child>

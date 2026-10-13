@@ -16,6 +16,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang};
 use crate::pages::Sends;
 use crate::pages::shared::failure_text;
 use crate::sink::EventSink;
@@ -94,7 +95,7 @@ pub(crate) fn notice_words(
 ) -> Option<(Cow<'_, str>, &'static str, &'static str)> {
     match state {
         SaveState::Saved => Some((
-            Cow::Borrowed(SaveState::SAVED),
+            Cow::Borrowed(core_text::settings_saved(lang())),
             "object-select-symbolic",
             "saved-card",
         )),

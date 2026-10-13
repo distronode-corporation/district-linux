@@ -23,7 +23,7 @@
             <property name="sidebar-width-fraction">0.4</property>
             <property name="sidebar">
               <object class="AdwNavigationPage">
-                <property name="title">Support</property>
+                <property name="title" translatable="yes" context="support_page.support">Support</property>
                 <property name="tag">requests</property>
                 <property name="child">
                   <object class="GtkBox">
@@ -37,7 +37,7 @@
                         <property name="child">
                           <object class="AdwButtonContent">
                             <property name="icon-name">list-add-symbolic</property>
-                            <property name="label">New request</property>
+                            <property name="label" translatable="yes" context="support_page.new_request">New request</property>
                           </object>
                         </property>
                       </object>
@@ -67,7 +67,7 @@
                         <child>
                           <object class="GtkButton" id="submitted_dismiss">
                             <property name="icon-name">window-close-symbolic</property>
-                            <property name="tooltip-text">Dismiss</property>
+                            <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
                             <property name="valign">center</property>
                             <property name="margin-end">6</property>
                             <style>
@@ -75,7 +75,7 @@
                               <class name="circular"/>
                             </style>
                             <accessibility>
-                              <property name="label">Dismiss</property>
+                              <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
                             </accessibility>
                           </object>
                         </child>
@@ -108,7 +108,7 @@
                                 </style>
                                 <property name="child">
                                   <object class="GtkButton" id="list_retry">
-                                    <property name="label">Try again</property>
+                                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                     <property name="halign">center</property>
                                     <style>
                                       <class name="pill"/>
@@ -146,7 +146,7 @@
                                     </child>
                                     <child>
                                       <object class="GtkLabel" id="open_heading">
-                                        <property name="label">Open</property>
+                                        <property name="label" translatable="yes" context="support_page.open">Open</property>
                                         <property name="xalign">0</property>
                                         <style>
                                           <class name="heading"/>
@@ -157,7 +157,7 @@
                                       <object class="GtkListBox" id="open_list">
                                         <property name="selection-mode">single</property>
                                         <accessibility>
-                                          <property name="label">Open requests</property>
+                                          <property name="label" translatable="yes" context="support_page.open_requests">Open requests</property>
                                         </accessibility>
                                         <style>
                                           <class name="boxed-list"/>
@@ -166,7 +166,7 @@
                                     </child>
                                     <child>
                                       <object class="GtkLabel" id="resolved_heading">
-                                        <property name="label">Resolved</property>
+                                        <property name="label" translatable="yes" context="support_page.resolved">Resolved</property>
                                         <property name="xalign">0</property>
                                         <property name="margin-top">10</property>
                                         <style>
@@ -178,7 +178,7 @@
                                       <object class="GtkListBox" id="resolved_list">
                                         <property name="selection-mode">single</property>
                                         <accessibility>
-                                          <property name="label">Resolved requests</property>
+                                          <property name="label" translatable="yes" context="support_page.resolved_requests">Resolved requests</property>
                                         </accessibility>
                                         <style>
                                           <class name="boxed-list"/>
@@ -209,7 +209,7 @@
             </property>
             <property name="content">
               <object class="AdwNavigationPage">
-                <property name="title">Support request</property>
+                <property name="title" translatable="yes" context="support_page.support_request">Support request</property>
                 <property name="tag">request</property>
                 <property name="child">
                   <object class="GtkStack" id="detail_stack">
@@ -219,8 +219,8 @@
                         <property name="child">
                           <object class="AdwStatusPage">
                             <property name="icon-name">help-faq-symbolic</property>
-                            <property name="title">No request open</property>
-                            <property name="description">Choose a request to read our replies and answer them.</property>
+                            <property name="title" translatable="yes" context="support_page.no_request_open">No request open</property>
+                            <property name="description" translatable="yes" context="support_page.choose_request_read_our_replies">Choose a request to read our replies and answer them.</property>
                             <style>
                               <class name="compact"/>
                             </style>

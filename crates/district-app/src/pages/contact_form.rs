@@ -13,6 +13,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::shared::{draw_line, draw_spinner};
 use crate::sink::EventSink;
@@ -31,8 +32,14 @@ impl FormKind {
     /// The dialog's title and its button.
     pub(crate) fn words(self) -> (&'static str, &'static str) {
         match self {
-            Self::Create => ("Add contact", "Add"),
-            Self::Edit => ("Edit contact", "Save"),
+            Self::Create => (
+                text::contact_form_add_title(lang()),
+                text::contact_form_add(lang()),
+            ),
+            Self::Edit => (
+                text::contact_form_edit_title(lang()),
+                text::common_save(lang()),
+            ),
         }
     }
 

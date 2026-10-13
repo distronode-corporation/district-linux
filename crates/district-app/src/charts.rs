@@ -18,6 +18,7 @@ use district_core::{ChartBar, SentimentShare};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, cairo, gdk, glib};
+use crate::l10n::{lang, text};
 
 /// How a sentiment band is filled.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -259,13 +260,14 @@ pub(crate) fn columns_summary(what: &str, bars: &[ChartBar]) -> String {
         .collect();
     let most = bars.iter().max_by_key(|bar| bar.value);
     match most {
-        Some(most) => format!(
-            "{what}: {}. The most was {}, on {}.",
-            each.join(", "),
-            most.value,
-            most.label
+        Some(most) => text::chart_columns_summary(
+            lang(),
+            what,
+            &each.join(", "),
+            &most.value.to_string(),
+            &most.label,
         ),
-        None => format!("{what}: nothing to show."),
+        None => text::chart_columns_empty(lang(), what),
     }
 }
 
@@ -275,7 +277,7 @@ pub(crate) fn sentiment_summary(bands: &[SentimentShare]) -> String {
         .iter()
         .map(|band| format!("{} {} ({})", band.label, band.value, percent(band.share)))
         .collect();
-    format!("Caller sentiment: {}.", each.join(", "))
+    text::chart_sentiment_summary(lang(), &each.join(", "))
 }
 
 /// A chart's drawing area: an image, named for a screen reader by `summary`,

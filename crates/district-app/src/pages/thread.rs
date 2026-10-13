@@ -18,15 +18,13 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, gdk, glib};
+use crate::l10n::{lang, text};
 use crate::pages::shared::{
     Echo, ImagePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
     icon_button, instant_in, now, plain_label,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
-
-/// The heading when a thread could not be read.
-pub(crate) const FAILED_TITLE: &str = "Could not load this conversation";
 
 /// How close to the end, in pixels, counts as reading the newest message: a
 /// message arriving then scrolls into view.
@@ -58,11 +56,11 @@ pub(crate) fn delivery(event: &TimelineEvent) -> Option<String> {
     Some(
         match event.status.as_str() {
             "" => return None,
-            "queued" | "accepted" | "sending" | "scheduled" => "Sending",
-            "sent" => "Sent",
-            "delivered" => "Delivered",
-            "read" => "Read",
-            "failed" | "undelivered" | "canceled" => "Not delivered",
+            "queued" | "accepted" | "sending" | "scheduled" => text::thread_sending(lang()),
+            "sent" => text::thread_sent(lang()),
+            "delivered" => text::thread_delivered(lang()),
+            "read" => text::thread_read(lang()),
+            "failed" | "undelivered" | "canceled" => text::thread_not_delivered(lang()),
             other => return Some(crate::pages::shared::humanize(other)),
         }
         .to_owned(),
@@ -72,21 +70,21 @@ pub(crate) fn delivery(event: &TimelineEvent) -> Option<String> {
 /// The channel a message went by, as a person names it.
 pub(crate) fn channel(event_type: &str) -> &'static str {
     match event_type {
-        "email" => "Email",
-        "whatsapp" => "WhatsApp",
-        _ => "Text message",
+        "email" => text::thread_email(lang()),
+        "whatsapp" => text::thread_whatsapp(lang()),
+        _ => text::common_text_message(lang()),
     }
 }
 
 /// The line for a call in the thread.
 pub(crate) fn call_line(event: &TimelineEvent) -> String {
     if event.is_missed_call() {
-        return "Missed call".to_owned();
+        return text::thread_missed_call(lang()).to_owned();
     }
     let direction = if event.direction == "outbound" {
-        "Outgoing call"
+        text::thread_outgoing_call(lang())
     } else {
-        "Incoming call"
+        text::thread_incoming_call(lang())
     };
     match event
         .duration
@@ -103,29 +101,26 @@ pub(crate) fn call_line(event: &TimelineEvent) -> String {
 pub(crate) fn reply_line(target: Option<&ReplyTarget>) -> String {
     match target {
         Some(target) if target.channel == CHANNEL_SMS => {
-            format!("Text message to {}", format_phone_number(&target.to))
+            text::thread_reply_by_text(lang(), &format_phone_number(&target.to))
         }
-        Some(target) => format!("Email to {}", target.to),
+        Some(target) => text::thread_reply_by_email(lang(), &target.to),
         None => String::new(),
     }
 }
 
 /// How many images a message carries, in words.
 pub(crate) fn images_attached(count: usize) -> String {
-    match count {
-        1 => "1 image attached".to_owned(),
-        count => format!("{count} images attached"),
-    }
+    text::thread_images_attached(lang(), i64::try_from(count).unwrap_or(i64::MAX))
 }
 
 /// What the composer is waiting for, if anything.
 pub(crate) fn busy(composer: &Composer) -> Option<&'static str> {
     if composer.sending {
-        Some("Sending")
+        Some(text::thread_sending(lang()))
     } else if composer.attaching {
-        Some("Uploading the image")
+        Some(text::thread_uploading_image(lang()))
     } else if composer.generating {
-        Some("Writing a reply")
+        Some(text::thread_writing_reply(lang()))
     } else {
         None
     }
@@ -379,7 +374,7 @@ impl ThreadView {
             ThreadHistory::Loading => imp.stack.set_visible_child_name("loading"),
             ThreadHistory::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(FAILED_TITLE);
+                imp.status.set_title(text::thread_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
@@ -416,9 +411,9 @@ impl ThreadView {
         );
         imp.start_label.set_visible(!events.has_more);
         imp.start_label.set_label(if events.events.is_empty() {
-            "No messages in this conversation yet."
+            text::thread_no_messages(lang())
         } else {
-            "The start of this conversation"
+            text::thread_view_start_conversation(lang())
         });
         let refresh_failure = events.refresh_failure.as_ref().map(failure_text);
         draw_line(&imp.refresh_failure, refresh_failure);
@@ -507,14 +502,18 @@ impl ThreadView {
         let imp = self.imp();
         imp.attachments.remove_all();
         for (index, url) in attachments.iter().enumerate() {
-            let name = format!("Image {}", index + 1);
+            let name =
+                text::thread_image_number(lang(), i64::try_from(index + 1).unwrap_or(i64::MAX));
             let chip = gtk::Box::builder()
                 .spacing(6)
                 .css_classes(["attachment-chip"])
                 .build();
             chip.append(&gtk::Image::from_icon_name("image-x-generic-symbolic"));
             chip.append(&gtk::Label::new(Some(&name)));
-            let remove = icon_button("window-close-symbolic", &format!("Remove {name}"));
+            let remove = icon_button(
+                "window-close-symbolic",
+                &text::thread_remove_image(lang(), &name),
+            );
             remove.add_css_class("flat");
             remove.add_css_class("circular");
             remove.set_widget_name("remove-attachment");
@@ -537,7 +536,7 @@ impl ThreadView {
             return;
         };
         let pick = Pick {
-            title: "Attach an image",
+            title: text::thread_attach_image_title(lang()),
             types: &district_core::ATTACHMENT_TYPES,
             unnamed: "image",
         };
@@ -608,7 +607,7 @@ fn message_bubble(event: &TimelineEvent, time: &str) -> gtk::Widget {
         meta.push(time.to_owned());
     }
     let delivery = delivery(event);
-    let failed = delivery.as_deref() == Some("Not delivered");
+    let failed = delivery.as_deref() == Some(text::thread_not_delivered(lang()));
     meta.extend(delivery);
     let meta = gtk::Label::builder()
         .label(meta.join(" \u{b7} "))

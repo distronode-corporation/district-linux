@@ -28,7 +28,7 @@
                 <property name="icon-name">preferences-system-devices-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -65,7 +65,7 @@
                         </child>
                         <child>
                           <object class="GtkButton" id="notice_dismiss">
-                            <property name="label">Dismiss</property>
+                            <property name="label" translatable="yes" context="common.dismiss_button">Dismiss</property>
                             <property name="valign">center</property>
                             <property name="margin-end">12</property>
                           </object>
@@ -76,8 +76,8 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="devices_group">
-                    <property name="title">Signed-in devices</property>
-                    <property name="description">A device's last active time is when it last renewed its sign-in, which can trail real use by up to ten minutes.</property>
+                    <property name="title" translatable="yes" context="devices_page.signed_devices">Signed-in devices</property>
+                    <property name="description" translatable="yes" context="devices_page.devices_last_active_time_when">A device's last active time is when it last renewed its sign-in, which can trail real use by up to ten minutes.</property>
                     <property name="header-suffix">
                       <object class="GtkSpinner" id="busy_spinner">
                         <property name="visible">False</property>
@@ -97,7 +97,7 @@
                   <object class="AdwPreferencesGroup">
                     <child>
                       <object class="GtkButton" id="everywhere_button">
-                        <property name="label">Sign out of every device</property>
+                        <property name="label" translatable="yes" context="devices_page.sign_out_every_device">Sign out of every device</property>
                         <property name="halign">center</property>
                         <style>
                           <class name="destructive-action"/>

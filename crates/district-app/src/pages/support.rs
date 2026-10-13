@@ -14,6 +14,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{RowIds, back_on_fold, clear_list, draw_line, failure_text, short_text};
 use crate::pages::support_request::SupportRequestView;
 use crate::pages::ticket_form::{FormState, TicketFormDialog};
@@ -28,7 +29,10 @@ pub(crate) fn in_section(route: &Route) -> bool {
 /// The line under a request: its reference, where it stands and when it last
 /// moved. A request still being opened has no reference yet, and says so.
 pub(crate) fn request_line(request: &SupportRequestSummary) -> String {
-    let reference = request.issue_key.as_deref().unwrap_or("Not filed yet");
+    let reference = request
+        .issue_key
+        .as_deref()
+        .unwrap_or(text::support_not_filed(lang()));
     format!(
         "{reference} \u{b7} {} \u{b7} {}",
         request.status_name,
@@ -106,7 +110,8 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.capped_note.set_label(SupportRequests::CAPPED);
+            self.capped_note
+                .set_label(core_text::support_capped(lang()));
             on_click(&self.list_retry, &*page, || Event::Refresh);
             on_click(&self.new_button, &*page, || {
                 Event::Support(SupportEvent::StartRequest)
@@ -223,13 +228,17 @@ impl SupportPage {
             }
             SupportList::Failed(failure) => {
                 status(
-                    SupportList::FAILED_TITLE,
+                    core_text::support_failed_title(lang()),
                     &failure_text(failure),
                     failure.retryable,
                 );
             }
             SupportList::Ready(requests) if requests.requests.is_empty() => {
-                status(SupportList::EMPTY_TITLE, SupportList::EMPTY_BODY, false);
+                status(
+                    core_text::support_empty_title(lang()),
+                    core_text::support_empty_body(lang()),
+                    false,
+                );
             }
             SupportList::Ready(requests) => {
                 imp.list_stack.set_visible_child_name("list");

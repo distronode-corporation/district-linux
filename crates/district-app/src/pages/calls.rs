@@ -12,6 +12,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang};
 use crate::pages::call::CallView;
 use crate::pages::shared::{
     EndWatch, PagedRows, PagingFooter, back_on_fold, failure_text, now, short_time, watch_end,
@@ -57,13 +58,13 @@ pub(crate) fn log_shown(log: &CallLog) -> LogShown<'_> {
     match log {
         CallLog::NotLoaded | CallLog::Loading => LogShown::Loading,
         CallLog::Failed(failure) => LogShown::Status {
-            title: CallLog::FAILED_TITLE,
+            title: core_text::calls_failed_title(lang()),
             body: failure_text(failure),
             retry: failure.retryable,
         },
         CallLog::Ready(rows) if rows.calls.is_empty() => LogShown::Status {
-            title: CallLog::EMPTY_TITLE,
-            body: CallLog::EMPTY_BODY.into(),
+            title: core_text::calls_empty_title(lang()),
+            body: core_text::calls_empty_body(lang()).into(),
             retry: false,
         },
         CallLog::Ready(rows) => LogShown::Calls(rows),

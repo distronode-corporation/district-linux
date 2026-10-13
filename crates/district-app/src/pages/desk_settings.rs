@@ -15,6 +15,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{Echo, ImagePicker, Pick, draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -25,9 +26,9 @@ pub(crate) const LOGO_TYPES: [&str; 3] = ["image/png", "image/jpeg", "image/webp
 /// Whether the desk has a logo, in words.
 pub(crate) fn logo_line(form: &DeskSettingsForm) -> &'static str {
     if form.stored.public_logo_url.is_some() {
-        "A logo is published."
+        text::desk_settings_logo_published(lang())
     } else {
-        "No logo yet."
+        text::desk_settings_no_logo(lang())
     }
 }
 
@@ -36,7 +37,7 @@ pub(crate) fn logo_line(form: &DeskSettingsForm) -> &'static str {
 pub(crate) fn logo_note(form: &DeskSettingsForm) -> Option<Cow<'_, str>> {
     form.logo_failure.as_ref().map(failure_text).or(form
         .logo_file_kept
-        .then_some(Cow::Borrowed(DeskSettingsForm::LOGO_FILE_KEPT)))
+        .then_some(Cow::Borrowed(core_text::desk_logo_file_kept(lang()))))
 }
 
 mod imp {
@@ -193,7 +194,8 @@ impl DeskSettingsView {
             }
             DeskSettingsRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(DeskSettingsRead::FAILED_TITLE);
+                imp.status
+                    .set_title(core_text::desk_settings_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
@@ -210,8 +212,12 @@ impl DeskSettingsView {
         let saved = imp.saving.replace(saving) && !saving;
         let logo_changed = imp.logo_busy.replace(logo_busy) && !logo_busy;
         match form {
-            Some(form) if saved && form.save_failure.is_none() => Some("Settings saved."),
-            Some(form) if logo_changed && form.logo_failure.is_none() => Some("Logo updated."),
+            Some(form) if saved && form.save_failure.is_none() => {
+                Some(text::desk_settings_saved(lang()))
+            }
+            Some(form) if logo_changed && form.logo_failure.is_none() => {
+                Some(text::desk_settings_logo_updated(lang()))
+            }
             _ => None,
         }
     }
@@ -260,7 +266,7 @@ impl DeskSettingsView {
     fn pick_logo(&self) {
         let workspace_id = self.imp().workspace_id.borrow().clone();
         let pick = Pick {
-            title: "Choose a logo",
+            title: text::desk_settings_choose_logo(lang()),
             types: &LOGO_TYPES,
             unnamed: "logo",
         };
