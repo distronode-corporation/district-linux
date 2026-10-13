@@ -197,7 +197,10 @@ jobs:
             XDG_RUNTIME_DIR="$(mktemp -d)"
             export XDG_RUNTIME_DIR
             flatpak run --system --command=sh com.distronode.DistrictAI -c "locale -a" || true
-            for env in "LANG=fr_CA.UTF-8" "LANG=fr_FR.UTF-8" "LANG=en_US.UTF-8 LANGUAGE=fr" "LANG=C.UTF-8 LANGUAGE=fr"; do
+            echo "--- the locale variables the container and the sandbox hold:"
+            env | grep -E "^(LANG|LANGUAGE|LC_[A-Z]+)=" || true
+            flatpak run --system --command=sh --env=LANG=fr_CA.UTF-8 com.distronode.DistrictAI -c "env | grep -E \"^(LANG|LANGUAGE|LC_[A-Z]+)=\"" || true
+            for env in "LANG=fr_CA.UTF-8" "LANG=fr_FR.UTF-8" "LANG=en_US.UTF-8 LANGUAGE=fr" "LANG=C.UTF-8 LANGUAGE=fr" "LC_ALL=fr_CA.UTF-8" "LC_ALL=en_US.UTF-8 LANGUAGE=fr"; do
               args=()
               for pair in $env; do args+=("--env=$pair"); done
               got="$(flatpak run --system "${args[@]}" com.distronode.DistrictAI --l10n-probe)"
