@@ -78,6 +78,9 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
 }
 
+/// A case's environment, and the lines it may print.
+type Case<'a> = (&'a [(&'a str, &'a str)], Vec<String>);
+
 const BUILDER: &str = r#"
 <interface>
   <object class="GtkLabel" id="label">
@@ -168,7 +171,7 @@ fn main() {
     let dir = compile_catalog();
     let french = line(FRENCH, "fr-CA", "fr-CA");
     let english = line(ENGLISH, "en", "en");
-    let cases: [(&[(&str, &str)], Vec<String>); 5] = [
+    let cases: [Case; 5] = [
         // The usual French desktop: both sides French.
         (&[("LANG", "fr_CA.UTF-8")], vec![french.clone()]),
         // LANGUAGE over another real locale: both sides French.
