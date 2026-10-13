@@ -24,6 +24,9 @@ on:
       - "LICENSE"
       - "NOTICE"
       - "scripts/build-deb.sh"
+      # The French catalog, and the switch that decides whether it ships.
+      - "crates/district-app/po/**"
+      - "scripts/french-enabled.py"
       - "scripts/third-party-licenses.sh"
       - "scripts/fetch-libwebrtc.sh"
       - "about.toml"
@@ -72,7 +75,9 @@ jobs:
       # shared-library half of Depends.
       - uses: $/.github/actions/install-clang-21
         with:
-          packages: dpkg-dev
+          # gettext for msgfmt, which compiles the French catalog when French
+          # is on (scripts/build-deb.sh).
+          packages: dpkg-dev gettext
 
       # The upstream release, checked against a pinned SHA-256, as the other
       # tools are installed.
@@ -192,6 +197,19 @@ jobs:
           # A crate every build links, so an empty or truncated file fails.
           if ! grep -qE '^  gtk4 [0-9]' "$RUNNER_TEMP/deb/usr/share/doc/district-ai/THIRD-PARTY-LICENSES.txt"; then
             echo "::error::THIRD-PARTY-LICENSES.txt does not list gtk4"
+            fail=1
+          fi
+          # French ships only with the `fr-ca` feature on (the release guard,
+          # run by release.yml through this workflow): with it off the package
+          # holds no catalog at all, with it on the French one.
+          catalogs="$(dpkg-deb --contents "$deb" | awk '{ print $6 }' | grep -E '\.mo$' || true)"
+          if python3 scripts/french-enabled.py; then
+            if [ "$catalogs" != "./usr/share/locale/fr/LC_MESSAGES/district-ai.mo" ]; then
+              echo "::error::French is on, and the package's catalogs are: ${catalogs:-none}"
+              fail=1
+            fi
+          elif [ -n "$catalogs" ]; then
+            echo "::error::French is off, and the package holds catalogs: $catalogs"
             fail=1
           fi
           exec_line="$(grep '^Exec=' "$RUNNER_TEMP/deb/usr/share/dbus-1/services/com.distronode.DistrictAI.service")"
