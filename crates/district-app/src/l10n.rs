@@ -51,7 +51,21 @@ pub fn pgettext(context: &str, msgid: &str) -> String {
 /// installed and found. GTK is initialised only for its `setlocale`; with no
 /// display it fails after that, which is all the probe needs.
 pub fn probe_line() -> String {
-    let _ = crate::gtk::init();
+    let gtk = crate::gtk::init();
+    // SPIKE diagnostics, on standard error: whether GTK initialised (and so
+    // whether its setlocale ran), where the domain is bound, and whether the
+    // French catalog is there.
+    let dir = gettextrs::getters::domain_directory(DOMAIN).unwrap_or_default();
+    let mo = dir.join("fr/LC_MESSAGES/district-ai.mo");
+    eprintln!(
+        "l10n-probe: gtk::init {gtk:?}; domain {:?}; dir {}; fr catalog present {}; GTK {}.{}.{}",
+        gettextrs::getters::current_textdomain().map(String::from_utf8),
+        dir.display(),
+        mo.is_file(),
+        crate::gtk::major_version(),
+        crate::gtk::minor_version(),
+        crate::gtk::micro_version(),
+    );
     pgettext("support-page", "Support")
 }
 

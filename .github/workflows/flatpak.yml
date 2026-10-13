@@ -200,7 +200,7 @@ jobs:
             for env in "LANG=fr_CA.UTF-8" "LANG=fr_FR.UTF-8" "LANG=en_US.UTF-8 LANGUAGE=fr" "LANG=C.UTF-8 LANGUAGE=fr"; do
               args=()
               for pair in $env; do args+=("--env=$pair"); done
-              got="$(flatpak run --system "${args[@]}" com.distronode.DistrictAI --l10n-probe 2>/dev/null)"
+              got="$(flatpak run --system "${args[@]}" com.distronode.DistrictAI --l10n-probe)"
               echo "probe with $env: $got"
             done
             if [ ! -s "$app/files/share/locale/fr/LC_MESSAGES/district-ai.mo" ]; then
