@@ -3,8 +3,13 @@
 //! documents, each deleted only after a question. Switching to the linked
 //! mode, which sends callers' questions to Atlassian, asks first too. A viewer
 //! reads all of it and is offered no control.
+//!
+//! The core has no upload: "Read a text file" fills the title and the text
+//! from a plain text file picked in the desktop's file chooser
+//! ([`text_file`]), which is refused here when it is not text or is too
+//! large, and nothing is sent until Add (as District AI for Windows does).
 
-use std::cell::{OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
 
 use district_core::{
@@ -21,13 +26,112 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::Echoed;
 use crate::pages::shared::{
-    Ask, Asking, draw_line, draw_spinner, failure_text, humanize, icon_button, short_text,
+    Ask, Asking, FilePicker, draw_line, draw_spinner, failure_text, humanize, icon_button,
+    short_text,
 };
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
 /// The modes, in the order they are offered.
 pub(crate) const MODES: [KnowledgeMode; 2] = [KnowledgeMode::Internal, KnowledgeMode::Linked];
+
+/// The file name suffixes the file chooser offers for a document: plain text
+/// only.
+pub(crate) const TEXT_SUFFIXES: [&str; 2] = ["txt", "md"];
+
+/// The largest file read in, in bytes. The service takes any length and bills
+/// by it, so this app keeps a file to a size a person would paste.
+pub(crate) const MAX_FILE_BYTES: usize = 1024 * 1024;
+
+/// The longest title a file's name gives, in characters: what the service
+/// keeps.
+const TITLE_CHARS: usize = 200;
+
+/// A picked file as a document's title and text, or why it is refused: too
+/// large, empty, not plain text (its first bytes, never its name, decide),
+/// or no words in it. `bytes` is what was read of the file named `name`, at
+/// most one byte past [`MAX_FILE_BYTES`].
+pub(crate) fn text_file(name: &str, bytes: &[u8]) -> Result<(String, String), &'static str> {
+    if bytes.len() > MAX_FILE_BYTES {
+        return Err(text::knowledge_file_too_large(lang()));
+    }
+    if bytes.is_empty() {
+        return Err(text::knowledge_file_empty(lang()));
+    }
+    let not_text = text::knowledge_file_not_text(lang());
+    if is_media(bytes) {
+        return Err(not_text);
+    }
+    let content = decode(bytes).ok_or(not_text)?;
+    if content
+        .chars()
+        .any(|c| c.is_control() && !matches!(c, '\t' | '\n' | '\r' | '\u{c}'))
+    {
+        return Err(not_text);
+    }
+    let content = content.replace("\r\n", "\n");
+    if content.trim().is_empty() {
+        return Err(text::knowledge_file_no_text(lang()));
+    }
+    Ok((title_of(name), content))
+}
+
+/// Whether `bytes` start as an image, a PDF or another media file does,
+/// whatever the file is called.
+fn is_media(bytes: &[u8]) -> bool {
+    const SIGNATURES: [&[u8]; 6] = [
+        b"\x89PNG\r\n\x1a\n",
+        &[0xff, 0xd8, 0xff],
+        b"GIF87a",
+        b"GIF89a",
+        b"%PDF-",
+        b"RIFF",
+    ];
+    SIGNATURES
+        .iter()
+        .any(|signature| bytes.starts_with(signature))
+        || bytes.get(4..8) == Some(b"ftyp".as_slice())
+}
+
+/// `bytes` as text: UTF-8, with or without its mark, or UTF-16 with its mark
+/// (as some editors save "Unicode"). Anything else is not plain text.
+fn decode(bytes: &[u8]) -> Option<String> {
+    let utf16 = |rest: &[u8], unit: fn([u8; 2]) -> u16| {
+        let (pairs, odd) = rest.as_chunks::<2>();
+        if !odd.is_empty() {
+            return None;
+        }
+        let units: Vec<u16> = pairs.iter().map(|pair| unit(*pair)).collect();
+        String::from_utf16(&units).ok()
+    };
+    if let Some(rest) = bytes.strip_prefix(&[0xef, 0xbb, 0xbf]) {
+        String::from_utf8(rest.to_vec()).ok()
+    } else if let Some(rest) = bytes.strip_prefix(&[0xff, 0xfe]) {
+        utf16(rest, u16::from_le_bytes)
+    } else if let Some(rest) = bytes.strip_prefix(&[0xfe, 0xff]) {
+        utf16(rest, u16::from_be_bytes)
+    } else {
+        String::from_utf8(bytes.to_vec()).ok()
+    }
+}
+
+/// The title a file's name suggests: without its folder, its last extension
+/// and any control character, no longer than the service keeps; the name as
+/// it is when that leaves nothing.
+fn title_of(file_name: &str) -> String {
+    let name: String = file_name
+        .rsplit('/')
+        .next()
+        .unwrap_or_default()
+        .chars()
+        .filter(|c| !c.is_control())
+        .collect();
+    let stem = match name.rsplit_once('.') {
+        Some((stem, _)) if !stem.trim().is_empty() => stem,
+        _ => name.as_str(),
+    };
+    stem.trim().chars().take(TITLE_CHARS).collect()
+}
 
 /// The line under a document: where it stands, how many pieces it was cut
 /// into, when it was added, and where it was read from.
@@ -83,6 +187,10 @@ mod imp {
         #[template_child]
         pub content_view: TemplateChild<gtk::TextView>,
         #[template_child]
+        pub file_refused: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub file_button: TemplateChild<gtk::Button>,
+        #[template_child]
         pub add_rejected: TemplateChild<gtk::Label>,
         #[template_child]
         pub add_spinner: TemplateChild<gtk::Spinner>,
@@ -106,6 +214,12 @@ mod imp {
         pub rows: RefCell<Vec<gtk::Widget>>,
         /// The question showing.
         pub asking: Asking,
+        /// The file chooser for "Read a text file", while it is open or its
+        /// file is read.
+        pub picking: FilePicker,
+        /// Whether a file read now may fill the form: the member may add, and
+        /// no write is on its way.
+        pub may_pick: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -144,6 +258,31 @@ mod imp {
             on_click(&self.documents_retry, &*view, || Event::Refresh);
             on_click(&self.add_button, &*view, || {
                 Event::Knowledge(KnowledgeEvent::Add)
+            });
+            let weak = view.downgrade();
+            self.file_button.connect_clicked(move |_| {
+                if let Some(view) = weak.upgrade() {
+                    view.pick_file();
+                }
+            });
+            // A file's refusal stands until the form is changed or added.
+            let weak = view.downgrade();
+            self.title_row.connect_changed(move |_| {
+                if let Some(view) = weak.upgrade() {
+                    view.refuse_file(None);
+                }
+            });
+            let weak = view.downgrade();
+            self.content_view.buffer().connect_changed(move |_| {
+                if let Some(view) = weak.upgrade() {
+                    view.refuse_file(None);
+                }
+            });
+            let weak = view.downgrade();
+            self.add_button.connect_clicked(move |_| {
+                if let Some(view) = weak.upgrade() {
+                    view.refuse_file(None);
+                }
             });
             self.title
                 .set(Echoed::text(&*self.title_row, &*view, |title| {
@@ -275,6 +414,58 @@ impl KnowledgeView {
         let adding = busy && section.last_write == Some(KnowledgeWrite::Add);
         draw_spinner(&imp.add_spinner, adding);
         imp.add_button.set_sensitive(!busy);
+        imp.file_button.set_sensitive(!busy);
+        imp.may_pick.set(can_change && !busy);
+    }
+
+    /// Opens the desktop's file chooser for one plain text file, and puts
+    /// what it holds in the form (its name as the title when the title is
+    /// empty), or says why it was refused. Nothing is sent: Add does that.
+    fn pick_file(&self) {
+        let filter = gtk::FileFilter::new();
+        filter.set_name(Some(text::knowledge_text_files_filter(lang())));
+        for suffix in TEXT_SUFFIXES {
+            filter.add_suffix(suffix);
+        }
+        self.imp().picking.open_file(
+            self,
+            text::knowledge_view_read_text_file(lang()),
+            &filter,
+            MAX_FILE_BYTES + 1,
+            "",
+            |view, read| {
+                let imp = view.imp();
+                if !imp.may_pick.get() {
+                    return;
+                }
+                let read = read
+                    .map_err(|_| text::knowledge_file_unreadable(lang()))
+                    .and_then(|(name, bytes)| text_file(&name, &bytes));
+                match read {
+                    Ok((title, content)) => {
+                        if imp.title_row.text().trim().is_empty() && !title.is_empty() {
+                            imp.title_row.set_text(&title);
+                        }
+                        imp.content_view.buffer().set_text(&content);
+                        view.refuse_file(None);
+                    }
+                    Err(reason) => view.refuse_file(Some(reason)),
+                }
+            },
+        );
+    }
+
+    /// Shows why a picked file was refused, and has a screen reader say it at
+    /// once; or, for `None`, takes the refusal away.
+    fn refuse_file(&self, reason: Option<&str>) {
+        let label = &self.imp().file_refused;
+        if reason.is_none() && !label.is_visible() {
+            return;
+        }
+        draw_line(label, reason);
+        if let Some(reason) = reason {
+            self.announce(reason, gtk::AccessibleAnnouncementPriority::High);
+        }
     }
 
     fn draw_documents(&self, section: &KnowledgeSection, can_change: bool) {
@@ -374,11 +565,14 @@ impl KnowledgeView {
         );
     }
 
-    /// The knowledge base is no longer showing: its question closes, and the
-    /// next visit starts from what is read then.
+    /// The knowledge base is no longer showing: its question and a file
+    /// chooser still open close, and the next visit starts from what is read
+    /// then.
     pub(crate) fn leave(&self) {
         let imp = self.imp();
         imp.asking.close();
+        imp.picking.close();
+        self.refuse_file(None);
         imp.title.get().expect("bound when built").reset();
         imp.content.get().expect("bound when built").reset();
     }
@@ -408,5 +602,85 @@ mod tests {
         let mut one = list.documents[0].clone();
         one.chunk_count = 1;
         assert!(document_line(&one).contains("1 piece \u{b7}"));
+    }
+
+    #[test]
+    fn a_text_file_fills_the_form() {
+        assert_eq!(
+            text_file("Refund policy.txt", b"We refund in 30 days.\r\n"),
+            Ok((
+                "Refund policy".to_owned(),
+                "We refund in 30 days.\n".to_owned()
+            ))
+        );
+        // With a UTF-8 mark, and as UTF-16 with its mark, in both orders.
+        let utf16 = |mark: [u8; 2], unit: fn(u16) -> [u8; 2]| -> Vec<u8> {
+            mark.into_iter()
+                .chain("Open 9 to 5".encode_utf16().flat_map(unit))
+                .collect()
+        };
+        for bytes in [
+            b"\xef\xbb\xbfOpen 9 to 5".to_vec(),
+            utf16([0xff, 0xfe], u16::to_le_bytes),
+            utf16([0xfe, 0xff], u16::to_be_bytes),
+        ] {
+            assert_eq!(
+                text_file("hours.md", &bytes),
+                Ok(("hours".to_owned(), "Open 9 to 5".to_owned()))
+            );
+        }
+    }
+
+    #[test]
+    fn the_title_loses_folder_extension_and_control_characters() {
+        assert_eq!(title_of("../a/b/notes.v2.txt"), "notes.v2");
+        assert_eq!(title_of("ro\r\nof.txt"), "roof");
+        assert_eq!(title_of(".txt"), ".txt");
+        assert_eq!(title_of("README"), "README");
+        assert_eq!(title_of("folder/"), "");
+        assert_eq!(title_of(""), "");
+        assert_eq!(title_of(&format!("{}.txt", "a".repeat(300))).len(), 200);
+    }
+
+    #[test]
+    fn a_file_that_is_not_text_is_refused_by_its_bytes() {
+        let not_text = Err(text::knowledge_file_not_text(lang()));
+        for (name, bytes) in [
+            ("scan.txt", b"%PDF-1.7\n%\xe2\xe3\xcf\xd3".as_slice()),
+            ("photo.md", b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".as_slice()),
+            ("photo.txt", b"\xff\xd8\xff\xe0".as_slice()),
+            ("anim.txt", b"GIF89a".as_slice()),
+            ("still.txt", b"GIF87a".as_slice()),
+            ("photo.webp.txt", b"RIFF\0\0\0\0WEBP".as_slice()),
+            ("photo.heic.txt", b"\0\0\0\x18ftypheic".as_slice()),
+            ("latin1.txt", b"caf\xe9".as_slice()),
+            ("binary.txt", b"abc\0def".as_slice()),
+            ("odd.txt", b"\xff\xfeA".as_slice()),
+            ("lone.txt", b"\xff\xfe\x00\xd8".as_slice()),
+            ("bad.txt", b"\xef\xbb\xbf\xff".as_slice()),
+        ] {
+            assert_eq!(text_file(name, bytes), not_text, "{name}");
+        }
+        // Tabs, line ends and form feeds are text.
+        assert!(text_file("tabs.txt", b"a\tb\r\nc\x0cd").is_ok());
+    }
+
+    #[test]
+    fn an_empty_or_large_file_is_refused() {
+        assert_eq!(
+            text_file("empty.txt", b""),
+            Err(text::knowledge_file_empty(lang()))
+        );
+        assert_eq!(
+            text_file("blank.txt", b" \r\n\t "),
+            Err(text::knowledge_file_no_text(lang()))
+        );
+        let mut large = vec![b'a'; MAX_FILE_BYTES + 1];
+        assert_eq!(
+            text_file("large.txt", &large),
+            Err(text::knowledge_file_too_large(lang()))
+        );
+        large.truncate(MAX_FILE_BYTES);
+        assert!(text_file("large.txt", &large).is_ok());
     }
 }

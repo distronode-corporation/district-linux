@@ -2690,6 +2690,16 @@ fn wait_for(smoke: &Smoke, name: &str) {
     }
 }
 
+/// Pumps the main loop until `done`, which a file read on the main loop
+/// brings about, failing with `never` after ten seconds.
+fn until(smoke: &Smoke, never: &str, done: impl Fn(&Smoke) -> bool) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !done(smoke) {
+        assert!(Instant::now() < deadline, "{never}");
+        smoke.pump();
+    }
+}
+
 /// The help desk: switched off and turned on, the queue failing and read and
 /// filtered, a ticket raised, one ticket with its status moved and a reply,
 /// the settings with the logo, and a narrow window.
@@ -5453,8 +5463,9 @@ fn call_handling_section(smoke: &Smoke) {
 }
 
 /// The knowledge base: the documents failing apart from the mode, a document
-/// refused, added and deleted after a question, and the linked mode asked
-/// first.
+/// refused, added and deleted after a question, a text file read into the
+/// form, and the linked mode asked first.
+#[allow(deprecated)] // GtkFileChooser is how a test reaches the dialog GtkFileDialog opens.
 fn knowledge_section(smoke: &Smoke) {
     smoke.activate("settings-knowledge");
     smoke.reply("LoadKnowledge {", |ticket| Event::KnowledgeLoaded {
@@ -5513,6 +5524,46 @@ fn knowledge_section(smoke: &Smoke) {
         .downcast::<gtk::Editable>()
         .unwrap();
     assert_eq!(title.text(), "", "added once, and the form empties");
+
+    // A text file read into the form: cancelled, refused by its bytes, then
+    // read, its name the title. Nothing is sent until Add.
+    smoke.click("file_button");
+    chooser(smoke).response(gtk::ResponseType::Cancel);
+    smoke.pump();
+    let dir = std::env::temp_dir().join(format!("district-smoke-knowledge-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("the folder is made");
+    let image = dir.join("scan.txt");
+    fs::write(&image, PNG).expect("the file is written");
+    pick(smoke, "file_button", &image);
+    let not_text = district_app::l10n::text::knowledge_file_not_text(district_app::l10n::lang());
+    until(smoke, "the refusal never showed", |smoke| {
+        smoke.shows_text(not_text)
+    });
+    assert!(smoke.shown("file_refused"));
+    let hours = dir.join("Opening hours.txt");
+    fs::write(&hours, "Open 9 to 5.\r\n").expect("the file is written");
+    pick(smoke, "file_button", &hours);
+    until(smoke, "the file never filled the form", |_| {
+        title.text() == "Opening hours"
+    });
+    let content = smoke.mapped_buffer("content_view");
+    assert_eq!(
+        content.text(&content.start_iter(), &content.end_iter(), false),
+        "Open 9 to 5.\n"
+    );
+    assert!(
+        !smoke.shown("file_refused"),
+        "a file read takes the refusal away"
+    );
+    assert!(
+        !smoke.pending("AddKnowledgeDocument"),
+        "nothing is sent until Add"
+    );
+    smoke.shot("116b-knowledge-from-file");
+    fs::remove_dir_all(&dir).ok();
+    smoke.type_into("title_row", "");
+    content.set_text("");
+    smoke.pump();
 
     smoke.click("document-delete");
     let asked = question(smoke).expect("asked before deleting");

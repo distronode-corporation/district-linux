@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The knowledge base: where answers come from, adding a document (billed,
-     sent once), and the documents, each deleted only after a question.
+<!-- The knowledge base: where answers come from, adding a document (typed,
+     or read from a plain text file; billed, sent once), and the documents,
+     each deleted only after a question.
      src/pages/knowledge.rs fills it. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
@@ -118,6 +119,30 @@
               </object>
             </child>
             <child>
+              <object class="GtkLabel" id="file_hint">
+                <property name="xalign">0</property>
+                <property name="wrap">True</property>
+                <property name="margin-top">12</property>
+                <property name="label" translatable="yes" context="knowledge_view.file_hint">A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.</property>
+                <style>
+                  <class name="caption"/>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="file_refused">
+                <property name="xalign">0</property>
+                <property name="wrap">True</property>
+                <property name="visible">False</property>
+                <property name="margin-top">6</property>
+                <property name="use-markup">False</property>
+                <style>
+                  <class name="error"/>
+                </style>
+              </object>
+            </child>
+            <child>
               <object class="GtkBox">
                 <property name="spacing">10</property>
                 <property name="margin-top">12</property>
@@ -138,10 +163,20 @@
                   </object>
                 </child>
                 <child>
+                  <object class="GtkButton" id="file_button">
+                    <property name="label" translatable="yes" context="knowledge_view.read_text_file">Read a text file</property>
+                    <accessibility>
+                      <property name="description" translatable="yes" context="knowledge_view.file_hint">A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.</property>
+                    </accessibility>
+                    <style>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
                   <object class="GtkButton" id="add_button">
                     <property name="label" translatable="yes" context="knowledge_view.add_document_button">Add document</property>
                     <property name="halign">end</property>
-                    <property name="hexpand">True</property>
                     <style>
                       <class name="pill"/>
                       <class name="suggested-action"/>

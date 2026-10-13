@@ -735,9 +735,11 @@ pub(crate) struct Pick<'a> {
     pub(crate) unnamed: &'a str,
 }
 
-/// The desktop's file chooser for one image, opened from a screen, and the
-/// read of the file picked: no further than one byte past the largest image
-/// the service takes, which the core then refuses.
+/// The desktop's file chooser for one file, opened from a screen, and the
+/// read of the file picked: no further than the cap the screen names, one
+/// byte past the largest file it takes, so a larger one is seen to be (an
+/// image past the largest the service takes, which the core then refuses; a
+/// text file past the knowledge base's limit).
 ///
 /// A file can take a while to read (a network mount, a slow disk), and the
 /// screen may have moved on meanwhile. The file picked is handed over only if
@@ -745,11 +747,11 @@ pub(crate) struct Pick<'a> {
 /// what else the screen needs to be the same (the thread, the workspace) it
 /// checks itself.
 #[derive(Debug, Default)]
-pub struct ImagePicker(RefCell<Option<gio::Cancellable>>);
+pub struct FilePicker(RefCell<Option<gio::Cancellable>>);
 
-impl ImagePicker {
-    /// Opens the chooser over `parent`, closing one still open, and hands
-    /// the image picked, or why it could not be read, to `picked`.
+impl FilePicker {
+    /// Opens the chooser over `parent` for an image, closing one still open,
+    /// and hands the image picked, or why it could not be read, to `picked`.
     pub(crate) fn open<W: IsA<gtk::Widget>>(
         &self,
         parent: &W,
@@ -761,13 +763,38 @@ impl ImagePicker {
         for mime_type in pick.types {
             filter.add_mime_type(mime_type);
         }
+        self.open_file(
+            parent,
+            pick.title,
+            &filter,
+            MAX_ATTACHMENT_BYTES + 1,
+            pick.unnamed,
+            move |parent, read| {
+                picked(parent, read.map(|(name, bytes)| attachment(&name, bytes)));
+            },
+        );
+    }
+
+    /// Opens the chooser over `parent`, titled `title` and offering the files
+    /// `filter` lets through, closing one still open, and hands the file
+    /// picked to `picked`: its name (`unnamed` when the desktop gives none)
+    /// and no more than `cap` of its bytes, or why it could not be read.
+    pub(crate) fn open_file<W: IsA<gtk::Widget>>(
+        &self,
+        parent: &W,
+        title: &str,
+        filter: &gtk::FileFilter,
+        cap: usize,
+        unnamed: &str,
+        picked: impl FnOnce(&W, Result<(String, Vec<u8>), glib::Error>) + 'static,
+    ) {
         let filters = gio::ListStore::new::<gtk::FileFilter>();
-        filters.append(&filter);
+        filters.append(filter);
         let dialog = gtk::FileDialog::builder()
-            .title(pick.title)
+            .title(title)
             .modal(true)
             .filters(&filters)
-            .default_filter(&filter)
+            .default_filter(filter)
             .build();
         let cancellable = gio::Cancellable::new();
         if let Some(earlier) = self.0.replace(Some(cancellable.clone())) {
@@ -775,7 +802,7 @@ impl ImagePicker {
         }
         let window = parent.root().and_downcast::<gtk::Window>();
         let weak = parent.downgrade();
-        let unnamed = pick.unnamed.to_owned();
+        let unnamed = unnamed.to_owned();
         let open = cancellable.clone();
         dialog.open(window.as_ref(), Some(&open), move |chosen| {
             // Dismissed or cancelled: nothing was picked.
@@ -783,14 +810,14 @@ impl ImagePicker {
                 return;
             };
             glib::spawn_future_local(async move {
-                let read = read_capped(&file, MAX_ATTACHMENT_BYTES + 1).await;
+                let read = read_capped(&file, cap).await;
                 let Some(parent) = weak.upgrade().filter(|_| !cancellable.is_cancelled()) else {
                     return;
                 };
                 let name = file
                     .basename()
                     .map_or(unnamed, |name| name.to_string_lossy().into());
-                picked(&parent, read.map(|bytes| attachment(&name, bytes)));
+                picked(&parent, read.map(|bytes| (name, bytes)));
             });
         });
     }
