@@ -13,6 +13,8 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-13
+
 ### Security
 
 - "Manage on the web" binds the sign-in it hands to the browser to the browser the app
@@ -27,10 +29,27 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   opens at all, the hand-off is given up. The button stays pressable while the browser
   is awaited, so a press starts over. The `state` and the nonce are never logged. The
   desktop already hands the app every `districtai:` link (one `x-scheme-handler`), so
-  the desktop entry and the Flatpak's permissions are unchanged.
+  the desktop entry and the Flatpak's permissions are unchanged. (#25)
+
+### Fixed
+
+- Billing names your plan ("Voice Pro") instead of its internal key ("VoicePro"):
+  Voice Solo, Voice Starter, Voice Pro and Voice Studio read as the service's own plan
+  chooser names them. A plan this version does not know is still shown as the service
+  spells it.
+- Quitting saves a reply still waiting to be saved: one typed in the last two seconds
+  before quitting, or queued behind a slow save, was lost.
 
 ### Changed
 
+- The app names itself on the wire through one identity it states at start-up: the
+  sign-in platform, the presence row, the call's room identity, the devices list and the
+  User-Agent, which now carries the app's own version rather than the core's. Everything
+  else the app sends is the same, byte for byte. (#22)
+- The device id, the refresh marker, the settings file and the protocol that holds the
+  sleep while the app gets ready moved into a crate of their own, district-host, which
+  District AI for Windows shares. The settings file's path, contents and permissions on
+  Linux are unchanged. (#23)
 - The crates the app is built on (district-model, district-api, district-auth,
   district-live, district-core, district-host and district-call), the contract fixtures
   they are tested against and the scripts that vendor those fixtures moved, with their
@@ -39,11 +58,19 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   with the exact version beside the tag; Cargo.lock holds the commit, the Flatpak's
   offline build fetches that commit, and `scripts/check-pins.py` fails CI while the
   tag, the lock file and the Flatpak's sources disagree. Nothing the app does changes,
-  and what it sends the service is the same, byte for byte.
-- District AI core for Rust moves to 1.2.0: 1.1.0 brings the hand-off binding above,
-  and 1.2.0 follows the service's current contract fixtures and drops a persona's
-  avatar recording setting, which named a recording the service never made. The app
-  showed no such setting, and recordings left the app in 2.0.0.
+  and what it sends the service is the same, byte for byte. (#24)
+- Built on District AI core for Rust 3.1.1 (#24 pinned 1.0.0, and #25 1.2.0). 1.1.0
+  brings the hand-off binding above; 1.2.0 follows the service's current contract
+  fixtures and drops a persona's avatar recording setting, which named a recording the
+  service never made (the app showed no such setting, and recordings left the app in
+  2.0.0); 2.0.0 brings the quitting fix above; 3.1.1 the plan names. The sign-in page
+  the browser opens now names the platform (`platform=linux`), which changes nothing on
+  it for this app.
+- During a call, the app now asks the live updates socket for the call's live
+  transcript, and reads the full transcript once the call ends, as the core does for
+  every app. This version does not show either.
+- Buying in the app, which the core added for District AI for Windows, stays off here:
+  billing is read only, as before, and "Manage billing on the web" opens the browser.
 
 ## [2.1.0] - 2026-10-05
 

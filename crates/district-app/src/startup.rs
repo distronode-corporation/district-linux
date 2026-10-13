@@ -149,6 +149,9 @@ fn launch() -> Result<glib::ExitCode, String> {
         web_base_url: api_config.base_url.to_string(),
         app_version: env!("CARGO_PKG_VERSION").to_owned(),
         calls_available: CALLS_AVAILABLE,
+        // This app does not sign up or buy in the app: billing stays read only,
+        // and the core's purchase events and effects never happen here.
+        in_app_purchases: false,
     };
     let app = application(Parts {
         config,

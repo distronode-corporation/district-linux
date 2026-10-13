@@ -727,6 +727,7 @@ fn start() -> Store {
             // As the packages are built, with the `voice` feature: the script
             // plays the call engine.
             calls_available: true,
+            in_app_purchases: false,
         },
         device_name: "Linux".to_owned(),
         effects: Rc::clone(&script) as Rc<dyn Effects>,

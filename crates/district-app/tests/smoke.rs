@@ -595,6 +595,8 @@ fn start() -> Smoke {
             // As a build with the `voice` feature: the script plays the call
             // engine, answering each `ConnectMedia` with the engine's reports.
             calls_available: true,
+            // As the app is built: no purchases in the app.
+            in_app_purchases: false,
         },
         device_name: DEVICE_NAME.to_owned(),
         effects: Rc::clone(&script) as Rc<dyn Effects>,
@@ -2204,7 +2206,9 @@ fn billing_screen(smoke: &Smoke) {
         result: Ok(fixture("district-billing.json")),
     });
     smoke.forget();
-    assert!(smoke.shows_text("VoicePro"));
+    // The plan by the pricing page's name, not as the service stores it.
+    assert!(smoke.shows_text("Voice Pro"));
+    assert!(!smoke.shows_text("VoicePro"));
     assert!(smoke.shows_text("Active"));
     assert!(smoke.shows_text("1522.75 of 1500 minutes"));
     assert!(smoke.shows_part("Founding customer 20% off"));
