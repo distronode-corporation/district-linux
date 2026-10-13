@@ -98,23 +98,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call-log.png</image>
       <caption>The call log, with each call's summary and transcript</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/inbox.png</image>
       <caption>Your customers' text messages and emails in one inbox</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call.png</image>
       <caption>A call placed from the desktop, with mute and hang up always in reach</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/contacts.png</image>
       <caption>Your contacts, with each customer's details</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.1.0/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/overview.png</image>
       <caption>The workspace at a glance, with its latest calls</caption>
     </screenshot>
   </screenshots>
@@ -125,6 +125,23 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="2.2.0" date="2026-10-13">
+      <description>
+        <p>
+          "Manage on the web" now signs in only the browser the app opened, and
+          Billing names your plan as the pricing page does.
+        </p>
+        <ul>
+          <li>A link to the web dashboard no longer signs in someone else's
+            browser</li>
+          <li>Billing shows Voice Solo, Voice Starter, Voice Pro or Voice
+            Studio</li>
+          <li>A reply typed just before quitting is saved</li>
+          <li>Built on District AI core for Rust 3.1.1, shared with District AI
+            for Windows</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.1.0" date="2026-10-05">
       <description>
         <p>
