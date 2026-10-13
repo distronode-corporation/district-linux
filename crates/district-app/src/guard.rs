@@ -9,17 +9,6 @@
 
 use district_core::{Event, Model, SessionState, SignedIn, WorkspacesState};
 
-/// The question's heading.
-pub(crate) const DISCARD_TITLE: &str = "Discard your changes?";
-
-/// What discarding does.
-pub(crate) const DISCARD_BODY: &str =
-    "What you changed in this section has not been saved, and leaving it drops those changes.";
-
-/// The button that discards them, and the one that stays.
-pub(crate) const DISCARD_ACTION: &str = "Discard";
-pub(crate) const KEEP_EDITING: &str = "Keep editing";
-
 /// Whether handling `event` would leave the settings section showing while it
 /// holds changes that are not saved, so the member is asked first.
 pub(crate) fn leaves_unsaved(model: &Model, event: &Event) -> bool {

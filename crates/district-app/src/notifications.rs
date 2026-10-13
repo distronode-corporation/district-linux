@@ -18,6 +18,7 @@ use district_core::{
 use crate::gtk::gio;
 use crate::gtk::glib::prelude::ToVariant;
 use crate::gtk::glib::{self, Variant};
+use crate::l10n::{lang, text};
 
 /// The application action that opens what a notification is about. Its
 /// parameter is [`target_variant`].
@@ -66,7 +67,7 @@ pub(crate) fn elsewhere<'a>(signed_in: &'a SignedIn, workspace_id: &str) -> Opti
 /// "Incoming call in Bravo Client".
 pub(crate) fn heading(heading: &str, elsewhere: Option<&str>) -> String {
     match elsewhere {
-        Some(workspace) => format!("{heading} in {workspace}"),
+        Some(workspace) => text::notification_in_workspace(lang(), heading, workspace),
         None => heading.to_owned(),
     }
 }

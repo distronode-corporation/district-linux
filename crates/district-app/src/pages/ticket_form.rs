@@ -16,6 +16,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::shared::{draw_line, draw_spinner, failure_text};
 use crate::sink::EventSink;
@@ -45,8 +46,14 @@ impl TicketKind {
     /// The dialog's title and its button.
     pub(crate) fn words(self) -> (&'static str, &'static str) {
         match self {
-            Self::Desk => ("New ticket", "Raise"),
-            Self::Support => ("New support request", "Send"),
+            Self::Desk => (
+                text::ticket_form_new_ticket(lang()),
+                text::ticket_form_raise(lang()),
+            ),
+            Self::Support => (
+                text::ticket_form_new_support_request(lang()),
+                text::reply_box_send(lang()),
+            ),
         }
     }
 
@@ -56,7 +63,11 @@ impl TicketKind {
             Self::Desk => (DESK_SUBJECT_MIN, DESK_SUBJECT_MAX),
             Self::Support => (SUPPORT_SUBJECT_MIN, SUPPORT_SUBJECT_MAX),
         };
-        format!("A subject of {min} to {max} characters, and a message.")
+        text::ticket_form_needs(
+            lang(),
+            i64::try_from(min).unwrap_or(i64::MAX),
+            i64::try_from(max).unwrap_or(i64::MAX),
+        )
     }
 
     /// The event for pressing the button.
@@ -131,7 +142,10 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let dialog = self.obj();
-            let labels: Vec<&str> = SupportForm::KINDS.iter().map(|(_, label)| *label).collect();
+            let labels: Vec<&str> = SupportForm::kinds()
+                .iter()
+                .map(|(_, label)| *label)
+                .collect();
             self.kind_row
                 .set_model(Some(&gtk::StringList::new(&labels)));
             for row in [
@@ -232,7 +246,7 @@ impl TicketFormDialog {
     pub(crate) fn support(form: &SupportForm, sink: EventSink) -> Self {
         Self::new(TicketKind::Support, sink, |dialog| {
             let imp = dialog.imp();
-            let kind = SupportForm::KINDS
+            let kind = SupportForm::kinds()
                 .iter()
                 .position(|(kind, _)| *kind == form.kind)
                 .and_then(|index| u32::try_from(index).ok())
@@ -271,7 +285,7 @@ impl TicketFormDialog {
             })),
             TicketKind::Support => {
                 let selected = usize::try_from(imp.kind_row.selected()).unwrap_or_default();
-                let kind = SupportForm::KINDS
+                let kind = SupportForm::kinds()
                     .get(selected)
                     .map_or_else(|| SupportForm::default().kind, |(kind, _)| *kind);
                 Event::Support(SupportEvent::EditRequest(SupportForm {

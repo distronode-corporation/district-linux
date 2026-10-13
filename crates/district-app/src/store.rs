@@ -11,7 +11,8 @@ use district_desktop::Oo7SessionStore;
 ///
 /// Memory is the fallback the security model promises: the refresh token is
 /// never written to a plain file, so without a secret store the user stays
-/// signed in until the app quits, and the app says so ([`MEMORY_ONLY`]).
+/// signed in until the app quits, and the app says so (`store.memory_only` in
+/// the catalog).
 #[derive(Debug)]
 pub(crate) enum AppStore {
     /// The Secret Service, or the secret portal inside a Flatpak.
@@ -19,12 +20,6 @@ pub(crate) enum AppStore {
     /// Memory only.
     Memory(MemorySessionStore),
 }
-
-/// What the app says, over every screen, when no secret store could be
-/// reached at start-up.
-pub(crate) const MEMORY_ONLY: &str = "No keyring is available, so your sign-in is kept only \
-    until District AI quits. Start a keyring (for example GNOME Keyring or KeePassXC) and open \
-    the app again to stay signed in.";
 
 macro_rules! each {
     ($store:expr, $inner:ident => $call:expr) => {
@@ -76,6 +71,7 @@ impl SessionStore for AppStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::l10n::{Locale, text};
 
     /// Memory, the fallback, does all of it: CI has no secret store to try the
     /// other half against.
@@ -107,7 +103,7 @@ mod tests {
         assert!(store.revoke_outbox().await.unwrap().is_empty());
         store.clear_session().await.unwrap();
         assert_eq!(store.load_session().await.unwrap(), None);
-        assert!(MEMORY_ONLY.contains("keyring"));
+        assert!(text::store_memory_only(Locale::En).contains("keyring"));
         assert!(format!("{store:?}").starts_with("Memory"));
     }
 }

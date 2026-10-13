@@ -14,6 +14,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{Echo, clear_list, draw_line, failure_text, humanize};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -21,7 +22,7 @@ use crate::sink::EventSink;
 /// A number type as it reads: the label the core gives it, or the service's
 /// word.
 pub(crate) fn type_label(raw: &str) -> String {
-    NumberSearchForm::NUMBER_TYPES
+    NumberSearchForm::number_types()
         .iter()
         .find(|(wire, _)| *wire == raw)
         .map_or_else(|| humanize(raw), |(_, label)| (*label).to_owned())
@@ -44,7 +45,7 @@ pub(crate) fn capabilities(raw: &[String]) -> String {
 /// A price as the carrier quoted it, by the month, or `None` when it quoted
 /// none.
 pub(crate) fn monthly(price: Option<f64>, currency: Option<&str>) -> Option<String> {
-    price_label(price, currency).map(|price| format!("{price} a month"))
+    price_label(price, currency).map(|price| text::marketplace_monthly(lang(), &price))
 }
 
 /// `parts` that say something, on one line.
@@ -185,9 +186,11 @@ mod imp {
             self.parent_constructed();
             let page = self.obj();
             // A long label, which wraps rather than widen a narrow window.
-            self.web_label.set_label(MarketplaceScreen::WEB_ACTION);
-            self.web_caption.set_label(MarketplaceScreen::WEB_CAPTION);
-            let labels: Vec<&str> = NumberSearchForm::NUMBER_TYPES
+            self.web_label
+                .set_label(core_text::marketplace_web_action(lang()));
+            self.web_caption
+                .set_label(core_text::marketplace_web_caption(lang()));
+            let labels: Vec<&str> = NumberSearchForm::number_types()
                 .iter()
                 .map(|(_, label)| *label)
                 .collect();
@@ -265,7 +268,7 @@ impl MarketplacePage {
     fn form(&self) -> NumberSearchForm {
         let imp = self.imp();
         let selected = usize::try_from(imp.type_row.selected()).unwrap_or_default();
-        let number_type = NumberSearchForm::NUMBER_TYPES
+        let number_type = NumberSearchForm::number_types()
             .get(selected)
             .map_or_else(String::new, |(wire, _)| (*wire).to_owned());
         NumberSearchForm {
@@ -318,7 +321,7 @@ impl MarketplacePage {
                 imp.writing.set(false);
             }
         }
-        let selected = NumberSearchForm::NUMBER_TYPES
+        let selected = NumberSearchForm::number_types()
             .iter()
             .position(|(wire, _)| *wire == screen.form.number_type);
         if let Some(selected) = selected.and_then(|index| u32::try_from(index).ok()) {
@@ -346,15 +349,15 @@ impl MarketplacePage {
                 imp.owned_stack.set_visible_child_name("loading");
             }
             OwnedNumbersList::Failed(failure) => status(
-                OwnedNumbersList::FAILED_TITLE,
+                core_text::marketplace_owned_failed_title(lang()),
                 &failure_text(failure),
                 failure.retryable,
             ),
             OwnedNumbersList::Ready(held) if held.numbers.is_empty() => status(
-                OwnedNumbersList::EMPTY_TITLE,
+                core_text::marketplace_owned_empty_title(lang()),
                 &held
                     .partial_note()
-                    .unwrap_or_else(|| OwnedNumbersList::EMPTY_BODY.to_owned()),
+                    .unwrap_or_else(|| core_text::marketplace_owned_empty_body(lang()).to_owned()),
                 false,
             ),
             OwnedNumbersList::Ready(held) => {
@@ -390,14 +393,14 @@ impl MarketplacePage {
             NumberSearchState::Idle => imp.search_stack.set_visible_child_name("idle"),
             NumberSearchState::Searching => imp.search_stack.set_visible_child_name("searching"),
             NumberSearchState::Ready { numbers, .. } if numbers.is_empty() => status(
-                NumberSearchState::NONE_TITLE,
-                NumberSearchState::NONE_BODY,
+                core_text::marketplace_search_none_title(lang()),
+                core_text::marketplace_search_none_body(lang()),
                 false,
             ),
             NumberSearchState::Ready { provider, numbers } => {
                 imp.search_stack.set_visible_child_name("results");
                 imp.provider_label
-                    .set_label(&format!("Offered by {}", humanize(provider)));
+                    .set_label(&text::marketplace_offered_by(lang(), &humanize(provider)));
                 if imp.found.borrow().as_ref() != Some(numbers) {
                     clear_list(&imp.results_list);
                     for number in numbers {
@@ -411,10 +414,14 @@ impl MarketplacePage {
                 }
             }
             NumberSearchState::NotConfigured(message) => {
-                status(NumberSearchState::NOT_CONFIGURED_TITLE, message, false);
+                status(
+                    core_text::marketplace_not_configured_title(lang()),
+                    message,
+                    false,
+                );
             }
             NumberSearchState::Failed(failure) => status(
-                NumberSearchState::FAILED_TITLE,
+                core_text::marketplace_search_failed_title(lang()),
                 &failure_text(failure),
                 failure.retryable,
             ),

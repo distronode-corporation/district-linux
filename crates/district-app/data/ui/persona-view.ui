@@ -46,16 +46,16 @@
               <object class="AdwPreferencesPage">
                 <child>
                   <object class="AdwPreferencesGroup" id="texts_group">
-                    <property name="title">What it says</property>
+                    <property name="title" translatable="yes" context="persona_view.what_says">What it says</property>
                     <child>
                       <object class="AdwEntryRow" id="name_row">
-                        <property name="title">Name</property>
+                        <property name="title" translatable="yes" context="common.name">Name</property>
                         <property name="use-markup">False</property>
                       </object>
                     </child>
                     <child>
                       <object class="AdwEntryRow" id="greeting_row">
-                        <property name="title">Greeting</property>
+                        <property name="title" translatable="yes" context="persona_view.greeting">Greeting</property>
                         <property name="use-markup">False</property>
                       </object>
                     </child>
@@ -63,8 +63,8 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup">
-                    <property name="title">Personality</property>
-                    <property name="description">How it behaves, written into every call's instructions.</property>
+                    <property name="title" translatable="yes" context="persona_view.personality">Personality</property>
+                    <property name="description" translatable="yes" context="persona_view.how_behaves_written_into_every">How it behaves, written into every call's instructions.</property>
                     <child>
                       <object class="GtkScrolledWindow">
                         <property name="hscrollbar-policy">never</property>
@@ -82,7 +82,7 @@
                             <property name="left-margin">12</property>
                             <property name="right-margin">12</property>
                             <accessibility>
-                              <property name="label">Personality</property>
+                              <property name="label" translatable="yes" context="persona_view.personality_a11y">Personality</property>
                             </accessibility>
                           </object>
                         </property>
@@ -92,7 +92,7 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="engine_group">
-                    <property name="title">Language and answers</property>
+                    <property name="title" translatable="yes" context="persona_view.language_answers">Language and answers</property>
                     <property name="header-suffix">
                       <object class="GtkSpinner" id="options_spinner">
                         <property name="visible">False</property>
@@ -101,10 +101,10 @@
                     <child>
                       <object class="AdwActionRow" id="engine_row">
                         <property name="use-markup">False</property>
-                        <property name="title">Voice engine</property>
+                        <property name="title" translatable="yes" context="persona_view.voice_engine">Voice engine</property>
                         <child type="suffix">
                           <object class="GtkButton" id="studio_button">
-                            <property name="label">Open Voice Studio</property>
+                            <property name="label" translatable="yes" context="persona_view.open_voice_studio">Open Voice Studio</property>
                             <property name="valign">center</property>
                           </object>
                         </child>
@@ -113,13 +113,13 @@
                     <child>
                       <object class="AdwComboRow" id="language_row">
                         <property name="use-markup">False</property>
-                        <property name="title">Language</property>
+                        <property name="title" translatable="yes" context="persona_view.language">Language</property>
                       </object>
                     </child>
                     <child>
                       <object class="AdwComboRow" id="length_row">
                         <property name="use-markup">False</property>
-                        <property name="title">Answer length</property>
+                        <property name="title" translatable="yes" context="persona_view.answer_length">Answer length</property>
                         <property name="use-subtitle">True</property>
                       </object>
                     </child>
@@ -136,7 +136,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="options_retry">
-                        <property name="label">Try again</property>
+                        <property name="label" translatable="yes" context="common.try_again">Try again</property>
                         <property name="halign">start</property>
                         <property name="margin-top">6</property>
                       </object>
@@ -170,7 +170,7 @@
                                 <property name="child">
                                   <object class="AdwButtonContent">
                                     <property name="icon-name">audio-speakers-symbolic</property>
-                                    <property name="label">Try this receptionist</property>
+                                    <property name="label" translatable="yes" context="persona_view.try_receptionist">Try this receptionist</property>
                                   </object>
                                 </property>
                                 <style>
@@ -185,7 +185,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="save_button">
-                                <property name="label">Save</property>
+                                <property name="label" translatable="yes" context="common.save">Save</property>
                                 <style>
                                   <class name="pill"/>
                                   <class name="suggested-action"/>

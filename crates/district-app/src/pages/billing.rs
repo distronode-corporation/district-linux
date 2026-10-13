@@ -7,9 +7,9 @@
 use std::cell::{OnceCell, RefCell};
 
 use district_core::{
-    AccountSection, BillingEvent, BillingScreen, Capabilities, Event, NOT_RECORDED, PlanCard,
-    PlanStatus, Renewal, UsageCard, format_amount, format_cents, invoice_amount, meter_fraction,
-    minutes_used, overage_note, plan_name, usage_lines,
+    AccountSection, BillingEvent, BillingScreen, Capabilities, Event, PlanCard, PlanStatus,
+    Renewal, format_amount, format_cents, invoice_amount, meter_fraction, minutes_used,
+    overage_note, plan_name, usage_lines,
 };
 use district_model::{AccountBillingResponse, BillingSubscription, WorkspaceBilling};
 
@@ -17,6 +17,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{clear_list, draw_line, failure_text, humanize, unix_date};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -37,35 +38,37 @@ pub(crate) fn status_class(status: &PlanStatus) -> &'static str {
 pub(crate) fn minutes_text(used: Option<f64>, included: Option<i64>) -> String {
     match (used, included) {
         (Some(used), Some(included)) => {
-            format!("{} of {}", format_amount(used), minutes(included))
+            text::billing_used_of_included(lang(), &format_amount(used), &minutes(included))
         }
         (Some(used), None) => {
             let used = format_amount(used);
-            let noun = if used == "1" { "minute" } else { "minutes" };
-            format!("{used} {noun}")
+            if used == "1" {
+                text::billing_used_minute(lang(), &used)
+            } else {
+                text::billing_used_minutes(lang(), &used)
+            }
         }
-        (None, Some(1)) => format!("{NOT_RECORDED}. 1 minute is included."),
-        (None, Some(included)) => format!("{NOT_RECORDED}. {included} minutes are included."),
-        (None, None) => NOT_RECORDED.to_owned(),
+        (None, Some(included)) => text::billing_not_recorded_included(
+            lang(),
+            core_text::analytics_not_recorded(lang()),
+            included,
+        ),
+        (None, None) => core_text::analytics_not_recorded(lang()).to_owned(),
     }
 }
 
 /// A whole number of minutes: `1 minute`, `30 minutes`.
 fn minutes(count: i64) -> String {
-    match count {
-        1 => "1 minute".to_owned(),
-        count => format!("{count} minutes"),
-    }
+    text::billing_minutes(lang(), count)
 }
 
 /// When a subscription renews, or ends: the same date reads the opposite
 /// way for one that was cancelled.
 pub(crate) fn renewal_text(renewal: Renewal) -> Option<String> {
-    let (words, at) = match renewal {
-        Renewal::Renews(at) => ("Renews", at),
-        Renewal::Ends(at) => ("Ends", at),
-    };
-    unix_date(at).map(|date| format!("{words} {date}"))
+    match renewal {
+        Renewal::Renews(at) => unix_date(at).map(|date| text::billing_renews(lang(), &date)),
+        Renewal::Ends(at) => unix_date(at).map(|date| text::billing_ends(lang(), &date)),
+    }
 }
 
 /// The line under a subscription: where it stands, what it costs, when it
@@ -73,8 +76,8 @@ pub(crate) fn renewal_text(renewal: Renewal) -> Option<String> {
 pub(crate) fn subscription_line(subscription: &BillingSubscription) -> String {
     let discount = subscription.discount.as_ref().map(|discount| {
         let off = match (discount.percent_off, discount.amount_off) {
-            (Some(percent), _) => format!("{percent}% off"),
-            (None, Some(amount)) => format!("{} off", format_cents(amount)),
+            (Some(percent), _) => text::billing_percent_off(lang(), &percent.to_string()),
+            (None, Some(amount)) => text::billing_amount_off(lang(), &format_cents(amount)),
             (None, None) => String::new(),
         };
         format!("{} {off}", discount.coupon_name).trim().to_owned()
@@ -85,7 +88,7 @@ pub(crate) fn subscription_line(subscription: &BillingSubscription) -> String {
         Renewal::of(subscription).and_then(renewal_text),
         subscription
             .included_minutes
-            .map(|included| format!("{} included", minutes(included))),
+            .map(|included| text::billing_minutes_included(lang(), &minutes(included))),
         discount,
     ];
     let said: Vec<String> = parts.into_iter().flatten().collect();
@@ -169,7 +172,8 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.web_button.set_label(BillingScreen::WEB_ACTION);
+            self.web_button
+                .set_label(core_text::billing_web_action(lang()));
             // One colour whatever the level: the words beside it say whether
             // the allowance is used up.
             for offset in [
@@ -232,7 +236,8 @@ impl BillingPage {
             PlanCard::NotLoaded | PlanCard::Loading => imp.stack.set_visible_child_name("loading"),
             PlanCard::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(PlanCard::FAILED_TITLE);
+                imp.status
+                    .set_title(core_text::billing_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
@@ -284,8 +289,11 @@ impl BillingPage {
         clear_list(&imp.usage_list);
         let lines = billing.usage.as_ref().map(usage_lines).unwrap_or_default();
         imp.usage_list.set_visible(!lines.is_empty());
-        imp.usage_group
-            .set_description(lines.is_empty().then_some(UsageCard::NONE));
+        imp.usage_group.set_description(
+            lines
+                .is_empty()
+                .then_some(core_text::analytics_usage_none(lang())),
+        );
         for line in lines {
             let row = adw::ActionRow::builder()
                 .use_markup(false)
@@ -318,12 +326,12 @@ impl BillingPage {
                 imp.account_stack.set_visible_child_name("loading");
             }
             AccountSection::Unavailable => note(
-                AccountSection::UNAVAILABLE_TITLE,
-                AccountSection::UNAVAILABLE_BODY,
+                core_text::billing_unavailable_title(lang()),
+                core_text::billing_unavailable_body(lang()),
                 false,
             ),
             AccountSection::Failed(failure) => note(
-                AccountSection::FAILED_TITLE,
+                core_text::billing_account_failed_title(lang()),
                 &failure_text(failure),
                 failure.retryable,
             ),
@@ -355,7 +363,7 @@ impl BillingPage {
         imp.no_subscription
             .set_visible(billing.subscriptions.is_empty());
         imp.no_subscription
-            .set_label(AccountSection::NO_SUBSCRIPTION);
+            .set_label(core_text::billing_no_subscription(lang()));
         clear_list(&imp.invoice_list);
         for invoice in &billing.invoices {
             let row = adw::ActionRow::builder()
@@ -372,7 +380,7 @@ impl BillingPage {
             );
             if invoice.hosted_invoice_url.is_some() {
                 let open = gtk::Button::builder()
-                    .label("View")
+                    .label(text::billing_view_invoice(lang()))
                     .valign(gtk::Align::Center)
                     .name("invoice-button")
                     .build();
@@ -388,12 +396,12 @@ impl BillingPage {
         }
         imp.invoice_list.set_visible(!billing.invoices.is_empty());
         let note = if billing.invoices.is_empty() {
-            Some(AccountSection::NO_INVOICES)
+            Some(core_text::billing_no_invoices(lang()))
         } else {
             billing
                 .invoices_has_more
                 .filter(|more| *more)
-                .map(|_| AccountSection::INVOICES_TRUNCATED)
+                .map(|_| core_text::billing_invoices_truncated(lang()))
         };
         draw_line(&imp.invoices_note, note);
     }

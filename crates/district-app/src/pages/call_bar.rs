@@ -17,13 +17,14 @@ use std::cell::{Cell, OnceCell};
 
 use district_core::{
     ActiveCall, CallDirection, CallEvent, Event, IncomingRing, MediaOwner, MediaSession,
-    MicrophoneState, Notification, RingEnd, RingEvent, RingPhase, SignedIn,
+    MicrophoneState, RingEnd, RingEvent, RingPhase, SignedIn,
 };
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::notifications;
 use crate::pages::shared::{draw_line, draw_spinner};
 use crate::pages::{Sends, on_click};
@@ -69,14 +70,16 @@ pub(crate) fn ring_shown(ring: &IncomingRing, elsewhere: Option<&str>) -> RingSh
         },
         title: notifications::heading(
             match ring.phase {
-                RingPhase::Waiting => Notification::WAITING_TITLE,
-                RingPhase::Ended(RingEnd::Missed) => Notification::MISSED_TITLE,
-                _ => IncomingRing::TITLE,
+                RingPhase::Waiting => core_text::live_waiting_title(lang()),
+                RingPhase::Ended(RingEnd::Missed) => core_text::live_missed_title(lang()),
+                _ => core_text::ringing_title(lang()),
             },
             elsewhere,
         ),
         message: ring.message(),
-        note: ring.can_answer().then_some(IncomingRing::MICROPHONE_NOTE),
+        note: ring
+            .can_answer()
+            .then_some(core_text::ringing_microphone_note(lang())),
         answer: offered,
         can_answer: ring.can_answer(),
         decline: live,
@@ -114,7 +117,7 @@ pub(crate) fn call_shown(call: &ActiveCall) -> CallShown {
         },
         title: call.title(),
         status: call.status(),
-        note: (over && call.was_answered()).then_some(ActiveCall::ENDED_NOTE),
+        note: (over && call.was_answered()).then_some(core_text::call_ended_note(lang())),
         controls: !over,
     }
 }
@@ -123,10 +126,16 @@ pub(crate) fn call_shown(call: &ActiveCall) -> CallShown {
 /// does, and the event that does it.
 pub(crate) fn microphone_button(state: MicrophoneState) -> (&'static str, &'static str, bool) {
     match state {
-        MicrophoneState::On => ("audio-input-microphone-symbolic", "Mute", false),
-        MicrophoneState::Off | MicrophoneState::Unavailable => {
-            ("microphone-disabled-symbolic", "Unmute", true)
-        }
+        MicrophoneState::On => (
+            "audio-input-microphone-symbolic",
+            text::common_mute(lang()),
+            false,
+        ),
+        MicrophoneState::Off | MicrophoneState::Unavailable => (
+            "microphone-disabled-symbolic",
+            text::common_unmute(lang()),
+            true,
+        ),
     }
 }
 
@@ -329,7 +338,7 @@ impl CallBar {
         imp.microphone_wanted.set(wanted);
         imp.call_mute_button.set_icon_name(icon);
         imp.call_mute_button
-            .set_tooltip_text(Some(&format!("{action} (Ctrl+D)")));
+            .set_tooltip_text(Some(&text::call_bar_microphone_tooltip(lang(), action)));
         imp.call_mute_button
             .update_property(&[gtk::accessible::Property::Label(action)]);
         if wanted {
@@ -342,7 +351,7 @@ impl CallBar {
 
 #[cfg(test)]
 mod tests {
-    use district_core::{DialerEvent, Route};
+    use district_core::{DialerEvent, Notification, Route};
 
     use super::*;
     use crate::testing::{failure, signed_in};

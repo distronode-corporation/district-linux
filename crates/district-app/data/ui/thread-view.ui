@@ -28,7 +28,7 @@
                 <property name="icon-name">mail-unread-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -129,7 +129,7 @@
                                 <property name="halign">center</property>
                                 <child>
                                   <object class="GtkButton" id="older_button">
-                                    <property name="label">Older messages</property>
+                                    <property name="label" translatable="yes" context="thread_view.older_messages">Older messages</property>
                                     <property name="halign">center</property>
                                     <style>
                                       <class name="pill"/>
@@ -158,7 +158,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel" id="start_label">
-                                <property name="label">The start of this conversation</property>
+                                <property name="label" translatable="yes" context="thread_view.start_conversation">The start of this conversation</property>
                                 <property name="halign">center</property>
                                 <style>
                                   <class name="dim-label"/>
@@ -230,11 +230,11 @@
                             <child>
                               <object class="GtkButton" id="failure_dismiss">
                                 <property name="icon-name">window-close-symbolic</property>
-                                <property name="tooltip-text">Dismiss</property>
+                                <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
                                 <property name="valign">center</property>
                                 <property name="margin-end">6</property>
                                 <accessibility>
-                                  <property name="label">Dismiss</property>
+                                  <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
                                 </accessibility>
                                 <style>
                                   <class name="flat"/>
@@ -261,10 +261,10 @@
                             <child>
                               <object class="GtkButton" id="attach_button">
                                 <property name="icon-name">mail-attachment-symbolic</property>
-                                <property name="tooltip-text">Attach an image</property>
+                                <property name="tooltip-text" translatable="yes" context="thread_view.attach_image">Attach an image</property>
                                 <property name="valign">end</property>
                                 <accessibility>
-                                  <property name="label">Attach an image</property>
+                                  <property name="label" translatable="yes" context="thread_view.attach_image_a11y">Attach an image</property>
                                 </accessibility>
                                 <style>
                                   <class name="flat"/>
@@ -292,7 +292,7 @@
                                     <property name="right-margin">10</property>
                                     <property name="input-hints">spellcheck|emoji</property>
                                     <accessibility>
-                                      <property name="label">Reply</property>
+                                      <property name="label" translatable="yes" context="common.reply">Reply</property>
                                     </accessibility>
                                   </object>
                                 </property>
@@ -301,10 +301,10 @@
                             <child>
                               <object class="GtkButton" id="send_button">
                                 <property name="icon-name">go-up-symbolic</property>
-                                <property name="tooltip-text">Send (Enter)</property>
+                                <property name="tooltip-text" translatable="yes" context="thread_view.send_enter">Send (Enter)</property>
                                 <property name="valign">end</property>
                                 <accessibility>
-                                  <property name="label">Send</property>
+                                  <property name="label" translatable="yes" context="thread_view.send">Send</property>
                                 </accessibility>
                                 <style>
                                   <class name="suggested-action"/>
@@ -319,11 +319,11 @@
                             <property name="spacing">8</property>
                             <child>
                               <object class="GtkButton" id="draft_button">
-                                <property name="tooltip-text">Writes a suggested reply into the box for you to read before sending. Each suggestion is billed.</property>
+                                <property name="tooltip-text" translatable="yes" context="thread_view.writes_suggested_reply_into_box">Writes a suggested reply into the box for you to read before sending. Each suggestion is billed.</property>
                                 <property name="child">
                                   <object class="AdwButtonContent">
                                     <property name="icon-name">document-edit-symbolic</property>
-                                    <property name="label">Draft a reply with AI</property>
+                                    <property name="label" translatable="yes" context="thread_view.draft_reply_ai">Draft a reply with AI</property>
                                   </object>
                                 </property>
                                 <style>
@@ -348,7 +348,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel" id="keys_hint">
-                                <property name="label">Shift+Enter for a new line</property>
+                                <property name="label" translatable="yes" context="thread_view.shift_enter_new_line">Shift+Enter for a new line</property>
                                 <property name="hexpand">True</property>
                                 <property name="xalign">1</property>
                                 <property name="ellipsize">end</property>

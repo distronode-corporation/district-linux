@@ -19,15 +19,13 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::audition::AuditionDialog;
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed, Frame, draw_config, unlisted};
 use crate::pages::shared::{draw_busy, draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
-
-/// The line while the options are being read.
-pub(crate) const OPTIONS_LOADING: &str = "Reading the languages this workspace may use.";
 
 /// The label of the stored engine `id`: its own when the options list it, else
 /// the id as stored.
@@ -127,7 +125,7 @@ mod imp {
             self.parent_constructed();
             let view = self.obj();
             self.texts_group
-                .set_description(Some(PersonaSection::CLEAR_HINT));
+                .set_description(Some(core_text::persona_clear_hint(lang())));
             let persona = |event: PersonaEvent| move || Event::Persona(event.clone());
             on_click(&self.retry_button, &*view, || Event::Refresh);
             on_click(&self.options_retry, &*view, || Event::Refresh);
@@ -267,10 +265,10 @@ impl PersonaView {
             (Some(_), _) => None,
             (None, Some(failure)) => Some(format!(
                 "{} {}",
-                PersonaSection::ENGINE_READ_ONLY,
+                core_text::persona_engine_read_only(lang()),
                 failure_text(failure)
             )),
-            (None, None) => Some(OPTIONS_LOADING.to_owned()),
+            (None, None) => Some(text::persona_options_loading(lang()).to_owned()),
         };
         draw_line(&imp.engine_note, note.as_deref());
         imp.options_retry
@@ -286,7 +284,7 @@ impl PersonaView {
             imp.engine_row
                 .set_subtitle(&engine_label(section.engines(), &values.model_id));
             imp.engine_row
-                .set_tooltip_text(Some(PersonaSection::STUDIO_HINT));
+                .set_tooltip_text(Some(core_text::persona_studio_hint(lang())));
             self.draw_pickers(section, values);
         }
     }

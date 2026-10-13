@@ -597,6 +597,8 @@ fn start() -> Smoke {
             calls_available: true,
             // As the app is built: no purchases in the app.
             in_app_purchases: false,
+            // English, as the app writes without the `fr-ca` feature.
+            locale: district_core::Locale::En,
         },
         device_name: DEVICE_NAME.to_owned(),
         effects: Rc::clone(&script) as Rc<dyn Effects>,
@@ -5265,7 +5267,7 @@ fn routing_section(smoke: &Smoke) {
     let voice = descendants(added.upcast_ref())
         .into_iter()
         .filter_map(|widget| widget.downcast::<adw::ComboRow>().ok())
-        .find(|row| row.title() == "Voice")
+        .find(|row| row.widget_name() == "rule-voice")
         .expect("the new rule's voice");
     choose(smoke, &voice, "Kore");
     assert!(smoke.shows_part("Industry contains \"retail\""));

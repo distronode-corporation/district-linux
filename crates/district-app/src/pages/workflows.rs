@@ -17,6 +17,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{
     Ask, Asking, clear_list, draw_line, draw_spinner, failure_text, humanize, when_text,
 };
@@ -43,12 +44,13 @@ pub(crate) fn trigger_words(trigger: &str) -> String {
 pub(crate) fn workflow_line(workflow: &WorkflowSummary) -> String {
     let trigger = trigger_words(&workflow.trigger);
     match &workflow.latest_run {
-        Some(run) => format!(
-            "{trigger} \u{b7} Last run {}, {}",
-            humanize(&run.status).to_lowercase(),
-            when_text(&run.started_at)
+        Some(run) => text::workflows_last_run(
+            lang(),
+            &trigger,
+            &humanize(&run.status).to_lowercase(),
+            &when_text(&run.started_at),
         ),
-        None => format!("{trigger} \u{b7} Not run yet"),
+        None => text::workflows_not_run(lang(), &trigger),
     }
 }
 
@@ -58,16 +60,16 @@ pub(crate) fn run_line(run: &WorkflowRun) -> String {
         .action_results
         .iter()
         .map(|action| {
-            let reason = action
-                .reason
-                .as_deref()
-                .map(|reason| format!(" ({})", humanize(reason).to_lowercase()))
-                .unwrap_or_default();
-            format!(
-                "{}: {}{reason}",
-                humanize(&action.action_type),
-                humanize(&action.outcome).to_lowercase()
-            )
+            let outcome = humanize(&action.outcome).to_lowercase();
+            let outcome = match action.reason.as_deref() {
+                Some(reason) => text::workflows_outcome_reason(
+                    lang(),
+                    &outcome,
+                    &humanize(reason).to_lowercase(),
+                ),
+                None => outcome,
+            };
+            text::workflows_action_result(lang(), &humanize(&action.action_type), &outcome)
         })
         .collect();
     parts.extend(run.error.clone());
@@ -155,7 +157,8 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.campaign_group.set_title(CampaignCard::TITLE);
+            self.campaign_group
+                .set_title(core_text::workflows_campaign_title(lang()));
             on_click(&self.list_retry, &*page, || Event::Refresh);
             on_click(&self.toggle_dismiss, &*page, || {
                 Event::Workflows(WorkflowsEvent::DismissToggleFailure)
@@ -218,13 +221,17 @@ impl WorkflowsPage {
             }
             WorkflowList::Failed(failure) => {
                 status(
-                    WorkflowList::FAILED_TITLE,
+                    core_text::workflows_failed_title(lang()),
                     &failure_text(failure),
                     failure.retryable,
                 );
             }
             WorkflowList::Ready(workflows) if workflows.is_empty() => {
-                status(WorkflowList::EMPTY_TITLE, WorkflowList::EMPTY_BODY, false);
+                status(
+                    core_text::workflows_empty_title(lang()),
+                    core_text::workflows_empty_body(lang()),
+                    false,
+                );
             }
             WorkflowList::Ready(workflows) => {
                 imp.list_stack.set_visible_child_name("list");
@@ -271,7 +278,7 @@ impl WorkflowsPage {
                 imp.campaign_stack.set_visible_child_name("failed");
                 imp.campaign_failed.set_label(&format!(
                     "{}. {}",
-                    CampaignCard::FAILED_TITLE,
+                    core_text::workflows_campaign_failed_title(lang()),
                     failure_text(failure)
                 ));
                 None
@@ -287,9 +294,9 @@ impl WorkflowsPage {
         };
         let active = status.infinite_sdr_enabled;
         imp.campaign_badge.set_label(if active {
-            CampaignCard::ACTIVE
+            core_text::workflows_campaign_active(lang())
         } else {
-            CampaignCard::PAUSED
+            core_text::workflows_campaign_paused(lang())
         });
         imp.campaign_badge.set_css_classes(&[
             "status-badge",
@@ -298,7 +305,7 @@ impl WorkflowsPage {
         ]);
         imp.batch_row
             .set_subtitle(&status.sdr_batch_size.map_or_else(
-                || CampaignCard::NO_BATCH.to_owned(),
+                || core_text::workflows_campaign_no_batch(lang()).to_owned(),
                 |size| size.to_string(),
             ));
         imp.goal_row.set_subtitle(
@@ -306,7 +313,7 @@ impl WorkflowsPage {
                 .sdr_campaign_goal
                 .as_deref()
                 .filter(|goal| !goal.trim().is_empty())
-                .unwrap_or(CampaignCard::NO_GOAL),
+                .unwrap_or(core_text::workflows_campaign_no_goal(lang())),
         );
         let controls = screen.controls(capabilities);
         imp.pause_button
@@ -319,9 +326,9 @@ impl WorkflowsPage {
         let failure = screen.campaign_failure.as_ref().map(failure_text);
         draw_line(&imp.campaign_failure, failure);
         imp.campaign_note.set_label(if capabilities.can_change {
-            CampaignCard::WEB_ONLY
+            core_text::workflows_campaign_web_only(lang())
         } else {
-            CampaignCard::VIEWER
+            core_text::workflows_campaign_viewer(lang())
         });
     }
 
@@ -378,9 +385,9 @@ impl WorkflowsPage {
             .sensitive(can_toggle && !toggling)
             .name("workflow-switch")
             .build();
-        switch.update_property(&[gtk::accessible::Property::Label(&format!(
-            "Turn on {}",
-            workflow.name
+        switch.update_property(&[gtk::accessible::Property::Label(&text::workflows_turn_on(
+            lang(),
+            &workflow.name,
         ))]);
         let id = workflow.id.clone();
         let weak = self.downgrade();
@@ -430,9 +437,15 @@ impl WorkflowsPage {
             row.add_row(&line);
         }
         let note = match (&history.failure, history.runs.is_empty(), history.loading) {
-            (_, _, true) => Some((Cow::Borrowed("Reading runs."), "dim-label")),
+            (_, _, true) => Some((
+                Cow::Borrowed(text::workflows_reading_runs(lang())),
+                "dim-label",
+            )),
             (Some(failure), _, false) => Some((failure_text(failure), "error")),
-            (None, true, false) => Some((Cow::Borrowed(RunHistory::EMPTY), "dim-label")),
+            (None, true, false) => Some((
+                Cow::Borrowed(core_text::workflows_runs_empty(lang())),
+                "dim-label",
+            )),
             (None, false, false) => None,
         };
         let more = history.can_load_more() || history.failure.is_some();
@@ -464,13 +477,13 @@ impl WorkflowsPage {
             // first page that failed, only with the whole screen.
             let (label, event) = if history.can_load_more() {
                 (
-                    "More runs",
+                    text::workflows_more_runs(lang()),
                     Event::Workflows(WorkflowsEvent::LoadMoreRuns {
                         workflow_id: workflow_id.to_owned(),
                     }),
                 )
             } else {
-                ("Try again", Event::Refresh)
+                (text::common_try_again(lang()), Event::Refresh)
             };
             let button = gtk::Button::builder()
                 .label(label)

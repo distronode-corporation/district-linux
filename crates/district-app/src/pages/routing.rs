@@ -16,6 +16,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed, Frame, draw_config, unlisted};
 use crate::pages::shared::{Ask, Asking, draw_busy, icon_button};
@@ -55,7 +56,7 @@ pub(crate) fn rule_line(rule: &RoutingRule) -> String {
     let field = rule.get(RoutingRuleField::Field);
     let voice = rule.get(RoutingRuleField::Voice);
     let condition = if field.is_empty() {
-        "No condition set here".to_owned()
+        text::routing_no_condition(lang()).to_owned()
     } else {
         format!(
             "{} {} \"{}\"",
@@ -80,18 +81,13 @@ pub(crate) fn kept_keys(rule: &RoutingRule) -> Option<String> {
         .map(|key| key_words(key))
         .collect();
     kept.sort();
-    (!kept.is_empty()).then(|| {
-        format!(
-            "Also stored: {}. Kept as they are when the rules are saved.",
-            kept.join(", ")
-        )
-    })
+    (!kept.is_empty()).then(|| text::routing_kept_keys(lang(), &kept.join(", ")))
 }
 
 /// A rule's engine, in words: the persona's own when none is set.
 pub(crate) fn engine_words(rule: &RoutingRule) -> String {
     match rule.get(RoutingRuleField::Model) {
-        "" => "The persona's own".to_owned(),
+        "" => text::routing_persona_engine(lang()).to_owned(),
         model => model.to_owned(),
     }
 }
@@ -182,8 +178,10 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let view = self.obj();
-            self.empty_row.set_title(RoutingRulesSection::EMPTY_TITLE);
-            self.empty_row.set_subtitle(RoutingRulesSection::EMPTY_BODY);
+            self.empty_row
+                .set_title(core_text::routing_empty_title(lang()));
+            self.empty_row
+                .set_subtitle(core_text::routing_empty_body(lang()));
             let rules = |event: RoutingRulesEvent| move || Event::RoutingRules(event.clone());
             on_click(&self.retry_button, &*view, || Event::Refresh);
             on_click(&self.add_button, &*view, rules(RoutingRulesEvent::Add));
@@ -263,8 +261,8 @@ impl RoutingView {
         if section.unmodellable() {
             frame.status(
                 "action-unavailable-symbolic",
-                RoutingRulesSection::UNMODELLABLE_TITLE,
-                RoutingRulesSection::UNMODELLABLE_BODY,
+                core_text::routing_unmodellable_title(lang()),
+                core_text::routing_unmodellable_body(lang()),
                 None,
             );
             return;
@@ -294,7 +292,8 @@ impl RoutingView {
             imp.cards.replace(cards);
         }
         for (index, (card, rule)) in imp.cards.borrow().iter().zip(rules).enumerate() {
-            card.row.set_title(&format!("Rule {}", index + 1));
+            card.row
+                .set_title(&text::routing_rule_title(lang(), index as i64 + 1));
             card.row.set_subtitle(&rule_line(rule));
             for (picker, field, values, words) in [
                 (
@@ -348,18 +347,27 @@ impl RoutingView {
                 })
             }
         };
-        let picker = |title: &str, field| {
+        let picker = |title: &str, field, name: &str| {
             let combo = adw::ComboRow::builder()
                 .title(title)
                 .use_markup(false)
+                .name(name)
                 .build();
             let choices = Choices::bind(&combo, self, edit(field));
             row.add_row(&combo);
             (combo, choices)
         };
-        let field = picker("Caller detail", RoutingRuleField::Field);
-        let operator = picker("Compared by", RoutingRuleField::Operator);
-        let text = |title: &str, field, name: &str| {
+        let field = picker(
+            text::routing_caller_detail(lang()),
+            RoutingRuleField::Field,
+            "rule-field",
+        );
+        let operator = picker(
+            text::routing_compared_by(lang()),
+            RoutingRuleField::Operator,
+            "rule-operator",
+        );
+        let entry = |title: &str, field, name: &str| {
             let entry = adw::EntryRow::builder()
                 .title(title)
                 .use_markup(false)
@@ -369,15 +377,23 @@ impl RoutingView {
             row.add_row(&entry);
             (entry, echoed)
         };
-        let value = text("Value", RoutingRuleField::Value, "rule-value");
-        let voice = picker("Voice", RoutingRuleField::Voice);
-        let instruction = text(
-            "Instruction",
+        let value = entry(
+            text::routing_value(lang()),
+            RoutingRuleField::Value,
+            "rule-value",
+        );
+        let voice = picker(
+            text::routing_voice(lang()),
+            RoutingRuleField::Voice,
+            "rule-voice",
+        );
+        let instruction = entry(
+            text::routing_instruction(lang()),
             RoutingRuleField::Instruction,
             "rule-instruction",
         );
         let engine = adw::ActionRow::builder()
-            .title("Engine")
+            .title(text::routing_engine(lang()))
             .use_markup(false)
             .subtitle_selectable(true)
             .css_classes(["property"])
@@ -386,7 +402,7 @@ impl RoutingView {
         let kept = adw::ActionRow::builder().use_markup(false).build();
         kept.add_css_class("dim-label");
         row.add_row(&kept);
-        let remove = icon_button("user-trash-symbolic", "Remove this rule");
+        let remove = icon_button("user-trash-symbolic", text::routing_remove_rule(lang()));
         remove.add_css_class("flat");
         remove.set_widget_name("rule-remove");
         on_click(&remove, self, move || {

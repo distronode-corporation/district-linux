@@ -8,7 +8,7 @@
     <property name="child">
       <object class="AdwStatusPage" id="status">
         <property name="icon-name">com.distronode.DistrictAI</property>
-        <property name="title">District AI</property>
+        <property name="title" translatable="yes" context="common.district_ai">District AI</property>
         <property name="child">
           <object class="AdwClamp">
             <property name="maximum-size">420</property>
@@ -36,7 +36,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="sign_in_button">
-                    <property name="label">Sign in with your browser</property>
+                    <property name="label" translatable="yes" context="session_page.sign_browser">Sign in with your browser</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="suggested-action"/>
@@ -46,7 +46,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -55,7 +55,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="retry_sign_out_button">
-                    <property name="label">Sign out again</property>
+                    <property name="label" translatable="yes" context="session_page.sign_out_again">Sign out again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -64,7 +64,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="cancel_button">
-                    <property name="label">Cancel</property>
+                    <property name="label" translatable="yes" context="common.cancel">Cancel</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>

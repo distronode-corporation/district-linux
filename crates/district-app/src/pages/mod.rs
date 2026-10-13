@@ -333,20 +333,22 @@ mod tests {
                         }
                         _ => button.to_owned(),
                     };
+                    // A translatable property carries its attributes after
+                    // the name, so the name alone is matched.
                     let icon_only = seen.contains(r#"<property name="icon-name">"#)
-                        && !seen.contains(r#"<property name="label">"#)
+                        && !seen.contains(r#"<property name="label""#)
                         && !seen.contains(r#"<property name="child">"#);
                     if !icon_only {
                         continue;
                     }
                     checked += 1;
                     assert!(
-                        seen.contains(r#"<property name="tooltip-text">"#),
+                        seen.contains(r#"<property name="tooltip-text""#),
                         "{file}: no tooltip on\n{button}"
                     );
-                    let names = button.find("<accessibility>").is_some_and(|start| {
-                        button[start..].contains(r#"<property name="label">"#)
-                    });
+                    let names = button
+                        .find("<accessibility>")
+                        .is_some_and(|start| button[start..].contains(r#"<property name="label""#));
                     assert!(names, "{file}: no accessible name on\n{button}");
                 }
             }

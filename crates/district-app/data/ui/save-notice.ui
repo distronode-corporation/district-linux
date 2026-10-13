@@ -33,7 +33,7 @@
         <child>
           <object class="GtkButton" id="notice_dismiss">
             <property name="icon-name">window-close-symbolic</property>
-            <property name="tooltip-text">Dismiss</property>
+            <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
             <property name="valign">center</property>
             <property name="margin-end">6</property>
             <style>
@@ -41,7 +41,7 @@
               <class name="circular"/>
             </style>
             <accessibility>
-              <property name="label">Dismiss</property>
+              <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
             </accessibility>
           </object>
         </child>

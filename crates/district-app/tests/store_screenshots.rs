@@ -728,6 +728,7 @@ fn start() -> Store {
             // plays the call engine.
             calls_available: true,
             in_app_purchases: false,
+            locale: district_core::Locale::En,
         },
         device_name: "Linux".to_owned(),
         effects: Rc::clone(&script) as Rc<dyn Effects>,

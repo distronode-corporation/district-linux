@@ -11,13 +11,14 @@ use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    Event, HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqScreen, HqText, SignedIn,
+    Event, HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqText, SignedIn,
 };
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::markdown::to_markup;
 use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
 use crate::pages::{Sends, on_click};
@@ -28,7 +29,7 @@ use crate::sink::EventSink;
 /// asked again.
 pub(crate) fn status_line(phase: &HqPhase, controls: &HqControls) -> Option<(String, bool)> {
     match phase {
-        HqPhase::Thinking => Some((HqScreen::THINKING.to_owned(), false)),
+        HqPhase::Thinking => Some((core_text::hq_thinking(lang()).to_owned(), false)),
         HqPhase::Failed(failure) => Some((
             failure_text(failure).into_owned(),
             controls.can_retry && failure.retryable,
@@ -44,23 +45,15 @@ pub(crate) fn appended(drawn: &[HqMessage], transcript: &[HqMessage]) -> Option<
     transcript.starts_with(drawn).then_some(drawn.len())
 }
 
-/// The note under a proposed change for a member whose role cannot make it.
-pub(crate) const VIEWER_NOTE: &str = "Nothing has been changed. Only an agency or client member \
-    of this workspace can confirm a change.";
-
-/// The note for a confirmation that failed: whether the change was made is not
-/// known, which is the member's to check before confirming again.
-pub(crate) const UNKNOWN_NOTE: &str =
-    "The change may have been made before the answer was lost. Check before confirming again.";
-
-/// The note under a proposed change: that nothing has changed yet, or that it
-/// may have, once a confirmation was sent and its answer lost; nothing while a
-/// change is being applied.
+/// The note under a proposed change: that nothing has changed yet (and, for a
+/// member whose role cannot make it, who can), or that it may have, once a
+/// confirmation was sent and its answer lost, which is the member's to check
+/// before confirming again; nothing while a change is being applied.
 pub(crate) fn card_note(phase: &HqPhase, controls: &HqControls) -> Option<&'static str> {
     match phase {
-        HqPhase::Confirming(_) if controls.can_confirm => Some(HqScreen::CONFIRM_NOTE),
-        HqPhase::Confirming(_) => Some(VIEWER_NOTE),
-        HqPhase::ConfirmFailed { .. } => Some(UNKNOWN_NOTE),
+        HqPhase::Confirming(_) if controls.can_confirm => Some(core_text::hq_confirm_note(lang())),
+        HqPhase::Confirming(_) => Some(text::hq_viewer_note(lang())),
+        HqPhase::ConfirmFailed { .. } => Some(text::hq_unknown_note(lang())),
         _ => None,
     }
 }
@@ -142,12 +135,16 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.empty_status.set_title(HqScreen::EMPTY_TITLE);
             self.empty_status
-                .set_description(Some(HqScreen::EMPTY_BODY));
-            self.card_title.set_label(HqScreen::CONFIRM_TITLE);
-            self.confirm_button.set_label(HqScreen::CONFIRM_ACTION);
-            self.dismiss_button.set_label(HqScreen::DISMISS_ACTION);
+                .set_title(core_text::hq_empty_title(lang()));
+            self.empty_status
+                .set_description(Some(core_text::hq_empty_body(lang())));
+            self.card_title
+                .set_label(core_text::hq_confirm_title(lang()));
+            self.confirm_button
+                .set_label(core_text::hq_confirm_action(lang()));
+            self.dismiss_button
+                .set_label(core_text::hq_dismiss_action(lang()));
             on_click(&self.retry_button, &*page, || Event::Hq(HqEvent::Retry));
             on_click(&self.confirm_button, &*page, || Event::Hq(HqEvent::Confirm));
             on_click(&self.dismiss_button, &*page, || Event::Hq(HqEvent::Dismiss));
@@ -244,7 +241,7 @@ impl HqPage {
         draw_spinner(&imp.card_spinner, applying);
         let failure = match &hq.phase {
             HqPhase::ConfirmFailed { failure, .. } => Some(failure_text(failure)),
-            HqPhase::Applying(_) => Some(Cow::Borrowed(HqScreen::APPLYING)),
+            HqPhase::Applying(_) => Some(Cow::Borrowed(core_text::hq_applying(lang()))),
             _ => None,
         };
         draw_line(&imp.card_failure, failure);
@@ -323,6 +320,8 @@ impl HqPage {
 
 #[cfg(test)]
 mod tests {
+    use district_core::HqScreen;
+
     use super::*;
     use crate::testing::failure;
 

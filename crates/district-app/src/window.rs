@@ -19,6 +19,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, gio, glib};
+use crate::l10n::{lang, text};
 use crate::pages::{
     AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
     DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
@@ -523,7 +524,8 @@ impl DistrictWindow {
         imp.live_banner
             .set_title(live.as_deref().unwrap_or_default());
         imp.live_banner.set_button_label(
-            matches!(signed_in.live.status, LiveStatus::Stopped(_)).then_some("Refresh"),
+            matches!(signed_in.live.status, LiveStatus::Stopped(_))
+                .then_some(text::window_refresh_button(lang())),
         );
         imp.live_banner.set_revealed(live.is_some());
         if *route != Route::Devices {

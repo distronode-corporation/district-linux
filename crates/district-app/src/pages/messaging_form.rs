@@ -22,6 +22,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::settings_kit::{Choices, Echoed};
 use crate::pages::shared::{draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, on_click};
@@ -40,32 +41,29 @@ pub(crate) const SOURCES: [MessagingCredentialSource; 2] = [
     MessagingCredentialSource::Managed,
 ];
 
-/// The line under the key boxes of a new account, or of one whose carrier
-/// changed, where every key must be typed.
-pub(crate) const KEYS_NEEDED: &str = "Every key the carrier needs, typed in full.";
-
 /// What a credential check came to, in words, and its style: `None` before
 /// one is asked for.
 pub(crate) fn test_words(test: &CredentialTest) -> Option<(String, &'static str)> {
     match test {
         CredentialTest::Idle => None,
-        CredentialTest::Running => Some(("Asking the carrier.".to_owned(), "dim-label")),
+        CredentialTest::Running => Some((
+            text::messaging_form_test_running(lang()).to_owned(),
+            "dim-label",
+        )),
         CredentialTest::Passed(Some(account)) => Some((
-            format!("The carrier accepted these keys, for {account}."),
+            text::messaging_form_test_passed_for(lang(), account),
             "success",
         )),
-        CredentialTest::Passed(None) => {
-            Some(("The carrier accepted these keys.".to_owned(), "success"))
-        }
+        CredentialTest::Passed(None) => Some((
+            text::messaging_form_test_passed(lang()).to_owned(),
+            "success",
+        )),
         CredentialTest::Rejected(reason) => Some((
-            format!("The carrier refused these keys: {reason}"),
+            text::messaging_form_test_rejected(lang(), reason),
             "warning",
         )),
         CredentialTest::Unreachable(failure) => Some((
-            format!(
-                "The carrier could not be asked, so nothing is known about these keys. {}",
-                failure_text(failure)
-            ),
+            text::messaging_form_test_unreachable(lang(), &failure_text(failure)),
             "error",
         )),
     }
@@ -147,11 +145,11 @@ mod imp {
             self.parent_constructed();
             let dialog = self.obj();
             self.numbers_group
-                .set_description(Some(MessagingForm::NUMBERS_HELP));
+                .set_description(Some(core_text::messaging_numbers_help(lang())));
             self.test_hint
-                .set_label(MessagingForm::TEST_NEEDS_EVERY_FIELD);
+                .set_label(core_text::messaging_test_needs_every_field(lang()));
             self.provider_switch
-                .set_label(MessagingForm::PROVIDER_SWITCH);
+                .set_label(core_text::messaging_provider_switch(lang()));
             let messaging = |event: MessagingEvent| move || Event::Messaging(event.clone());
             on_click(
                 &self.cancel_button,
@@ -236,9 +234,9 @@ impl MessagingFormDialog {
         let dialog: Self = glib::Object::new();
         dialog.imp().sink.set(sink).ok();
         dialog.set_title(if editing {
-            "Edit the carrier account"
+            text::messaging_form_edit_title(lang())
         } else {
-            "Add a carrier account"
+            text::messaging_form_add_title(lang())
         });
         dialog
     }
@@ -277,9 +275,9 @@ impl MessagingFormDialog {
         self.draw_keys(form.provider, busy);
         imp.keys_group
             .set_description(Some(if form.secrets_required() {
-                KEYS_NEEDED
+                text::messaging_form_keys_needed(lang())
             } else {
-                MessagingForm::SECRET_KEEP
+                core_text::messaging_secret_keep(lang())
             }));
         let testing = form.test == CredentialTest::Running;
         imp.test_button

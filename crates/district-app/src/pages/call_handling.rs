@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use district_core::{
     AvailabilityView, CallHandlingEvent, CallHandlingSection, CallHandlingView as HandlingRead,
-    ConfigLoad, Event, SignedIn, call_handling_mode_body, call_handling_mode_label,
+    Event, SignedIn, call_handling_mode_body, call_handling_mode_label,
 };
 use district_model::CallHandlingMode;
 
@@ -17,6 +17,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::Echoed;
 use crate::pages::shared::{draw_busy, draw_spinner, failure_text};
@@ -32,7 +33,7 @@ pub(crate) const MODES: [CallHandlingMode; 3] = [
 
 /// A ring, in words.
 pub(crate) fn ring_words(seconds: i64) -> String {
-    format!("{seconds} seconds")
+    text::call_handling_ring_seconds(lang(), seconds)
 }
 
 mod imp {
@@ -113,11 +114,14 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let view = self.obj();
-            self.handling_failed.set_title(ConfigLoad::FAILED_TITLE);
+            self.handling_failed
+                .set_title(core_text::settings_failed_title(lang()));
             self.availability_failed
-                .set_title("Could not read whether you are rung");
-            self.ring_row.set_subtitle(CallHandlingSection::RING_HINT);
-            self.viewer_note.set_label(CallHandlingSection::VIEWER);
+                .set_title(text::call_handling_presence_failed(lang()));
+            self.ring_row
+                .set_subtitle(core_text::call_handling_ring_hint(lang()));
+            self.viewer_note
+                .set_label(core_text::call_handling_viewer(lang()));
             on_click(&self.handling_retry, &*view, || Event::Refresh);
             on_click(&self.availability_retry, &*view, || Event::Refresh);
             on_click(&self.save_button, &*view, || {
@@ -227,9 +231,9 @@ impl CallHandlingView {
         }
         imp.unknown_row
             .set_visible(stored.is_some() && mode.is_none());
-        imp.unknown_row.set_subtitle(&format!(
-            "Stored as \"{}\".",
-            stored.map_or("", |stored| stored.call_handling.as_str())
+        imp.unknown_row.set_subtitle(&text::common_stored_as(
+            lang(),
+            stored.map_or("", |stored| stored.call_handling.as_str()),
         ));
         imp.ring_row.set_visible(stored.is_some());
         let seconds = section.ring_seconds().unwrap_or_default();

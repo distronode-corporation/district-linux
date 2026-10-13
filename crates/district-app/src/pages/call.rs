@@ -3,6 +3,7 @@
 
 use std::cell::{OnceCell, RefCell};
 
+use district_core::l10n::WireCategory;
 use district_core::{CallDetailScreen, CallView as CallRead, Event, TranscriptView};
 use district_model::{CallAnalysis, CallSummary, PhoneIntel};
 
@@ -12,13 +13,12 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::calls::{call_icon, call_title};
 use crate::pages::shared::{
-    add_value_row, clear_group, draw_line, failure_text, humanize, long_time, now,
+    add_value_row, clear_group, draw_line, failure_text, humanize, long_time, now, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
-/// The heading when a call could not be read.
-pub(crate) const FAILED_TITLE: &str = "Could not load this call";
+use crate::l10n::{core_text, lang, text};
 
 /// The line under the call's title: when, and how long.
 pub(crate) fn subtitle(call: &CallSummary, now: Option<&glib::DateTime>) -> String {
@@ -65,31 +65,59 @@ pub(crate) fn facts(call: &CallSummary) -> Vec<(&'static str, String)> {
             facts.push((title, value));
         }
     };
-    add("Status", Some(humanize(&call.status)));
-    add("Direction", call.direction.as_deref().map(humanize));
+    add(
+        text::call_status(lang()),
+        Some(wire_text(WireCategory::CallStatus, &call.status)),
+    );
+    add(
+        text::call_direction(lang()),
+        call.direction
+            .as_deref()
+            .map(|direction| wire_text(WireCategory::CallDirection, direction)),
+    );
     add(
         if outbound {
-            "Placed from"
+            text::call_placed_from(lang())
         } else {
-            "Caller's number"
+            text::call_callers_number(lang())
         },
         call.from.as_deref().map(district_core::format_phone_number),
     );
     let intel = call.phone_intel.as_ref();
-    add("Location", intel.and_then(location));
+    add(text::common_location(lang()), intel.and_then(location));
     add(
-        "Line type",
+        text::common_line_type(lang()),
         intel
             .and_then(|intel| intel.line_type.as_deref())
             .map(humanize),
     );
-    add("Carrier", intel.and_then(|intel| intel.carrier.clone()));
-    add("Sentiment", call.sentiment.as_deref().map(humanize));
-    add("Outcome", call.disposition.as_deref().map(humanize));
-    add("Transfer", call.transfer_status.as_deref().map(humanize));
     add(
-        "Why it was transferred",
-        call.transfer_reason.as_deref().map(humanize),
+        text::common_carrier(lang()),
+        intel.and_then(|intel| intel.carrier.clone()),
+    );
+    add(
+        text::call_sentiment(lang()),
+        call.sentiment
+            .as_deref()
+            .map(|sentiment| wire_text(WireCategory::Sentiment, sentiment)),
+    );
+    add(
+        text::call_outcome(lang()),
+        call.disposition
+            .as_deref()
+            .map(|disposition| wire_text(WireCategory::Disposition, disposition)),
+    );
+    add(
+        text::call_transfer(lang()),
+        call.transfer_status
+            .as_deref()
+            .map(|status| wire_text(WireCategory::TransferStatus, status)),
+    );
+    add(
+        text::call_why_transferred(lang()),
+        call.transfer_reason
+            .as_deref()
+            .map(|reason| wire_text(WireCategory::TransferReason, reason)),
     );
     facts
 }
@@ -97,10 +125,10 @@ pub(crate) fn facts(call: &CallSummary) -> Vec<(&'static str, String)> {
 /// The analysis's lists, each with its heading, leaving out the empty ones.
 pub(crate) fn analysis(analysis: &CallAnalysis) -> Vec<(&'static str, String)> {
     [
-        ("Key points", &analysis.key_points),
-        ("Action items", &analysis.action_items),
-        ("Objections", &analysis.objections),
-        ("Topics", &analysis.topics),
+        (text::call_key_points(lang()), &analysis.key_points),
+        (text::call_action_items(lang()), &analysis.action_items),
+        (text::call_objections(lang()), &analysis.objections),
+        (text::call_topics(lang()), &analysis.topics),
     ]
     .into_iter()
     .filter(|(_, items)| !items.is_empty())
@@ -216,7 +244,7 @@ impl CallView {
             CallRead::Loading => imp.stack.set_visible_child_name("loading"),
             CallRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(FAILED_TITLE);
+                imp.status.set_title(text::call_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
@@ -262,13 +290,13 @@ impl CallView {
         add_value_row(
             &imp.follow_up_group,
             &imp.follow_up,
-            "Email sent to",
+            text::call_email_sent_to(lang()),
             follow_up.and_then(|sent| sent.email.as_deref()),
         );
         add_value_row(
             &imp.follow_up_group,
             &imp.follow_up,
-            "Text message",
+            text::common_text_message(lang()),
             follow_up.and_then(|sent| sent.sms.as_deref()),
         );
         imp.follow_up_group
@@ -289,7 +317,8 @@ impl CallView {
             }
             TranscriptView::Absent => {
                 imp.transcript_stack.set_visible_child_name("note");
-                imp.transcript_note.set_label(TranscriptView::ABSENT);
+                imp.transcript_note
+                    .set_label(core_text::calls_transcript_absent(lang()));
             }
             TranscriptView::Failed(failure) => {
                 imp.transcript_stack.set_visible_child_name("note");

@@ -39,6 +39,7 @@ mod charts;
 mod controller;
 mod effects;
 mod guard;
+pub mod l10n;
 mod markdown;
 mod notifications;
 mod pages;
@@ -79,6 +80,7 @@ pub(crate) mod testing {
             app_version: "0.1.0".to_owned(),
             calls_available: false,
             in_app_purchases: false,
+            locale: district_core::Locale::En,
         }
     }
 

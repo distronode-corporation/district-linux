@@ -15,6 +15,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{lang, text};
 use crate::pages::desk::status_badge;
 use crate::pages::reply_box::{ReplyBox, ReplyEvents, ReplyState};
 use crate::pages::shared::{
@@ -23,9 +24,6 @@ use crate::pages::shared::{
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
-
-/// The heading when a ticket could not be read.
-pub(crate) const FAILED_TITLE: &str = "Could not load this ticket";
 
 /// The statuses, in the order of their buttons.
 const STATUSES: [DeskTicketStatus; 3] = [
@@ -38,9 +36,9 @@ const STATUSES: [DeskTicketStatus; 3] = [
 pub(crate) fn notified_note(notified: Option<bool>) -> Option<&'static str> {
     notified.map(|emailed| {
         if emailed {
-            "The customer was emailed your reply."
+            text::desk_ticket_emailed(lang())
         } else {
-            "The customer was not emailed this reply."
+            text::desk_ticket_not_emailed(lang())
         }
     })
 }
@@ -48,15 +46,27 @@ pub(crate) fn notified_note(notified: Option<bool>) -> Option<&'static str> {
 /// The ticket's details, as rows of a title and a value.
 pub(crate) fn details(ticket: &DeskTicketDetail) -> Vec<(&'static str, Option<String>)> {
     vec![
-        ("Name", ticket.requester_name.clone()),
-        ("Email address", ticket.requester_email.clone()),
+        (text::common_name(lang()), ticket.requester_name.clone()),
         (
-            "Phone number",
+            text::common_email_address(lang()),
+            ticket.requester_email.clone(),
+        ),
+        (
+            text::common_phone_number(lang()),
             ticket.requester_phone.as_deref().map(format_phone_number),
         ),
-        ("Came in by", Some(humanize(&ticket.source))),
-        ("Raised", Some(when_text(&ticket.created_at))),
-        ("Resolved", ticket.resolved_at.as_deref().map(when_text)),
+        (
+            text::desk_ticket_came_in_by(lang()),
+            Some(humanize(&ticket.source)),
+        ),
+        (
+            text::desk_ticket_raised(lang()),
+            Some(when_text(&ticket.created_at)),
+        ),
+        (
+            text::desk_ticket_resolved_at(lang()),
+            ticket.resolved_at.as_deref().map(when_text),
+        ),
     ]
 }
 
@@ -192,7 +202,7 @@ impl DeskTicketView {
             DeskTicketRead::Loading => imp.stack.set_visible_child_name("loading"),
             DeskTicketRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(FAILED_TITLE);
+                imp.status.set_title(text::desk_ticket_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
@@ -229,7 +239,7 @@ impl DeskTicketView {
             .landed(&screen.ticket_id, screen.sending.then_some(()));
         landed
             .filter(|()| screen.send_failure.is_none())
-            .map(|()| "Reply sent.")
+            .map(|()| text::common_reply_sent(lang()))
     }
 
     fn draw(&self, detail: &DeskTicketDetail) {

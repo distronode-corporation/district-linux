@@ -19,6 +19,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{lang, text};
 use crate::pages::call::location;
 use crate::pages::contact_form::{ContactFormDialog, FormKind};
 use crate::pages::inbox::has_initials;
@@ -28,18 +29,15 @@ use crate::pages::shared::{
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
-/// The heading when a contact could not be read.
-pub(crate) const FAILED_TITLE: &str = "Could not load this contact";
-
 /// What the screen says while a change is on its way.
 pub(crate) fn busy_words(action: ContactAction) -> &'static str {
     match action {
-        ContactAction::Save => "Saving the contact",
-        ContactAction::Delete => "Deleting the contact",
-        ContactAction::Enrich => "Starting research",
-        ContactAction::ClearIntel => "Clearing research",
-        ContactAction::Block => "Blocking the caller",
-        ContactAction::Unblock => "Unblocking the caller",
+        ContactAction::Save => text::contact_busy_saving(lang()),
+        ContactAction::Delete => text::contact_busy_deleting(lang()),
+        ContactAction::Enrich => text::contact_busy_starting_research(lang()),
+        ContactAction::ClearIntel => text::contact_busy_clearing_research(lang()),
+        ContactAction::Block => text::contact_busy_blocking(lang()),
+        ContactAction::Unblock => text::contact_busy_unblocking(lang()),
     }
 }
 
@@ -47,14 +45,12 @@ pub(crate) fn busy_words(action: ContactAction) -> &'static str {
 /// which leaves the screen and is reported by the list.
 pub(crate) fn done_words(action: ContactAction) -> Option<&'static str> {
     match action {
-        ContactAction::Save => Some("Contact saved."),
+        ContactAction::Save => Some(text::contact_saved(lang())),
         ContactAction::Delete => None,
-        ContactAction::Enrich => {
-            Some("Research started. The result appears here when it is ready.")
-        }
-        ContactAction::ClearIntel => Some("Research cleared."),
-        ContactAction::Block => Some("Caller blocked."),
-        ContactAction::Unblock => Some("Caller unblocked."),
+        ContactAction::Enrich => Some(text::contact_research_started(lang())),
+        ContactAction::ClearIntel => Some(text::contact_research_cleared(lang())),
+        ContactAction::Block => Some(text::contact_caller_blocked(lang())),
+        ContactAction::Unblock => Some(text::contact_caller_unblocked(lang())),
     }
 }
 
@@ -77,11 +73,11 @@ pub(crate) fn research_status(contact: &Contact) -> Option<String> {
     let status = contact.dgi_status.as_deref()?;
     Some(
         match status {
-            DGI_PENDING => "Queued",
-            DGI_CRAWLING => "Searching the web",
-            DGI_SYNTHESIZING => "Writing the summary",
-            DGI_COMPLETE => "Complete",
-            DGI_FAILED => "Did not finish",
+            DGI_PENDING => text::contact_research_queued(lang()),
+            DGI_CRAWLING => text::contact_research_searching(lang()),
+            DGI_SYNTHESIZING => text::contact_research_writing(lang()),
+            DGI_COMPLETE => text::contact_research_complete(lang()),
+            DGI_FAILED => text::contact_research_did_not_finish(lang()),
             other => return Some(humanize(other)),
         }
         .to_owned(),
@@ -126,21 +122,30 @@ pub(crate) fn contact_facts(
     let company = contact.company.as_ref();
     [
         (
-            "Phone number",
+            text::common_phone_number(lang()),
             contact.phone_number.as_deref().map(format_phone_number),
         ),
-        ("Email address", contact.email.clone()),
-        ("Company", company.and_then(|company| company.name.clone())),
+        (text::common_email_address(lang()), contact.email.clone()),
         (
-            "Industry",
+            text::contact_company(lang()),
+            company.and_then(|company| company.name.clone()),
+        ),
+        (
+            text::contact_industry(lang()),
             company.and_then(|company| company.industry.clone()),
         ),
-        ("Website", contact.website.clone()),
-        ("Budget", contact.budget.clone()),
-        ("Timeline", contact.timeline.clone()),
-        ("Latest context", contact.latest_context_summary.clone()),
-        ("Added", Some(when(&contact.created_at))),
-        ("Last changed", contact.last_updated.as_deref().map(when)),
+        (text::contact_website(lang()), contact.website.clone()),
+        (text::contact_budget(lang()), contact.budget.clone()),
+        (text::contact_timeline(lang()), contact.timeline.clone()),
+        (
+            text::contact_latest_context(lang()),
+            contact.latest_context_summary.clone(),
+        ),
+        (text::contact_added(lang()), Some(when(&contact.created_at))),
+        (
+            text::contact_last_changed(lang()),
+            contact.last_updated.as_deref().map(when),
+        ),
     ]
     .into_iter()
     .filter_map(|(title, value)| {
@@ -154,9 +159,12 @@ pub(crate) fn contact_facts(
 /// What is known about the contact's number, as rows.
 pub(crate) fn number_facts(intel: &PhoneIntel) -> Vec<(&'static str, String)> {
     [
-        ("Location", location(intel)),
-        ("Line type", intel.line_type.as_deref().map(humanize)),
-        ("Carrier", intel.carrier.clone()),
+        (text::common_location(lang()), location(intel)),
+        (
+            text::common_line_type(lang()),
+            intel.line_type.as_deref().map(humanize),
+        ),
+        (text::common_carrier(lang()), intel.carrier.clone()),
     ]
     .into_iter()
     .filter_map(|(title, value)| value.map(|value| (title, value)))
@@ -324,7 +332,7 @@ impl ContactView {
             ContactRead::Loading => imp.stack.set_visible_child_name("loading"),
             ContactRead::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(FAILED_TITLE);
+                imp.status.set_title(text::contact_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);
@@ -373,17 +381,18 @@ impl ContactView {
             add_value_row(&imp.number_group, &imp.number_rows, title, Some(&value));
         }
         clear_group(&imp.research_group, &imp.research_rows);
-        let status = research_status(contact).unwrap_or_else(|| "Not run".to_owned());
+        let status = research_status(contact)
+            .unwrap_or_else(|| text::contact_research_not_run(lang()).to_owned());
         add_value_row(
             &imp.research_group,
             &imp.research_rows,
-            "Status",
+            text::contact_research_status(lang()),
             Some(&status),
         );
         add_value_row(
             &imp.research_group,
             &imp.research_rows,
-            "Why it did not finish",
+            text::contact_research_why_not_finished(lang()),
             contact.dgi_error.as_deref(),
         );
         for (title, value) in contact
@@ -415,8 +424,11 @@ impl ContactView {
         imp.edit_button.set_sensitive(controls.can_edit);
         imp.delete_button.set_sensitive(controls.can_delete);
         imp.block_button.set_sensitive(controls.can_block);
-        imp.block_button
-            .set_label(if controls.blocked { "Unblock" } else { "Block" });
+        imp.block_button.set_label(if controls.blocked {
+            text::contact_unblock(lang())
+        } else {
+            text::contact_block(lang())
+        });
         imp.blocked_label.set_visible(controls.blocked);
         imp.research_actions.set_visible(member);
         imp.research_button.set_sensitive(controls.can_enrich);

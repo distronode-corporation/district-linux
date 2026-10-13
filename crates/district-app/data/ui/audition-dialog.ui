@@ -58,7 +58,7 @@
                   <object class="GtkLabel" id="cooling_label">
                     <property name="wrap">True</property>
                     <property name="justify">center</property>
-                    <property name="label">Another audition can start in a few seconds.</property>
+                    <property name="label" translatable="yes" context="audition_dialog.another_audition_can_start_few">Another audition can start in a few seconds.</property>
                     <style>
                       <class name="dim-label"/>
                     </style>
@@ -66,7 +66,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="start_button">
-                    <property name="label">Start</property>
+                    <property name="label" translatable="yes" context="audition_dialog.start">Start</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -76,7 +76,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="stop_button">
-                    <property name="label">Stop</property>
+                    <property name="label" translatable="yes" context="audition_dialog.stop">Stop</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>

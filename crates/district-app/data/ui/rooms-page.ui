@@ -30,12 +30,12 @@
                         </style>
                         <child>
                           <object class="AdwEntryRow" id="room_row">
-                            <property name="title">Room name</property>
+                            <property name="title" translatable="yes" context="rooms_page.room_name">Room name</property>
                             <property name="use-markup">False</property>
                             <property name="input-hints">no-spellcheck</property>
                             <child type="suffix">
                               <object class="GtkButton" id="join_button">
-                                <property name="label">Join</property>
+                                <property name="label" translatable="yes" context="rooms_page.join">Join</property>
                                 <property name="valign">center</property>
                                 <style>
                                   <class name="suggested-action"/>
@@ -112,7 +112,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="failure_dismiss">
-                        <property name="label">Dismiss</property>
+                        <property name="label" translatable="yes" context="common.dismiss_button">Dismiss</property>
                         <property name="valign">center</property>
                         <property name="margin-end">10</property>
                       </object>
@@ -161,9 +161,9 @@
                         </child>
                         <child>
                           <object class="GtkButton" id="copy_link_button">
-                            <property name="label">Copy guest link</property>
+                            <property name="label" translatable="yes" context="rooms_page.copy_guest_link">Copy guest link</property>
                             <property name="visible">False</property>
-                            <property name="tooltip-text">Copy a link that lets someone without an account join this room</property>
+                            <property name="tooltip-text" translatable="yes" context="rooms_page.copy_link_lets_someone_without">Copy a link that lets someone without an account join this room</property>
                             <style>
                               <class name="pill"/>
                             </style>
@@ -171,7 +171,7 @@
                         </child>
                         <child>
                           <object class="GtkButton" id="leave_button">
-                            <property name="label">Leave the room</property>
+                            <property name="label" translatable="yes" context="rooms_page.leave_room">Leave the room</property>
                             <style>
                               <class name="pill"/>
                               <class name="destructive-action"/>
@@ -184,8 +184,8 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup">
-                    <property name="title">Meetings</property>
-                    <property name="description">The most recent meetings held in this workspace's rooms. Open one to read its minutes and transcript.</property>
+                    <property name="title" translatable="yes" context="rooms_page.meetings">Meetings</property>
+                    <property name="description" translatable="yes" context="rooms_page.most_recent_meetings_held_workspaces">The most recent meetings held in this workspace's rooms. Open one to read its minutes and transcript.</property>
                     <property name="header-suffix">
                       <object class="GtkSpinner" id="meetings_spinner">
                         <property name="visible">False</property>
@@ -217,7 +217,7 @@
                                 </style>
                                 <property name="child">
                                   <object class="GtkButton" id="meetings_retry">
-                                    <property name="label">Try again</property>
+                                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                     <property name="halign">center</property>
                                     <style>
                                       <class name="pill"/>
@@ -235,7 +235,7 @@
                               <object class="GtkListBox" id="meeting_list">
                                 <property name="selection-mode">none</property>
                                 <accessibility>
-                                  <property name="label">Meetings</property>
+                                  <property name="label" translatable="yes" context="rooms_page.meetings_a11y">Meetings</property>
                                 </accessibility>
                                 <style>
                                   <class name="boxed-list"/>

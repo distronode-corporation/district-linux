@@ -67,12 +67,12 @@
                     </style>
                     <child>
                       <object class="GtkToggleButton" id="owned_tab">
-                        <property name="label">Your numbers</property>
+                        <property name="label" translatable="yes" context="marketplace_page.numbers">Your numbers</property>
                       </object>
                     </child>
                     <child>
                       <object class="GtkToggleButton" id="search_tab">
-                        <property name="label">Find a number</property>
+                        <property name="label" translatable="yes" context="marketplace_page.find_number">Find a number</property>
                         <property name="group">owned_tab</property>
                       </object>
                     </child>
@@ -110,7 +110,7 @@
                                     </style>
                                     <property name="child">
                                       <object class="GtkButton" id="owned_retry">
-                                        <property name="label">Try again</property>
+                                        <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                         <property name="halign">center</property>
                                         <style>
                                           <class name="pill"/>
@@ -143,7 +143,7 @@
                                       <object class="GtkListBox" id="owned_list">
                                         <property name="selection-mode">none</property>
                                         <accessibility>
-                                          <property name="label">Your numbers</property>
+                                          <property name="label" translatable="yes" context="marketplace_page.numbers_a11y">Your numbers</property>
                                         </accessibility>
                                         <style>
                                           <class name="boxed-list"/>
@@ -173,27 +173,27 @@
                                 </style>
                                 <child>
                                   <object class="AdwEntryRow" id="area_row">
-                                    <property name="title">Area code</property>
+                                    <property name="title" translatable="yes" context="marketplace_page.area_code">Area code</property>
                                     <property name="use-markup">False</property>
                                     <property name="input-purpose">digits</property>
                                   </object>
                                 </child>
                                 <child>
                                   <object class="AdwEntryRow" id="country_row">
-                                    <property name="title">Country code</property>
+                                    <property name="title" translatable="yes" context="marketplace_page.country_code">Country code</property>
                                     <property name="use-markup">False</property>
                                   </object>
                                 </child>
                                 <child>
                                   <object class="AdwComboRow" id="type_row">
-                                    <property name="title">Number type</property>
+                                    <property name="title" translatable="yes" context="marketplace_page.number_type">Number type</property>
                                   </object>
                                 </child>
                               </object>
                             </child>
                             <child>
                               <object class="GtkButton" id="search_button">
-                                <property name="label">Search</property>
+                                <property name="label" translatable="yes" context="marketplace_page.search">Search</property>
                                 <property name="halign">start</property>
                                 <style>
                                   <class name="pill"/>
@@ -209,7 +209,7 @@
                                     <property name="name">idle</property>
                                     <property name="child">
                                       <object class="GtkLabel">
-                                        <property name="label">Type an area code, or search the whole country. Results come from your carrier.</property>
+                                        <property name="label" translatable="yes" context="marketplace_page.type_area_code_search_whole">Type an area code, or search the whole country. Results come from your carrier.</property>
                                         <property name="xalign">0</property>
                                         <property name="wrap">True</property>
                                         <style>
@@ -242,7 +242,7 @@
                                         </style>
                                         <property name="child">
                                           <object class="GtkButton" id="search_retry">
-                                            <property name="label">Try again</property>
+                                            <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                             <property name="halign">center</property>
                                             <style>
                                               <class name="pill"/>
@@ -274,7 +274,7 @@
                                           <object class="GtkListBox" id="results_list">
                                             <property name="selection-mode">none</property>
                                             <accessibility>
-                                              <property name="label">Numbers for sale</property>
+                                              <property name="label" translatable="yes" context="marketplace_page.numbers_sale">Numbers for sale</property>
                                             </accessibility>
                                             <style>
                                               <class name="boxed-list"/>

@@ -29,7 +29,7 @@
                 <property name="icon-name">x-office-calendar-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -82,7 +82,7 @@
                             </style>
                             <child>
                               <object class="AdwActionRow" id="page_row">
-                                <property name="title">Booking page</property>
+                                <property name="title" translatable="yes" context="scheduling_page.booking_page">Booking page</property>
                                 <property name="use-markup">False</property>
                                 <property name="subtitle-selectable">True</property>
                                 <style>
@@ -92,7 +92,7 @@
                             </child>
                             <child>
                               <object class="AdwActionRow" id="ready_row">
-                                <property name="title">Last live</property>
+                                <property name="title" translatable="yes" context="scheduling_page.last_live">Last live</property>
                                 <property name="use-markup">False</property>
                                 <style>
                                   <class name="property"/>
@@ -101,7 +101,7 @@
                             </child>
                             <child>
                               <object class="AdwActionRow" id="problem_row">
-                                <property name="title">What went wrong</property>
+                                <property name="title" translatable="yes" context="scheduling_page.what_went_wrong">What went wrong</property>
                                 <property name="use-markup">False</property>
                                 <property name="subtitle-selectable">True</property>
                                 <style>
@@ -132,7 +132,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="notice_dismiss">
-                                <property name="label">Dismiss</property>
+                                <property name="label" translatable="yes" context="common.dismiss_button">Dismiss</property>
                                 <property name="valign">center</property>
                                 <property name="margin-end">10</property>
                               </object>
@@ -145,7 +145,7 @@
                             <property name="halign">center</property>
                             <child>
                               <object class="GtkButton" id="enable_button">
-                                <property name="label">Turn on booking pages</property>
+                                <property name="label" translatable="yes" context="scheduling_page.turn_booking_pages">Turn on booking pages</property>
                                 <style>
                                   <class name="pill"/>
                                   <class name="suggested-action"/>
@@ -154,7 +154,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="check_button">
-                                <property name="label">Check again</property>
+                                <property name="label" translatable="yes" context="scheduling_page.check_again">Check again</property>
                                 <style>
                                   <class name="pill"/>
                                 </style>
@@ -162,7 +162,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="web_button">
-                                <property name="label">Manage on the web</property>
+                                <property name="label" translatable="yes" context="scheduling_page.manage_web">Manage on the web</property>
                                 <style>
                                   <class name="pill"/>
                                   <class name="suggested-action"/>
@@ -178,7 +178,7 @@
                         </child>
                         <child>
                           <object class="GtkLabel" id="web_caption">
-                            <property name="label">Opens the booking pages on the District AI website in your browser, signed in as you.</property>
+                            <property name="label" translatable="yes" context="scheduling_page.opens_booking_pages_district_ai">Opens the booking pages on the District AI website in your browser, signed in as you.</property>
                             <property name="wrap">True</property>
                             <property name="justify">center</property>
                             <style>

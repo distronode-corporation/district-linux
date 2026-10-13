@@ -27,6 +27,9 @@ on:
       - "about.hbs"
       - "scripts/fetch-libwebrtc.sh"
       - "scripts/third-party-licenses.sh"
+      # The French catalog, and the switch that decides whether it ships.
+      - "crates/district-app/po/**"
+      - "scripts/french-enabled.py"
       - ".github/actions/read-version/**"
       - ".github/actions/install-cargo-about/**"
       - ".github/workflows/flatpak.yml"
@@ -174,6 +177,31 @@ jobs:
               fail=1
             fi
             exit "$fail"
+          '
+
+      # The release guard (release.yml runs this workflow): French ships only
+      # with the `fr-ca` feature on. With it off the installed bundle holds no
+      # catalog at all, with it on exactly the French one, in the app itself.
+      - name: The installed bundle holds a French catalog only with French on
+        run: |
+          set -euo pipefail
+          if python3 scripts/french-enabled.py; then french=on; else french=off; fi
+          docker exec --env french="$french" flatpak bash -euo pipefail -c '
+            app="$(flatpak info --system --show-location com.distronode.DistrictAI)"
+            catalogs="$(cd "$app/files" && find . -name "*.mo" | sort)"
+            want=""
+            if [ "$french" = on ]; then
+              want="./share/locale/fr/LC_MESSAGES/district-ai.mo"
+            fi
+            if [ "$catalogs" != "$want" ]; then
+              echo "::error::French is $french, and the bundle holds these catalogs: ${catalogs:-none}"
+              exit 1
+            fi
+            if flatpak info --system com.distronode.DistrictAI.Locale > /dev/null 2>&1; then
+              echo "::error::a separate com.distronode.DistrictAI.Locale extension is installed"
+              exit 1
+            fi
+            echo "French is $french: catalogs ${catalogs:-none}"
           '
 
       - name: Name the bundle for the release

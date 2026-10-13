@@ -23,7 +23,7 @@
             <property name="sidebar-width-fraction">0.4</property>
             <property name="sidebar">
               <object class="AdwNavigationPage">
-                <property name="title">Contacts</property>
+                <property name="title" translatable="yes" context="contacts_page.contacts">Contacts</property>
                 <property name="tag">list</property>
                 <property name="child">
                   <object class="GtkBox">
@@ -41,7 +41,7 @@
                             <property name="child">
                               <object class="AdwButtonContent">
                                 <property name="icon-name">list-add-symbolic</property>
-                                <property name="label">Add contact</property>
+                                <property name="label" translatable="yes" context="contacts_page.add_contact">Add contact</property>
                               </object>
                             </property>
                           </object>
@@ -52,7 +52,7 @@
                             <property name="child">
                               <object class="AdwButtonContent">
                                 <property name="icon-name">action-unavailable-symbolic</property>
-                                <property name="label">Blocked callers</property>
+                                <property name="label" translatable="yes" context="contacts_page.blocked_callers">Blocked callers</property>
                               </object>
                             </property>
                           </object>
@@ -86,7 +86,7 @@
                                 </style>
                                 <property name="child">
                                   <object class="GtkButton" id="list_retry">
-                                    <property name="label">Try again</property>
+                                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                     <property name="halign">center</property>
                                     <style>
                                       <class name="pill"/>
@@ -136,7 +136,7 @@
                                       <object class="GtkListBox" id="contact_list">
                                         <property name="selection-mode">single</property>
                                         <accessibility>
-                                          <property name="label">Contacts</property>
+                                          <property name="label" translatable="yes" context="contacts_page.contacts_a11y">Contacts</property>
                                         </accessibility>
                                         <style>
                                           <class name="boxed-list"/>
@@ -167,7 +167,7 @@
                                         </child>
                                         <child>
                                           <object class="GtkButton" id="more_button">
-                                            <property name="label">Try again</property>
+                                            <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                             <property name="visible">False</property>
                                             <style>
                                               <class name="pill"/>
@@ -190,7 +190,7 @@
             </property>
             <property name="content">
               <object class="AdwNavigationPage">
-                <property name="title">Contact</property>
+                <property name="title" translatable="yes" context="contacts_page.contact">Contact</property>
                 <property name="tag">contact</property>
                 <property name="child">
                   <object class="GtkStack" id="detail_stack">
@@ -200,8 +200,8 @@
                         <property name="child">
                           <object class="AdwStatusPage">
                             <property name="icon-name">x-office-address-book-symbolic</property>
-                            <property name="title">No contact open</property>
-                            <property name="description">Choose a contact to see their details.</property>
+                            <property name="title" translatable="yes" context="contacts_page.no_contact_open">No contact open</property>
+                            <property name="description" translatable="yes" context="contacts_page.choose_contact_see_their_details">Choose a contact to see their details.</property>
                             <style>
                               <class name="compact"/>
                             </style>

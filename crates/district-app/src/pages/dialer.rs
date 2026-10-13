@@ -3,7 +3,7 @@
 //!
 //! The box holds the number exactly as typed, which is what the core keeps and
 //! what the service is sent; the line above it is how it reads
-//! ([`DialerScreen::formatted`]), and the box is never rewritten to match it.
+//! ([`district_core::DialerScreen::formatted`]), and the box is never rewritten to match it.
 //! The keypad types into the box at its cursor, so every way of entering a
 //! number (the keys, the keyboard, a paste) is one edit of one box. Call works
 //! only when the core says a call can be placed (`can_place_call`), and Enter
@@ -12,12 +12,13 @@
 
 use std::cell::{Cell, OnceCell, RefCell};
 
-use district_core::{DialerEvent, DialerScreen, Event, SignedIn};
+use district_core::{DialerEvent, Event, SignedIn};
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang};
 use crate::pages::shared::Echo;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
@@ -77,10 +78,11 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.dial_hint.set_label(DialerScreen::HINT);
+            self.dial_hint.set_label(core_text::dialer_hint(lang()));
             self.microphone_note
-                .set_label(DialerScreen::MICROPHONE_NOTE);
-            self.dial_busy_note.set_label(DialerScreen::BUSY_NOTE);
+                .set_label(core_text::dialer_microphone_note(lang()));
+            self.dial_busy_note
+                .set_label(core_text::dialer_busy_note(lang()));
             for (index, key) in KEYS.into_iter().enumerate() {
                 let button = gtk::Button::builder()
                     .label(key)

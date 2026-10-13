@@ -13,7 +13,8 @@ use crate::app::{APP_ID, Parts};
 use crate::bridge::UiCommand;
 use crate::effects::Effects;
 use crate::gtk::{self, gdk, gio, glib};
-use crate::guard::{self, DISCARD_ACTION, DISCARD_BODY, DISCARD_TITLE, KEEP_EDITING};
+use crate::guard;
+use crate::l10n::{lang, text};
 use crate::notifications::{self, BUTTON_ACTION, OPEN_ACTION};
 use crate::sink::EventSink;
 use crate::style::Brand;
@@ -26,9 +27,6 @@ const RINGTONE: &str = "/com/distronode/DistrictAI/sounds/ringtone.wav";
 
 /// The AppStream metadata, in the resources built into the binary.
 const METAINFO: &str = "/com/distronode/DistrictAI/com.distronode.DistrictAI.metainfo.xml";
-
-/// The About dialog's copyright line, which the metadata does not hold.
-const COPYRIGHT: &str = "Copyright 2026 Distronode Corporation";
 
 /// How long the app waits, as it quits, for the effects quitting asks for:
 /// unregistering this desktop's presence, ending a call at the carrier.
@@ -91,6 +89,9 @@ impl Controller {
     /// channels into the main loop, and the model's first effects.
     pub(crate) fn startup(self: &Rc<Self>, app: &adw::Application) {
         self.app.set(Some(app));
+        // GTK has set the locale by now, so gettext has found its catalog, if
+        // any, for the templates about to be built.
+        crate::l10n::report_disagreement();
         gtk::Window::set_default_icon_name(APP_ID);
         if let Some(display) = gdk::Display::default() {
             let brand = Brand::install(&display, &adw::StyleManager::default());
@@ -174,9 +175,12 @@ impl Controller {
         if self.discard.borrow().is_some() {
             return;
         }
-        let dialog = adw::AlertDialog::new(Some(DISCARD_TITLE), Some(DISCARD_BODY));
-        dialog.add_response("keep", KEEP_EDITING);
-        dialog.add_response("discard", DISCARD_ACTION);
+        let dialog = adw::AlertDialog::new(
+            Some(text::guard_discard_title(lang())),
+            Some(text::guard_discard_body(lang())),
+        );
+        dialog.add_response("keep", text::guard_keep_editing(lang()));
+        dialog.add_response("discard", text::guard_discard(lang()));
         dialog.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
         dialog.set_default_response(Some("keep"));
         dialog.set_close_response("keep");
@@ -401,7 +405,7 @@ fn looking(visible: bool, active: bool, suspended: bool) -> bool {
 fn show_about(app: &adw::Application, version: &str) {
     let about = adw::AboutDialog::from_appdata(METAINFO, Some(version));
     about.set_version(version);
-    about.set_copyright(COPYRIGHT);
+    about.set_copyright(text::about_copyright(lang()));
     about.present(app.active_window().as_ref());
 }
 

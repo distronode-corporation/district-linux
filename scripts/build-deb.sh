@@ -22,6 +22,13 @@
 # - THIRD-PARTY-LICENSES.txt, the licence texts of every crate the binary links,
 #   written by scripts/third-party-licenses.sh (cargo-about, from Cargo.lock with
 #   about.toml and about.hbs), which writes the Flatpak's copy too.
+#
+# With French on (scripts/french-enabled.py: `fr-ca` among district-app's
+# default features), a fourth: the French catalog, crates/district-app/po/fr.po
+# compiled by msgfmt (the gettext package), which the `fr-ca` variant installs
+# as /usr/share/locale/fr/LC_MESSAGES/district-ai.mo, under `fr` so that every
+# French locale finds it. With French off nothing is compiled and the package
+# holds no catalog, which deb.yml checks.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -48,4 +55,10 @@ cp "$LK_CUSTOM_WEBRTC/LICENSE.md" "$target/release/libwebrtc-LICENSE.md"
 
 scripts/third-party-licenses.sh "$target/release/THIRD-PARTY-LICENSES.txt" > /dev/null
 
+if python3 scripts/french-enabled.py > /dev/null; then
+  mkdir -p "$target/release/locale/fr/LC_MESSAGES"
+  msgfmt --check -o "$target/release/locale/fr/LC_MESSAGES/district-ai.mo" \
+    crates/district-app/po/fr.po
+  exec cargo deb -p district-app --locked --variant fr-ca "$@"
+fi
 exec cargo deb -p district-app --locked "$@"

@@ -43,9 +43,9 @@
                       <object class="GtkEntry" id="number_entry">
                         <property name="input-purpose">phone</property>
                         <property name="xalign">0.5</property>
-                        <property name="placeholder-text">Type or paste a number</property>
+                        <property name="placeholder-text" translatable="yes" context="dialer_page.type_paste_number">Type or paste a number</property>
                         <accessibility>
-                          <property name="label">Number to call</property>
+                          <property name="label" translatable="yes" context="dialer_page.number_call">Number to call</property>
                         </accessibility>
                       </object>
                     </child>
@@ -70,15 +70,15 @@
                     <property name="row-homogeneous">True</property>
                     <property name="column-homogeneous">True</property>
                     <accessibility>
-                      <property name="label">Keypad</property>
+                      <property name="label" translatable="yes" context="dialer_page.keypad">Keypad</property>
                     </accessibility>
                     <child>
                       <object class="GtkButton" id="backspace_button">
                         <property name="icon-name">edit-clear-symbolic</property>
-                        <property name="tooltip-text">Delete the last digit</property>
+                        <property name="tooltip-text" translatable="yes" context="dialer_page.delete_last_digit">Delete the last digit</property>
                         <property name="focus-on-click">False</property>
                         <accessibility>
-                          <property name="label">Delete the last digit</property>
+                          <property name="label" translatable="yes" context="dialer_page.delete_last_digit_a11y">Delete the last digit</property>
                         </accessibility>
                         <style>
                           <class name="circular"/>
@@ -99,7 +99,7 @@
                     <property name="child">
                       <object class="AdwButtonContent">
                         <property name="icon-name">call-start-symbolic</property>
-                        <property name="label">Call</property>
+                        <property name="label" translatable="yes" context="dialer_page.call">Call</property>
                       </object>
                     </property>
                     <style>

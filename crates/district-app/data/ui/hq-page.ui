@@ -40,7 +40,7 @@
                             <property name="margin-top">18</property>
                             <property name="margin-bottom">18</property>
                             <accessibility>
-                              <property name="label">Conversation with District HQ</property>
+                              <property name="label" translatable="yes" context="hq_page.conversation_district_hq">Conversation with District HQ</property>
                             </accessibility>
                           </object>
                         </property>
@@ -80,7 +80,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="retry_button">
-                        <property name="label">Try again</property>
+                        <property name="label" translatable="yes" context="common.try_again">Try again</property>
                         <property name="valign">center</property>
                       </object>
                     </child>
@@ -167,16 +167,16 @@
                     <child>
                       <object class="GtkEntry" id="prompt_entry">
                         <property name="hexpand">True</property>
-                        <property name="placeholder-text">Ask District HQ</property>
+                        <property name="placeholder-text" translatable="yes" context="hq_page.ask_district_hq">Ask District HQ</property>
                         <property name="input-hints">spellcheck|uppercase-sentences</property>
                         <accessibility>
-                          <property name="label">Ask District HQ</property>
+                          <property name="label" translatable="yes" context="hq_page.ask_district_hq_a11y">Ask District HQ</property>
                         </accessibility>
                       </object>
                     </child>
                     <child>
                       <object class="GtkButton" id="ask_button">
-                        <property name="label">Ask</property>
+                        <property name="label" translatable="yes" context="hq_page.ask">Ask</property>
                         <style>
                           <class name="suggested-action"/>
                         </style>
@@ -186,7 +186,7 @@
                 </child>
                 <child>
                   <object class="GtkLabel">
-                    <property name="label">Each question is answered by an AI model, which is billed. A change it proposes is made only when you confirm it.</property>
+                    <property name="label" translatable="yes" context="hq_page.each_question_answered_ai_model">Each question is answered by an AI model, which is billed. A change it proposes is made only when you confirm it.</property>
                     <property name="xalign">0</property>
                     <property name="wrap">True</property>
                     <style>

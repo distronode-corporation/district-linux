@@ -1,0 +1,3068 @@
+[meta]
+catalog = "linux"
+platform = "gtk"
+apple = false
+
+[about.copyright]
+en = "Copyright 2026 Distronode Corporation"
+ctx = "legal"
+screen = "about"
+tier = "T0"
+
+[account.version]
+en = "Version {version}"
+ctx = "label"
+screen = "account"
+args = { version = "str" }
+
+[account_page.account]
+en = "Your account"
+ctx = "title"
+screen = "account_page"
+note = "In account-page.ui."
+
+[account_page.computer]
+en = "This computer"
+ctx = "title"
+screen = "account_page"
+note = "In account-page.ui."
+
+[account_page.delete_account]
+en = "Delete your account"
+ctx = "label"
+screen = "account_page"
+note = "In account-page.ui."
+
+[account_page.device_name]
+en = "Device name"
+ctx = "label"
+screen = "account_page"
+note = "In account-page.ui."
+
+[account_page.devices]
+en = "Devices"
+ctx = "label"
+screen = "account_page"
+note = "In account-page.ui."
+
+[account_page.district_ai_linux]
+en = "District AI for Linux"
+ctx = "label"
+screen = "account_page"
+note = "In account-page.ui."
+
+[account_page.sign_out]
+en = "Sign out"
+ctx = "label"
+screen = "account_page"
+note = "In account-page.ui."
+
+[analytics.calls_per_day]
+en = "Calls per day"
+ctx = "title"
+screen = "analytics"
+
+[analytics.calls_per_week]
+en = "Calls per week"
+ctx = "title"
+screen = "analytics"
+
+[analytics.history_call_minutes]
+en = "Call minutes"
+ctx = "label"
+screen = "analytics"
+
+[analytics.history_messages]
+en = "Messages"
+ctx = "label"
+screen = "analytics"
+
+[analytics.history_month]
+en = "Month"
+ctx = "label"
+screen = "analytics"
+
+[analytics.history_row]
+en = "{month}: {minutes} call minutes, {messages} messages"
+ctx = "a11y"
+screen = "analytics"
+args = { month = "str", minutes = "str", messages = "str" }
+
+[analytics.report_title]
+en = "Calls over {range}"
+ctx = "title"
+screen = "analytics"
+args = { range = "str" }
+note = "The range is \"the last 7 days\" and the like."
+
+[analytics.tile_abandoned]
+en = "Abandoned"
+ctx = "label"
+screen = "analytics"
+
+[analytics.tile_average_call]
+en = "Average call"
+ctx = "label"
+screen = "analytics"
+
+[analytics.tile_calls]
+en = "Calls"
+ctx = "label"
+screen = "analytics"
+
+[analytics.tile_converted]
+en = "Converted"
+ctx = "label"
+screen = "analytics"
+
+[analytics.tile_missed]
+en = "Missed"
+ctx = "label"
+screen = "analytics"
+
+[analytics_page.call_funnel]
+en = "Call funnel"
+ctx = "label"
+screen = "analytics_page"
+note = "In analytics-page.ui."
+
+[analytics_page.caller_sentiment]
+en = "Caller sentiment"
+ctx = "label"
+screen = "analytics_page"
+note = "In analytics-page.ui."
+
+[analytics_page.n30_days]
+en = "30 days"
+ctx = "button"
+screen = "analytics_page"
+note = "In analytics-page.ui."
+
+[analytics_page.n7_days]
+en = "7 days"
+ctx = "button"
+screen = "analytics_page"
+note = "In analytics-page.ui."
+
+[analytics_page.n90_days]
+en = "90 days"
+ctx = "button"
+screen = "analytics_page"
+note = "In analytics-page.ui."
+
+[analytics_page.period]
+en = "Period"
+ctx = "a11y"
+screen = "analytics_page"
+note = "In analytics-page.ui."
+
+[analytics_page.recent_months]
+en = "Recent months"
+ctx = "title"
+screen = "analytics_page"
+note = "In analytics-page.ui."
+
+[audition.connected]
+en = "On the call with your receptionist."
+ctx = "body"
+screen = "persona"
+
+[audition.connecting]
+en = "Connecting to your receptionist."
+ctx = "body"
+screen = "persona"
+
+[audition.ended]
+en = "The audition ended."
+ctx = "body"
+screen = "persona"
+
+[audition.starting]
+en = "Starting the call."
+ctx = "body"
+screen = "persona"
+
+[audition_dialog.another_audition_can_start_few]
+en = "Another audition can start in a few seconds."
+ctx = "body"
+screen = "audition_dialog"
+note = "In audition-dialog.ui."
+
+[audition_dialog.start]
+en = "Start"
+ctx = "button"
+screen = "audition_dialog"
+note = "In audition-dialog.ui."
+
+[audition_dialog.stop]
+en = "Stop"
+ctx = "button"
+screen = "audition_dialog"
+note = "In audition-dialog.ui."
+
+[billing.amount_off]
+en = "{amount} off"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { amount = "money" }
+
+[billing.ends]
+en = "Ends {date}"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { date = "str" }
+
+[billing.minutes]
+en.one = "{count} minute"
+en.other = "{count} minutes"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { count = "int" }
+
+[billing.minutes_included]
+en = "{minutes} included"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { minutes = "str" }
+note = "minutes is billing.minutes: \"500 minutes included\"."
+
+[billing.not_recorded_included]
+en.one = "{not_recorded}. {count} minute is included."
+en.other = "{not_recorded}. {count} minutes are included."
+ctx = "body"
+screen = "billing"
+tier = "T1"
+args = { not_recorded = "str", count = "int" }
+note = "not_recorded is the core's \"Not recorded\"."
+
+[billing.percent_off]
+en = "{percent}% off"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { percent = "str" }
+
+[billing.renews]
+en = "Renews {date}"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { date = "str" }
+
+[billing.used_minute]
+en = "{used} minute"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { used = "str" }
+note = "Exactly one minute used."
+
+[billing.used_minutes]
+en = "{used} minutes"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { used = "str" }
+note = "Any other number of minutes used, possibly with decimals."
+
+[billing.used_of_included]
+en = "{used} of {included}"
+ctx = "label"
+screen = "billing"
+tier = "T1"
+args = { used = "str", included = "str" }
+note = "Minutes used this month of those included: \"12 of 500 minutes\"."
+
+[billing.view_invoice]
+en = "View"
+ctx = "button"
+screen = "billing"
+tier = "T1"
+note = "Opens an invoice."
+
+[billing_page.call_minutes_month]
+en = "Call minutes this month"
+ctx = "label"
+screen = "billing_page"
+note = "In billing-page.ui."
+
+[billing_page.call_minutes_used_those_included]
+en = "Call minutes used of those included"
+ctx = "a11y"
+screen = "billing_page"
+note = "In billing-page.ui."
+
+[billing_page.invoices]
+en = "Invoices"
+ctx = "title"
+screen = "billing_page"
+note = "In billing-page.ui."
+
+[billing_page.invoices_a11y]
+en = "Invoices"
+ctx = "a11y"
+screen = "billing_page"
+note = "In billing-page.ui."
+
+[billing_page.subscription]
+en = "Subscription"
+ctx = "title"
+screen = "billing_page"
+note = "In billing-page.ui."
+
+[blocked.empty_body]
+en = "Callers you block from a contact's page are listed here, where you can unblock them."
+ctx = "body"
+screen = "contacts"
+
+[blocked.when]
+en = "Blocked {when}"
+ctx = "label"
+screen = "contacts"
+args = { when = "date" }
+
+[blocked_view.blocked_callers]
+en = "Blocked callers"
+ctx = "title"
+screen = "blocked_view"
+note = "In blocked-view.ui."
+
+[blocked_view.blocked_callers_a11y]
+en = "Blocked callers"
+ctx = "a11y"
+screen = "blocked_view"
+note = "In blocked-view.ui."
+
+[blocked_view.their_conversations_calls_do_not]
+en = "Their conversations and calls do not appear in this workspace."
+ctx = "body"
+screen = "blocked_view"
+note = "In blocked-view.ui."
+
+[call.action_items]
+en = "Action items"
+ctx = "label"
+screen = "calls"
+
+[call.callers_number]
+en = "Caller's number"
+ctx = "label"
+screen = "calls"
+
+[call.direction]
+en = "Direction"
+ctx = "label"
+screen = "calls"
+
+[call.email_sent_to]
+en = "Email sent to"
+ctx = "label"
+screen = "calls"
+
+[call.failed_title]
+en = "Could not load this call"
+ctx = "error"
+screen = "calls"
+tier = "T2"
+
+[call.key_points]
+en = "Key points"
+ctx = "label"
+screen = "calls"
+
+[call.objections]
+en = "Objections"
+ctx = "label"
+screen = "calls"
+
+[call.outcome]
+en = "Outcome"
+ctx = "label"
+screen = "calls"
+
+[call.placed_from]
+en = "Placed from"
+ctx = "label"
+screen = "calls"
+
+[call.sentiment]
+en = "Sentiment"
+ctx = "label"
+screen = "calls"
+
+[call.status]
+en = "Status"
+ctx = "label"
+screen = "calls"
+
+[call.topics]
+en = "Topics"
+ctx = "label"
+screen = "calls"
+
+[call.transfer]
+en = "Transfer"
+ctx = "label"
+screen = "calls"
+
+[call.why_transferred]
+en = "Why it was transferred"
+ctx = "label"
+screen = "calls"
+
+[call_bar.answer]
+en = "Answer"
+ctx = "button"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_bar.call]
+en = "Call"
+ctx = "a11y"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_bar.decline]
+en = "Decline"
+ctx = "button"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_bar.hang_up]
+en = "Hang up"
+ctx = "a11y"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_bar.hang_up_ctrl_shift_h]
+en = "Hang up (Ctrl+Shift+H)"
+ctx = "tooltip"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_bar.incoming_call]
+en = "Incoming call"
+ctx = "a11y"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_bar.microphone_tooltip]
+en = "{action} (Ctrl+D)"
+ctx = "tooltip"
+screen = "call"
+args = { action = "str" }
+note = "action is \"Mute\" or \"Unmute\"; Ctrl+D is the shortcut."
+
+[call_bar.mute]
+en = "Mute"
+ctx = "a11y"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_bar.mute_ctrl_d]
+en = "Mute (Ctrl+D)"
+ctx = "tooltip"
+screen = "call_bar"
+note = "In call-bar.ui."
+
+[call_handling.presence_failed]
+en = "Could not read whether you are rung"
+ctx = "error"
+screen = "call_handling"
+tier = "T2"
+
+[call_handling.ring_seconds]
+en = "{seconds} seconds"
+ctx = "label"
+screen = "call_handling"
+args = { seconds = "int" }
+note = "How long devices ring; never fewer than 2 seconds."
+
+[call_handling_view.availability]
+en = "Your availability"
+ctx = "title"
+screen = "call_handling_view"
+note = "In call-handling-view.ui."
+
+[call_handling_view.every_member_workspace]
+en = "For every member of this workspace."
+ctx = "body"
+screen = "call_handling_view"
+note = "In call-handling-view.ui."
+
+[call_handling_view.how_long_devices_ring]
+en = "How long your devices ring"
+ctx = "label"
+screen = "call_handling_view"
+note = "In call-handling-view.ui."
+
+[call_handling_view.how_long_devices_ring_seconds]
+en = "How long your devices ring, in seconds"
+ctx = "a11y"
+screen = "call_handling_view"
+note = "In call-handling-view.ui."
+
+[call_handling_view.ring_me_calls]
+en = "Ring me for calls"
+ctx = "label"
+screen = "call_handling_view"
+note = "In call-handling-view.ui."
+
+[call_handling_view.whether_own_devices_ring_workspaces]
+en = "Whether your own devices ring for this workspace's calls. A change is sent at once."
+ctx = "body"
+screen = "call_handling_view"
+note = "In call-handling-view.ui."
+
+[call_handling_view.who_answers]
+en = "Who answers"
+ctx = "title"
+screen = "call_handling_view"
+note = "In call-handling-view.ui."
+
+[call_view.analysis]
+en = "Analysis"
+ctx = "title"
+screen = "call_view"
+note = "In call-view.ui."
+
+[call_view.follow_up_sent]
+en = "Follow-up sent"
+ctx = "title"
+screen = "call_view"
+note = "In call-view.ui."
+
+[call_view.summary]
+en = "Summary"
+ctx = "title"
+screen = "call_view"
+note = "In call-view.ui."
+
+[calls_page.call]
+en = "Call"
+ctx = "title"
+screen = "calls_page"
+note = "In calls-page.ui."
+
+[calls_page.calls]
+en = "Calls"
+ctx = "a11y"
+screen = "calls_page"
+note = "In calls-page.ui."
+
+[calls_page.choose_call_see_summary_transcript]
+en = "Choose a call to see its summary and transcript."
+ctx = "body"
+screen = "calls_page"
+note = "In calls-page.ui."
+
+[calls_page.no_call_open]
+en = "No call open"
+ctx = "title"
+screen = "calls_page"
+note = "In calls-page.ui."
+
+[calls_page.place_call]
+en = "Place a call"
+ctx = "button"
+screen = "calls_page"
+note = "In calls-page.ui."
+
+[chart.columns_empty]
+en = "{what}: nothing to show."
+ctx = "a11y"
+screen = "analytics"
+args = { what = "str" }
+
+[chart.columns_summary]
+en = "{what}: {bars}. The most was {most}, on {label}."
+ctx = "a11y"
+screen = "analytics"
+args = { what = "str", bars = "str", most = "str", label = "str" }
+note = "A column chart read aloud: its name, each bar (\"Mon 3, Tue 5\"), then the largest value and its bar."
+
+[chart.sentiment_summary]
+en = "Caller sentiment: {bands}."
+ctx = "a11y"
+screen = "analytics"
+args = { bands = "str" }
+note = "Each band is \"Positive 2 (67%)\", joined by commas."
+
+[common.calls]
+en = "Calls"
+ctx = "title"
+screen = "common"
+note = "In account-page.ui, analytics-page.ui, calls-page.ui."
+
+[common.cancel]
+en = "Cancel"
+ctx = "button"
+screen = "common"
+note = "In contact-form.ui, messaging-form.ui, session-page.ui, ticket-form.ui."
+
+[common.carrier]
+en = "Carrier"
+ctx = "label"
+screen = "common"
+note = "The phone company that holds a number."
+
+[common.conversation]
+en = "Conversation"
+ctx = "label"
+screen = "common"
+note = "In desk-ticket-view.ui, support-request-view.ui."
+
+[common.details]
+en = "Details"
+ctx = "title"
+screen = "common"
+note = "In call-view.ui, contact-view.ui."
+
+[common.dismiss]
+en = "Dismiss"
+ctx = "tooltip"
+screen = "common"
+note = "In blocked-view.ui, call-bar.ui, contact-view.ui, desk-page.ui, save-notice.ui, support-page.ui, thread-view.ui."
+
+[common.dismiss_a11y]
+en = "Dismiss"
+ctx = "a11y"
+screen = "common"
+note = "In blocked-view.ui, call-bar.ui, contact-view.ui, desk-page.ui, save-notice.ui, support-page.ui, thread-view.ui."
+
+[common.dismiss_button]
+en = "Dismiss"
+ctx = "button"
+screen = "common"
+note = "In desk-settings-view.ui, devices-page.ui, reply-box.ui, rooms-page.ui, scheduling-page.ui, window.ui, workflows-page.ui."
+
+[common.district_ai]
+en = "District AI"
+ctx = "title"
+screen = "common"
+fixed = true
+note = "In session-page.ui, window.ui."
+
+[common.distronode]
+en = "Distronode"
+ctx = "label"
+screen = "common"
+fixed = true
+
+[common.email_address]
+en = "Email address"
+ctx = "label"
+screen = "common"
+note = "In contact-form.ui, members-view.ui, ticket-form.ui."
+
+[common.help_desk]
+en = "Help desk"
+ctx = "title"
+screen = "common"
+note = "In desk-page.ui, desk-settings-view.ui."
+
+[common.line_type]
+en = "Line type"
+ctx = "label"
+screen = "common"
+
+[common.location]
+en = "Location"
+ctx = "label"
+screen = "common"
+
+[common.months_usage]
+en = "This month's usage"
+ctx = "title"
+screen = "common"
+note = "In analytics-page.ui, billing-page.ui."
+
+[common.mute]
+en = "Mute"
+ctx = "button"
+screen = "common"
+
+[common.name]
+en = "Name"
+ctx = "label"
+screen = "common"
+note = "In contact-form.ui, directory-view.ui, messaging-form.ui, persona-view.ui, ticket-form.ui."
+
+[common.phone_number]
+en = "Phone number"
+ctx = "label"
+screen = "common"
+note = "In contact-form.ui, directory-view.ui, ticket-form.ui."
+
+[common.reply]
+en = "Reply"
+ctx = "a11y"
+screen = "common"
+note = "In reply-box.ui, thread-view.ui."
+
+[common.reply_sent]
+en = "Reply sent."
+ctx = "toast"
+screen = "common"
+
+[common.save]
+en = "Save"
+ctx = "button"
+screen = "common"
+note = "In call-handling-view.ui, desk-settings-view.ui, messaging-form.ui, persona-view.ui."
+
+[common.setting_app_does_not_know]
+en = "A setting this app does not know"
+ctx = "label"
+screen = "common"
+note = "In call-handling-view.ui, knowledge-view.ui."
+
+[common.stored_as]
+en = "Stored as \"{value}\"."
+ctx = "body"
+screen = "common"
+args = { value = "str" }
+note = "A setting value this app does not know, quoted as stored."
+
+[common.text_message]
+en = "Text message"
+ctx = "label"
+screen = "common"
+
+[common.transcript]
+en = "Transcript"
+ctx = "title"
+screen = "common"
+note = "In call-view.ui, meeting-record.ui."
+
+[common.try_again]
+en = "Try again"
+ctx = "button"
+screen = "common"
+note = "In analytics-page.ui, billing-page.ui, blocked-view.ui, call-handling-view.ui, call-view.ui, calls-page.ui, contact-view.ui, contacts-page.ui, desk-page.ui, desk-settings-view.ui, desk-ticket-view.ui, devices-page.ui, hq-page.ui, inbox-page.ui, knowledge-view.ui, marketplace-page.ui, messaging-view.ui, overview-page.ui, persona-view.ui, rooms-page.ui, scheduling-page.ui, session-page.ui, support-page.ui, support-request-view.ui, thread-view.ui, workflows-page.ui."
+
+[common.unmute]
+en = "Unmute"
+ctx = "button"
+screen = "common"
+
+[contact.added]
+en = "Added"
+ctx = "label"
+screen = "contacts"
+
+[contact.block]
+en = "Block"
+ctx = "button"
+screen = "contacts"
+
+[contact.budget]
+en = "Budget"
+ctx = "label"
+screen = "contacts"
+
+[contact.busy_blocking]
+en = "Blocking the caller"
+ctx = "label"
+screen = "contacts"
+
+[contact.busy_clearing_research]
+en = "Clearing research"
+ctx = "label"
+screen = "contacts"
+
+[contact.busy_deleting]
+en = "Deleting the contact"
+ctx = "label"
+screen = "contacts"
+
+[contact.busy_saving]
+en = "Saving the contact"
+ctx = "label"
+screen = "contacts"
+
+[contact.busy_starting_research]
+en = "Starting research"
+ctx = "label"
+screen = "contacts"
+
+[contact.busy_unblocking]
+en = "Unblocking the caller"
+ctx = "label"
+screen = "contacts"
+
+[contact.caller_blocked]
+en = "Caller blocked."
+ctx = "toast"
+screen = "contacts"
+
+[contact.caller_unblocked]
+en = "Caller unblocked."
+ctx = "toast"
+screen = "contacts"
+
+[contact.company]
+en = "Company"
+ctx = "label"
+screen = "contacts"
+
+[contact.failed_title]
+en = "Could not load this contact"
+ctx = "error"
+screen = "contacts"
+tier = "T2"
+
+[contact.industry]
+en = "Industry"
+ctx = "label"
+screen = "contacts"
+
+[contact.last_changed]
+en = "Last changed"
+ctx = "label"
+screen = "contacts"
+
+[contact.latest_context]
+en = "Latest context"
+ctx = "label"
+screen = "contacts"
+
+[contact.research_cleared]
+en = "Research cleared."
+ctx = "toast"
+screen = "contacts"
+
+[contact.research_complete]
+en = "Complete"
+ctx = "label"
+screen = "contacts"
+
+[contact.research_did_not_finish]
+en = "Did not finish"
+ctx = "label"
+screen = "contacts"
+
+[contact.research_not_run]
+en = "Not run"
+ctx = "label"
+screen = "contacts"
+
+[contact.research_queued]
+en = "Queued"
+ctx = "label"
+screen = "contacts"
+note = "Where a contact's web research stands."
+
+[contact.research_searching]
+en = "Searching the web"
+ctx = "label"
+screen = "contacts"
+
+[contact.research_started]
+en = "Research started. The result appears here when it is ready."
+ctx = "toast"
+screen = "contacts"
+
+[contact.research_status]
+en = "Status"
+ctx = "label"
+screen = "contacts"
+
+[contact.research_why_not_finished]
+en = "Why it did not finish"
+ctx = "label"
+screen = "contacts"
+
+[contact.research_writing]
+en = "Writing the summary"
+ctx = "label"
+screen = "contacts"
+
+[contact.saved]
+en = "Contact saved."
+ctx = "toast"
+screen = "contacts"
+
+[contact.timeline]
+en = "Timeline"
+ctx = "label"
+screen = "contacts"
+
+[contact.unblock]
+en = "Unblock"
+ctx = "button"
+screen = "contacts"
+
+[contact.website]
+en = "Website"
+ctx = "label"
+screen = "contacts"
+
+[contact_form.add]
+en = "Add"
+ctx = "button"
+screen = "contacts"
+
+[contact_form.add_title]
+en = "Add contact"
+ctx = "title"
+screen = "contacts"
+
+[contact_form.contact_needs_name_phone_number]
+en = "A contact needs a name, and a phone number or an email address."
+ctx = "body"
+screen = "contact_form"
+note = "In contact-form.ui."
+
+[contact_form.edit_title]
+en = "Edit contact"
+ctx = "title"
+screen = "contacts"
+
+[contact_view.block]
+en = "Block"
+ctx = "button"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.blocked]
+en = "Blocked"
+ctx = "label"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.clear_research]
+en = "Clear research"
+ctx = "button"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.delete]
+en = "Delete"
+ctx = "button"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.edit]
+en = "Edit"
+ctx = "button"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.have_read_only_access_workspace]
+en = "You have read-only access to this workspace, so you cannot change contacts."
+ctx = "body"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.phone_number]
+en = "Phone number"
+ctx = "title"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.research]
+en = "Research"
+ctx = "title"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.research_looks_contact_up_web]
+en = "Research looks this contact up on the web and writes a summary. Each run is billed."
+ctx = "body"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contact_view.run_research]
+en = "Run research"
+ctx = "button"
+screen = "contact_view"
+note = "In contact-view.ui."
+
+[contacts.added]
+en = "Contact added."
+ctx = "toast"
+screen = "contacts"
+
+[contacts.count]
+en.one = "{count} contact"
+en.other = "{count} contacts"
+ctx = "label"
+screen = "contacts"
+args = { count = "int" }
+
+[contacts.deleted]
+en = "Contact deleted."
+ctx = "toast"
+screen = "contacts"
+
+[contacts_page.add_contact]
+en = "Add contact"
+ctx = "button"
+screen = "contacts_page"
+note = "In contacts-page.ui."
+
+[contacts_page.blocked_callers]
+en = "Blocked callers"
+ctx = "button"
+screen = "contacts_page"
+note = "In contacts-page.ui."
+
+[contacts_page.choose_contact_see_their_details]
+en = "Choose a contact to see their details."
+ctx = "body"
+screen = "contacts_page"
+note = "In contacts-page.ui."
+
+[contacts_page.contact]
+en = "Contact"
+ctx = "title"
+screen = "contacts_page"
+note = "In contacts-page.ui."
+
+[contacts_page.contacts]
+en = "Contacts"
+ctx = "title"
+screen = "contacts_page"
+note = "In contacts-page.ui."
+
+[contacts_page.contacts_a11y]
+en = "Contacts"
+ctx = "a11y"
+screen = "contacts_page"
+note = "In contacts-page.ui."
+
+[contacts_page.no_contact_open]
+en = "No contact open"
+ctx = "title"
+screen = "contacts_page"
+note = "In contacts-page.ui."
+
+[desk.every_ticket]
+en = "Every ticket"
+ctx = "label"
+screen = "desk"
+note = "The help desk filter that shows all tickets."
+
+[desk.no_customer_details]
+en = "No customer details"
+ctx = "label"
+screen = "desk"
+
+[desk.waiting]
+en = "Waiting"
+ctx = "label"
+screen = "desk"
+note = "A ticket waiting on the customer, in a list row with little room."
+
+[desk_page.choose_ticket_read_reply]
+en = "Choose a ticket to read it and reply."
+ctx = "body"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_page.new_ticket]
+en = "New ticket"
+ctx = "button"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_page.no_ticket_open]
+en = "No ticket open"
+ctx = "title"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_page.settings]
+en = "Settings"
+ctx = "button"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_page.ticket]
+en = "Ticket"
+ctx = "title"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_page.tickets]
+en = "Tickets"
+ctx = "a11y"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_page.which_tickets_show]
+en = "Which tickets to show"
+ctx = "tooltip"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_page.which_tickets_show_a11y]
+en = "Which tickets to show"
+ctx = "a11y"
+screen = "desk_page"
+note = "In desk-page.ui."
+
+[desk_settings.choose_logo]
+en = "Choose a logo"
+ctx = "title"
+screen = "desk_settings"
+note = "The title of the file chooser."
+
+[desk_settings.logo_published]
+en = "A logo is published."
+ctx = "body"
+screen = "desk_settings"
+
+[desk_settings.logo_updated]
+en = "Logo updated."
+ctx = "toast"
+screen = "desk_settings"
+
+[desk_settings.no_logo]
+en = "No logo yet."
+ctx = "body"
+screen = "desk_settings"
+
+[desk_settings.saved]
+en = "Settings saved."
+ctx = "toast"
+screen = "desk_settings"
+
+[desk_settings_view.choose_image]
+en = "Choose an image"
+ctx = "button"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.email_customers_replies]
+en = "Email customers your replies"
+ctx = "label"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.leave_name_blank_show_customers]
+en = "Leave the name blank to show customers the workspace's own name."
+ctx = "body"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.logo]
+en = "Logo"
+ctx = "title"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.logo_label]
+en = "Logo"
+ctx = "label"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.name_customers_see]
+en = "Name customers see"
+ctx = "label"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.remove]
+en = "Remove"
+ctx = "button"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.shown_customers_help_desks_pages]
+en = "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
+ctx = "body"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.take_tickets]
+en = "Take tickets"
+ctx = "label"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_settings_view.while_desk_off_no_tickets]
+en = "While the desk is off, no tickets are recorded."
+ctx = "body"
+screen = "desk_settings_view"
+note = "In desk-settings-view.ui."
+
+[desk_ticket.came_in_by]
+en = "Came in by"
+ctx = "label"
+screen = "desk"
+note = "The channel a ticket arrived through."
+
+[desk_ticket.emailed]
+en = "The customer was emailed your reply."
+ctx = "body"
+screen = "desk"
+
+[desk_ticket.failed_title]
+en = "Could not load this ticket"
+ctx = "error"
+screen = "desk"
+tier = "T2"
+
+[desk_ticket.not_emailed]
+en = "The customer was not emailed this reply."
+ctx = "body"
+screen = "desk"
+
+[desk_ticket.raised]
+en = "Raised"
+ctx = "label"
+screen = "desk"
+note = "When the ticket was opened."
+
+[desk_ticket.resolved_at]
+en = "Resolved"
+ctx = "label"
+screen = "desk"
+note = "When the ticket was resolved."
+
+[desk_ticket_view.customer]
+en = "Customer"
+ctx = "title"
+screen = "desk_ticket_view"
+note = "In desk-ticket-view.ui."
+
+[desk_ticket_view.open]
+en = "Open"
+ctx = "button"
+screen = "desk_ticket_view"
+note = "In desk-ticket-view.ui."
+
+[desk_ticket_view.resolved]
+en = "Resolved"
+ctx = "button"
+screen = "desk_ticket_view"
+note = "In desk-ticket-view.ui."
+
+[desk_ticket_view.status]
+en = "Status"
+ctx = "a11y"
+screen = "desk_ticket_view"
+note = "In desk-ticket-view.ui."
+
+[desk_ticket_view.waiting]
+en = "Waiting"
+ctx = "button"
+screen = "desk_ticket_view"
+note = "In desk-ticket-view.ui."
+
+[desk_ticket_view.waiting_customer]
+en = "Waiting on the customer"
+ctx = "tooltip"
+screen = "desk_ticket_view"
+note = "In desk-ticket-view.ui."
+
+[devices.last_active]
+en = "Last active {when}"
+ctx = "label"
+screen = "devices"
+args = { when = "date" }
+
+[devices.sign_out]
+en = "Sign out"
+ctx = "button"
+screen = "devices"
+tier = "T2"
+
+[devices.sign_out_question]
+en = "Sign out?"
+ctx = "title"
+screen = "devices"
+tier = "T2"
+
+[devices_page.devices_last_active_time_when]
+en = "A device's last active time is when it last renewed its sign-in, which can trail real use by up to ten minutes."
+ctx = "body"
+screen = "devices_page"
+note = "In devices-page.ui."
+
+[devices_page.sign_out_every_device]
+en = "Sign out of every device"
+ctx = "button"
+screen = "devices_page"
+note = "In devices-page.ui."
+
+[devices_page.signed_devices]
+en = "Signed-in devices"
+ctx = "title"
+screen = "devices_page"
+note = "In devices-page.ui."
+
+[dialer_page.call]
+en = "Call"
+ctx = "button"
+screen = "dialer_page"
+note = "In dialer-page.ui."
+
+[dialer_page.delete_last_digit]
+en = "Delete the last digit"
+ctx = "tooltip"
+screen = "dialer_page"
+note = "In dialer-page.ui."
+
+[dialer_page.delete_last_digit_a11y]
+en = "Delete the last digit"
+ctx = "a11y"
+screen = "dialer_page"
+note = "In dialer-page.ui."
+
+[dialer_page.keypad]
+en = "Keypad"
+ctx = "a11y"
+screen = "dialer_page"
+note = "In dialer-page.ui."
+
+[dialer_page.number_call]
+en = "Number to call"
+ctx = "a11y"
+screen = "dialer_page"
+note = "In dialer-page.ui."
+
+[dialer_page.type_paste_number]
+en = "Type or paste a number"
+ctx = "placeholder"
+screen = "dialer_page"
+note = "In dialer-page.ui."
+
+[directory.no_name]
+en = "No name"
+ctx = "label"
+screen = "directory"
+
+[directory.no_phone_number]
+en = "No phone number, so nobody can be put through"
+ctx = "label"
+screen = "directory"
+
+[directory.remove]
+en = "Remove from the directory"
+ctx = "tooltip"
+screen = "directory"
+
+[directory_view.add_list]
+en = "Add to the list"
+ctx = "button"
+screen = "directory_view"
+note = "In directory-view.ui."
+
+[directory_view.add_someone]
+en = "Add someone"
+ctx = "title"
+screen = "directory_view"
+note = "In directory-view.ui."
+
+[directory_view.replace_directory]
+en = "Replace the directory"
+ctx = "button"
+screen = "directory_view"
+note = "In directory-view.ui."
+
+[directory_view.transfer_targets]
+en = "Transfer targets"
+ctx = "title"
+screen = "directory_view"
+note = "In directory-view.ui."
+
+[guard.discard]
+en = "Discard"
+ctx = "button"
+screen = "settings"
+tier = "T2"
+
+[guard.discard_body]
+en = "What you changed in this section has not been saved, and leaving it drops those changes."
+ctx = "body"
+screen = "settings"
+tier = "T2"
+
+[guard.discard_title]
+en = "Discard your changes?"
+ctx = "title"
+screen = "settings"
+tier = "T2"
+
+[guard.keep_editing]
+en = "Keep editing"
+ctx = "button"
+screen = "settings"
+
+[hq.unknown_note]
+en = "The change may have been made before the answer was lost. Check before confirming again."
+ctx = "body"
+screen = "hq"
+tier = "T2"
+
+[hq.viewer_note]
+en = "Nothing has been changed. Only an agency or client member of this workspace can confirm a change."
+ctx = "body"
+screen = "hq"
+
+[hq_page.ask]
+en = "Ask"
+ctx = "button"
+screen = "hq_page"
+note = "In hq-page.ui."
+
+[hq_page.ask_district_hq]
+en = "Ask District HQ"
+ctx = "placeholder"
+screen = "hq_page"
+note = "In hq-page.ui."
+
+[hq_page.ask_district_hq_a11y]
+en = "Ask District HQ"
+ctx = "a11y"
+screen = "hq_page"
+note = "In hq-page.ui."
+
+[hq_page.conversation_district_hq]
+en = "Conversation with District HQ"
+ctx = "a11y"
+screen = "hq_page"
+note = "In hq-page.ui."
+
+[hq_page.each_question_answered_ai_model]
+en = "Each question is answered by an AI model, which is billed. A change it proposes is made only when you confirm it."
+ctx = "body"
+screen = "hq_page"
+note = "In hq-page.ui."
+
+[inbox.draft]
+en = "Draft"
+ctx = "label"
+screen = "inbox"
+note = "A small chip on a conversation with a saved reply."
+
+[inbox.draft_saved]
+en = "reply saved as a draft"
+ctx = "a11y"
+screen = "inbox"
+note = "Read aloud for a conversation row, after a comma, so lower case."
+
+[inbox.hit_subject]
+en = "{subject}: {body}"
+ctx = "label"
+screen = "inbox"
+args = { subject = "str", body = "str" }
+note = "A matching email: its subject, then its text."
+
+[inbox.preview_own]
+en = "You: {text}"
+ctx = "label"
+screen = "inbox"
+args = { text = "str" }
+note = "The latest message of a conversation, sent by the workspace itself."
+
+[inbox.search_failed]
+en = "Could not search"
+ctx = "error"
+screen = "inbox"
+tier = "T2"
+
+[inbox.unread]
+en.one = "{count} unread"
+en.other = "{count} unread"
+ctx = "a11y"
+screen = "inbox"
+args = { count = "int" }
+note = "Read aloud for a conversation row: unread messages."
+
+[inbox_page.choose_conversation_read_reply]
+en = "Choose a conversation to read it and reply."
+ctx = "body"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[inbox_page.conversation]
+en = "Conversation"
+ctx = "title"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[inbox_page.conversations]
+en = "Conversations"
+ctx = "title"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[inbox_page.conversations_a11y]
+en = "Conversations"
+ctx = "a11y"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[inbox_page.matching_messages]
+en = "Matching messages"
+ctx = "a11y"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[inbox_page.no_conversation_open]
+en = "No conversation open"
+ctx = "title"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[inbox_page.search_every_message]
+en = "Search every message"
+ctx = "placeholder"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[inbox_page.search_every_message_a11y]
+en = "Search every message"
+ctx = "a11y"
+screen = "inbox_page"
+note = "In inbox-page.ui."
+
+[knowledge.added]
+en = "Added {when}"
+ctx = "label"
+screen = "knowledge"
+args = { when = "date" }
+
+[knowledge.delete_document]
+en = "Delete this document"
+ctx = "tooltip"
+screen = "knowledge"
+tier = "T2"
+
+[knowledge.documents_failed]
+en = "Could not load the documents"
+ctx = "error"
+screen = "knowledge"
+tier = "T2"
+
+[knowledge.pieces]
+en.one = "{count} piece"
+en.other = "{count} pieces"
+ctx = "label"
+screen = "knowledge"
+args = { count = "int" }
+note = "How many pieces a document was cut into for answers."
+
+[knowledge_view.add_document]
+en = "Add a document"
+ctx = "title"
+screen = "knowledge_view"
+note = "In knowledge-view.ui."
+
+[knowledge_view.add_document_button]
+en = "Add document"
+ctx = "button"
+screen = "knowledge_view"
+note = "In knowledge-view.ui."
+
+[knowledge_view.documents]
+en = "Documents"
+ctx = "title"
+screen = "knowledge_view"
+note = "In knowledge-view.ui."
+
+[knowledge_view.documents_text]
+en = "The document's text"
+ctx = "a11y"
+screen = "knowledge_view"
+note = "In knowledge-view.ui."
+
+[knowledge_view.title]
+en = "Title"
+ctx = "label"
+screen = "knowledge_view"
+note = "In knowledge-view.ui."
+
+[knowledge_view.where_answers_come_from]
+en = "Where answers come from"
+ctx = "title"
+screen = "knowledge_view"
+note = "In knowledge-view.ui."
+
+[marketplace.monthly]
+en = "{price} a month"
+ctx = "label"
+screen = "marketplace"
+tier = "T1"
+args = { price = "money" }
+
+[marketplace.offered_by]
+en = "Offered by {carrier}"
+ctx = "label"
+screen = "marketplace"
+args = { carrier = "str" }
+
+[marketplace_page.area_code]
+en = "Area code"
+ctx = "label"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.country_code]
+en = "Country code"
+ctx = "label"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.find_number]
+en = "Find a number"
+ctx = "button"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.number_type]
+en = "Number type"
+ctx = "label"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.numbers]
+en = "Your numbers"
+ctx = "button"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.numbers_a11y]
+en = "Your numbers"
+ctx = "a11y"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.numbers_sale]
+en = "Numbers for sale"
+ctx = "a11y"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.search]
+en = "Search"
+ctx = "button"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[marketplace_page.type_area_code_search_whole]
+en = "Type an area code, or search the whole country. Results come from your carrier."
+ctx = "body"
+screen = "marketplace_page"
+note = "In marketplace-page.ui."
+
+[meeting.ended]
+en = "Ended"
+ctx = "label"
+screen = "meetings"
+
+[meeting.length]
+en = "Length"
+ctx = "label"
+screen = "meetings"
+
+[meeting.people]
+en = "People"
+ctx = "label"
+screen = "meetings"
+
+[meeting.started]
+en = "Started"
+ctx = "label"
+screen = "meetings"
+
+[meeting.status]
+en = "Status"
+ctx = "label"
+screen = "meetings"
+
+[meeting_record.action_items]
+en = "Action items"
+ctx = "title"
+screen = "meeting_record"
+note = "In meeting-record.ui."
+
+[meeting_record.could_not_load_meeting]
+en = "Could not load this meeting"
+ctx = "title"
+screen = "meeting_record"
+note = "In meeting-record.ui."
+
+[meeting_record.meeting]
+en = "Meeting"
+ctx = "title"
+screen = "meeting_record"
+note = "In meeting-record.ui."
+
+[meeting_record.minutes]
+en = "Minutes"
+ctx = "title"
+screen = "meeting_record"
+note = "In meeting-record.ui."
+
+[members.agency_only]
+en = "Only an agency member can add members, change their roles or remove them."
+ctx = "body"
+screen = "members"
+
+[members.failed_title]
+en = "Could not load the members"
+ctx = "error"
+screen = "members"
+tier = "T2"
+
+[members.remove]
+en = "Remove from this workspace"
+ctx = "button"
+screen = "members"
+tier = "T2"
+
+[members.role]
+en = "Role"
+ctx = "label"
+screen = "members"
+
+[members.unknown_role]
+en = "{role} · A role this app does not know, which it treats as no access."
+ctx = "label"
+screen = "members"
+args = { role = "str" }
+
+[members_view.add]
+en = "Add"
+ctx = "button"
+screen = "members_view"
+note = "In members-view.ui."
+
+[members_view.add_member]
+en = "Add a member"
+ctx = "title"
+screen = "members_view"
+note = "In members-view.ui."
+
+[members_view.members]
+en = "Members"
+ctx = "title"
+screen = "members_view"
+note = "In members-view.ui."
+
+[members_view.new_name]
+en = "New name"
+ctx = "label"
+screen = "members_view"
+note = "In members-view.ui."
+
+[members_view.now]
+en = "Now"
+ctx = "label"
+screen = "members_view"
+note = "In members-view.ui."
+
+[members_view.rename_workspace]
+en = "Rename the workspace"
+ctx = "button"
+screen = "members_view"
+note = "In members-view.ui."
+
+[members_view.role]
+en = "Role"
+ctx = "label"
+screen = "members_view"
+note = "In members-view.ui."
+
+[members_view.workspaces_name]
+en = "The workspace's name"
+ctx = "title"
+screen = "members_view"
+note = "In members-view.ui."
+
+[messaging.accounts_failed]
+en = "Could not load the carrier accounts"
+ctx = "error"
+screen = "messaging"
+tier = "T2"
+
+[messaging.default]
+en = "Default"
+ctx = "label"
+screen = "messaging"
+note = "A chip on the default carrier account."
+
+[messaging.default_sender]
+en = "The default account"
+ctx = "label"
+screen = "messaging"
+note = "What a channel's sender picker shows when the channel has no sender of its own."
+
+[messaging.edit_account]
+en = "Edit this account"
+ctx = "tooltip"
+screen = "messaging"
+
+[messaging.make_default]
+en = "Make default"
+ctx = "button"
+screen = "messaging"
+
+[messaging.no_numbers]
+en = "No numbers"
+ctx = "label"
+screen = "messaging"
+
+[messaging.remove_account]
+en = "Remove this account"
+ctx = "tooltip"
+screen = "messaging"
+tier = "T2"
+
+[messaging.unlisted_account]
+en = "An account that is not listed"
+ctx = "label"
+screen = "messaging"
+
+[messaging_form.add_title]
+en = "Add a carrier account"
+ctx = "title"
+screen = "messaging"
+
+[messaging_form.carrier]
+en = "Carrier"
+ctx = "label"
+screen = "messaging_form"
+note = "In messaging-form.ui."
+
+[messaging_form.check_these_keys]
+en = "Check these keys"
+ctx = "button"
+screen = "messaging_form"
+note = "In messaging-form.ui."
+
+[messaging_form.edit_title]
+en = "Edit the carrier account"
+ctx = "title"
+screen = "messaging"
+
+[messaging_form.keys]
+en = "Keys"
+ctx = "title"
+screen = "messaging_form"
+note = "In messaging-form.ui."
+
+[messaging_form.keys_needed]
+en = "Every key the carrier needs, typed in full."
+ctx = "body"
+screen = "messaging"
+
+[messaging_form.make_default_sender]
+en = "Make it the default sender"
+ctx = "label"
+screen = "messaging_form"
+note = "In messaging-form.ui."
+
+[messaging_form.phone_numbers]
+en = "Phone numbers"
+ctx = "title"
+screen = "messaging_form"
+note = "In messaging-form.ui."
+
+[messaging_form.phone_numbers_one_per_line]
+en = "Phone numbers, one per line"
+ctx = "a11y"
+screen = "messaging_form"
+note = "In messaging-form.ui."
+
+[messaging_form.test_passed]
+en = "The carrier accepted these keys."
+ctx = "body"
+screen = "messaging"
+
+[messaging_form.test_passed_for]
+en = "The carrier accepted these keys, for {account}."
+ctx = "body"
+screen = "messaging"
+args = { account = "str" }
+
+[messaging_form.test_rejected]
+en = "The carrier refused these keys: {reason}"
+ctx = "error"
+screen = "messaging"
+tier = "T2"
+args = { reason = "str" }
+
+[messaging_form.test_running]
+en = "Asking the carrier."
+ctx = "body"
+screen = "messaging"
+
+[messaging_form.test_unreachable]
+en = "The carrier could not be asked, so nothing is known about these keys. {failure}"
+ctx = "error"
+screen = "messaging"
+tier = "T2"
+args = { failure = "str" }
+
+[messaging_form.whose_account]
+en = "Whose account"
+ctx = "label"
+screen = "messaging_form"
+note = "In messaging-form.ui."
+
+[messaging_view.add_account]
+en = "Add an account"
+ctx = "button"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.bought_workspace_distronodes_own_carrier]
+en = "Bought for this workspace on Distronode's own carrier account. They are not an account of this workspace's, so they cannot be chosen as a sender."
+ctx = "body"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.carrier_accounts]
+en = "Carrier accounts"
+ctx = "title"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.channel_without_sender_own_sends]
+en = "A channel without a sender of its own sends from the default account."
+ctx = "body"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.mobile_number]
+en = "Mobile number"
+ctx = "label"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.numbers_held_distronode]
+en = "Numbers held by Distronode"
+ctx = "title"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.owners_mobile_number]
+en = "The owner's mobile number"
+ctx = "title"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.save_number]
+en = "Save number"
+ctx = "button"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[messaging_view.sender_each_channel]
+en = "Sender for each channel"
+ctx = "title"
+screen = "messaging_view"
+note = "In messaging-view.ui."
+
+[notification.in_workspace]
+en = "{heading} in {workspace}"
+ctx = "notification"
+screen = "notifications"
+tier = "T0"
+args = { heading = "str", workspace = "str" }
+note = "A notification's heading naming another workspace: \"Incoming call in Bravo Client\"."
+
+[overview.calls_this_week]
+en = "Calls this week"
+ctx = "label"
+screen = "overview"
+
+[overview.contacts]
+en = "Contacts"
+ctx = "label"
+screen = "overview"
+
+[overview.failed_title]
+en = "Could not load the overview"
+ctx = "error"
+screen = "overview"
+tier = "T2"
+
+[overview_page.no_calls_yet_they_appear]
+en = "No calls yet. They appear here as your receptionist answers them."
+ctx = "body"
+screen = "overview_page"
+note = "In overview-page.ui."
+
+[overview_page.recent_calls]
+en = "Recent calls"
+ctx = "title"
+screen = "overview_page"
+note = "In overview-page.ui."
+
+[persona.options_loading]
+en = "Reading the languages this workspace may use."
+ctx = "body"
+screen = "persona"
+
+[persona_view.answer_length]
+en = "Answer length"
+ctx = "label"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.greeting]
+en = "Greeting"
+ctx = "label"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.how_behaves_written_into_every]
+en = "How it behaves, written into every call's instructions."
+ctx = "body"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.language]
+en = "Language"
+ctx = "label"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.language_answers]
+en = "Language and answers"
+ctx = "title"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.open_voice_studio]
+en = "Open Voice Studio"
+ctx = "button"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.personality]
+en = "Personality"
+ctx = "title"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.personality_a11y]
+en = "Personality"
+ctx = "a11y"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.try_receptionist]
+en = "Try this receptionist"
+ctx = "button"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.voice_engine]
+en = "Voice engine"
+ctx = "label"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[persona_view.what_says]
+en = "What it says"
+ctx = "title"
+screen = "persona_view"
+note = "In persona-view.ui."
+
+[reply_box.send]
+en = "Send"
+ctx = "button"
+screen = "reply_box"
+note = "In reply-box.ui."
+
+[rooms.a_guest]
+en = "A guest"
+ctx = "label"
+screen = "rooms"
+
+[rooms.guest_link_copied]
+en = "Guest link copied."
+ctx = "toast"
+screen = "rooms"
+
+[rooms.in_progress]
+en = "In progress"
+ctx = "label"
+screen = "rooms"
+
+[rooms.in_room]
+en = "In the room."
+ctx = "body"
+screen = "rooms"
+
+[rooms.joining]
+en = "Joining the room."
+ctx = "body"
+screen = "rooms"
+
+[rooms.nobody_else]
+en = "Nobody else is here yet."
+ctx = "body"
+screen = "rooms"
+
+[rooms.people]
+en.one = "{count} person"
+en.other = "{count} people"
+ctx = "label"
+screen = "rooms"
+args = { count = "int" }
+
+[rooms.rejoin]
+en = "Rejoin"
+ctx = "button"
+screen = "rooms"
+
+[rooms.room_title]
+en = "Room \"{name}\""
+ctx = "title"
+screen = "rooms"
+args = { name = "str" }
+
+[rooms.with]
+en = "With {names}."
+ctx = "body"
+screen = "rooms"
+args = { names = "str" }
+note = "names are the others in the room, joined by commas."
+
+[rooms_page.copy_guest_link]
+en = "Copy guest link"
+ctx = "button"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[rooms_page.copy_link_lets_someone_without]
+en = "Copy a link that lets someone without an account join this room"
+ctx = "tooltip"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[rooms_page.join]
+en = "Join"
+ctx = "button"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[rooms_page.leave_room]
+en = "Leave the room"
+ctx = "button"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[rooms_page.meetings]
+en = "Meetings"
+ctx = "title"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[rooms_page.meetings_a11y]
+en = "Meetings"
+ctx = "a11y"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[rooms_page.most_recent_meetings_held_workspaces]
+en = "The most recent meetings held in this workspace's rooms. Open one to read its minutes and transcript."
+ctx = "body"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[rooms_page.room_name]
+en = "Room name"
+ctx = "label"
+screen = "rooms_page"
+note = "In rooms-page.ui."
+
+[route.account]
+en = "Account"
+ctx = "title"
+screen = "navigation"
+
+[route.analytics]
+en = "Analytics"
+ctx = "title"
+screen = "navigation"
+
+[route.billing]
+en = "Billing"
+ctx = "title"
+screen = "navigation"
+
+[route.blocked_callers]
+en = "Blocked callers"
+ctx = "title"
+screen = "navigation"
+
+[route.booking_pages]
+en = "Booking pages"
+ctx = "title"
+screen = "navigation"
+
+[route.call]
+en = "Call"
+ctx = "title"
+screen = "navigation"
+
+[route.call_handling]
+en = "Call handling"
+ctx = "title"
+screen = "navigation"
+
+[route.calls]
+en = "Calls"
+ctx = "title"
+screen = "navigation"
+
+[route.contact]
+en = "Contact"
+ctx = "title"
+screen = "navigation"
+
+[route.contacts]
+en = "Contacts"
+ctx = "title"
+screen = "navigation"
+
+[route.conversation]
+en = "Conversation"
+ctx = "title"
+screen = "navigation"
+
+[route.devices]
+en = "Devices"
+ctx = "title"
+screen = "navigation"
+
+[route.dialler]
+en = "Dialler"
+ctx = "title"
+screen = "navigation"
+
+[route.district_hq]
+en = "District HQ"
+ctx = "title"
+screen = "navigation"
+
+[route.help_desk]
+en = "Help desk"
+ctx = "title"
+screen = "navigation"
+
+[route.help_desk_settings]
+en = "Help desk settings"
+ctx = "title"
+screen = "navigation"
+
+[route.inbox]
+en = "Inbox"
+ctx = "title"
+screen = "navigation"
+
+[route.knowledge]
+en = "Knowledge"
+ctx = "title"
+screen = "navigation"
+
+[route.meeting_rooms]
+en = "Meeting rooms"
+ctx = "title"
+screen = "navigation"
+
+[route.members]
+en = "Members"
+ctx = "title"
+screen = "navigation"
+
+[route.messaging_accounts]
+en = "Messaging accounts"
+ctx = "title"
+screen = "navigation"
+
+[route.overview]
+en = "Overview"
+ctx = "title"
+screen = "navigation"
+
+[route.persona]
+en = "Persona"
+ctx = "title"
+screen = "navigation"
+
+[route.phone_numbers]
+en = "Phone numbers"
+ctx = "title"
+screen = "navigation"
+
+[route.routing_rules]
+en = "Routing rules"
+ctx = "title"
+screen = "navigation"
+
+[route.skills]
+en = "Skills"
+ctx = "title"
+screen = "navigation"
+
+[route.support]
+en = "Support"
+ctx = "title"
+screen = "navigation"
+
+[route.support_request]
+en = "Support request"
+ctx = "title"
+screen = "navigation"
+
+[route.ticket]
+en = "Ticket"
+ctx = "title"
+screen = "navigation"
+
+[route.transfer_directory]
+en = "Transfer directory"
+ctx = "title"
+screen = "navigation"
+
+[route.voice]
+en = "Voice"
+ctx = "title"
+screen = "navigation"
+
+[route.workflows]
+en = "Workflows"
+ctx = "title"
+screen = "navigation"
+
+[route.workspace]
+en = "Workspace"
+ctx = "title"
+screen = "navigation"
+note = "The heading over the workspace's rows in the sidebar."
+
+[route.workspace_settings]
+en = "Workspace settings"
+ctx = "title"
+screen = "navigation"
+
+[routing.caller_detail]
+en = "Caller detail"
+ctx = "label"
+screen = "routing"
+
+[routing.compared_by]
+en = "Compared by"
+ctx = "label"
+screen = "routing"
+
+[routing.engine]
+en = "Engine"
+ctx = "label"
+screen = "routing"
+
+[routing.instruction]
+en = "Instruction"
+ctx = "label"
+screen = "routing"
+
+[routing.kept_keys]
+en = "Also stored: {keys}. Kept as they are when the rules are saved."
+ctx = "body"
+screen = "routing"
+args = { keys = "str" }
+
+[routing.no_condition]
+en = "No condition set here"
+ctx = "label"
+screen = "routing"
+
+[routing.persona_engine]
+en = "The persona's own"
+ctx = "label"
+screen = "routing"
+note = "A rule with no engine of its own uses the persona's."
+
+[routing.remove_rule]
+en = "Remove this rule"
+ctx = "tooltip"
+screen = "routing"
+tier = "T2"
+
+[routing.rule_title]
+en = "Rule {number}"
+ctx = "title"
+screen = "routing"
+args = { number = "int" }
+
+[routing.value]
+en = "Value"
+ctx = "label"
+screen = "routing"
+
+[routing.voice]
+en = "Voice"
+ctx = "label"
+screen = "routing"
+
+[routing_view.add_rule]
+en = "Add a rule"
+ctx = "button"
+screen = "routing_view"
+note = "In routing-view.ui."
+
+[routing_view.checked_order_caller_who_matches]
+en = "Checked in this order. A caller who matches a rule gets its voice and instruction."
+ctx = "body"
+screen = "routing_view"
+note = "In routing-view.ui."
+
+[routing_view.replace_rules]
+en = "Replace the rules"
+ctx = "button"
+screen = "routing_view"
+note = "In routing-view.ui."
+
+[routing_view.rules]
+en = "Rules"
+ctx = "title"
+screen = "routing_view"
+note = "In routing-view.ui."
+
+[scheduling_page.booking_page]
+en = "Booking page"
+ctx = "label"
+screen = "scheduling_page"
+note = "In scheduling-page.ui."
+
+[scheduling_page.check_again]
+en = "Check again"
+ctx = "button"
+screen = "scheduling_page"
+note = "In scheduling-page.ui."
+
+[scheduling_page.last_live]
+en = "Last live"
+ctx = "label"
+screen = "scheduling_page"
+note = "In scheduling-page.ui."
+
+[scheduling_page.manage_web]
+en = "Manage on the web"
+ctx = "button"
+screen = "scheduling_page"
+note = "In scheduling-page.ui."
+
+[scheduling_page.opens_booking_pages_district_ai]
+en = "Opens the booking pages on the District AI website in your browser, signed in as you."
+ctx = "body"
+screen = "scheduling_page"
+note = "In scheduling-page.ui."
+
+[scheduling_page.turn_booking_pages]
+en = "Turn on booking pages"
+ctx = "button"
+screen = "scheduling_page"
+note = "In scheduling-page.ui."
+
+[scheduling_page.what_went_wrong]
+en = "What went wrong"
+ctx = "label"
+screen = "scheduling_page"
+note = "In scheduling-page.ui."
+
+[session.retrying]
+en = "District AI will try again by itself."
+ctx = "body"
+screen = "session"
+
+[session.signed_out_body]
+en = "Sign in again whenever you are ready."
+ctx = "body"
+screen = "session"
+
+[session.signing_in]
+en = "Signing in"
+ctx = "title"
+screen = "session"
+
+[session.signing_out]
+en = "Signing out"
+ctx = "title"
+screen = "session"
+
+[session.signing_out_everywhere]
+en = "Every device is signed out. Removing your sign-in from this computer."
+ctx = "body"
+screen = "session"
+
+[session.signing_out_this_device]
+en = "Telling District AI, then removing your sign-in from this computer."
+ctx = "body"
+screen = "session"
+
+[session.welcome_body]
+en = "Sign in with your District AI account. Signing in happens in your browser, so this app never sees your password."
+ctx = "body"
+screen = "session"
+tier = "T2"
+
+[session.welcome_title]
+en = "Welcome to District AI"
+ctx = "title"
+screen = "session"
+
+[session_page.sign_browser]
+en = "Sign in with your browser"
+ctx = "button"
+screen = "session_page"
+note = "In session-page.ui."
+
+[session_page.sign_out_again]
+en = "Sign out again"
+ctx = "button"
+screen = "session_page"
+note = "In session-page.ui."
+
+[settings.not_chosen]
+en = "Not chosen"
+ctx = "label"
+screen = "settings"
+
+[settings.read_again]
+en = "Read them again"
+ctx = "button"
+screen = "settings"
+
+[settings.stale_title]
+en = "Saved"
+ctx = "title"
+screen = "settings"
+note = "A save landed but the settings could not be read back; not a failure."
+
+[settings_page.choose_section_read_settings]
+en = "Choose a section to read its settings."
+ctx = "body"
+screen = "settings_page"
+note = "In settings-page.ui."
+
+[settings_page.no_section_open]
+en = "No section open"
+ctx = "title"
+screen = "settings_page"
+note = "In settings-page.ui."
+
+[settings_page.section]
+en = "Section"
+ctx = "title"
+screen = "settings_page"
+note = "In settings-page.ui."
+
+[settings_page.settings_sections]
+en = "Settings sections"
+ctx = "a11y"
+screen = "settings_page"
+note = "In settings-page.ui."
+
+[settings_page.workspace_settings]
+en = "Workspace settings"
+ctx = "title"
+screen = "settings_page"
+note = "In settings-page.ui."
+
+[shared.images_filter]
+en = "Images"
+ctx = "label"
+screen = "file_chooser"
+note = "The file chooser's filter for image files."
+
+[shared.today]
+en = "Today"
+ctx = "title"
+screen = "inbox"
+note = "The heading over today's messages."
+
+[shared.yesterday]
+en = "Yesterday"
+ctx = "title"
+screen = "inbox"
+
+[store.memory_only]
+en = "No keyring is available, so your sign-in is kept only until District AI quits. Start a keyring (for example GNOME Keyring or KeePassXC) and open the app again to stay signed in."
+ctx = "body"
+screen = "session"
+tier = "T2"
+
+[support.not_filed]
+en = "Not filed yet"
+ctx = "label"
+screen = "support"
+note = "A support request still being opened has no reference yet."
+
+[support_page.choose_request_read_our_replies]
+en = "Choose a request to read our replies and answer them."
+ctx = "body"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.new_request]
+en = "New request"
+ctx = "button"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.no_request_open]
+en = "No request open"
+ctx = "title"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.open]
+en = "Open"
+ctx = "label"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.open_requests]
+en = "Open requests"
+ctx = "a11y"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.resolved]
+en = "Resolved"
+ctx = "label"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.resolved_requests]
+en = "Resolved requests"
+ctx = "a11y"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.support]
+en = "Support"
+ctx = "title"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_page.support_request]
+en = "Support request"
+ctx = "title"
+screen = "support_page"
+note = "In support-page.ui."
+
+[support_request.failed_title]
+en = "Could not load this request"
+ctx = "error"
+screen = "support"
+tier = "T2"
+
+[thread.attach_image_title]
+en = "Attach an image"
+ctx = "title"
+screen = "inbox"
+note = "The title of the file chooser."
+
+[thread.delivered]
+en = "Delivered"
+ctx = "label"
+screen = "inbox"
+
+[thread.email]
+en = "Email"
+ctx = "label"
+screen = "inbox"
+note = "The channel a message went by."
+
+[thread.failed_title]
+en = "Could not load this conversation"
+ctx = "error"
+screen = "inbox"
+tier = "T2"
+
+[thread.image_number]
+en = "Image {number}"
+ctx = "label"
+screen = "inbox"
+args = { number = "int" }
+
+[thread.images_attached]
+en.one = "{count} image attached"
+en.other = "{count} images attached"
+ctx = "label"
+screen = "inbox"
+args = { count = "int" }
+
+[thread.incoming_call]
+en = "Incoming call"
+ctx = "label"
+screen = "inbox"
+
+[thread.missed_call]
+en = "Missed call"
+ctx = "label"
+screen = "inbox"
+
+[thread.no_messages]
+en = "No messages in this conversation yet."
+ctx = "body"
+screen = "inbox"
+
+[thread.not_delivered]
+en = "Not delivered"
+ctx = "label"
+screen = "inbox"
+
+[thread.outgoing_call]
+en = "Outgoing call"
+ctx = "label"
+screen = "inbox"
+
+[thread.read]
+en = "Read"
+ctx = "label"
+screen = "inbox"
+note = "A message the recipient has read."
+
+[thread.remove_image]
+en = "Remove {name}"
+ctx = "tooltip"
+screen = "inbox"
+args = { name = "str" }
+note = "name is thread.image_number: \"Remove Image 2\"."
+
+[thread.reply_by_email]
+en = "Email to {address}"
+ctx = "label"
+screen = "inbox"
+args = { address = "str" }
+
+[thread.reply_by_text]
+en = "Text message to {number}"
+ctx = "label"
+screen = "inbox"
+args = { number = "str" }
+
+[thread.sending]
+en = "Sending"
+ctx = "label"
+screen = "inbox"
+
+[thread.sent]
+en = "Sent"
+ctx = "label"
+screen = "inbox"
+
+[thread.uploading_image]
+en = "Uploading the image"
+ctx = "label"
+screen = "inbox"
+
+[thread.whatsapp]
+en = "WhatsApp"
+ctx = "label"
+screen = "inbox"
+fixed = true
+
+[thread.writing_reply]
+en = "Writing a reply"
+ctx = "label"
+screen = "inbox"
+
+[thread_view.attach_image]
+en = "Attach an image"
+ctx = "tooltip"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.attach_image_a11y]
+en = "Attach an image"
+ctx = "a11y"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.draft_reply_ai]
+en = "Draft a reply with AI"
+ctx = "button"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.older_messages]
+en = "Older messages"
+ctx = "button"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.send]
+en = "Send"
+ctx = "a11y"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.send_enter]
+en = "Send (Enter)"
+ctx = "tooltip"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.shift_enter_new_line]
+en = "Shift+Enter for a new line"
+ctx = "label"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.start_conversation]
+en = "The start of this conversation"
+ctx = "label"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[thread_view.writes_suggested_reply_into_box]
+en = "Writes a suggested reply into the box for you to read before sending. Each suggestion is billed."
+ctx = "tooltip"
+screen = "thread_view"
+note = "In thread-view.ui."
+
+[ticket_form.customer]
+en = "The customer"
+ctx = "title"
+screen = "ticket_form"
+note = "In ticket-form.ui."
+
+[ticket_form.message]
+en = "Message"
+ctx = "title"
+screen = "ticket_form"
+note = "In ticket-form.ui."
+
+[ticket_form.message_a11y]
+en = "Message"
+ctx = "a11y"
+screen = "ticket_form"
+note = "In ticket-form.ui."
+
+[ticket_form.needs]
+en = "A subject of {min} to {max} characters, and a message."
+ctx = "body"
+screen = "support"
+args = { min = "int", max = "int" }
+
+[ticket_form.new_support_request]
+en = "New support request"
+ctx = "title"
+screen = "support"
+
+[ticket_form.new_ticket]
+en = "New ticket"
+ctx = "title"
+screen = "desk"
+
+[ticket_form.optional_replies_emailed_address_given]
+en = "Optional. Replies are emailed to the address given here, when the desk emails customers."
+ctx = "body"
+screen = "ticket_form"
+note = "In ticket-form.ui."
+
+[ticket_form.raise]
+en = "Raise"
+ctx = "button"
+screen = "desk"
+note = "Opens a new help desk ticket."
+
+[ticket_form.subject]
+en = "Subject"
+ctx = "label"
+screen = "ticket_form"
+note = "In ticket-form.ui."
+
+[ticket_form.what_about]
+en = "What is it about"
+ctx = "label"
+screen = "ticket_form"
+note = "In ticket-form.ui."
+
+[tools_view.call]
+en = "On a call"
+ctx = "title"
+screen = "tools_view"
+note = "In tools-view.ui."
+
+[tools_view.research_contacts]
+en = "Research contacts"
+ctx = "label"
+screen = "tools_view"
+note = "In tools-view.ui."
+
+[tools_view.save_capabilities]
+en = "Save capabilities"
+ctx = "button"
+screen = "tools_view"
+note = "In tools-view.ui."
+
+[tools_view.save_research_setting]
+en = "Save research setting"
+ctx = "button"
+screen = "tools_view"
+note = "In tools-view.ui."
+
+[tools_view.what_receptionist_may_do_saving]
+en = "What the receptionist may do. Saving replaces the stored list with these switches."
+ctx = "body"
+screen = "tools_view"
+note = "In tools-view.ui."
+
+[window.about_district_ai]
+en = "_About District AI"
+ctx = "menu"
+screen = "window"
+note = "In window.ui."
+
+[window.back]
+en = "Back"
+ctx = "tooltip"
+screen = "window"
+note = "In window.ui."
+
+[window.back_a11y]
+en = "Back"
+ctx = "a11y"
+screen = "window"
+note = "In window.ui."
+
+[window.main_menu]
+en = "Main Menu"
+ctx = "tooltip"
+screen = "window"
+note = "In window.ui."
+
+[window.main_menu_a11y]
+en = "Main Menu"
+ctx = "a11y"
+screen = "window"
+note = "In window.ui."
+
+[window.overview]
+en = "Overview"
+ctx = "title"
+screen = "window"
+note = "In window.ui."
+
+[window.quit]
+en = "_Quit"
+ctx = "menu"
+screen = "window"
+note = "In window.ui."
+
+[window.refresh]
+en = "Refresh"
+ctx = "tooltip"
+screen = "window"
+note = "In window.ui."
+
+[window.refresh_a11y]
+en = "Refresh"
+ctx = "a11y"
+screen = "window"
+note = "In window.ui."
+
+[window.refresh_button]
+en = "Refresh"
+ctx = "button"
+screen = "navigation"
+
+[window.workspace]
+en = "Workspace"
+ctx = "tooltip"
+screen = "window"
+note = "In window.ui."
+
+[workflows.action_result]
+en = "{action}: {outcome}"
+ctx = "label"
+screen = "workflows"
+args = { action = "str", outcome = "str" }
+
+[workflows.last_run]
+en = "{trigger} · Last run {status}, {when}"
+ctx = "label"
+screen = "workflows"
+args = { trigger = "str", status = "str", when = "date" }
+note = "status is the run's stored status in lower case."
+
+[workflows.more_runs]
+en = "More runs"
+ctx = "button"
+screen = "workflows"
+
+[workflows.not_run]
+en = "{trigger} · Not run yet"
+ctx = "label"
+screen = "workflows"
+args = { trigger = "str" }
+
+[workflows.outcome_reason]
+en = "{outcome} ({reason})"
+ctx = "label"
+screen = "workflows"
+args = { outcome = "str", reason = "str" }
+
+[workflows.reading_runs]
+en = "Reading runs."
+ctx = "body"
+screen = "workflows"
+
+[workflows.turn_on]
+en = "Turn on {name}"
+ctx = "a11y"
+screen = "workflows"
+args = { name = "str" }
+
+[workflows_page.batch_size]
+en = "Batch size"
+ctx = "label"
+screen = "workflows_page"
+note = "In workflows-page.ui."
+
+[workflows_page.goal]
+en = "Goal"
+ctx = "label"
+screen = "workflows_page"
+note = "In workflows-page.ui."
+
+[workflows_page.pause_campaign]
+en = "Pause campaign"
+ctx = "button"
+screen = "workflows_page"
+note = "In workflows-page.ui."
+
+[workflows_page.resume_campaign]
+en = "Resume campaign"
+ctx = "button"
+screen = "workflows_page"
+note = "In workflows-page.ui."
+
+[workflows_page.workflows]
+en = "Workflows"
+ctx = "title"
+screen = "workflows_page"
+note = "In workflows-page.ui."
+
+[workflows_page.workflows_a11y]
+en = "Workflows"
+ctx = "a11y"
+screen = "workflows_page"
+note = "In workflows-page.ui."
+
+[workflows_page.workflows_built_edited_district_ai]
+en = "Workflows are built and edited on the District AI website. Here you can turn each on or off and see what its runs did."
+ctx = "body"
+screen = "workflows_page"
+note = "In workflows-page.ui."

@@ -28,7 +28,7 @@
                 <property name="icon-name">help-browser-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -101,22 +101,22 @@
                                       <class name="linked"/>
                                     </style>
                                     <accessibility>
-                                      <property name="label">Status</property>
+                                      <property name="label" translatable="yes" context="desk_ticket_view.status">Status</property>
                                     </accessibility>
                                     <child>
                                       <object class="GtkToggleButton" id="open_button">
-                                        <property name="label">Open</property>
+                                        <property name="label" translatable="yes" context="desk_ticket_view.open">Open</property>
                                       </object>
                                     </child>
                                     <child>
                                       <object class="GtkToggleButton" id="waiting_button">
-                                        <property name="label">Waiting</property>
-                                        <property name="tooltip-text">Waiting on the customer</property>
+                                        <property name="label" translatable="yes" context="desk_ticket_view.waiting">Waiting</property>
+                                        <property name="tooltip-text" translatable="yes" context="desk_ticket_view.waiting_customer">Waiting on the customer</property>
                                       </object>
                                     </child>
                                     <child>
                                       <object class="GtkToggleButton" id="resolved_button">
-                                        <property name="label">Resolved</property>
+                                        <property name="label" translatable="yes" context="desk_ticket_view.resolved">Resolved</property>
                                       </object>
                                     </child>
                                   </object>
@@ -140,7 +140,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label">Conversation</property>
+                                <property name="label" translatable="yes" context="common.conversation">Conversation</property>
                                 <property name="xalign">0</property>
                                 <property name="margin-top">6</property>
                                 <style>
@@ -156,7 +156,7 @@
                             </child>
                             <child>
                               <object class="AdwPreferencesGroup" id="details_group">
-                                <property name="title">Customer</property>
+                                <property name="title" translatable="yes" context="desk_ticket_view.customer">Customer</property>
                                 <property name="margin-top">12</property>
                               </object>
                             </child>

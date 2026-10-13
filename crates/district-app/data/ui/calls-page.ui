@@ -23,7 +23,7 @@
             <property name="sidebar-width-fraction">0.4</property>
             <property name="sidebar">
               <object class="AdwNavigationPage">
-                <property name="title">Calls</property>
+                <property name="title" translatable="yes" context="common.calls">Calls</property>
                 <property name="tag">list</property>
                 <property name="child">
                   <object class="GtkBox">
@@ -37,7 +37,7 @@
                         <property name="child">
                           <object class="AdwButtonContent">
                             <property name="icon-name">input-dialpad-symbolic</property>
-                            <property name="label">Place a call</property>
+                            <property name="label" translatable="yes" context="calls_page.place_call">Place a call</property>
                           </object>
                         </property>
                       </object>
@@ -69,7 +69,7 @@
                                 </style>
                                 <property name="child">
                                   <object class="GtkButton" id="list_retry">
-                                    <property name="label">Try again</property>
+                                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                     <property name="halign">center</property>
                                     <style>
                                       <class name="pill"/>
@@ -110,7 +110,7 @@
                                       <object class="GtkListBox" id="call_list">
                                         <property name="selection-mode">single</property>
                                         <accessibility>
-                                          <property name="label">Calls</property>
+                                          <property name="label" translatable="yes" context="calls_page.calls">Calls</property>
                                         </accessibility>
                                         <style>
                                           <class name="boxed-list"/>
@@ -141,7 +141,7 @@
                                         </child>
                                         <child>
                                           <object class="GtkButton" id="more_button">
-                                            <property name="label">Try again</property>
+                                            <property name="label" translatable="yes" context="common.try_again">Try again</property>
                                             <property name="visible">False</property>
                                             <style>
                                               <class name="pill"/>
@@ -164,7 +164,7 @@
             </property>
             <property name="content">
               <object class="AdwNavigationPage">
-                <property name="title">Call</property>
+                <property name="title" translatable="yes" context="calls_page.call">Call</property>
                 <property name="tag">call</property>
                 <property name="child">
                   <object class="GtkStack" id="detail_stack">
@@ -174,8 +174,8 @@
                         <property name="child">
                           <object class="AdwStatusPage">
                             <property name="icon-name">call-start-symbolic</property>
-                            <property name="title">No call open</property>
-                            <property name="description">Choose a call to see its summary and transcript.</property>
+                            <property name="title" translatable="yes" context="calls_page.no_call_open">No call open</property>
+                            <property name="description" translatable="yes" context="calls_page.choose_call_see_summary_transcript">Choose a call to see its summary and transcript.</property>
                             <style>
                               <class name="compact"/>
                             </style>

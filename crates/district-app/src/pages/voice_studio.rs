@@ -25,6 +25,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang};
 use crate::pages::settings_kit::Frame;
 use crate::pages::shared::{draw_busy, draw_line, failure_text};
 use crate::pages::{Sends, on_click};
@@ -256,7 +257,7 @@ pub(crate) fn notice_text(save: &StudioSaveState, studio: &VoiceStudioResponse) 
         }
         StudioSaveState::SavedButStale(failure) => Some(format!(
             "{} {}",
-            VoiceStudioSection::SAVED_STALE,
+            core_text::voice_studio_saved_stale(lang()),
             failure_text(failure)
         )),
     }
@@ -350,7 +351,7 @@ impl VoiceStudioView {
             VoiceStudioLoad::Loading => self.frame().loading(),
             VoiceStudioLoad::Failed(failure) => {
                 self.frame()
-                    .failed(VoiceStudioSection::FAILED_TITLE, failure);
+                    .failed(core_text::voice_studio_failed_title(lang()), failure);
             }
             VoiceStudioLoad::Ready(ready) => {
                 self.frame().form();

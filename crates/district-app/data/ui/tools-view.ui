@@ -45,8 +45,8 @@
               <object class="AdwPreferencesPage">
                 <child>
                   <object class="AdwPreferencesGroup" id="tools_group">
-                    <property name="title">On a call</property>
-                    <property name="description">What the receptionist may do. Saving replaces the stored list with these switches.</property>
+                    <property name="title" translatable="yes" context="tools_view.call">On a call</property>
+                    <property name="description" translatable="yes" context="tools_view.what_receptionist_may_do_saving">What the receptionist may do. Saving replaces the stored list with these switches.</property>
                     <child>
                       <object class="GtkBox">
                         <property name="orientation">vertical</property>
@@ -66,7 +66,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="save_tools_button">
-                                <property name="label">Save capabilities</property>
+                                <property name="label" translatable="yes" context="tools_view.save_capabilities">Save capabilities</property>
                                 <style>
                                   <class name="pill"/>
                                   <class name="suggested-action"/>
@@ -83,7 +83,7 @@
                   <object class="AdwPreferencesGroup" id="research_group">
                     <child>
                       <object class="AdwSwitchRow" id="research_row">
-                        <property name="title">Research contacts</property>
+                        <property name="title" translatable="yes" context="tools_view.research_contacts">Research contacts</property>
                         <property name="use-markup">False</property>
                       </object>
                     </child>
@@ -106,7 +106,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="save_research_button">
-                                <property name="label">Save research setting</property>
+                                <property name="label" translatable="yes" context="tools_view.save_research_setting">Save research setting</property>
                                 <style>
                                   <class name="pill"/>
                                   <class name="suggested-action"/>

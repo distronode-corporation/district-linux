@@ -23,7 +23,8 @@ use crate::app::{Parts, application};
 use crate::bridge::UiBridge;
 use crate::effects::RuntimeEffects;
 use crate::gtk::glib;
-use crate::store::{AppStore, MEMORY_ONLY};
+use crate::l10n::{desktop_locale, text};
+use crate::store::AppStore;
 
 /// The product token this app's `User-Agent` starts with.
 const PRODUCT: &str = "DistrictAI-Linux";
@@ -41,6 +42,7 @@ pub fn run() -> glib::ExitCode {
         println!("{}", version_line());
         return glib::ExitCode::SUCCESS;
     }
+    crate::l10n::init();
     match launch() {
         Ok(code) => code,
         Err(problem) => {
@@ -51,6 +53,7 @@ pub fn run() -> glib::ExitCode {
 }
 
 fn launch() -> Result<glib::ExitCode, String> {
+    let locale = desktop_locale();
     let dirs = XdgDirs::from_env().map_err(|error| error.to_string())?;
     let device_id = dirs
         .device_identity()
@@ -75,7 +78,7 @@ fn launch() -> Result<glib::ExitCode, String> {
             eprintln!("district-ai: the keyring could not be opened: {error}");
             (
                 AppStore::Memory(MemorySessionStore::new()),
-                Some(MEMORY_ONLY.to_owned()),
+                Some(text::store_memory_only(locale).to_owned()),
             )
         }
     };
@@ -152,6 +155,7 @@ fn launch() -> Result<glib::ExitCode, String> {
         // This app does not sign up or buy in the app: billing stays read only,
         // and the core's purchase events and effects never happen here.
         in_app_purchases: false,
+        locale,
     };
     let app = application(Parts {
         config,

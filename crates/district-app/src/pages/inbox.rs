@@ -15,6 +15,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{
     Echo, RowIds, back_on_fold, clear_list, draw_line, draw_spinner, failure_text, now, short_time,
 };
@@ -45,21 +46,18 @@ pub(crate) fn list_shown(list: &ConversationList) -> ListShown<'_> {
     match list {
         ConversationList::NotLoaded | ConversationList::Loading => ListShown::Loading,
         ConversationList::Failed(failure) => ListShown::Status {
-            title: ConversationList::FAILED_TITLE,
+            title: core_text::inbox_failed_title(lang()),
             body: failure_text(failure),
             retry: failure.retryable,
         },
         ConversationList::Ready(list) if list.threads.is_empty() => ListShown::Status {
-            title: Conversations::EMPTY_TITLE,
-            body: Conversations::EMPTY_BODY.into(),
+            title: core_text::inbox_empty_title(lang()),
+            body: core_text::inbox_empty_body(lang()).into(),
             retry: false,
         },
         ConversationList::Ready(list) => ListShown::Threads(list),
     }
 }
-
-/// The heading when a search failed.
-pub(crate) const SEARCH_FAILED_TITLE: &str = "Could not search";
 
 /// What the list pane shows for a search, or `None` when no search is active
 /// (the query is too short) and the threads show instead.
@@ -117,7 +115,7 @@ pub(crate) fn preview(conversation: &ConversationSummary) -> String {
     let last = &conversation.last_message;
     let text = last.body.split_whitespace().collect::<Vec<_>>().join(" ");
     if last.direction == "outbound" {
-        format!("You: {text}")
+        text::inbox_preview_own(lang(), &text)
     } else {
         text
     }
@@ -344,7 +342,8 @@ impl InboxPage {
             ListShown::Threads(list) => {
                 imp.list_stack.set_visible_child_name("list");
                 imp.partial_note.set_visible(list.partial);
-                imp.partial_note.set_label(Conversations::PARTIAL_NOTE);
+                imp.partial_note
+                    .set_label(core_text::inbox_partial_note(lang()));
                 let failure = list.refresh_failure.as_ref().map(failure_text);
                 draw_line(&imp.refresh_failure, failure);
                 self.draw_threads(&list.threads, draft_keys);
@@ -387,10 +386,14 @@ impl InboxPage {
         match found {
             SearchShown::Searching => imp.list_stack.set_visible_child_name("loading"),
             SearchShown::Failed { body, retry } => {
-                self.search_status(SEARCH_FAILED_TITLE, &body, retry);
+                self.search_status(text::inbox_search_failed(lang()), &body, retry);
             }
             SearchShown::NoMatches => {
-                self.search_status(SearchState::NONE_TITLE, SearchState::NONE_BODY, false);
+                self.search_status(
+                    core_text::inbox_search_none_title(lang()),
+                    core_text::inbox_search_none_body(lang()),
+                    false,
+                );
             }
             SearchShown::Hits {
                 hits,
@@ -400,7 +403,8 @@ impl InboxPage {
                 imp.list_stack.set_visible_child_name("search");
                 draw_spinner(&imp.search_more_spinner, running);
                 imp.truncated_note.set_visible(truncated);
-                imp.truncated_note.set_label(SearchState::TRUNCATED_NOTE);
+                imp.truncated_note
+                    .set_label(core_text::inbox_search_truncated(lang()));
                 if imp.found.borrow().as_deref() != Some(hits) {
                     clear_list(&imp.hit_list);
                     let now = now();
@@ -438,10 +442,10 @@ pub(crate) fn avatar(title: &str, size: i32) -> adw::Avatar {
 pub(crate) fn row_description(title: &str, preview: &str, unread: i64, draft: bool) -> String {
     let mut parts = vec![title.to_owned(), preview.to_owned()];
     if unread > 0 {
-        parts.push(format!("{unread} unread"));
+        parts.push(text::inbox_unread(lang(), unread));
     }
     if draft {
-        parts.push("reply saved as a draft".to_owned());
+        parts.push(text::inbox_draft_saved(lang()).to_owned());
     }
     parts.join(", ")
 }
@@ -484,7 +488,7 @@ fn conversation_row(
     if has_draft {
         bottom.append(
             &gtk::Label::builder()
-                .label("Draft")
+                .label(text::inbox_draft(lang()))
                 .name("draft-chip")
                 .valign(gtk::Align::Center)
                 .css_classes(["draft-chip", "caption"])
@@ -540,7 +544,7 @@ fn hit_row(hit: &MessageSearchHit, now: Option<&glib::DateTime>) -> adw::ActionR
     let title = format_phone_number(hit.display_name());
     let body = hit.body.split_whitespace().collect::<Vec<_>>().join(" ");
     let subtitle = match hit.subject.as_deref().filter(|s| !s.trim().is_empty()) {
-        Some(subject) => format!("{subject}: {body}"),
+        Some(subject) => text::inbox_hit_subject(lang(), subject, &body),
         None => body,
     };
     let row = adw::ActionRow::builder()

@@ -9,19 +9,10 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{lang, text};
 use crate::pages::shared::{draw_line, draw_spinner};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
-
-/// The heading of the signed-out screen on a first run.
-pub(crate) const WELCOME_TITLE: &str = "Welcome to District AI";
-/// Its body.
-pub(crate) const WELCOME_BODY: &str = "Sign in with your District AI account. Signing in \
-    happens in your browser, so this app never sees your password.";
-/// The body after a sign-out that went as it should.
-pub(crate) const SIGNED_OUT_BODY: &str = "Sign in again whenever you are ready.";
-/// A note under a start-up check that will try again by itself.
-pub(crate) const RETRYING: &str = "District AI will try again by itself.";
 
 /// What the page shows for a session state.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -48,7 +39,7 @@ pub(crate) struct Shown {
 /// page is not showing.
 pub(crate) fn shown(session: &SessionState) -> Option<Shown> {
     let nothing = Shown {
-        title: "District AI",
+        title: text::common_district_ai(lang()),
         body: String::new(),
         busy: false,
         sign_in: false,
@@ -61,7 +52,7 @@ pub(crate) fn shown(session: &SessionState) -> Option<Shown> {
         SessionState::Restoring(restoring) => {
             let mut body = restoring.message();
             if restoring.retry_in.is_some() && !restoring.checking {
-                body = format!("{body} {RETRYING}");
+                body = format!("{body} {}", text::session_retrying(lang()));
             }
             Shown {
                 body,
@@ -72,11 +63,14 @@ pub(crate) fn shown(session: &SessionState) -> Option<Shown> {
         }
         SessionState::SignedOut(signed_out) => {
             let (title, body) = match &signed_out.why {
-                SignedOutWhy::NeverSignedIn => (WELCOME_TITLE, WELCOME_BODY.to_owned()),
+                SignedOutWhy::NeverSignedIn => (
+                    text::session_welcome_title(lang()),
+                    text::session_welcome_body(lang()).to_owned(),
+                ),
                 SignedOutWhy::SignedOut(outcome) => {
                     let details = outcome.details();
                     let body = if details.is_empty() {
-                        SIGNED_OUT_BODY.to_owned()
+                        text::session_signed_out_body(lang()).to_owned()
                     } else {
                         details.join("\n\n")
                     };
@@ -97,21 +91,17 @@ pub(crate) fn shown(session: &SessionState) -> Option<Shown> {
             }
         }
         SessionState::SigningIn(signing_in) => Shown {
-            title: "Signing in",
+            title: text::session_signing_in(lang()),
             body: signing_in.phase.message().to_owned(),
             busy: true,
             cancel: signing_in.can_cancel(),
             ..nothing
         },
         SessionState::SigningOut(signing_out) => Shown {
-            title: "Signing out",
+            title: text::session_signing_out(lang()),
             body: match signing_out.scope {
-                SignOutScope::ThisDevice => {
-                    "Telling District AI, then removing your sign-in from this computer."
-                }
-                SignOutScope::Everywhere => {
-                    "Every device is signed out. Removing your sign-in from this computer."
-                }
+                SignOutScope::ThisDevice => text::session_signing_out_this_device(lang()),
+                SignOutScope::Everywhere => text::session_signing_out_everywhere(lang()),
             }
             .to_owned(),
             busy: true,
@@ -241,7 +231,11 @@ mod tests {
             retry_in: Some(Duration::from_secs(5)),
         });
         let offline = shown(&offline).unwrap();
-        assert!(offline.body.ends_with(RETRYING), "{}", offline.body);
+        assert!(
+            offline.body.ends_with(text::session_retrying(lang())),
+            "{}",
+            offline.body
+        );
         assert!(offline.retry && !offline.busy);
 
         let locked = SessionState::Restoring(Restoring {
@@ -250,7 +244,10 @@ mod tests {
             retry_in: None,
         });
         assert!(
-            !shown(&locked).unwrap().body.contains(RETRYING),
+            !shown(&locked)
+                .unwrap()
+                .body
+                .contains(text::session_retrying(lang())),
             "waits for the user"
         );
     }
@@ -260,7 +257,10 @@ mod tests {
         let first = shown(&signed_out(SignedOutWhy::NeverSignedIn, None)).unwrap();
         assert_eq!(
             (first.title, first.body.as_str()),
-            (WELCOME_TITLE, WELCOME_BODY)
+            (
+                text::session_welcome_title(lang()),
+                text::session_welcome_body(lang())
+            )
         );
         assert!(first.sign_in && !first.retry_sign_out && first.error.is_none());
 
@@ -278,7 +278,7 @@ mod tests {
         };
         let done = shown(&signed_out(SignedOutWhy::SignedOut(clean), None)).unwrap();
         assert_eq!(done.title, clean.headline());
-        assert_eq!(done.body, SIGNED_OUT_BODY);
+        assert_eq!(done.body, text::session_signed_out_body(lang()));
 
         let left_behind = SignOutOutcome {
             service: ServiceSignOut::Deferred,

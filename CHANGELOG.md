@@ -13,6 +13,27 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Changed
+
+- Built on District AI core for Rust 4.0.0-beta.1, which writes its words from a catalog
+  in the language the app chooses (`CoreConfig::locale`).
+- Every word the app writes itself comes from one catalog,
+  `crates/district-app/l10n/linux.toml`, keyed: the `.ui` templates mark each string
+  `translatable="yes"` with its key as the `context`, looked up in the `district-ai`
+  gettext domain (`po/`), and the Rust code calls an accessor generated for each key.
+  `scripts/gen-l10n.py --check` holds the generated files to the catalog, and a test
+  holds each template string to the catalog's English for its key.
+- A call's sentiment `negative` reads "Friction", and a transfer status `success`
+  "Transferred", as the portal labels them. Every other word is unchanged.
+
+### Added
+
+- Canadian French behind the `fr-ca` cargo feature, off by default and in every package:
+  the app follows a French desktop (`glib::language_names`), the core and gettext are
+  checked to agree at start-up, and the packages carry the compiled catalog only with
+  the feature on. Until then deb.yml and flatpak.yml, which a release runs, fail a
+  package that holds a catalog.
+
 ## [2.2.0] - 2026-10-13
 
 ### Security

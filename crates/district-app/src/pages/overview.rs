@@ -2,23 +2,18 @@
 
 use std::cell::{OnceCell, RefCell};
 
-use district_core::{
-    Event, FINISH_SETUP_ACTION, FINISH_SETUP_BODY, FINISH_SETUP_TITLE, OverviewContent,
-    OverviewScreen, Route, SignedIn, WorkspacesState,
-};
+use district_core::{Event, OverviewContent, OverviewScreen, Route, SignedIn, WorkspacesState};
 use district_model::CallSummary;
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang, text};
 use crate::pages::calls::call_row;
 use crate::pages::shared::{RowIds, draw_line, failure_text, metric_tile, now};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
-
-/// The heading when the overview could not be read.
-pub(crate) const FAILED_TITLE: &str = "Could not load the overview";
 
 /// What the overview page shows.
 #[derive(Clone, Debug, PartialEq)]
@@ -51,7 +46,7 @@ pub(crate) fn shown(signed_in: &SignedIn) -> Shown<'_> {
         WorkspacesState::Ready(workspaces) => match &signed_in.overview {
             OverviewScreen::Loading => Shown::Loading,
             OverviewScreen::Failed(failure) => Shown::Status {
-                title: FAILED_TITLE,
+                title: text::overview_failed_title(lang()),
                 body: failure_text(failure).into_owned(),
                 retry: failure.retryable,
             },
@@ -72,10 +67,22 @@ pub(crate) fn shown(signed_in: &SignedIn) -> Shown<'_> {
 pub(crate) fn metrics(content: &OverviewContent) -> [(String, &'static str); 4] {
     let figures = &content.overview.metrics;
     [
-        (figures.total_calls.to_string(), "Calls"),
-        (figures.calls_this_week.to_string(), "Calls this week"),
-        (figures.total_contacts.to_string(), "Contacts"),
-        (content.overview.avg_duration_label.clone(), "Average call"),
+        (
+            figures.total_calls.to_string(),
+            text::analytics_tile_calls(lang()),
+        ),
+        (
+            figures.calls_this_week.to_string(),
+            text::overview_calls_this_week(lang()),
+        ),
+        (
+            figures.total_contacts.to_string(),
+            text::overview_contacts(lang()),
+        ),
+        (
+            content.overview.avg_duration_label.clone(),
+            text::analytics_tile_average_call(lang()),
+        ),
     ]
 }
 
@@ -139,9 +146,12 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let page = self.obj();
-            self.setup_title.set_label(FINISH_SETUP_TITLE);
-            self.setup_body.set_label(FINISH_SETUP_BODY);
-            self.setup_button.set_label(FINISH_SETUP_ACTION);
+            self.setup_title
+                .set_label(core_text::overview_finish_setup_title(lang()));
+            self.setup_body
+                .set_label(core_text::overview_finish_setup_body(lang()));
+            self.setup_button
+                .set_label(core_text::overview_finish_setup_action(lang()));
             on_click(&self.setup_button, &*page, || Event::OpenFinishSetup);
             on_click(&self.retry_button, &*page, || Event::Refresh);
             let weak = page.downgrade();
@@ -316,7 +326,7 @@ mod tests {
         let Shown::Status { title, retry, .. } = shown(signed_in(&model)) else {
             panic!("the failure");
         };
-        assert_eq!(title, FAILED_TITLE);
+        assert_eq!(title, text::overview_failed_title(lang()));
         assert!(retry);
     }
 }

@@ -10,11 +10,13 @@ use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use district_core::{Event, FailureText, MAX_ATTACHMENT_BYTES, Paging, PickedAttachment};
+use district_core::l10n::{WireCategory, wire_label};
+use district_core::{Event, FailureText, Locale, MAX_ATTACHMENT_BYTES, Paging, PickedAttachment};
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, gio, glib};
+use crate::l10n::{lang, text};
 use crate::pages::Sends;
 
 /// Text a person types into a field the model also writes to (the composer,
@@ -280,13 +282,13 @@ pub(crate) fn when_text(iso: &str) -> String {
 /// The heading over a day's messages: "Today", "Yesterday", or the date.
 pub(crate) fn day_heading(when: &glib::DateTime, now: &glib::DateTime) -> String {
     if same_day(when, now) {
-        return "Today".to_owned();
+        return text::shared_today(lang()).to_owned();
     }
     if now
         .add_days(-1)
         .is_ok_and(|yesterday| same_day(when, &yesterday))
     {
-        return "Yesterday".to_owned();
+        return text::shared_yesterday(lang()).to_owned();
     }
     let format = if when.year() == now.year() {
         "%A %-d %B"
@@ -296,9 +298,39 @@ pub(crate) fn day_heading(when: &glib::DateTime, now: &glib::DateTime) -> String
     when.format(format).map(String::from).unwrap_or_default()
 }
 
+/// What a screen shows for a value the service stores in English in one of
+/// the categories `contracts/i18n/wire-vocabulary.json` names (a call's
+/// status, its sentiment, a member's role). In French, the core's label for
+/// it ([`wire_label`]), and for a value it does not know the category's
+/// generic one, never the stored text turned into English words.
+///
+/// English keeps the words this app has always shown, [`humanize`] of the
+/// value, except for the two values whose portal labels it takes on:
+/// sentiment `negative` reads "Friction", and transfer status `success`
+/// "Transferred". (A failed transfer and its reasons have portal sentences
+/// too, which English does not take on yet; every other value the vocabulary
+/// knows reads the same either way.)
+pub(crate) fn wire_text(category: WireCategory, raw: &str) -> String {
+    let locale = lang();
+    let portal = PORTAL_LABELS
+        .iter()
+        .any(|(known, value)| *known == category && raw.trim().eq_ignore_ascii_case(value));
+    if locale == Locale::En && !portal {
+        return humanize(raw);
+    }
+    wire_label(category, raw, locale)
+}
+
+/// The values whose English label is the portal's rather than [`humanize`]'s.
+const PORTAL_LABELS: [(WireCategory, &str); 2] = [
+    (WireCategory::Sentiment, "negative"),
+    (WireCategory::TransferStatus, "success"),
+];
+
 /// A status value the service wrote in its own form (`no-answer`,
 /// `caller_requested_human`) as a sentence starts it: `No answer`, `Caller
-/// requested human`.
+/// requested human`. For a value outside the wire vocabulary only; one in it
+/// goes through [`wire_text`].
 pub(crate) fn humanize(raw: &str) -> String {
     let words = raw.trim().replace(['-', '_'], " ");
     let mut chars = words.chars();
@@ -659,7 +691,7 @@ impl Asking {
             None => split_question(ask.question),
         };
         let dialog = adw::AlertDialog::new(Some(heading), Some(body).filter(|b| !b.is_empty()));
-        dialog.add_response("cancel", "Cancel");
+        dialog.add_response("cancel", text::common_cancel(lang()));
         dialog.add_response("confirm", ask.action);
         dialog.set_response_appearance(
             "confirm",
@@ -725,7 +757,7 @@ impl ImagePicker {
         picked: impl FnOnce(&W, Result<PickedAttachment, glib::Error>) + 'static,
     ) {
         let filter = gtk::FileFilter::new();
-        filter.set_name(Some("Images"));
+        filter.set_name(Some(text::shared_images_filter(lang())));
         for mime_type in pick.types {
             filter.add_mime_type(mime_type);
         }

@@ -16,7 +16,7 @@
             <property name="show-end-title-buttons">False</property>
             <child type="start">
               <object class="GtkButton" id="cancel_button">
-                <property name="label">Cancel</property>
+                <property name="label" translatable="yes" context="common.cancel">Cancel</property>
               </object>
             </child>
             <child type="end">
@@ -37,24 +37,24 @@
           <object class="AdwPreferencesPage">
             <child>
               <object class="AdwPreferencesGroup">
-                <property name="description">A contact needs a name, and a phone number or an email address.</property>
+                <property name="description" translatable="yes" context="contact_form.contact_needs_name_phone_number">A contact needs a name, and a phone number or an email address.</property>
                 <child>
                   <object class="AdwEntryRow" id="name_row">
-                    <property name="title">Name</property>
+                    <property name="title" translatable="yes" context="common.name">Name</property>
                     <property name="use-markup">False</property>
                     <property name="input-hints">no-spellcheck|uppercase-words</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwEntryRow" id="phone_row">
-                    <property name="title">Phone number</property>
+                    <property name="title" translatable="yes" context="common.phone_number">Phone number</property>
                     <property name="use-markup">False</property>
                     <property name="input-purpose">phone</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwEntryRow" id="email_row">
-                    <property name="title">Email address</property>
+                    <property name="title" translatable="yes" context="common.email_address">Email address</property>
                     <property name="use-markup">False</property>
                     <property name="input-purpose">email</property>
                   </object>

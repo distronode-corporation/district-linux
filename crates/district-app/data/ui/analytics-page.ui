@@ -17,7 +17,7 @@
                 <property name="icon-name">x-office-presentation-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -52,22 +52,22 @@
                               <class name="linked"/>
                             </style>
                             <accessibility>
-                              <property name="label">Period</property>
+                              <property name="label" translatable="yes" context="analytics_page.period">Period</property>
                             </accessibility>
                             <child>
                               <object class="GtkToggleButton" id="range_7">
-                                <property name="label">7 days</property>
+                                <property name="label" translatable="yes" context="analytics_page.n7_days">7 days</property>
                               </object>
                             </child>
                             <child>
                               <object class="GtkToggleButton" id="range_30">
-                                <property name="label">30 days</property>
+                                <property name="label" translatable="yes" context="analytics_page.n30_days">30 days</property>
                                 <property name="group">range_7</property>
                               </object>
                             </child>
                             <child>
                               <object class="GtkToggleButton" id="range_90">
-                                <property name="label">90 days</property>
+                                <property name="label" translatable="yes" context="analytics_page.n90_days">90 days</property>
                                 <property name="group">range_7</property>
                               </object>
                             </child>
@@ -75,7 +75,7 @@
                         </child>
                         <child>
                           <object class="AdwPreferencesGroup" id="report_group">
-                            <property name="title">Calls</property>
+                            <property name="title" translatable="yes" context="common.calls">Calls</property>
                             <property name="header-suffix">
                               <object class="GtkSpinner" id="report_spinner">
                                 <property name="visible">False</property>
@@ -151,7 +151,7 @@
                                         </child>
                                         <child>
                                           <object class="GtkLabel">
-                                            <property name="label">Call funnel</property>
+                                            <property name="label" translatable="yes" context="analytics_page.call_funnel">Call funnel</property>
                                             <property name="xalign">0</property>
                                             <property name="margin-top">8</property>
                                             <style>
@@ -167,7 +167,7 @@
                                         </child>
                                         <child>
                                           <object class="GtkLabel">
-                                            <property name="label">Caller sentiment</property>
+                                            <property name="label" translatable="yes" context="analytics_page.caller_sentiment">Caller sentiment</property>
                                             <property name="xalign">0</property>
                                             <property name="margin-top">8</property>
                                             <style>
@@ -191,7 +191,7 @@
                         </child>
                         <child>
                           <object class="AdwPreferencesGroup" id="usage_group">
-                            <property name="title">This month's usage</property>
+                            <property name="title" translatable="yes" context="common.months_usage">This month's usage</property>
                             <child>
                               <object class="GtkStack" id="usage_stack">
                                 <property name="vhomogeneous">False</property>
@@ -236,7 +236,7 @@
                         </child>
                         <child>
                           <object class="AdwPreferencesGroup" id="history_group">
-                            <property name="title">Recent months</property>
+                            <property name="title" translatable="yes" context="analytics_page.recent_months">Recent months</property>
                             <child>
                               <object class="GtkStack" id="history_stack">
                                 <property name="vhomogeneous">False</property>

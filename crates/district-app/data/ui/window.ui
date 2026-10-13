@@ -9,17 +9,17 @@
   <menu id="primary_menu">
     <section>
       <item>
-        <attribute name="label">_About District AI</attribute>
+        <attribute name="label" translatable="yes" context="window.about_district_ai">_About District AI</attribute>
         <attribute name="action">app.about</attribute>
       </item>
       <item>
-        <attribute name="label">_Quit</attribute>
+        <attribute name="label" translatable="yes" context="window.quit">_Quit</attribute>
         <attribute name="action">app.quit</attribute>
       </item>
     </section>
   </menu>
   <template class="DistrictWindow" parent="AdwApplicationWindow">
-    <property name="title">District AI</property>
+    <property name="title" translatable="yes" context="common.district_ai">District AI</property>
     <property name="icon-name">com.distronode.DistrictAI</property>
     <property name="default-width">1024</property>
     <property name="default-height">720</property>
@@ -56,9 +56,9 @@
                                 <property name="icon-name">open-menu-symbolic</property>
                                 <property name="menu-model">primary_menu</property>
                                 <property name="primary">True</property>
-                                <property name="tooltip-text">Main Menu</property>
+                                <property name="tooltip-text" translatable="yes" context="window.main_menu">Main Menu</property>
                                 <accessibility>
-                                  <property name="label">Main Menu</property>
+                                  <property name="label" translatable="yes" context="window.main_menu_a11y">Main Menu</property>
                                 </accessibility>
                               </object>
                             </child>
@@ -82,7 +82,7 @@
                           <object class="AdwNavigationSplitView" id="split_view">
                             <property name="sidebar">
                               <object class="AdwNavigationPage">
-                                <property name="title">District AI</property>
+                                <property name="title" translatable="yes" context="common.district_ai">District AI</property>
                                 <property name="tag">sidebar</property>
                                 <property name="child">
                                   <object class="AdwToolbarView">
@@ -93,9 +93,9 @@
                                             <property name="icon-name">open-menu-symbolic</property>
                                             <property name="menu-model">primary_menu</property>
                                             <property name="primary">True</property>
-                                            <property name="tooltip-text">Main Menu</property>
+                                            <property name="tooltip-text" translatable="yes" context="window.main_menu">Main Menu</property>
                                             <accessibility>
-                                              <property name="label">Main Menu</property>
+                                              <property name="label" translatable="yes" context="window.main_menu_a11y">Main Menu</property>
                                             </accessibility>
                                           </object>
                                         </child>
@@ -126,7 +126,7 @@
                                                 </child>
                                                 <child>
                                                   <object class="GtkDropDown" id="workspace_dropdown">
-                                                    <property name="tooltip-text">Workspace</property>
+                                                    <property name="tooltip-text" translatable="yes" context="window.workspace">Workspace</property>
                                                   </object>
                                                 </child>
                                                 <child>
@@ -159,7 +159,7 @@
                             </property>
                             <property name="content">
                               <object class="AdwNavigationPage" id="content_page">
-                                <property name="title">Overview</property>
+                                <property name="title" translatable="yes" context="window.overview">Overview</property>
                                 <property name="tag">content</property>
                                 <property name="child">
                                   <object class="AdwToolbarView">
@@ -168,19 +168,19 @@
                                         <child type="start">
                                           <object class="GtkButton" id="back_button">
                                             <property name="icon-name">go-previous-symbolic</property>
-                                            <property name="tooltip-text">Back</property>
+                                            <property name="tooltip-text" translatable="yes" context="window.back">Back</property>
                                             <property name="visible">False</property>
                                             <accessibility>
-                                              <property name="label">Back</property>
+                                              <property name="label" translatable="yes" context="window.back_a11y">Back</property>
                                             </accessibility>
                                           </object>
                                         </child>
                                         <child type="end">
                                           <object class="GtkButton" id="refresh_button">
                                             <property name="icon-name">view-refresh-symbolic</property>
-                                            <property name="tooltip-text">Refresh</property>
+                                            <property name="tooltip-text" translatable="yes" context="window.refresh">Refresh</property>
                                             <accessibility>
-                                              <property name="label">Refresh</property>
+                                              <property name="label" translatable="yes" context="window.refresh_a11y">Refresh</property>
                                             </accessibility>
                                           </object>
                                         </child>
@@ -193,7 +193,7 @@
                                     </child>
                                     <child type="top">
                                       <object class="AdwBanner" id="notice_banner">
-                                        <property name="button-label">Dismiss</property>
+                                        <property name="button-label" translatable="yes" context="common.dismiss_button">Dismiss</property>
                                       </object>
                                     </child>
                                     <child type="top">

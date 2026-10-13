@@ -16,6 +16,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
+use crate::l10n::{core_text, lang};
 use crate::pages::shared::{draw_spinner, failure_text, when_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -167,7 +168,8 @@ impl SchedulingPage {
             }
             SchedulingStatus::Failed(failure) => {
                 imp.stack.set_visible_child_name("status");
-                imp.status.set_title(SchedulingStatus::FAILED_TITLE);
+                imp.status
+                    .set_title(core_text::scheduling_failed_title(lang()));
                 imp.status
                     .set_description(Some(&escape(&failure_text(failure))));
                 imp.retry_button.set_visible(failure.retryable);

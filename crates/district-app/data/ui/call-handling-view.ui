@@ -10,8 +10,8 @@
       <object class="AdwPreferencesPage">
         <child>
           <object class="AdwPreferencesGroup" id="handling_group">
-            <property name="title">Who answers</property>
-            <property name="description">For every member of this workspace.</property>
+            <property name="title" translatable="yes" context="call_handling_view.who_answers">Who answers</property>
+            <property name="description" translatable="yes" context="call_handling_view.every_member_workspace">For every member of this workspace.</property>
             <property name="header-suffix">
               <object class="GtkSpinner" id="handling_spinner">
                 <property name="visible">False</property>
@@ -22,7 +22,7 @@
                 <property name="use-markup">False</property>
                 <child type="suffix">
                   <object class="GtkButton" id="handling_retry">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="valign">center</property>
                   </object>
                 </child>
@@ -66,7 +66,7 @@
             <child>
               <object class="AdwActionRow" id="unknown_row">
                 <property name="use-markup">False</property>
-                <property name="title">A setting this app does not know</property>
+                <property name="title" translatable="yes" context="common.setting_app_does_not_know">A setting this app does not know</property>
                 <style>
                   <class name="dim-label"/>
                 </style>
@@ -75,7 +75,7 @@
             <child>
               <object class="AdwActionRow" id="ring_row">
                 <property name="use-markup">False</property>
-                <property name="title">How long your devices ring</property>
+                <property name="title" translatable="yes" context="call_handling_view.how_long_devices_ring">How long your devices ring</property>
                 <child type="suffix">
                   <object class="GtkScale" id="ring_scale">
                     <property name="valign">center</property>
@@ -93,7 +93,7 @@
                       </object>
                     </property>
                     <accessibility>
-                      <property name="label">How long your devices ring, in seconds</property>
+                      <property name="label" translatable="yes" context="call_handling_view.how_long_devices_ring_seconds">How long your devices ring, in seconds</property>
                     </accessibility>
                   </object>
                 </child>
@@ -137,7 +137,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="save_button">
-                        <property name="label">Save</property>
+                        <property name="label" translatable="yes" context="common.save">Save</property>
                         <style>
                           <class name="pill"/>
                           <class name="suggested-action"/>
@@ -152,8 +152,8 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup" id="availability_group">
-            <property name="title">Your availability</property>
-            <property name="description">Whether your own devices ring for this workspace's calls. A change is sent at once.</property>
+            <property name="title" translatable="yes" context="call_handling_view.availability">Your availability</property>
+            <property name="description" translatable="yes" context="call_handling_view.whether_own_devices_ring_workspaces">Whether your own devices ring for this workspace's calls. A change is sent at once.</property>
             <property name="header-suffix">
               <object class="GtkSpinner" id="availability_spinner">
                 <property name="visible">False</property>
@@ -164,7 +164,7 @@
                 <property name="use-markup">False</property>
                 <child type="suffix">
                   <object class="GtkButton" id="availability_retry">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="valign">center</property>
                   </object>
                 </child>
@@ -173,13 +173,13 @@
             <child>
               <object class="AdwSwitchRow" id="availability_row">
                 <property name="use-markup">False</property>
-                <property name="title">Ring me for calls</property>
+                <property name="title" translatable="yes" context="call_handling_view.ring_me_calls">Ring me for calls</property>
               </object>
             </child>
             <child>
               <object class="AdwActionRow" id="blocked_row">
                 <property name="use-markup">False</property>
-                <property name="title">Ring me for calls</property>
+                <property name="title" translatable="yes" context="call_handling_view.ring_me_calls">Ring me for calls</property>
               </object>
             </child>
             <child>

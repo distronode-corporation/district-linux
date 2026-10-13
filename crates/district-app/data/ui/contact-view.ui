@@ -29,7 +29,7 @@
                 <property name="icon-name">x-office-address-book-symbolic</property>
                 <property name="child">
                   <object class="GtkButton" id="retry_button">
-                    <property name="label">Try again</property>
+                    <property name="label" translatable="yes" context="common.try_again">Try again</property>
                     <property name="halign">center</property>
                     <style>
                       <class name="pill"/>
@@ -80,7 +80,7 @@
                         </child>
                         <child>
                           <object class="GtkLabel" id="blocked_label">
-                            <property name="label">Blocked</property>
+                            <property name="label" translatable="yes" context="contact_view.blocked">Blocked</property>
                             <property name="halign">center</property>
                             <property name="visible">False</property>
                             <style>
@@ -96,7 +96,7 @@
                             <property name="margin-top">10</property>
                             <child>
                               <object class="GtkButton" id="edit_button">
-                                <property name="label">Edit</property>
+                                <property name="label" translatable="yes" context="contact_view.edit">Edit</property>
                                 <style>
                                   <class name="pill"/>
                                 </style>
@@ -104,7 +104,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="block_button">
-                                <property name="label">Block</property>
+                                <property name="label" translatable="yes" context="contact_view.block">Block</property>
                                 <style>
                                   <class name="pill"/>
                                 </style>
@@ -112,7 +112,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="delete_button">
-                                <property name="label">Delete</property>
+                                <property name="label" translatable="yes" context="contact_view.delete">Delete</property>
                                 <style>
                                   <class name="pill"/>
                                   <class name="destructive-action"/>
@@ -123,7 +123,7 @@
                         </child>
                         <child>
                           <object class="GtkLabel" id="read_only_label">
-                            <property name="label">You have read-only access to this workspace, so you cannot change contacts.</property>
+                            <property name="label" translatable="yes" context="contact_view.have_read_only_access_workspace">You have read-only access to this workspace, so you cannot change contacts.</property>
                             <property name="visible">False</property>
                             <property name="wrap">True</property>
                             <property name="justify">center</property>
@@ -175,11 +175,11 @@
                             <child>
                               <object class="GtkButton" id="failure_dismiss">
                                 <property name="icon-name">window-close-symbolic</property>
-                                <property name="tooltip-text">Dismiss</property>
+                                <property name="tooltip-text" translatable="yes" context="common.dismiss">Dismiss</property>
                                 <property name="valign">center</property>
                                 <property name="margin-end">6</property>
                                 <accessibility>
-                                  <property name="label">Dismiss</property>
+                                  <property name="label" translatable="yes" context="common.dismiss_a11y">Dismiss</property>
                                 </accessibility>
                                 <style>
                                   <class name="flat"/>
@@ -195,18 +195,18 @@
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="details_group">
-                    <property name="title">Details</property>
+                    <property name="title" translatable="yes" context="common.details">Details</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="number_group">
-                    <property name="title">Phone number</property>
+                    <property name="title" translatable="yes" context="contact_view.phone_number">Phone number</property>
                   </object>
                 </child>
                 <child>
                   <object class="AdwPreferencesGroup" id="research_group">
-                    <property name="title">Research</property>
-                    <property name="description">Research looks this contact up on the web and writes a summary. Each run is billed.</property>
+                    <property name="title" translatable="yes" context="contact_view.research">Research</property>
+                    <property name="description" translatable="yes" context="contact_view.research_looks_contact_up_web">Research looks this contact up on the web and writes a summary. Each run is billed.</property>
                   </object>
                 </child>
                 <child>
@@ -216,7 +216,7 @@
                         <property name="spacing">8</property>
                         <child>
                           <object class="GtkButton" id="research_button">
-                            <property name="label">Run research</property>
+                            <property name="label" translatable="yes" context="contact_view.run_research">Run research</property>
                             <style>
                               <class name="pill"/>
                             </style>
@@ -224,7 +224,7 @@
                         </child>
                         <child>
                           <object class="GtkButton" id="clear_button">
-                            <property name="label">Clear research</property>
+                            <property name="label" translatable="yes" context="contact_view.clear_research">Clear research</property>
                             <style>
                               <class name="pill"/>
                               <class name="flat"/>
