@@ -4169,6 +4169,33 @@ pub fn scheduling_admin_hosts_add_heading(l: Locale) -> &'static str {
     }
 }
 
+/// `scheduling_admin.hours_closes_a11y`
+#[must_use]
+pub fn scheduling_admin_hours_closes_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Closes",
+        Locale::FrCa => "Closes",
+    }
+}
+
+/// `scheduling_admin.hours_opens_a11y`
+#[must_use]
+pub fn scheduling_admin_hours_opens_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Opens",
+        Locale::FrCa => "Opens",
+    }
+}
+
+/// `scheduling_admin.hours_window_a11y`
+#[must_use]
+pub fn scheduling_admin_hours_window_a11y(l: Locale, day: &str, number: i64) -> String {
+    match l {
+        Locale::En => format!("{day}, range {number}"),
+        Locale::FrCa => format!("{day}, range {number}"),
+    }
+}
+
 /// `scheduling_admin.loading_a11y`
 #[must_use]
 pub fn scheduling_admin_loading_a11y(l: Locale) -> &'static str {

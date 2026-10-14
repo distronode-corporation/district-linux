@@ -3009,6 +3009,7 @@ fn scheduling_screen(smoke: &Smoke) {
     assert!(smoke.shown("scheduling-section-overview"));
     assert!(!smoke.shown("scheduling_areas"));
     scheduling_event_types(smoke);
+    scheduling_hours(smoke);
     smoke.activate("scheduling-section-team");
     assert!(smoke.shown("team_placeholder"));
     smoke.click("back_button");
@@ -3951,6 +3952,266 @@ fn scheduling_event_types(smoke: &Smoke) {
     assert!(!smoke.shown("actions-toggle"));
     smoke.forget();
     smoke.click("back_button");
+}
+
+/// The booking pages' working hours: the week failing with Try again and
+/// the overrides failing alone, then both read in the profile's zone; the
+/// week's editor failing its read, refusing a window, adding, copying and
+/// removing ranges, a save stopping at a refusal and one landing; and the
+/// overrides' editor refusing a form, adding custom hours through a failure,
+/// and deleting a run of days when asked, after a no.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn scheduling_hours(smoke: &Smoke) {
+    use district_model::{
+        SchedulingAdminData as Data, SchedulingAdminRequest as Request,
+        SchedulingAvailabilityOverride, SchedulingAvailabilityRule, SchedulingMe, SchedulingOk,
+        SchedulingOverrideDraft,
+    };
+    let rule = |id: &str, day: i64| SchedulingAvailabilityRule {
+        id: id.to_owned(),
+        day_of_week: day,
+        start_time: "09:00".to_owned(),
+        end_time: "17:00".to_owned(),
+        ..SchedulingAvailabilityRule::default()
+    };
+    let rules = move || Data::Rules(vec![rule("r-mon", 1), rule("r-tue", 2)]);
+    let day_off = |id: &str, date: &str| SchedulingAvailabilityOverride {
+        id: id.to_owned(),
+        date: date.to_owned(),
+        reason: "day_off".to_owned(),
+        group_id: Some("run".to_owned()),
+        ..SchedulingAvailabilityOverride::default()
+    };
+    let custom = |id: &str, date: &str| SchedulingAvailabilityOverride {
+        id: id.to_owned(),
+        date: date.to_owned(),
+        is_available: true,
+        reason: "custom_hours".to_owned(),
+        start_time: Some("12:00".to_owned()),
+        end_time: Some("16:00".to_owned()),
+        ..SchedulingAvailabilityOverride::default()
+    };
+    let run = move || vec![day_off("o-1", "2030-12-24"), day_off("o-2", "2030-12-25")];
+    let overrides = move || {
+        let mut all = run();
+        all.push(custom("o-3", "2030-09-24"));
+        Data::Overrides(all)
+    };
+    let reads = move |request: &Request| match request {
+        Request::Me => Ok(Data::Me(SchedulingMe {
+            timezone: "America/Toronto".to_owned(),
+            ..SchedulingMe::default()
+        })),
+        Request::Rules { event_type_id } => {
+            assert_eq!(*event_type_id, None, "the member's own hours");
+            Ok(rules())
+        }
+        Request::Overrides => Ok(overrides()),
+        other => unreachable!("{other:?}"),
+    };
+    let done = || Ok(Data::Done(SchedulingOk { ok: true }));
+
+    // The section: the week fails with Try again, the overrides alone.
+    smoke.activate("scheduling-section-hours");
+    assert!(smoke.shown("hours-week-loading") && smoke.shown("overrides_spinner"));
+    assert!(smoke.shown("hours_write_bar"), "drawn whatever the reads");
+    scheduling_reads(smoke, |request| match request {
+        Request::Rules { .. } | Request::Overrides => Err(server_error()),
+        other => reads(other),
+    });
+    assert!(smoke.shown("hours-week-failed") && smoke.shown("overrides_failure"));
+    smoke.click("hours-week-retry");
+    scheduling_reads(smoke, |request| match request {
+        Request::Overrides => Ok(Data::Overrides(Vec::new())),
+        other => reads(other),
+    });
+    assert!(smoke.shown("overrides_empty"));
+    smoke.click("refresh_button");
+    scheduling_reads(smoke, reads);
+    assert_eq!(smoke.count("hours-day"), 7, "every day, an empty one too");
+    assert!(smoke.shows_part("America/Toronto"));
+    assert!(smoke.shows_text("Monday") && smoke.shows_text("Not bookable"));
+    assert!(smoke.shows_text("9:00 a.m. to 5:00 p.m."));
+    assert!(
+        smoke.shown("week_summary"),
+        "the summary the overview shows"
+    );
+    assert_eq!(smoke.count("hours-override"), 2, "a run is one row");
+    assert!(!smoke.shown("overrides_empty") && !smoke.shown("overrides_failure"));
+    smoke.shot("66-booking-hours");
+
+    // The week's editor reads for itself, and a failed read saves nothing.
+    smoke.click("hours_week_button");
+    assert!(smoke.shown("week-loading"));
+    assert!(!smoke.sensitive("dialog-save"), "no save before the read");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Rules { .. }));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("week-load-failure") && !smoke.shown("week-day"));
+    smoke.click("dialog-cancel");
+    assert!(!smoke.shown("week-load-failure"));
+    smoke.click("hours_week_button");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, Ok(rules()));
+    assert_eq!(smoke.count("week-day"), 7);
+    assert_eq!(smoke.count("week-range"), 2);
+    assert_eq!(smoke.count("week-not-bookable"), 5);
+    assert_eq!(smoke.count("week-copy"), 2, "Monday and Tuesday have one");
+    // Nothing changed: nothing sent.
+    smoke.click("dialog-save");
+    assert!(!smoke.pending("SchedulingAdmin"));
+    assert!(smoke.shows_text("Nothing to save."));
+    smoke.click("hours-dismiss");
+    assert!(!smoke.shown("week-outcome"));
+    // A window that closes before it opens is refused, then mended.
+    smoke.type_into("week-end", "08:00");
+    assert!(smoke.shows_text("The end has to be after the start."));
+    assert!(!smoke.sensitive("dialog-save"));
+    smoke.type_into("week-end", "12:00");
+    assert!(!smoke.shown("week-error"));
+    // A second range on Monday overlaps until it opens after the first.
+    smoke.click("week-add-range");
+    assert_eq!(smoke.count("week-range"), 3);
+    assert!(smoke.shows_text("These hours overlap another range on this day."));
+    smoke.nth::<gtk::Entry>("week-start", 1).set_text("13:00");
+    smoke.pump();
+    assert!(!smoke.shown("week-error"));
+    // Monday to every weekday, then Friday's second range off.
+    smoke.click("week-copy");
+    assert_eq!(smoke.count("week-range"), 10);
+    assert_eq!(smoke.count("week-not-bookable"), 2);
+    smoke.nth::<gtk::Button>("week-remove", 9).emit_clicked();
+    smoke.pump();
+    assert_eq!(smoke.count("week-range"), 9);
+    smoke.shot("66-booking-hours-week");
+    // The save goes a step at a time, and stops at a refusal.
+    smoke.click("dialog-save");
+    let (ticket, request) = admin_request(smoke);
+    assert_eq!(
+        request,
+        Request::PatchRule {
+            id: "r-mon".to_owned(),
+            day_of_week: Some(1),
+            start_time: Some("09:00".to_owned()),
+            end_time: Some("12:00".to_owned()),
+        }
+    );
+    assert!(!smoke.sensitive("dialog-save"), "one save at a time");
+    admin_answer(smoke, ticket, done());
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::PatchRule { ref id, .. } if id == "r-tue"));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("week-outcome"));
+    // Read again, whatever happened: the week is what the scheduler holds.
+    scheduling_reads(smoke, reads);
+    assert_eq!(smoke.count("week-range"), 2);
+    smoke.nth::<gtk::Button>("week-add-range", 2).emit_clicked();
+    smoke.pump();
+    smoke.click("dialog-save");
+    let (ticket, request) = admin_request(smoke);
+    assert_eq!(
+        request,
+        Request::CreateRule {
+            event_type_id: None,
+            day_of_week: 3,
+            start_time: "09:00".to_owned(),
+            end_time: "17:00".to_owned(),
+        }
+    );
+    admin_answer(smoke, ticket, done());
+    scheduling_reads(smoke, reads);
+    assert!(smoke.shows_text("Working hours saved"));
+    smoke.click("dialog-cancel");
+    assert!(!smoke.shown("week-day"));
+
+    // The overrides' editor: the days to come, a run as one row.
+    smoke.click("hours_overrides_button");
+    assert!(smoke.shown("overrides-loading"));
+    scheduling_reads(smoke, reads);
+    assert_eq!(smoke.count("override-row"), 2);
+    assert!(smoke.shows_text("12:00 p.m. to 4:00 p.m."));
+    // The form: refused, then custom hours, which are one day.
+    smoke.click("overrides-add");
+    assert!(smoke.shown("override-date") && smoke.shown("override-last-day"));
+    assert!(!smoke.shown("override-start"));
+    smoke.click("override-save");
+    assert!(smoke.shows_text("Pick a date."));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    choose(smoke, &combo(smoke, "override-kind", 0), "Custom hours");
+    assert!(smoke.shown("override-start") && !smoke.shown("override-last-day"));
+    smoke.type_into("override-date", "2030-10-01");
+    smoke.type_into("override-start", "12:00");
+    smoke.type_into("override-end", "16:00");
+    smoke.shot("66-booking-hours-override");
+    smoke.click("override-save");
+    let (ticket, request) = admin_request(smoke);
+    assert_eq!(
+        request,
+        Request::CreateOverride(SchedulingOverrideDraft {
+            date: "2030-10-01".to_owned(),
+            end_date: None,
+            reason: "custom_hours".to_owned(),
+            start_time: Some("12:00".to_owned()),
+            end_time: Some("16:00".to_owned()),
+        })
+    );
+    assert!(!smoke.sensitive("override-save"), "one add at a time");
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("override-outcome"));
+    smoke.click("override-save");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, done());
+    assert!(!smoke.shown("override-date"), "an add closes its form");
+    assert!(smoke.shows_text("Override added"));
+    let with_added = move || {
+        let Data::Overrides(mut all) = overrides() else {
+            unreachable!()
+        };
+        all.push(custom("o-4", "2030-10-01"));
+        Ok(Data::Overrides(all))
+    };
+    scheduling_reads(smoke, |_| with_added());
+    assert_eq!(smoke.count("override-row"), 3);
+    smoke.click("overrides-add");
+    smoke.click("override-cancel");
+    assert!(!smoke.shown("override-date"));
+    // Deleting the run is asked once, saying how many days go; no leaves it.
+    smoke
+        .nth::<gtk::Button>("override-delete", 2)
+        .emit_clicked();
+    smoke.pump();
+    assert_eq!(questions(smoke), 1);
+    assert!(smoke.shows_part("All 2 days go back to your weekly hours."));
+    smoke.respond("cancel");
+    assert_eq!(questions(smoke), 0);
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke
+        .nth::<gtk::Button>("override-delete", 2)
+        .emit_clicked();
+    smoke.pump();
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert_eq!(
+        request,
+        Request::DeleteOverrideGroup {
+            group_id: "run".to_owned()
+        }
+    );
+    admin_answer(smoke, ticket, done());
+    assert!(smoke.shows_text("Override deleted"));
+    scheduling_reads(smoke, |_| {
+        Ok(Data::Overrides(vec![
+            custom("o-3", "2030-09-24"),
+            custom("o-4", "2030-10-01"),
+        ]))
+    });
+    assert_eq!(smoke.count("override-row"), 2);
+    smoke.click("hours-dismiss");
+    smoke.click("dialog-cancel");
+    assert!(!smoke.shown("override-row"));
+    assert_eq!(smoke.count("hours-override"), 2, "the section has them too");
+    smoke.click("back_button");
+    smoke.forget();
 }
 
 /// The desktop hands the app `link`, as it does the browser's answer.
