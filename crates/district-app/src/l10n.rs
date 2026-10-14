@@ -26,6 +26,9 @@
 use std::path::{Path, PathBuf};
 
 pub use district_core::Locale;
+/// The core's words for the booking pages' sections, an accessor per key of
+/// its scheduling catalog (`sched_text::desk_eyebrow`).
+pub use district_core::l10n::scheduling_strings as sched_text;
 /// The core's own words, an accessor per key of its catalog, for the
 /// constants it keeps in English (`AnalyticsCard::FAILED_TITLE` is
 /// `core_text::analytics_report_failed_title`).

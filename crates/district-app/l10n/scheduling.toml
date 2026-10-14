@@ -3,9 +3,32 @@ catalog = "linux_scheduling"
 platform = "gtk"
 apple = false
 
+[scheduling_admin.coming_up_row_a11y]
+en = "{when}, {subtitle}, {status}"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+args = { when = "str", subtitle = "str", status = "str" }
+note = "What a screen reader says for a booking coming up on the booking pages' overview: when it is, who booked and what, and its status (Confirmed, Cancelled...)."
+
+[scheduling_admin.desk_row_a11y]
+en = "{label}: {value}"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+args = { label = "str", value = "str" }
+note = "What a screen reader says for a row of the booking desk on the booking pages' overview: the row's label (Calendar, Working hours...), then what it shows."
+
 [scheduling_admin.failed_title]
 en = "Could not load this section"
 ctx = "title"
 screen = "scheduling_admin"
 tier = "T3"
 note = "Heading over why a section of the booking pages (the event types, the bookings, the team...) could not be read. The reason is under it."
+
+[scheduling_admin.loading_a11y]
+en = "Loading"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+note = "What a screen reader says for a part of a booking pages section still being read."

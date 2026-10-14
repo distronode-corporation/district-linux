@@ -936,8 +936,14 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::routing_view_replace_rules(Locale::FrCa), "Replace the rules");
     assert_eq!(text::routing_view_rules(Locale::En), "Rules");
     assert_eq!(text::routing_view_rules(Locale::FrCa), "Rules");
+    assert_eq!(text::scheduling_admin_coming_up_row_a11y(Locale::En, "{when}", "{subtitle}", "{status}"), "{when}, {subtitle}, {status}");
+    assert_eq!(text::scheduling_admin_coming_up_row_a11y(Locale::FrCa, "{when}", "{subtitle}", "{status}"), "{when}, {subtitle}, {status}");
+    assert_eq!(text::scheduling_admin_desk_row_a11y(Locale::En, "{label}", "{value}"), "{label}: {value}");
+    assert_eq!(text::scheduling_admin_desk_row_a11y(Locale::FrCa, "{label}", "{value}"), "{label}: {value}");
     assert_eq!(text::scheduling_admin_failed_title(Locale::En), "Could not load this section");
     assert_eq!(text::scheduling_admin_failed_title(Locale::FrCa), "Could not load this section");
+    assert_eq!(text::scheduling_admin_loading_a11y(Locale::En), "Loading");
+    assert_eq!(text::scheduling_admin_loading_a11y(Locale::FrCa), "Loading");
     assert_eq!(text::scheduling_page_booking_page(Locale::En), "Booking page");
     assert_eq!(text::scheduling_page_booking_page(Locale::FrCa), "Booking page");
     assert_eq!(text::scheduling_page_check_again(Locale::En), "Check again");

@@ -2529,10 +2529,28 @@ msgctxt "routing_view.rules"
 msgid "Rules"
 msgstr ""
 
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for a booking coming up on the booking pages' overview: when it is, who booked and what, and its status (Confirmed, Cancelled...).
+msgctxt "scheduling_admin.coming_up_row_a11y"
+msgid "{when}, {subtitle}, {status}"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for a row of the booking desk on the booking pages' overview: the row's label (Calendar, Working hours...), then what it shows.
+msgctxt "scheduling_admin.desk_row_a11y"
+msgid "{label}: {value}"
+msgstr ""
+
 #. screen: scheduling_admin; ctx: title; tier: T3
 #. Heading over why a section of the booking pages (the event types, the bookings, the team...) could not be read. The reason is under it.
 msgctxt "scheduling_admin.failed_title"
 msgid "Could not load this section"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for a part of a booking pages section still being read.
+msgctxt "scheduling_admin.loading_a11y"
+msgid "Loading"
 msgstr ""
 
 #. screen: scheduling_page; ctx: label; tier: T3
