@@ -75,6 +75,12 @@ district-model = { workspace = true }
 # GNU gettext from source (LGPL).
 gettext-rs = { version = "0.8.0", features = ["gettext-system"] }
 gtk4 = { workspace = true }
+# Background mode (src/background.rs): the tray icon, a StatusNotifierItem
+# and its menu over D-Bus (pure Rust on zbus, no GTK 3 or libappindicator;
+# Unlicense), and the Background portal, which lets a Flatpak run with no
+# window, start at login and say why in GNOME's Background Apps list.
+ksni = { version = "0.3.6", default-features = false, features = ["tokio"] }
+ashpd = { version = "0.13.13", default-features = false, features = ["tokio", "background"] }
 libadwaita = { workspace = true }
 # A contact's research dossier is free-form JSON, shown as the text it holds.
 serde_json = { workspace = true }

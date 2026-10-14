@@ -86,6 +86,24 @@ pub fn account_page_sign_out(l: Locale) -> &'static str {
     }
 }
 
+/// `account_page.start_at_login`
+#[must_use]
+pub fn account_page_start_at_login(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Start at login",
+        Locale::FrCa => "Start at login",
+    }
+}
+
+/// `account_page.start_at_login_body`
+#[must_use]
+pub fn account_page_start_at_login_body(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it.",
+        Locale::FrCa => "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it.",
+    }
+}
+
 /// `analytics.calls_per_day`
 #[must_use]
 pub fn analytics_calls_per_day(l: Locale) -> &'static str {
@@ -317,6 +335,51 @@ pub fn audition_dialog_stop(l: Locale) -> &'static str {
     match l {
         Locale::En => "Stop",
         Locale::FrCa => "Stop",
+    }
+}
+
+/// `background.portal_reason`
+#[must_use]
+pub fn background_portal_reason(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "So that calls handed to this computer ring while the District AI window is closed.",
+        Locale::FrCa => "So that calls handed to this computer ring while the District AI window is closed.",
+    }
+}
+
+/// `background.status`
+#[must_use]
+pub fn background_status(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Ringing for calls handed to this computer",
+        Locale::FrCa => "Ringing for calls handed to this computer",
+    }
+}
+
+/// `background.tray_open`
+#[must_use]
+pub fn background_tray_open(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Open District AI",
+        Locale::FrCa => "Open District AI",
+    }
+}
+
+/// `background.tray_quit`
+#[must_use]
+pub fn background_tray_quit(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Quit",
+        Locale::FrCa => "Quit",
+    }
+}
+
+/// `background.tray_title`
+#[must_use]
+pub fn background_tray_title(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District AI",
+        Locale::FrCa => "District AI",
     }
 }
 

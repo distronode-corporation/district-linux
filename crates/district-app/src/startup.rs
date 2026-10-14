@@ -20,6 +20,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 
 use crate::adw::prelude::*;
 use crate::app::{Parts, application};
+use crate::background::DesktopBackground;
 use crate::bridge::UiBridge;
 use crate::effects::RuntimeEffects;
 use crate::gtk::glib;
@@ -85,6 +86,13 @@ fn launch() -> Result<glib::ExitCode, String> {
 
     let (events, receiver) = async_channel::unbounded();
     let (commands, command_receiver) = async_channel::unbounded();
+    let tray_bridge = UiBridge::new(commands.clone());
+    let background = DesktopBackground::new(
+        runtime.handle().clone(),
+        ashpd::is_sandboxed(),
+        dirs.app_config_dir(),
+        glib::user_config_dir().join("autostart"),
+    );
     // The machine about to sleep, and waking: told to the model through the
     // main thread, with the sleep held until what it asks for has run. Without
     // logind (or, in a Flatpak, without permission to talk to it) nothing is
@@ -164,6 +172,8 @@ fn launch() -> Result<glib::ExitCode, String> {
         events: (events, receiver),
         commands: command_receiver,
         startup_notice,
+        background: Rc::new(background),
+        tray_bridge,
     });
     let code = app.run();
     drop(app);

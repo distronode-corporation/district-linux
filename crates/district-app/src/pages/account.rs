@@ -1,5 +1,9 @@
-//! The account: this build and this computer, whether calls ring here, the
-//! devices signed in, signing out, and where deleting the account starts.
+//! The account: this build and this computer, whether the app starts at
+//! login, whether calls ring here, the devices signed in, signing out, and
+//! where deleting the account starts.
+//!
+//! "Start at login" is this computer's, not the core's: the application's
+//! `start-at-login` action holds it (see [`crate::background`]).
 //!
 //! "Ring on this computer" is shown once the core has read it, which a build
 //! without calls never does: there is nothing to ring there.
@@ -11,6 +15,7 @@ use district_core::{AccountView, Event, PresenceState, Route};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
+use crate::background::START_AT_LOGIN_ACTION;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::{Sends, on_activate};
@@ -26,6 +31,8 @@ mod imp {
         pub device_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub version_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        pub start_at_login_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         pub devices_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -76,6 +83,23 @@ mod imp {
             self.ring_here_row
                 .set_subtitle(core_text::presence_setting_body(lang()));
             let weak = page.downgrade();
+            self.start_at_login_row.connect_active_notify(move |row| {
+                let Some(page) = weak.upgrade() else {
+                    return;
+                };
+                let on = row.is_active();
+                if page.starts_at_login() != Some(on) {
+                    row.activate_action(
+                        &format!("app.{START_AT_LOGIN_ACTION}"),
+                        Some(&on.to_variant()),
+                    )
+                    .ok();
+                    // What was kept, which a folder that cannot be written
+                    // leaves as it was.
+                    row.set_active(page.starts_at_login().unwrap_or_default());
+                }
+            });
+            let weak = page.downgrade();
             self.ring_here_row.connect_active_notify(move |row| {
                 if let Some(page) = weak.upgrade() {
                     page.send(Event::SetRingOnThisComputer(row.is_active()));
@@ -102,6 +126,16 @@ impl Sends for AccountPage {
 }
 
 impl AccountPage {
+    /// Whether the app starts at login, as the application's action holds
+    /// it; `None` before the page is in a window of the application.
+    fn starts_at_login(&self) -> Option<bool> {
+        self.root()
+            .and_downcast::<gtk::Window>()
+            .and_then(|window| window.application())
+            .and_then(|app| app.action_state(START_AT_LOGIN_ACTION))
+            .and_then(|state| state.get::<bool>())
+    }
+
     /// Hands over the window's sink.
     pub(crate) fn set_sink(&self, sink: EventSink) {
         self.imp().sink.set(sink).ok();
@@ -118,6 +152,9 @@ impl AccountPage {
     ) {
         let imp = self.imp();
         imp.device_row.set_subtitle(device_name);
+        if let Some(on) = self.starts_at_login() {
+            imp.start_at_login_row.set_active(on);
+        }
         if let Some(account) = account {
             imp.version_row
                 .set_subtitle(&text::account_version(lang(), &account.app_version));

@@ -304,9 +304,13 @@ PulseAudio, for a call's audio and the ringtone; and
 and listens for `PrepareForSleep` so that a laptop closing its lid stops ringing
 at once and ends a call under way; without the permission it cannot reach
 logind, and a sleeping desktop keeps its registration (and a caller can be held
-for it) until the registration lapses ten minutes later. Nothing else: the
-keyring, notifications, links, the file chooser and autostart all go through
-the portals, so a new permission needs a test that shows the app cannot work
+for it) until the registration lapses ten minutes later. And
+`--talk-name=org.kde.StatusNotifierWatcher`, for the tray icon of background
+mode (`src/background.rs`): without it the icon cannot register with the
+desktop's tray, and the app is then reached only through the launcher, which
+it must stay usable with anyway (Flathub refuses an app that needs a tray).
+Nothing else: the keyring, notifications, links, the file chooser, running in
+the background and autostart all go through the portals, so a new permission needs a test that shows the app cannot work
 without it.
 
 `.github/workflows/flatpak.yml` builds the bundle in Flathub's GNOME 51 build

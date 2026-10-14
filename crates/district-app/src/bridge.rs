@@ -40,6 +40,8 @@ pub enum UiCommand {
     },
     /// The machine woke up: tell the model.
     Resumed,
+    /// Quit, from the tray: as the window's Quit does.
+    Quit,
 }
 
 impl fmt::Debug for UiCommand {
@@ -53,6 +55,7 @@ impl fmt::Debug for UiCommand {
             Self::PresentWindow => f.write_str("PresentWindow"),
             Self::Suspending { .. } => f.write_str("Suspending"),
             Self::Resumed => f.write_str("Resumed"),
+            Self::Quit => f.write_str("Quit"),
         }
     }
 }
@@ -68,6 +71,11 @@ impl UiBridge {
     /// A bridge sending on `commands`, which the app's main loop reads.
     pub fn new(commands: async_channel::Sender<UiCommand>) -> Self {
         Self { commands }
+    }
+
+    /// Asks the app to quit, as the window's Quit does: the tray's Quit.
+    pub fn quit(&self) {
+        self.send(UiCommand::Quit);
     }
 
     fn send(&self, command: UiCommand) {
@@ -155,15 +163,16 @@ mod tests {
         bridge.start_ringtone();
         bridge.stop_ringtone();
         bridge.present_window();
+        bridge.quit();
         let shown: Vec<String> = std::iter::from_fn(|| receiver.try_recv().ok())
             .map(|command| format!("{command:?}"))
             .collect();
-        assert_eq!(shown.len(), 5, "{shown:?}");
+        assert_eq!(shown.len(), 6, "{shown:?}");
         assert!(shown[0].starts_with("Notify(Notification { id: \"message:m1\""));
         assert_eq!(shown[1], "Withdraw(\"message:m1\")");
         assert_eq!(
             shown[2..],
-            ["StartRingtone", "StopRingtone", "PresentWindow"]
+            ["StartRingtone", "StopRingtone", "PresentWindow", "Quit"]
         );
     }
 

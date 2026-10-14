@@ -22,6 +22,10 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::account_page_district_ai_linux(Locale::FrCa), "District AI for Linux");
     assert_eq!(text::account_page_sign_out(Locale::En), "Sign out");
     assert_eq!(text::account_page_sign_out(Locale::FrCa), "Sign out");
+    assert_eq!(text::account_page_start_at_login(Locale::En), "Start at login");
+    assert_eq!(text::account_page_start_at_login(Locale::FrCa), "Start at login");
+    assert_eq!(text::account_page_start_at_login_body(Locale::En), "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it.");
+    assert_eq!(text::account_page_start_at_login_body(Locale::FrCa), "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it.");
     assert_eq!(text::analytics_calls_per_day(Locale::En), "Calls per day");
     assert_eq!(text::analytics_calls_per_day(Locale::FrCa), "Calls per day");
     assert_eq!(text::analytics_calls_per_week(Locale::En), "Calls per week");
@@ -74,6 +78,16 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::audition_dialog_start(Locale::FrCa), "Start");
     assert_eq!(text::audition_dialog_stop(Locale::En), "Stop");
     assert_eq!(text::audition_dialog_stop(Locale::FrCa), "Stop");
+    assert_eq!(text::background_portal_reason(Locale::En), "So that calls handed to this computer ring while the District AI window is closed.");
+    assert_eq!(text::background_portal_reason(Locale::FrCa), "So that calls handed to this computer ring while the District AI window is closed.");
+    assert_eq!(text::background_status(Locale::En), "Ringing for calls handed to this computer");
+    assert_eq!(text::background_status(Locale::FrCa), "Ringing for calls handed to this computer");
+    assert_eq!(text::background_tray_open(Locale::En), "Open District AI");
+    assert_eq!(text::background_tray_open(Locale::FrCa), "Open District AI");
+    assert_eq!(text::background_tray_quit(Locale::En), "Quit");
+    assert_eq!(text::background_tray_quit(Locale::FrCa), "Quit");
+    assert_eq!(text::background_tray_title(Locale::En), "District AI");
+    assert_eq!(text::background_tray_title(Locale::FrCa), "District AI");
     assert_eq!(text::billing_amount_off(Locale::En, "{amount}"), "{amount} off");
     assert_eq!(text::billing_amount_off(Locale::FrCa, "{amount}"), "{amount} off");
     assert_eq!(text::billing_ends(Locale::En, "{date}"), "Ends {date}");

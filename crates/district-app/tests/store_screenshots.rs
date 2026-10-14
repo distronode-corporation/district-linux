@@ -41,7 +41,7 @@ use std::time::{Duration, Instant};
 
 use adw::prelude::*;
 use common::{descendants, ticket};
-use district_app::{Effects, Parts, UiBridge, application};
+use district_app::{Background, Effects, Parts, UiBridge, application};
 use district_auth::AccessClaims;
 use district_core::{
     CALL_TICK, CoreConfig, Effect, Event, MediaEvent, MediaUpdate, MicrophoneState, Participant,
@@ -718,6 +718,16 @@ fn start() -> Store {
     settings.set_gtk_enable_animations(false);
     adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceLight);
     let script = Rc::new(Script::default());
+    // No tray and no autostart entry: the pictures are of the window.
+    struct NoBackground;
+    impl Background for NoBackground {
+        fn start(&self, _bridge: UiBridge) {}
+        fn backgrounded(&self) {}
+        fn starts_at_login(&self) -> bool {
+            false
+        }
+        fn set_starts_at_login(&self, _on: bool) {}
+    }
     let (events, receiver) = async_channel::unbounded();
     let (commands, command_receiver) = async_channel::unbounded();
     let app = application(Parts {
@@ -735,6 +745,8 @@ fn start() -> Store {
         events: (events.clone(), receiver),
         commands: command_receiver,
         startup_notice: None,
+        background: Rc::new(NoBackground),
+        tray_bridge: UiBridge::new(commands.clone()),
     });
     // Never the running app's own instance, whatever is on this session bus.
     app.set_flags(app.flags() | gio::ApplicationFlags::NON_UNIQUE);

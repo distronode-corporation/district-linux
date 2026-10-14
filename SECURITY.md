@@ -203,8 +203,9 @@ desktop's devices through a sound server, and reconnecting.
   takes the installation from the access token. The registration is renewed
   every five minutes, because the service rings a desktop only while its
   registration is under ten minutes old, and it is removed when the setting is
-  turned off, before the machine sleeps, when the app quits, and as the first
-  step of signing out, before the session is revoked. Changes go out one at a
+  turned off, before the machine sleeps, when the app quits (Quit, not closing
+  the window: see background mode below), and as the first step of signing
+  out, before the session is revoked. Changes go out one at a
   time, and one that arrives after a later one was sent is dropped, so a renewal
   already on its way cannot register a desktop that just unregistered or signed
   out. An app that is killed leaves a registration that lapses within ten
@@ -222,8 +223,24 @@ desktop's devices through a sound server, and reconnecting.
   tells it nothing about the user. Inside a Flatpak this needs
   `--system-talk-name=org.freedesktop.login1`; without it, or without logind,
   a sleeping desktop's registration lapses by itself, as a killed app's does.
-  Quitting (closing the window, or Quit) unregisters too, waiting up to two
-  seconds for it.
+  Quitting (Quit in the window's menu or the tray's, or Ctrl+Q) unregisters
+  too, waiting up to two seconds for it.
+- Background mode: while a session is open, closing the window does not quit
+  the app, so the presence stays registered, the live socket stays open and a
+  call handed to this computer still rings (the ring brings a window back).
+  Only Quit stops it. The tray icon is a StatusNotifierItem on the session bus:
+  what it publishes there is the app's id, its name, its icon and the two menu
+  labels (Open District AI, Quit), never anything of the account or the
+  workspace, and any program on the session bus can activate it, which opens
+  the window or quits, as the launcher and the window's menu already let it.
+  Inside a Flatpak this needs `--talk-name=org.kde.StatusNotifierWatcher`, and
+  the item registers its unique bus name. "Start at login" is off until the
+  member turns it on: inside a Flatpak the Background portal writes the
+  autostart entry (and the desktop may ask first); otherwise the app writes
+  `$XDG_CONFIG_HOME/autostart/com.distronode.DistrictAI.desktop`, which starts
+  `district-ai --gapplication-service` with no window, and removes it when the
+  setting is turned off. Either way a marker file in the app's configuration
+  folder remembers the setting.
 - A call is rung on the desktop by a `call_ringing` event on the workspace's live
   socket. It carries ids only: the call, and the user ids of the members it
   rings through a desktop. It reaches every socket open on the workspace, so

@@ -63,6 +63,18 @@ msgctxt "account_page.sign_out"
 msgid "Sign out"
 msgstr ""
 
+#. screen: account_page; ctx: label; tier: T2
+#. In account-page.ui. A switch: the app starts in the background when the user logs in to the computer. Off until turned on.
+msgctxt "account_page.start_at_login"
+msgid "Start at login"
+msgstr ""
+
+#. screen: account_page; ctx: body; tier: T2
+#. In account-page.ui. Under the Start at login switch.
+msgctxt "account_page.start_at_login_body"
+msgid "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it."
+msgstr ""
+
 #. screen: analytics; ctx: title; tier: T3
 msgctxt "analytics.calls_per_day"
 msgid "Calls per day"
@@ -202,6 +214,36 @@ msgstr ""
 #. In audition-dialog.ui.
 msgctxt "audition_dialog.stop"
 msgid "Stop"
+msgstr ""
+
+#. screen: background; ctx: body; tier: T2
+#. Why the app asks the desktop to run in the background; the desktop may show it in its permission question.
+msgctxt "background.portal_reason"
+msgid "So that calls handed to this computer ring while the District AI window is closed."
+msgstr ""
+
+#. screen: background; ctx: label; tier: T2
+#. The app's status in GNOME's Background Apps list while it runs with no window. At most 96 characters.
+msgctxt "background.status"
+msgid "Ringing for calls handed to this computer"
+msgstr ""
+
+#. screen: background; ctx: menu; tier: T2
+#. The tray icon's menu: brings the window back.
+msgctxt "background.tray_open"
+msgid "Open District AI"
+msgstr ""
+
+#. screen: background; ctx: menu; tier: T2
+#. The tray icon's menu: quits the app, so calls stop ringing on this computer.
+msgctxt "background.tray_quit"
+msgid "Quit"
+msgstr ""
+
+#. screen: background; ctx: label; tier: T0
+#. The tray icon's name. The product name, not translated.
+msgctxt "background.tray_title"
+msgid "District AI"
 msgstr ""
 
 #. screen: billing; ctx: label; tier: T1

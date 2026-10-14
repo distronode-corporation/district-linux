@@ -34,6 +34,7 @@ use gtk4 as gtk;
 use libadwaita as adw;
 
 mod app;
+mod background;
 mod bridge;
 mod charts;
 mod controller;
@@ -51,6 +52,7 @@ mod style;
 mod window;
 
 pub use app::{APP_ID, Parts, application};
+pub use background::{AUTOSTART_COMMAND, Background, DesktopBackground, START_AT_LOGIN_MARKER};
 pub use bridge::{UiBridge, UiCommand};
 pub use effects::{Effects, RunEffect, RuntimeEffects};
 pub use startup::run;
