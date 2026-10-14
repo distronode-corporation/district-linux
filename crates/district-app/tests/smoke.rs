@@ -4283,7 +4283,7 @@ fn viewer_screens(smoke: &Smoke) {
         ticket,
         result: Ok(fixture("district-provider-numbers.json")),
     });
-    assert!(smoke.shows_part("Ask an agency or client member"));
+    assert!(smoke.shows_part("need an agency or client role"));
     assert!(
         !smoke.shown("web_button"),
         "nothing to buy with there either"
