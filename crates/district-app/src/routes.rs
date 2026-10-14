@@ -147,6 +147,7 @@ pub(crate) fn title(route: &Route) -> &'static str {
         Route::Billing => text::route_billing(lang()),
         Route::Workflows => text::route_workflows(lang()),
         Route::Scheduling => text::route_booking_pages(lang()),
+        Route::SchedulingAdmin(section) => section.title(),
         Route::Desk => text::route_help_desk(lang()),
         Route::DeskTicket { .. } => text::route_ticket(lang()),
         Route::DeskSettings => text::route_help_desk_settings(lang()),
@@ -207,6 +208,15 @@ mod tests {
             Route::Devices,
         ];
         routes.extend(WorkspaceSection::ALL.map(Route::Workspace));
+        routes.extend(
+            district_core::SchedulingSection::listed()
+                .into_iter()
+                .chain([
+                    district_core::SchedulingSection::EventType { slug: id() },
+                    district_core::SchedulingSection::Booking { id: id() },
+                ])
+                .map(Route::SchedulingAdmin),
+        );
         routes
     }
 

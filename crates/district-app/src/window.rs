@@ -605,7 +605,8 @@ impl DistrictWindow {
                 imp.page_stack.set_visible_child_name("workflows");
                 imp.workflows_page.update(signed_in);
             }
-            Route::Scheduling => {
+            // The sections draw on the booking pages screen until each has its own.
+            Route::Scheduling | Route::SchedulingAdmin(_) => {
                 imp.page_stack.set_visible_child_name("scheduling");
                 imp.scheduling_page.update(&signed_in.scheduling);
             }
