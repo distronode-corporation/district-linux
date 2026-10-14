@@ -4133,6 +4133,15 @@ pub fn scheduling_admin_desk_row_a11y(l: Locale, label: &str, value: &str) -> St
     }
 }
 
+/// `scheduling_admin.developer_tabs_a11y`
+#[must_use]
+pub fn scheduling_admin_developer_tabs_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Which developer settings to show",
+        Locale::FrCa => "Which developer settings to show",
+    }
+}
+
 /// `scheduling_admin.event_type_row_a11y`
 #[must_use]
 pub fn scheduling_admin_event_type_row_a11y(l: Locale, name: &str, subtitle: &str, state: &str, booking_page: &str) -> String {

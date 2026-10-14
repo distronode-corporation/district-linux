@@ -72,6 +72,18 @@ impl LoadFrame {
     /// A frame named `name` around `ready`, whose Try again sends
     /// `Event::Refresh` from `page`.
     pub(crate) fn new<P: Sends>(page: &P, name: &str, ready: &impl IsA<gtk::Widget>) -> Self {
+        Self::retrying(page, name, ready, Event::Refresh)
+    }
+
+    /// [`new`](Self::new), whose Try again sends `retry_event` instead: a
+    /// section with tabs reads only the tab shown again, where the window's
+    /// Refresh opens the section afresh on its first tab.
+    pub(crate) fn retrying<P: Sends>(
+        page: &P,
+        name: &str,
+        ready: &impl IsA<gtk::Widget>,
+        retry_event: Event,
+    ) -> Self {
         let spinner = gtk::Spinner::builder()
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
@@ -85,7 +97,7 @@ impl LoadFrame {
             .css_classes(["pill"])
             .name(format!("{name}-retry"))
             .build();
-        on_click(&retry, page, || Event::Refresh);
+        on_click(&retry, page, move || retry_event.clone());
         let status = adw::StatusPage::builder()
             .icon_name("dialog-warning-symbolic")
             .title(text::scheduling_admin_failed_title(lang()))

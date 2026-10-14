@@ -944,6 +944,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::scheduling_admin_control_of_a11y(Locale::FrCa, "{control}", "{name}"), "{control}: {name}");
     assert_eq!(text::scheduling_admin_desk_row_a11y(Locale::En, "{label}", "{value}"), "{label}: {value}");
     assert_eq!(text::scheduling_admin_desk_row_a11y(Locale::FrCa, "{label}", "{value}"), "{label}: {value}");
+    assert_eq!(text::scheduling_admin_developer_tabs_a11y(Locale::En), "Which developer settings to show");
+    assert_eq!(text::scheduling_admin_developer_tabs_a11y(Locale::FrCa), "Which developer settings to show");
     assert_eq!(text::scheduling_admin_event_type_row_a11y(Locale::En, "{name}", "{subtitle}", "{state}", "{booking_page}"), "{name}, {subtitle}, {state}, {booking_page}");
     assert_eq!(text::scheduling_admin_event_type_row_a11y(Locale::FrCa, "{name}", "{subtitle}", "{state}", "{booking_page}"), "{name}, {subtitle}, {state}, {booking_page}");
     assert_eq!(text::scheduling_admin_failed_title(Locale::En), "Could not load this section");

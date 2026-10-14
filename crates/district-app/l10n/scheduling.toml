@@ -34,6 +34,13 @@ tier = "T3"
 args = { label = "str", value = "str" }
 note = "What a screen reader says for a row of the booking desk on the booking pages' overview: the row's label (Calendar, Working hours...), then what it shows."
 
+[scheduling_admin.developer_tabs_a11y]
+en = "Which developer settings to show"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+note = "Screen-reader name of the row of buttons at the top of the booking pages' developer section that picks what it shows: the API keys, the connected apps, or the webhooks."
+
 [scheduling_admin.event_type_row_a11y]
 en = "{name}, {subtitle}, {state}, {booking_page}"
 ctx = "a11y"
