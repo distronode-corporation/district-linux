@@ -9,10 +9,6 @@
 //! a retry can fix offers the same press in place ([`LoadFrame`]). A failure
 //! is never drawn as an empty section: every list here can be empty for real.
 
-// Each section takes what it needs of these as it is drawn; until the last
-// one is, some are not called yet.
-#![allow(dead_code)]
-
 use district_core::scheduling_admin::{SectionLoad, WriteState};
 use district_core::{Event, FailureText, Tone};
 
