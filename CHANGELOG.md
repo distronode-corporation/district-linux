@@ -66,8 +66,9 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   Dossier Summary", before "ExecutiveSummary"), and the service's dashed
   spelling of "No answer, no conversation took place." reads with the comma. Every other English word is unchanged.
 - A contact's Edit, Block and Delete wrap onto a second line when the pane is too
-  narrow for them, and the workspace settings list shows each section's whole
-  description instead of two lines.
+  narrow for them (Tab still stops on each button once, and only on the buttons), and
+  the workspace settings list shows each section's whole description instead of two
+  lines.
 
 ### Added
 

@@ -497,13 +497,13 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::dialer_page_type_paste_number(Locale::En), "Type or paste a number");
     assert_eq!(text::dialer_page_type_paste_number(Locale::FrCa), "Tapez ou collez un numéro");
     assert_eq!(text::directory_incomplete_note(Locale::En, 1), "One entry lacks a name or a number. It is kept, but the receptionist cannot put anyone through to it.");
-    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 1), "1 entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel.");
+    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 1), "1 entrée est sans nom ou sans numéro. Elle est conservée, mais la réceptionniste ne peut pas y transférer d'appels.");
     assert_eq!(text::directory_incomplete_note(Locale::En, 7), "7 entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them.");
-    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 7), "7 entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel.");
+    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 7), "7 entrées sont sans nom ou sans numéro. Elles sont conservées, mais la réceptionniste ne peut pas y transférer d'appels.");
     assert_eq!(text::directory_incomplete_note(Locale::En, 0), "0 entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them.");
-    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 0), "0 entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel.");
+    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 0), "0 entrée est sans nom ou sans numéro. Elle est conservée, mais la réceptionniste ne peut pas y transférer d'appels.");
     assert_eq!(text::directory_incomplete_note(Locale::En, 1000000), "1000000 entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them.");
-    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 1000000), "1\u{00A0}000\u{00A0}000 entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel.");
+    assert_eq!(text::directory_incomplete_note(Locale::FrCa, 1000000), "1\u{00A0}000\u{00A0}000 entrées sont sans nom ou sans numéro. Elles sont conservées, mais la réceptionniste ne peut pas y transférer d'appels.");
     assert_eq!(text::directory_no_name(Locale::En), "No name");
     assert_eq!(text::directory_no_name(Locale::FrCa), "Aucun nom");
     assert_eq!(text::directory_no_phone_number(Locale::En), "No phone number, so nobody can be put through");

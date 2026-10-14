@@ -374,7 +374,7 @@ mod tests {
             assert!(
                 incomplete_note(1)
                     .unwrap()
-                    .starts_with("1 entr\u{e9}e n'a pas")
+                    .starts_with("1 entr\u{e9}e est sans nom")
             );
             assert!(
                 incomplete_note(1204)

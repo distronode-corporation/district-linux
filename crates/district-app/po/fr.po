@@ -1354,9 +1354,9 @@ msgstr "Tapez ou collez un numéro"
 msgctxt "directory.incomplete_note"
 msgid "One entry lacks a name or a number. It is kept, but the receptionist cannot put anyone through to it."
 msgid_plural "{count} entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them."
-msgstr[0] "{count} entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel."
-msgstr[1] "{count} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel."
-msgstr[2] "{count} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel."
+msgstr[0] "{count} entrée est sans nom ou sans numéro. Elle est conservée, mais la réceptionniste ne peut pas y transférer d'appels."
+msgstr[1] "{count} entrées sont sans nom ou sans numéro. Elles sont conservées, mais la réceptionniste ne peut pas y transférer d'appels."
+msgstr[2] "{count} entrées sont sans nom ou sans numéro. Elles sont conservées, mais la réceptionniste ne peut pas y transférer d'appels."
 
 #. screen: directory; ctx: label; tier: T3
 msgctxt "directory.no_name"

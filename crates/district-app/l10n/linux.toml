@@ -1878,12 +1878,12 @@ note = "In dialer-page.ui."
 [directory.incomplete_note]
 en.one = "One entry lacks a name or a number. It is kept, but the receptionist cannot put anyone through to it."
 en.other = "{count} entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them."
-fr.one = "{count} entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel."
-fr.other = "{count} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel."
+fr.one = "{count} entrée est sans nom ou sans numéro. Elle est conservée, mais la réceptionniste ne peut pas y transférer d'appels."
+fr.other = "{count} entrées sont sans nom ou sans numéro. Elles sont conservées, mais la réceptionniste ne peut pas y transférer d'appels."
 ctx = "body"
 screen = "directory"
 args = { count = "int" }
-state = "draft"
+state = "reviewed"
 note = "Under the transfer directory when entries lack a name or a phone number; never shown for none."
 
 [directory.no_name]

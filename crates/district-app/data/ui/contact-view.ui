@@ -90,6 +90,10 @@
                           </object>
                         </child>
                         <child>
+                          <!-- The actions wrap when the pane is narrow. Each flow box child takes no
+                               focus of its own, so Tab lands only on the buttons, and is shown and
+                               sensitive with its button: a flow box sends Tab into its first child
+                               only, and one whose button is hidden or insensitive would hold it. -->
                           <object class="GtkFlowBox" id="actions">
                             <property name="selection-mode">none</property>
                             <property name="column-spacing">8</property>
@@ -99,28 +103,49 @@
                             <property name="halign">center</property>
                             <property name="margin-top">10</property>
                             <child>
-                              <object class="GtkButton" id="edit_button">
-                                <property name="label" translatable="yes" context="contact_view.edit">Edit</property>
-                                <style>
-                                  <class name="pill"/>
-                                </style>
+                              <object class="GtkFlowBoxChild">
+                                <property name="focusable">False</property>
+                                <property name="visible" bind-source="edit_button" bind-property="visible" bind-flags="sync-create"/>
+                                <property name="sensitive" bind-source="edit_button" bind-property="sensitive" bind-flags="sync-create"/>
+                                <child>
+                                  <object class="GtkButton" id="edit_button">
+                                    <property name="label" translatable="yes" context="contact_view.edit">Edit</property>
+                                    <style>
+                                      <class name="pill"/>
+                                    </style>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkButton" id="block_button">
-                                <property name="label" translatable="yes" context="contact_view.block">Block</property>
-                                <style>
-                                  <class name="pill"/>
-                                </style>
+                              <object class="GtkFlowBoxChild">
+                                <property name="focusable">False</property>
+                                <property name="visible" bind-source="block_button" bind-property="visible" bind-flags="sync-create"/>
+                                <property name="sensitive" bind-source="block_button" bind-property="sensitive" bind-flags="sync-create"/>
+                                <child>
+                                  <object class="GtkButton" id="block_button">
+                                    <property name="label" translatable="yes" context="contact_view.block">Block</property>
+                                    <style>
+                                      <class name="pill"/>
+                                    </style>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkButton" id="delete_button">
-                                <property name="label" translatable="yes" context="contact_view.delete">Delete</property>
-                                <style>
-                                  <class name="pill"/>
-                                  <class name="destructive-action"/>
-                                </style>
+                              <object class="GtkFlowBoxChild">
+                                <property name="focusable">False</property>
+                                <property name="visible" bind-source="delete_button" bind-property="visible" bind-flags="sync-create"/>
+                                <property name="sensitive" bind-source="delete_button" bind-property="sensitive" bind-flags="sync-create"/>
+                                <child>
+                                  <object class="GtkButton" id="delete_button">
+                                    <property name="label" translatable="yes" context="contact_view.delete">Delete</property>
+                                    <style>
+                                      <class name="pill"/>
+                                      <class name="destructive-action"/>
+                                    </style>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                           </object>
@@ -216,7 +241,7 @@
                 <child>
                   <object class="AdwPreferencesGroup" id="research_actions">
                     <child>
-                      <object class="GtkFlowBox">
+                      <object class="GtkFlowBox" id="research_flow">
                         <property name="selection-mode">none</property>
                         <property name="column-spacing">8</property>
                         <property name="row-spacing">8</property>
@@ -224,20 +249,34 @@
                         <property name="max-children-per-line">2</property>
                         <property name="halign">start</property>
                         <child>
-                          <object class="GtkButton" id="research_button">
-                            <property name="label" translatable="yes" context="contact_view.run_research">Run research</property>
-                            <style>
-                              <class name="pill"/>
-                            </style>
+                          <object class="GtkFlowBoxChild">
+                            <property name="focusable">False</property>
+                            <property name="visible" bind-source="research_button" bind-property="visible" bind-flags="sync-create"/>
+                            <property name="sensitive" bind-source="research_button" bind-property="sensitive" bind-flags="sync-create"/>
+                            <child>
+                              <object class="GtkButton" id="research_button">
+                                <property name="label" translatable="yes" context="contact_view.run_research">Run research</property>
+                                <style>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </child>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkButton" id="clear_button">
-                            <property name="label" translatable="yes" context="contact_view.clear_research">Clear research</property>
-                            <style>
-                              <class name="pill"/>
-                              <class name="flat"/>
-                            </style>
+                          <object class="GtkFlowBoxChild">
+                            <property name="focusable">False</property>
+                            <property name="visible" bind-source="clear_button" bind-property="visible" bind-flags="sync-create"/>
+                            <property name="sensitive" bind-source="clear_button" bind-property="sensitive" bind-flags="sync-create"/>
+                            <child>
+                              <object class="GtkButton" id="clear_button">
+                                <property name="label" translatable="yes" context="contact_view.clear_research">Clear research</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="flat"/>
+                                </style>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>

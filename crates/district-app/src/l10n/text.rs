@@ -2187,9 +2187,9 @@ pub fn directory_incomplete_note(l: Locale, count: i64) -> String {
         }
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{} entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel.", district_core::l10n::format::integer(l, count))
+                format!("{} entrée est sans nom ou sans numéro. Elle est conservée, mais la réceptionniste ne peut pas y transférer d'appels.", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel.", district_core::l10n::format::integer(l, count))
+                format!("{} entrées sont sans nom ou sans numéro. Elles sont conservées, mais la réceptionniste ne peut pas y transférer d'appels.", district_core::l10n::format::integer(l, count))
             }
         }
     }
