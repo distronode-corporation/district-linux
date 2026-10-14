@@ -14,652 +14,652 @@ msgstr ""
 #. screen: about; ctx: legal; tier: T0
 msgctxt "about.copyright"
 msgid "Copyright 2026 Distronode Corporation"
-msgstr ""
+msgstr "Droit d'auteur 2026 Distronode Corporation"
 
 #. screen: account; ctx: label; tier: T3
 msgctxt "account.version"
 msgid "Version {version}"
-msgstr ""
+msgstr "Version {version}"
 
 #. screen: account_page; ctx: title; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.account"
 msgid "Your account"
-msgstr ""
+msgstr "Votre compte"
 
 #. screen: account_page; ctx: title; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.computer"
 msgid "This computer"
-msgstr ""
+msgstr "Cet ordinateur"
 
 #. screen: account_page; ctx: label; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.delete_account"
 msgid "Delete your account"
-msgstr ""
+msgstr "Supprimer votre compte"
 
 #. screen: account_page; ctx: label; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.device_name"
 msgid "Device name"
-msgstr ""
+msgstr "Nom d'appareil"
 
 #. screen: account_page; ctx: label; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.devices"
 msgid "Devices"
-msgstr ""
+msgstr "Appareils"
 
 #. screen: account_page; ctx: label; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.district_ai_linux"
 msgid "District AI for Linux"
-msgstr ""
+msgstr "District AI pour Linux"
 
 #. screen: account_page; ctx: label; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.sign_out"
 msgid "Sign out"
-msgstr ""
+msgstr "Se déconnecter"
 
 #. screen: account_page; ctx: label; tier: T2
 #. In account-page.ui. A switch: the app starts in the background when the user logs in to the computer. Off until turned on.
 msgctxt "account_page.start_at_login"
 msgid "Start at login"
-msgstr ""
+msgstr "Lancer à l'ouverture de session"
 
 #. screen: account_page; ctx: body; tier: T2
 #. In account-page.ui. Under the Start at login switch.
 msgctxt "account_page.start_at_login_body"
 msgid "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it."
-msgstr ""
+msgstr "Ouvrir District AI en arrière-plan à l'ouverture de votre session, pour que les appels sonnent ici avant que vous ouvriez la fenêtre. Fermer la fenêtre ne l'arrête pas; « Quitter » l'arrête."
 
 #. screen: analytics; ctx: title; tier: T3
 msgctxt "analytics.calls_per_day"
 msgid "Calls per day"
-msgstr ""
+msgstr "Appels par jour"
 
 #. screen: analytics; ctx: title; tier: T3
 msgctxt "analytics.calls_per_week"
 msgid "Calls per week"
-msgstr ""
+msgstr "Appels par semaine"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.history_call_minutes"
 msgid "Call minutes"
-msgstr ""
+msgstr "Minutes d'appel"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.history_messages"
 msgid "Messages"
-msgstr ""
+msgstr "Messages"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.history_month"
 msgid "Month"
-msgstr ""
+msgstr "Mois"
 
 #. screen: analytics; ctx: a11y; tier: T3
 msgctxt "analytics.history_row"
 msgid "{month}: {minutes} call minutes, {messages} messages"
-msgstr ""
+msgstr "{month} : minutes d'appel, {minutes}; messages, {messages}"
 
 #. screen: analytics; ctx: title; tier: T3
 #. The range is "the last 7 days" and the like.
 msgctxt "analytics.report_title"
 msgid "Calls over {range}"
-msgstr ""
+msgstr "Appels sur {range}"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_abandoned"
 msgid "Abandoned"
-msgstr ""
+msgstr "Abandonné"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_average_call"
 msgid "Average call"
-msgstr ""
+msgstr "Durée moyenne"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_calls"
 msgid "Calls"
-msgstr ""
+msgstr "Appels"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_converted"
 msgid "Converted"
-msgstr ""
+msgstr "Conversions"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_missed"
 msgid "Missed"
-msgstr ""
+msgstr "Manqué"
 
 #. screen: analytics_page; ctx: label; tier: T3
 #. In analytics-page.ui.
 msgctxt "analytics_page.call_funnel"
 msgid "Call funnel"
-msgstr ""
+msgstr "Entonnoir d'appels"
 
 #. screen: analytics_page; ctx: label; tier: T3
 #. In analytics-page.ui.
 msgctxt "analytics_page.caller_sentiment"
 msgid "Caller sentiment"
-msgstr ""
+msgstr "Sentiment de l'appelant"
 
 #. screen: analytics_page; ctx: button; tier: T3
 #. In analytics-page.ui.
 msgctxt "analytics_page.n30_days"
 msgid "30 days"
-msgstr ""
+msgstr "30 jours"
 
 #. screen: analytics_page; ctx: button; tier: T3
 #. In analytics-page.ui.
 msgctxt "analytics_page.n7_days"
 msgid "7 days"
-msgstr ""
+msgstr "7 jours"
 
 #. screen: analytics_page; ctx: button; tier: T3
 #. In analytics-page.ui.
 msgctxt "analytics_page.n90_days"
 msgid "90 days"
-msgstr ""
+msgstr "90 jours"
 
 #. screen: analytics_page; ctx: a11y; tier: T3
 #. In analytics-page.ui.
 msgctxt "analytics_page.period"
 msgid "Period"
-msgstr ""
+msgstr "Période"
 
 #. screen: analytics_page; ctx: title; tier: T3
 #. In analytics-page.ui.
 msgctxt "analytics_page.recent_months"
 msgid "Recent months"
-msgstr ""
+msgstr "Derniers mois"
 
 #. screen: persona; ctx: body; tier: T3
 msgctxt "audition.connected"
 msgid "On the call with your receptionist."
-msgstr ""
+msgstr "En appel avec votre réceptionniste."
 
 #. screen: persona; ctx: body; tier: T3
 msgctxt "audition.connecting"
 msgid "Connecting to your receptionist."
-msgstr ""
+msgstr "Connexion à votre réceptionniste en cours."
 
 #. screen: persona; ctx: body; tier: T3
 msgctxt "audition.ended"
 msgid "The audition ended."
-msgstr ""
+msgstr "L'essai est terminé."
 
 #. screen: persona; ctx: body; tier: T3
 msgctxt "audition.starting"
 msgid "Starting the call."
-msgstr ""
+msgstr "Lancement de l'appel."
 
 #. screen: audition_dialog; ctx: body; tier: T3
 #. In audition-dialog.ui.
 msgctxt "audition_dialog.another_audition_can_start_few"
 msgid "Another audition can start in a few seconds."
-msgstr ""
+msgstr "Un autre aperçu pourra démarrer dans quelques secondes."
 
 #. screen: audition_dialog; ctx: button; tier: T3
 #. In audition-dialog.ui.
 msgctxt "audition_dialog.start"
 msgid "Start"
-msgstr ""
+msgstr "Démarrer"
 
 #. screen: audition_dialog; ctx: button; tier: T3
 #. In audition-dialog.ui.
 msgctxt "audition_dialog.stop"
 msgid "Stop"
-msgstr ""
+msgstr "Arrêter"
 
 #. screen: background; ctx: body; tier: T2
 #. Why the app asks the desktop to run in the background; the desktop may show it in its permission question.
 msgctxt "background.portal_reason"
 msgid "So that calls handed to this computer ring while the District AI window is closed."
-msgstr ""
+msgstr "Pour que les appels destinés à cet ordinateur sonnent pendant que la fenêtre de District AI est fermée."
 
 #. screen: background; ctx: label; tier: T2
 #. The app's status in GNOME's Background Apps list while it runs with no window. At most 96 characters.
 msgctxt "background.status"
 msgid "Ringing for calls handed to this computer"
-msgstr ""
+msgstr "Sonnerie des appels destinés à cet ordinateur"
 
 #. screen: background; ctx: menu; tier: T2
 #. The tray icon's menu: brings the window back.
 msgctxt "background.tray_open"
 msgid "Open District AI"
-msgstr ""
+msgstr "Ouvrir District AI"
 
 #. screen: background; ctx: menu; tier: T2
 #. The tray icon's menu: quits the app, so calls stop ringing on this computer.
 msgctxt "background.tray_quit"
 msgid "Quit"
-msgstr ""
+msgstr "Quitter"
 
 #. screen: background; ctx: label; tier: T0
 #. The tray icon's name. The product name, not translated.
 msgctxt "background.tray_title"
 msgid "District AI"
-msgstr ""
+msgstr "District AI"
 
 #. screen: billing; ctx: label; tier: T1
 msgctxt "billing.amount_off"
 msgid "{amount} off"
-msgstr ""
+msgstr "{amount} de rabais"
 
 #. screen: billing; ctx: label; tier: T1
 msgctxt "billing.ends"
 msgid "Ends {date}"
-msgstr ""
+msgstr "Fin le {date}"
 
 #. screen: billing; ctx: label; tier: T1
 msgctxt "billing.minutes"
 msgid "{count} minute"
 msgid_plural "{count} minutes"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{count} minute"
+msgstr[1] "{count} minutes"
+msgstr[2] "{count} minutes"
 
 #. screen: billing; ctx: label; tier: T1
 #. minutes is billing.minutes: "500 minutes included".
 msgctxt "billing.minutes_included"
 msgid "{minutes} included"
-msgstr ""
+msgstr "{minutes} incluses"
 
 #. screen: billing; ctx: body; tier: T1
 #. not_recorded is the core's "Not recorded".
 msgctxt "billing.not_recorded_included"
 msgid "{not_recorded}. {count} minute is included."
 msgid_plural "{not_recorded}. {count} minutes are included."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{not_recorded}. {count} minute est incluse."
+msgstr[1] "{not_recorded}. {count} minutes sont incluses."
+msgstr[2] "{not_recorded}. {count} minutes sont incluses."
 
 #. screen: billing; ctx: label; tier: T1
 msgctxt "billing.percent_off"
 msgid "{percent}% off"
-msgstr ""
+msgstr "{percent} % de rabais"
 
 #. screen: billing; ctx: label; tier: T1
 msgctxt "billing.renews"
 msgid "Renews {date}"
-msgstr ""
+msgstr "Renouvellement le {date}"
 
 #. screen: billing; ctx: label; tier: T1
 #. Exactly one minute used.
 msgctxt "billing.used_minute"
 msgid "{used} minute"
-msgstr ""
+msgstr "{used} minute"
 
 #. screen: billing; ctx: label; tier: T1
 #. Any other number of minutes used, possibly with decimals.
 msgctxt "billing.used_minutes"
 msgid "{used} minutes"
-msgstr ""
+msgstr "{used} minutes"
 
 #. screen: billing; ctx: label; tier: T1
 #. Minutes used this month of those included: "12 of 500 minutes".
 msgctxt "billing.used_of_included"
 msgid "{used} of {included}"
-msgstr ""
+msgstr "{used} sur {included}"
 
 #. screen: billing; ctx: button; tier: T1
 #. Opens an invoice.
 msgctxt "billing.view_invoice"
 msgid "View"
-msgstr ""
+msgstr "Afficher"
 
 #. screen: billing_page; ctx: label; tier: T3
 #. In billing-page.ui.
 msgctxt "billing_page.call_minutes_month"
 msgid "Call minutes this month"
-msgstr ""
+msgstr "Minutes d'appel ce mois-ci"
 
 #. screen: billing_page; ctx: a11y; tier: T3
 #. In billing-page.ui.
 msgctxt "billing_page.call_minutes_used_those_included"
 msgid "Call minutes used of those included"
-msgstr ""
+msgstr "Minutes d'appel utilisées sur celles incluses"
 
 #. screen: billing_page; ctx: title; tier: T3
 #. In billing-page.ui.
 msgctxt "billing_page.invoices"
 msgid "Invoices"
-msgstr ""
+msgstr "Factures"
 
 #. screen: billing_page; ctx: a11y; tier: T3
 #. In billing-page.ui.
 msgctxt "billing_page.invoices_a11y"
 msgid "Invoices"
-msgstr ""
+msgstr "Factures"
 
 #. screen: billing_page; ctx: title; tier: T3
 #. In billing-page.ui.
 msgctxt "billing_page.subscription"
 msgid "Subscription"
-msgstr ""
+msgstr "Abonnement"
 
 #. screen: contacts; ctx: body; tier: T3
 msgctxt "blocked.empty_body"
 msgid "Callers you block from a contact's page are listed here, where you can unblock them."
-msgstr ""
+msgstr "Les appelants que vous bloquez depuis la page d'un contact figurent ici, où vous pouvez les débloquer."
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "blocked.when"
 msgid "Blocked {when}"
-msgstr ""
+msgstr "Bloqué : {when}"
 
 #. screen: blocked_view; ctx: title; tier: T3
 #. In blocked-view.ui.
 msgctxt "blocked_view.blocked_callers"
 msgid "Blocked callers"
-msgstr ""
+msgstr "Appelants bloqués"
 
 #. screen: blocked_view; ctx: a11y; tier: T3
 #. In blocked-view.ui.
 msgctxt "blocked_view.blocked_callers_a11y"
 msgid "Blocked callers"
-msgstr ""
+msgstr "Appelants bloqués"
 
 #. screen: blocked_view; ctx: body; tier: T3
 #. In blocked-view.ui.
 msgctxt "blocked_view.their_conversations_calls_do_not"
 msgid "Their conversations and calls do not appear in this workspace."
-msgstr ""
+msgstr "Leurs conversations et appels n'apparaissent pas dans cet espace de travail."
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.action_items"
 msgid "Action items"
-msgstr ""
+msgstr "Actions à faire"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.callers_number"
 msgid "Caller's number"
-msgstr ""
+msgstr "Numéro de l'appelant"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.direction"
 msgid "Direction"
-msgstr ""
+msgstr "Sens"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.email_sent_to"
 msgid "Email sent to"
-msgstr ""
+msgstr "Courriel envoyé à"
 
 #. screen: calls; ctx: error; tier: T2
 msgctxt "call.failed_title"
 msgid "Could not load this call"
-msgstr ""
+msgstr "Impossible de charger cet appel"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.key_points"
 msgid "Key points"
-msgstr ""
+msgstr "Points clés"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.objections"
 msgid "Objections"
-msgstr ""
+msgstr "Objections"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.outcome"
 msgid "Outcome"
-msgstr ""
+msgstr "Résultat"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.placed_from"
 msgid "Placed from"
-msgstr ""
+msgstr "Appel passé depuis"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.sentiment"
 msgid "Sentiment"
-msgstr ""
+msgstr "Sentiment"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.status"
 msgid "Status"
-msgstr ""
+msgstr "État"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.topics"
 msgid "Topics"
-msgstr ""
+msgstr "Sujets"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.transfer"
 msgid "Transfer"
-msgstr ""
+msgstr "Transfert"
 
 #. screen: calls; ctx: label; tier: T3
 msgctxt "call.why_transferred"
 msgid "Why it was transferred"
-msgstr ""
+msgstr "Motif du transfert"
 
 #. screen: call_bar; ctx: button; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.answer"
 msgid "Answer"
-msgstr ""
+msgstr "Répondre"
 
 #. screen: call_bar; ctx: a11y; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.call"
 msgid "Call"
-msgstr ""
+msgstr "Appel"
 
 #. screen: call_bar; ctx: button; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.decline"
 msgid "Decline"
-msgstr ""
+msgstr "Refuser"
 
 #. screen: call_bar; ctx: a11y; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.hang_up"
 msgid "Hang up"
-msgstr ""
+msgstr "Raccrocher"
 
 #. screen: call_bar; ctx: tooltip; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.hang_up_ctrl_shift_h"
 msgid "Hang up (Ctrl+Shift+H)"
-msgstr ""
+msgstr "Raccrocher (Ctrl+Maj+H)"
 
 #. screen: call_bar; ctx: a11y; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.incoming_call"
 msgid "Incoming call"
-msgstr ""
+msgstr "Appel entrant"
 
 #. screen: call; ctx: tooltip; tier: T3
 #. action is "Mute" or "Unmute"; Ctrl+D is the shortcut.
 msgctxt "call_bar.microphone_tooltip"
 msgid "{action} (Ctrl+D)"
-msgstr ""
+msgstr "{action} (Ctrl+D)"
 
 #. screen: call_bar; ctx: a11y; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.mute"
 msgid "Mute"
-msgstr ""
+msgstr "Couper le micro"
 
 #. screen: call_bar; ctx: tooltip; tier: T3
 #. In call-bar.ui.
 msgctxt "call_bar.mute_ctrl_d"
 msgid "Mute (Ctrl+D)"
-msgstr ""
+msgstr "Couper le micro (Ctrl+D)"
 
 #. screen: call_handling; ctx: error; tier: T2
 msgctxt "call_handling.presence_failed"
 msgid "Could not read whether you are rung"
-msgstr ""
+msgstr "Impossible de savoir si vos appareils sonnent"
 
 #. screen: call_handling; ctx: label; tier: T3
 #. How long devices ring; never fewer than 2 seconds.
 msgctxt "call_handling.ring_seconds"
 msgid "{seconds} seconds"
-msgstr ""
+msgstr "{seconds} secondes"
 
 #. screen: call_handling_view; ctx: title; tier: T3
 #. In call-handling-view.ui.
 msgctxt "call_handling_view.availability"
 msgid "Your availability"
-msgstr ""
+msgstr "Votre disponibilité"
 
 #. screen: call_handling_view; ctx: body; tier: T3
 #. In call-handling-view.ui.
 msgctxt "call_handling_view.every_member_workspace"
 msgid "For every member of this workspace."
-msgstr ""
+msgstr "Pour chaque membre de cet espace de travail."
 
 #. screen: call_handling_view; ctx: label; tier: T3
 #. In call-handling-view.ui.
 msgctxt "call_handling_view.how_long_devices_ring"
 msgid "How long your devices ring"
-msgstr ""
+msgstr "Durée de sonnerie de vos appareils"
 
 #. screen: call_handling_view; ctx: a11y; tier: T3
 #. In call-handling-view.ui.
 msgctxt "call_handling_view.how_long_devices_ring_seconds"
 msgid "How long your devices ring, in seconds"
-msgstr ""
+msgstr "Durée de sonnerie de vos appareils, en secondes"
 
 #. screen: call_handling_view; ctx: label; tier: T3
 #. In call-handling-view.ui.
 msgctxt "call_handling_view.ring_me_calls"
 msgid "Ring me for calls"
-msgstr ""
+msgstr "Mes appareils sonnent"
 
 #. screen: call_handling_view; ctx: body; tier: T3
 #. In call-handling-view.ui.
 msgctxt "call_handling_view.whether_own_devices_ring_workspaces"
 msgid "Whether your own devices ring for this workspace's calls. A change is sent at once."
-msgstr ""
+msgstr "Vos propres appareils sonnent-ils pour les appels de cet espace de travail? Tout changement est immédiat."
 
 #. screen: call_handling_view; ctx: title; tier: T3
 #. In call-handling-view.ui.
 msgctxt "call_handling_view.who_answers"
 msgid "Who answers"
-msgstr ""
+msgstr "Qui répond"
 
 #. screen: call_view; ctx: title; tier: T3
 #. In call-view.ui.
 msgctxt "call_view.analysis"
 msgid "Analysis"
-msgstr ""
+msgstr "Analyse"
 
 #. screen: call_view; ctx: title; tier: T3
 #. In call-view.ui.
 msgctxt "call_view.follow_up_sent"
 msgid "Follow-up sent"
-msgstr ""
+msgstr "Suivi envoyé"
 
 #. screen: call_view; ctx: title; tier: T3
 #. In call-view.ui.
 msgctxt "call_view.summary"
 msgid "Summary"
-msgstr ""
+msgstr "Résumé"
 
 #. screen: calls_page; ctx: title; tier: T3
 #. In calls-page.ui.
 msgctxt "calls_page.call"
 msgid "Call"
-msgstr ""
+msgstr "Appel"
 
 #. screen: calls_page; ctx: a11y; tier: T3
 #. In calls-page.ui.
 msgctxt "calls_page.calls"
 msgid "Calls"
-msgstr ""
+msgstr "Appels"
 
 #. screen: calls_page; ctx: body; tier: T3
 #. In calls-page.ui.
 msgctxt "calls_page.choose_call_see_summary_transcript"
 msgid "Choose a call to see its summary and transcript."
-msgstr ""
+msgstr "Choisissez un appel pour voir son résumé et sa transcription."
 
 #. screen: calls_page; ctx: title; tier: T3
 #. In calls-page.ui.
 msgctxt "calls_page.no_call_open"
 msgid "No call open"
-msgstr ""
+msgstr "Aucun appel sélectionné"
 
 #. screen: calls_page; ctx: button; tier: T3
 #. In calls-page.ui.
 msgctxt "calls_page.place_call"
 msgid "Place a call"
-msgstr ""
+msgstr "Passer un appel"
 
 #. screen: analytics; ctx: a11y; tier: T3
 msgctxt "chart.columns_empty"
 msgid "{what}: nothing to show."
-msgstr ""
+msgstr "{what} : rien à afficher."
 
 #. screen: analytics; ctx: a11y; tier: T3
 #. A column chart read aloud: its name, each bar ("Mon 3, Tue 5"), then the largest value and its bar.
 msgctxt "chart.columns_summary"
 msgid "{what}: {bars}. The most was {most}, on {label}."
-msgstr ""
+msgstr "{what} : {bars}. Valeur la plus élevée : {most} ({label})."
 
 #. screen: analytics; ctx: a11y; tier: T3
 #. Each band is "Positive 2 (67%)", joined by commas.
 msgctxt "chart.sentiment_summary"
 msgid "Caller sentiment: {bands}."
-msgstr ""
+msgstr "Sentiment de l'appelant : {bands}."
 
 #. screen: common; ctx: title; tier: T3
 #. In account-page.ui, analytics-page.ui, calls-page.ui.
 msgctxt "common.calls"
 msgid "Calls"
-msgstr ""
+msgstr "Appels"
 
 #. screen: common; ctx: button; tier: T3
 #. In contact-form.ui, messaging-form.ui, session-page.ui, ticket-form.ui.
 msgctxt "common.cancel"
 msgid "Cancel"
-msgstr ""
+msgstr "Annuler"
 
 #. screen: common; ctx: label; tier: T3
 #. The phone company that holds a number.
 msgctxt "common.carrier"
 msgid "Carrier"
-msgstr ""
+msgstr "Transporteur"
 
 #. screen: common; ctx: label; tier: T3
 #. In desk-ticket-view.ui, support-request-view.ui.
 msgctxt "common.conversation"
 msgid "Conversation"
-msgstr ""
+msgstr "Conversation"
 
 #. screen: common; ctx: title; tier: T3
 #. In call-view.ui, contact-view.ui.
 msgctxt "common.details"
 msgid "Details"
-msgstr ""
+msgstr "Détails"
 
 #. screen: common; ctx: tooltip; tier: T3
 #. In blocked-view.ui, call-bar.ui, contact-view.ui, desk-page.ui, save-notice.ui, support-page.ui, thread-view.ui.
 msgctxt "common.dismiss"
 msgid "Dismiss"
-msgstr ""
+msgstr "Fermer"
 
 #. screen: common; ctx: a11y; tier: T3
 #. In blocked-view.ui, call-bar.ui, contact-view.ui, desk-page.ui, save-notice.ui, support-page.ui, thread-view.ui.
 msgctxt "common.dismiss_a11y"
 msgid "Dismiss"
-msgstr ""
+msgstr "Fermer"
 
 #. screen: common; ctx: button; tier: T3
 #. In desk-settings-view.ui, devices-page.ui, reply-box.ui, rooms-page.ui, scheduling-page.ui, window.ui, workflows-page.ui.
 msgctxt "common.dismiss_button"
 msgid "Dismiss"
-msgstr ""
+msgstr "Fermer"
 
 #. screen: common; ctx: title; tier: T3
 #. In session-page.ui, window.ui.
@@ -676,2272 +676,2272 @@ msgstr "Distronode"
 #. In contact-form.ui, members-view.ui, ticket-form.ui.
 msgctxt "common.email_address"
 msgid "Email address"
-msgstr ""
+msgstr "Adresse courriel"
 
 #. screen: common; ctx: title; tier: T3
 #. In desk-page.ui, desk-settings-view.ui.
 msgctxt "common.help_desk"
 msgid "Help desk"
-msgstr ""
+msgstr "Comptoir clients"
 
 #. screen: common; ctx: label; tier: T3
 msgctxt "common.line_type"
 msgid "Line type"
-msgstr ""
+msgstr "Type de ligne"
 
 #. screen: common; ctx: label; tier: T3
 msgctxt "common.location"
 msgid "Location"
-msgstr ""
+msgstr "Lieu"
 
 #. screen: common; ctx: title; tier: T3
 #. In analytics-page.ui, billing-page.ui.
 msgctxt "common.months_usage"
 msgid "This month's usage"
-msgstr ""
+msgstr "Utilisation du mois"
 
 #. screen: common; ctx: button; tier: T3
 msgctxt "common.mute"
 msgid "Mute"
-msgstr ""
+msgstr "Couper le micro"
 
 #. screen: common; ctx: label; tier: T3
 #. In contact-form.ui, directory-view.ui, messaging-form.ui, persona-view.ui, ticket-form.ui.
 msgctxt "common.name"
 msgid "Name"
-msgstr ""
+msgstr "Nom"
 
 #. screen: common; ctx: label; tier: T3
 #. In contact-form.ui, directory-view.ui, ticket-form.ui.
 msgctxt "common.phone_number"
 msgid "Phone number"
-msgstr ""
+msgstr "Numéro de téléphone"
 
 #. screen: common; ctx: a11y; tier: T3
 #. In reply-box.ui, thread-view.ui.
 msgctxt "common.reply"
 msgid "Reply"
-msgstr ""
+msgstr "Réponse"
 
 #. screen: common; ctx: toast; tier: T3
 msgctxt "common.reply_sent"
 msgid "Reply sent."
-msgstr ""
+msgstr "Réponse envoyée."
 
 #. screen: common; ctx: button; tier: T3
 #. In call-handling-view.ui, desk-settings-view.ui, messaging-form.ui, persona-view.ui.
 msgctxt "common.save"
 msgid "Save"
-msgstr ""
+msgstr "Enregistrer"
 
 #. screen: common; ctx: label; tier: T3
 #. In call-handling-view.ui, knowledge-view.ui.
 msgctxt "common.setting_app_does_not_know"
 msgid "A setting this app does not know"
-msgstr ""
+msgstr "Paramètre inconnu de cette application"
 
 #. screen: common; ctx: body; tier: T3
 #. A setting value this app does not know, quoted as stored.
 msgctxt "common.stored_as"
 msgid "Stored as \"{value}\"."
-msgstr ""
+msgstr "Valeur stockée : « {value} »."
 
 #. screen: common; ctx: label; tier: T3
 msgctxt "common.text_message"
 msgid "Text message"
-msgstr ""
+msgstr "Texto"
 
 #. screen: common; ctx: title; tier: T3
 #. In call-view.ui, meeting-record.ui.
 msgctxt "common.transcript"
 msgid "Transcript"
-msgstr ""
+msgstr "Transcription"
 
 #. screen: common; ctx: button; tier: T3
 #. In analytics-page.ui, billing-page.ui, blocked-view.ui, call-handling-view.ui, call-view.ui, calls-page.ui, contact-view.ui, contacts-page.ui, desk-page.ui, desk-settings-view.ui, desk-ticket-view.ui, devices-page.ui, hq-page.ui, inbox-page.ui, knowledge-view.ui, marketplace-page.ui, messaging-view.ui, overview-page.ui, persona-view.ui, rooms-page.ui, scheduling-page.ui, session-page.ui, support-page.ui, support-request-view.ui, thread-view.ui, workflows-page.ui.
 msgctxt "common.try_again"
 msgid "Try again"
-msgstr ""
+msgstr "Réessayer"
 
 #. screen: common; ctx: button; tier: T3
 msgctxt "common.unmute"
 msgid "Unmute"
-msgstr ""
+msgstr "Rétablir le micro"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.added"
 msgid "Added"
-msgstr ""
+msgstr "Ajouté"
 
 #. screen: contacts; ctx: button; tier: T3
 msgctxt "contact.block"
 msgid "Block"
-msgstr ""
+msgstr "Bloquer"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.budget"
 msgid "Budget"
-msgstr ""
+msgstr "Budget"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.busy_blocking"
 msgid "Blocking the caller"
-msgstr ""
+msgstr "Blocage de l'appelant"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.busy_clearing_research"
 msgid "Clearing research"
-msgstr ""
+msgstr "Effacement de la recherche externe"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.busy_deleting"
 msgid "Deleting the contact"
-msgstr ""
+msgstr "Suppression du contact"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.busy_saving"
 msgid "Saving the contact"
-msgstr ""
+msgstr "Sauvegarde du contact"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.busy_starting_research"
 msgid "Starting research"
-msgstr ""
+msgstr "Lancement de la recherche externe"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.busy_unblocking"
 msgid "Unblocking the caller"
-msgstr ""
+msgstr "Déblocage de l'appelant"
 
 #. screen: contacts; ctx: toast; tier: T3
 msgctxt "contact.caller_blocked"
 msgid "Caller blocked."
-msgstr ""
+msgstr "Appelant bloqué."
 
 #. screen: contacts; ctx: toast; tier: T3
 msgctxt "contact.caller_unblocked"
 msgid "Caller unblocked."
-msgstr ""
+msgstr "Appelant débloqué."
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.company"
 msgid "Company"
-msgstr ""
+msgstr "Entreprise"
 
 #. screen: contacts; ctx: error; tier: T2
 msgctxt "contact.failed_title"
 msgid "Could not load this contact"
-msgstr ""
+msgstr "Impossible de charger ce contact"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.industry"
 msgid "Industry"
-msgstr ""
+msgstr "Secteur"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.last_changed"
 msgid "Last changed"
-msgstr ""
+msgstr "Mis à jour"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.latest_context"
 msgid "Latest context"
-msgstr ""
+msgstr "Contexte récent"
 
 #. screen: contacts; ctx: toast; tier: T3
 msgctxt "contact.research_cleared"
 msgid "Research cleared."
-msgstr ""
+msgstr "Recherche externe effacée."
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.research_complete"
 msgid "Complete"
-msgstr ""
+msgstr "Terminé"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.research_did_not_finish"
 msgid "Did not finish"
-msgstr ""
+msgstr "Non terminée"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.research_not_run"
 msgid "Not run"
-msgstr ""
+msgstr "Non lancée"
 
 #. screen: contacts; ctx: label; tier: T3
 #. Where a contact's web research stands.
 msgctxt "contact.research_queued"
 msgid "Queued"
-msgstr ""
+msgstr "En attente"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.research_searching"
 msgid "Searching the web"
-msgstr ""
+msgstr "Recherche sur le Web"
 
 #. screen: contacts; ctx: toast; tier: T3
 msgctxt "contact.research_started"
 msgid "Research started. The result appears here when it is ready."
-msgstr ""
+msgstr "Recherche externe lancée. Le résultat apparaîtra ici une fois prêt."
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.research_status"
 msgid "Status"
-msgstr ""
+msgstr "État"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.research_why_not_finished"
 msgid "Why it did not finish"
-msgstr ""
+msgstr "Raison de l'interruption"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.research_writing"
 msgid "Writing the summary"
-msgstr ""
+msgstr "Rédaction du résumé"
 
 #. screen: contacts; ctx: toast; tier: T3
 msgctxt "contact.saved"
 msgid "Contact saved."
-msgstr ""
+msgstr "Contact enregistré."
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.timeline"
 msgid "Timeline"
-msgstr ""
+msgstr "Chronologie"
 
 #. screen: contacts; ctx: button; tier: T3
 msgctxt "contact.unblock"
 msgid "Unblock"
-msgstr ""
+msgstr "Débloquer"
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.website"
 msgid "Website"
-msgstr ""
+msgstr "Site"
 
 #. screen: contacts; ctx: button; tier: T3
 msgctxt "contact_form.add"
 msgid "Add"
-msgstr ""
+msgstr "Ajouter"
 
 #. screen: contacts; ctx: title; tier: T3
 msgctxt "contact_form.add_title"
 msgid "Add contact"
-msgstr ""
+msgstr "Nouveau contact"
 
 #. screen: contact_form; ctx: body; tier: T3
 #. In contact-form.ui.
 msgctxt "contact_form.contact_needs_name_phone_number"
 msgid "A contact needs a name, and a phone number or an email address."
-msgstr ""
+msgstr "Un contact requiert un nom et un numéro de téléphone ou une adresse courriel."
 
 #. screen: contacts; ctx: title; tier: T3
 msgctxt "contact_form.edit_title"
 msgid "Edit contact"
-msgstr ""
+msgstr "Modifier le contact"
 
 #. screen: contact_view; ctx: button; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.block"
 msgid "Block"
-msgstr ""
+msgstr "Bloquer"
 
 #. screen: contact_view; ctx: label; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.blocked"
 msgid "Blocked"
-msgstr ""
+msgstr "Bloqué"
 
 #. screen: contact_view; ctx: button; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.clear_research"
 msgid "Clear research"
-msgstr ""
+msgstr "Effacer la recherche externe"
 
 #. screen: contact_view; ctx: button; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.delete"
 msgid "Delete"
-msgstr ""
+msgstr "Supprimer"
 
 #. screen: contact_view; ctx: button; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.edit"
 msgid "Edit"
-msgstr ""
+msgstr "Modifier"
 
 #. screen: contact_view; ctx: body; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.have_read_only_access_workspace"
 msgid "You have read-only access to this workspace, so you cannot change contacts."
-msgstr ""
+msgstr "Votre accès à cet espace de travail est en lecture seule. Vous ne pouvez modifier aucun contact."
 
 #. screen: contact_view; ctx: title; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.phone_number"
 msgid "Phone number"
-msgstr ""
+msgstr "Numéro de téléphone"
 
 #. screen: contact_view; ctx: title; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.research"
 msgid "Research"
-msgstr ""
+msgstr "Recherche externe"
 
 #. screen: contact_view; ctx: body; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.research_looks_contact_up_web"
 msgid "Research looks this contact up on the web and writes a summary. Each run is billed."
-msgstr ""
+msgstr "La recherche externe consulte le Web au sujet de ce contact et en rédige un résumé. Chaque recherche externe est facturée."
 
 #. screen: contact_view; ctx: button; tier: T3
 #. In contact-view.ui.
 msgctxt "contact_view.run_research"
 msgid "Run research"
-msgstr ""
+msgstr "Lancer la recherche externe"
 
 #. screen: contacts; ctx: toast; tier: T3
 msgctxt "contacts.added"
 msgid "Contact added."
-msgstr ""
+msgstr "Contact ajouté."
 
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contacts.count"
 msgid "{count} contact"
 msgid_plural "{count} contacts"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{count} contact"
+msgstr[1] "{count} contacts"
+msgstr[2] "{count} contacts"
 
 #. screen: contacts; ctx: toast; tier: T3
 msgctxt "contacts.deleted"
 msgid "Contact deleted."
-msgstr ""
+msgstr "Contact supprimé."
 
 #. screen: contacts_page; ctx: button; tier: T3
 #. In contacts-page.ui.
 msgctxt "contacts_page.add_contact"
 msgid "Add contact"
-msgstr ""
+msgstr "Ajouter un contact"
 
 #. screen: contacts_page; ctx: button; tier: T3
 #. In contacts-page.ui.
 msgctxt "contacts_page.blocked_callers"
 msgid "Blocked callers"
-msgstr ""
+msgstr "Appelants bloqués"
 
 #. screen: contacts_page; ctx: body; tier: T3
 #. In contacts-page.ui.
 msgctxt "contacts_page.choose_contact_see_their_details"
 msgid "Choose a contact to see their details."
-msgstr ""
+msgstr "Choisissez un contact pour afficher sa fiche."
 
 #. screen: contacts_page; ctx: title; tier: T3
 #. In contacts-page.ui.
 msgctxt "contacts_page.contact"
 msgid "Contact"
-msgstr ""
+msgstr "Contact"
 
 #. screen: contacts_page; ctx: title; tier: T3
 #. In contacts-page.ui.
 msgctxt "contacts_page.contacts"
 msgid "Contacts"
-msgstr ""
+msgstr "Contacts"
 
 #. screen: contacts_page; ctx: a11y; tier: T3
 #. In contacts-page.ui.
 msgctxt "contacts_page.contacts_a11y"
 msgid "Contacts"
-msgstr ""
+msgstr "Contacts"
 
 #. screen: contacts_page; ctx: title; tier: T3
 #. In contacts-page.ui.
 msgctxt "contacts_page.no_contact_open"
 msgid "No contact open"
-msgstr ""
+msgstr "Aucun contact sélectionné"
 
 #. screen: desk; ctx: label; tier: T3
 #. The help desk filter that shows all tickets.
 msgctxt "desk.every_ticket"
 msgid "Every ticket"
-msgstr ""
+msgstr "Tous les billets"
 
 #. screen: desk; ctx: label; tier: T3
 msgctxt "desk.no_customer_details"
 msgid "No customer details"
-msgstr ""
+msgstr "Client non indiqué"
 
 #. screen: desk; ctx: label; tier: T3
 #. A ticket waiting on the customer, in a list row with little room.
 msgctxt "desk.waiting"
 msgid "Waiting"
-msgstr ""
+msgstr "En attente"
 
 #. screen: desk_page; ctx: body; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.choose_ticket_read_reply"
 msgid "Choose a ticket to read it and reply."
-msgstr ""
+msgstr "Choisissez un billet pour le lire et y répondre."
 
 #. screen: desk_page; ctx: button; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.new_ticket"
 msgid "New ticket"
-msgstr ""
+msgstr "Nouveau billet"
 
 #. screen: desk_page; ctx: title; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.no_ticket_open"
 msgid "No ticket open"
-msgstr ""
+msgstr "Aucun billet sélectionné"
 
 #. screen: desk_page; ctx: button; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.settings"
 msgid "Settings"
-msgstr ""
+msgstr "Paramètres"
 
 #. screen: desk_page; ctx: title; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.ticket"
 msgid "Ticket"
-msgstr ""
+msgstr "Billet"
 
 #. screen: desk_page; ctx: a11y; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.tickets"
 msgid "Tickets"
-msgstr ""
+msgstr "Billets"
 
 #. screen: desk_page; ctx: tooltip; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.which_tickets_show"
 msgid "Which tickets to show"
-msgstr ""
+msgstr "Billets à afficher"
 
 #. screen: desk_page; ctx: a11y; tier: T3
 #. In desk-page.ui.
 msgctxt "desk_page.which_tickets_show_a11y"
 msgid "Which tickets to show"
-msgstr ""
+msgstr "Billets à afficher"
 
 #. screen: desk_settings; ctx: title; tier: T3
 #. The title of the file chooser.
 msgctxt "desk_settings.choose_logo"
 msgid "Choose a logo"
-msgstr ""
+msgstr "Choisir un logo"
 
 #. screen: desk_settings; ctx: body; tier: T3
 msgctxt "desk_settings.logo_published"
 msgid "A logo is published."
-msgstr ""
+msgstr "Un logo est publié."
 
 #. screen: desk_settings; ctx: toast; tier: T3
 msgctxt "desk_settings.logo_updated"
 msgid "Logo updated."
-msgstr ""
+msgstr "Logo mis à jour."
 
 #. screen: desk_settings; ctx: body; tier: T3
 msgctxt "desk_settings.no_logo"
 msgid "No logo yet."
-msgstr ""
+msgstr "Aucun logo."
 
 #. screen: desk_settings; ctx: toast; tier: T3
 msgctxt "desk_settings.saved"
 msgid "Settings saved."
-msgstr ""
+msgstr "Paramètres enregistrés."
 
 #. screen: desk_settings_view; ctx: button; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.choose_image"
 msgid "Choose an image"
-msgstr ""
+msgstr "Choisir une image"
 
 #. screen: desk_settings_view; ctx: label; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.email_customers_replies"
 msgid "Email customers your replies"
-msgstr ""
+msgstr "Envoyer vos réponses aux clients par courriel"
 
 #. screen: desk_settings_view; ctx: body; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.leave_name_blank_show_customers"
 msgid "Leave the name blank to show customers the workspace's own name."
-msgstr ""
+msgstr "Laissez le nom vide pour montrer aux clients le nom de l'espace de travail."
 
 #. screen: desk_settings_view; ctx: title; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.logo"
 msgid "Logo"
-msgstr ""
+msgstr "Logo"
 
 #. screen: desk_settings_view; ctx: label; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.logo_label"
 msgid "Logo"
-msgstr ""
+msgstr "Logo"
 
 #. screen: desk_settings_view; ctx: label; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.name_customers_see"
 msgid "Name customers see"
-msgstr ""
+msgstr "Nom affiché aux clients"
 
 #. screen: desk_settings_view; ctx: button; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.remove"
 msgid "Remove"
-msgstr ""
+msgstr "Retirer"
 
 #. screen: desk_settings_view; ctx: body; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.shown_customers_help_desks_pages"
 msgid "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
-msgstr ""
+msgstr "Affiché aux clients sur les pages du comptoir. Une image PNG, JPEG ou WebP; District AI en vérifie la taille et les dimensions."
 
 #. screen: desk_settings_view; ctx: label; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.take_tickets"
 msgid "Take tickets"
-msgstr ""
+msgstr "Recevoir des billets"
 
 #. screen: desk_settings_view; ctx: body; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.while_desk_off_no_tickets"
 msgid "While the desk is off, no tickets are recorded."
-msgstr ""
+msgstr "Quand le comptoir est désactivé, aucun billet n'est consigné."
 
 #. screen: desk; ctx: label; tier: T3
 #. The channel a ticket arrived through.
 msgctxt "desk_ticket.came_in_by"
 msgid "Came in by"
-msgstr ""
+msgstr "Canal"
 
 #. screen: desk; ctx: body; tier: T3
 msgctxt "desk_ticket.emailed"
 msgid "The customer was emailed your reply."
-msgstr ""
+msgstr "Votre réponse a été envoyée au client par courriel."
 
 #. screen: desk; ctx: error; tier: T2
 msgctxt "desk_ticket.failed_title"
 msgid "Could not load this ticket"
-msgstr ""
+msgstr "Impossible de charger ce billet"
 
 #. screen: desk; ctx: body; tier: T3
 msgctxt "desk_ticket.not_emailed"
 msgid "The customer was not emailed this reply."
-msgstr ""
+msgstr "Aucun courriel n'a été envoyé au client pour cette réponse."
 
 #. screen: desk; ctx: label; tier: T3
 #. When the ticket was opened.
 msgctxt "desk_ticket.raised"
 msgid "Raised"
-msgstr ""
+msgstr "Créé le"
 
 #. screen: desk; ctx: label; tier: T3
 #. When the ticket was resolved.
 msgctxt "desk_ticket.resolved_at"
 msgid "Resolved"
-msgstr ""
+msgstr "Réglée"
 
 #. screen: desk_ticket_view; ctx: title; tier: T3
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.customer"
 msgid "Customer"
-msgstr ""
+msgstr "Client"
 
 #. screen: desk_ticket_view; ctx: button; tier: T3
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.open"
 msgid "Open"
-msgstr ""
+msgstr "Ouverte"
 
 #. screen: desk_ticket_view; ctx: button; tier: T3
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.resolved"
 msgid "Resolved"
-msgstr ""
+msgstr "Réglée"
 
 #. screen: desk_ticket_view; ctx: a11y; tier: T3
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.status"
 msgid "Status"
-msgstr ""
+msgstr "État"
 
 #. screen: desk_ticket_view; ctx: button; tier: T3
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.waiting"
 msgid "Waiting"
-msgstr ""
+msgstr "En attente"
 
 #. screen: desk_ticket_view; ctx: tooltip; tier: T3
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.waiting_customer"
 msgid "Waiting on the customer"
-msgstr ""
+msgstr "En attente du client"
 
 #. screen: devices; ctx: label; tier: T3
 msgctxt "devices.last_active"
 msgid "Last active {when}"
-msgstr ""
+msgstr "Dernière activité : {when}"
 
 #. screen: devices; ctx: button; tier: T2
 msgctxt "devices.sign_out"
 msgid "Sign out"
-msgstr ""
+msgstr "Se déconnecter"
 
 #. screen: devices; ctx: title; tier: T2
 msgctxt "devices.sign_out_question"
 msgid "Sign out?"
-msgstr ""
+msgstr "Déconnecter?"
 
 #. screen: devices_page; ctx: body; tier: T3
 #. In devices-page.ui.
 msgctxt "devices_page.devices_last_active_time_when"
 msgid "A device's last active time is when it last renewed its sign-in, which can trail real use by up to ten minutes."
-msgstr ""
+msgstr "La dernière activité d'un appareil correspond à sa dernière reconnexion automatique, qui peut avoir jusqu'à dix minutes de retard sur l'utilisation réelle."
 
 #. screen: devices_page; ctx: button; tier: T3
 #. In devices-page.ui.
 msgctxt "devices_page.sign_out_every_device"
 msgid "Sign out of every device"
-msgstr ""
+msgstr "Déconnecter tous les appareils"
 
 #. screen: devices_page; ctx: title; tier: T3
 #. In devices-page.ui.
 msgctxt "devices_page.signed_devices"
 msgid "Signed-in devices"
-msgstr ""
+msgstr "Appareils connectés"
 
 #. screen: dialer_page; ctx: button; tier: T3
 #. In dialer-page.ui.
 msgctxt "dialer_page.call"
 msgid "Call"
-msgstr ""
+msgstr "Appeler"
 
 #. screen: dialer_page; ctx: tooltip; tier: T3
 #. In dialer-page.ui.
 msgctxt "dialer_page.delete_last_digit"
 msgid "Delete the last digit"
-msgstr ""
+msgstr "Effacer le dernier chiffre"
 
 #. screen: dialer_page; ctx: a11y; tier: T3
 #. In dialer-page.ui.
 msgctxt "dialer_page.delete_last_digit_a11y"
 msgid "Delete the last digit"
-msgstr ""
+msgstr "Effacer le dernier chiffre"
 
 #. screen: dialer_page; ctx: a11y; tier: T3
 #. In dialer-page.ui.
 msgctxt "dialer_page.keypad"
 msgid "Keypad"
-msgstr ""
+msgstr "Clavier"
 
 #. screen: dialer_page; ctx: a11y; tier: T3
 #. In dialer-page.ui.
 msgctxt "dialer_page.number_call"
 msgid "Number to call"
-msgstr ""
+msgstr "Numéro à appeler"
 
 #. screen: dialer_page; ctx: placeholder; tier: T3
 #. In dialer-page.ui.
 msgctxt "dialer_page.type_paste_number"
 msgid "Type or paste a number"
-msgstr ""
+msgstr "Tapez ou collez un numéro"
 
 #. screen: directory; ctx: label; tier: T3
 msgctxt "directory.no_name"
 msgid "No name"
-msgstr ""
+msgstr "Aucun nom"
 
 #. screen: directory; ctx: label; tier: T3
 msgctxt "directory.no_phone_number"
 msgid "No phone number, so nobody can be put through"
-msgstr ""
+msgstr "Aucun numéro de téléphone, donc aucun transfert possible"
 
 #. screen: directory; ctx: tooltip; tier: T3
 msgctxt "directory.remove"
 msgid "Remove from the directory"
-msgstr ""
+msgstr "Retirer du répertoire"
 
 #. screen: directory_view; ctx: button; tier: T3
 #. In directory-view.ui.
 msgctxt "directory_view.add_list"
 msgid "Add to the list"
-msgstr ""
+msgstr "Ajouter à la liste"
 
 #. screen: directory_view; ctx: title; tier: T3
 #. In directory-view.ui.
 msgctxt "directory_view.add_someone"
 msgid "Add someone"
-msgstr ""
+msgstr "Ajouter une personne"
 
 #. screen: directory_view; ctx: button; tier: T3
 #. In directory-view.ui.
 msgctxt "directory_view.replace_directory"
 msgid "Replace the directory"
-msgstr ""
+msgstr "Remplacer le répertoire"
 
 #. screen: directory_view; ctx: title; tier: T3
 #. In directory-view.ui.
 msgctxt "directory_view.transfer_targets"
 msgid "Transfer targets"
-msgstr ""
+msgstr "Destinations de transfert"
 
 #. screen: settings; ctx: button; tier: T2
 msgctxt "guard.discard"
 msgid "Discard"
-msgstr ""
+msgstr "Abandonner"
 
 #. screen: settings; ctx: body; tier: T2
 msgctxt "guard.discard_body"
 msgid "What you changed in this section has not been saved, and leaving it drops those changes."
-msgstr ""
+msgstr "Vos modifications dans cette section ne sont pas enregistrées; si vous la quittez, elles seront perdues."
 
 #. screen: settings; ctx: title; tier: T2
 msgctxt "guard.discard_title"
 msgid "Discard your changes?"
-msgstr ""
+msgstr "Abandonner vos modifications?"
 
 #. screen: settings; ctx: button; tier: T3
 msgctxt "guard.keep_editing"
 msgid "Keep editing"
-msgstr ""
+msgstr "Continuer la modification"
 
 #. screen: hq; ctx: body; tier: T2
 msgctxt "hq.unknown_note"
 msgid "The change may have been made before the answer was lost. Check before confirming again."
-msgstr ""
+msgstr "Le changement a peut-être été effectué avant la perte de la connexion. Vérifiez avant de confirmer de nouveau."
 
 #. screen: hq; ctx: body; tier: T3
 msgctxt "hq.viewer_note"
 msgid "Nothing has been changed. Only an agency or client member of this workspace can confirm a change."
-msgstr ""
+msgstr "Rien n'a été modifié. Seul un membre ayant le rôle Agence ou Client dans cet espace de travail peut confirmer un changement."
 
 #. screen: hq_page; ctx: button; tier: T3
 #. In hq-page.ui.
 msgctxt "hq_page.ask"
 msgid "Ask"
-msgstr ""
+msgstr "Demander"
 
 #. screen: hq_page; ctx: placeholder; tier: T3
 #. In hq-page.ui.
 msgctxt "hq_page.ask_district_hq"
 msgid "Ask District HQ"
-msgstr ""
+msgstr "Poser une question à District HQ"
 
 #. screen: hq_page; ctx: a11y; tier: T3
 #. In hq-page.ui.
 msgctxt "hq_page.ask_district_hq_a11y"
 msgid "Ask District HQ"
-msgstr ""
+msgstr "Poser une question à District HQ"
 
 #. screen: hq_page; ctx: a11y; tier: T3
 #. In hq-page.ui.
 msgctxt "hq_page.conversation_district_hq"
 msgid "Conversation with District HQ"
-msgstr ""
+msgstr "Conversation avec District HQ"
 
 #. screen: hq_page; ctx: body; tier: T3
 #. In hq-page.ui.
 msgctxt "hq_page.each_question_answered_ai_model"
 msgid "Each question is answered by an AI model, which is billed. A change it proposes is made only when you confirm it."
-msgstr ""
+msgstr "Chaque question est traitée par un modèle d'IA, ce qui est facturé. Un changement qu'il propose n'est effectué que lorsque vous le confirmez."
 
 #. screen: inbox; ctx: label; tier: T3
 #. A small chip on a conversation with a saved reply.
 msgctxt "inbox.draft"
 msgid "Draft"
-msgstr ""
+msgstr "Brouillon"
 
 #. screen: inbox; ctx: a11y; tier: T3
 #. Read aloud for a conversation row, after a comma, so lower case.
 msgctxt "inbox.draft_saved"
 msgid "reply saved as a draft"
-msgstr ""
+msgstr "réponse enregistrée comme brouillon"
 
 #. screen: inbox; ctx: label; tier: T3
 #. A matching email: its subject, then its text.
 msgctxt "inbox.hit_subject"
 msgid "{subject}: {body}"
-msgstr ""
+msgstr "{subject} : {body}"
 
 #. screen: inbox; ctx: label; tier: T3
 #. The latest message of a conversation, sent by the workspace itself.
 msgctxt "inbox.preview_own"
 msgid "You: {text}"
-msgstr ""
+msgstr "Vous : {text}"
 
 #. screen: inbox; ctx: error; tier: T2
 msgctxt "inbox.search_failed"
 msgid "Could not search"
-msgstr ""
+msgstr "Recherche impossible"
 
 #. screen: inbox; ctx: a11y; tier: T3
 #. Read aloud for a conversation row: unread messages.
 msgctxt "inbox.unread"
 msgid "{count} unread"
 msgid_plural "{count} unread"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{count} non lu"
+msgstr[1] "{count} non lus"
+msgstr[2] "{count} non lus"
 
 #. screen: inbox_page; ctx: body; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.choose_conversation_read_reply"
 msgid "Choose a conversation to read it and reply."
-msgstr ""
+msgstr "Choisissez une conversation pour la lire et y répondre."
 
 #. screen: inbox_page; ctx: title; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.conversation"
 msgid "Conversation"
-msgstr ""
+msgstr "Conversation"
 
 #. screen: inbox_page; ctx: title; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.conversations"
 msgid "Conversations"
-msgstr ""
+msgstr "Conversations"
 
 #. screen: inbox_page; ctx: a11y; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.conversations_a11y"
 msgid "Conversations"
-msgstr ""
+msgstr "Conversations"
 
 #. screen: inbox_page; ctx: a11y; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.matching_messages"
 msgid "Matching messages"
-msgstr ""
+msgstr "Messages trouvés"
 
 #. screen: inbox_page; ctx: tooltip; tier: T3
 #. In inbox-page.ui. The button beside the inbox search that starts a new conversation.
 msgctxt "inbox_page.new_message"
 msgid "New message"
-msgstr ""
+msgstr "Nouveau message"
 
 #. screen: inbox_page; ctx: a11y; tier: T3
 #. In inbox-page.ui. The name a screen reader says for the button that starts a new conversation.
 msgctxt "inbox_page.new_message_a11y"
 msgid "New message"
-msgstr ""
+msgstr "Nouveau message"
 
 #. screen: inbox_page; ctx: title; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.no_conversation_open"
 msgid "No conversation open"
-msgstr ""
+msgstr "Aucune conversation sélectionnée"
 
 #. screen: inbox_page; ctx: placeholder; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.search_every_message"
 msgid "Search every message"
-msgstr ""
+msgstr "Rechercher dans tous les messages"
 
 #. screen: inbox_page; ctx: a11y; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.search_every_message_a11y"
 msgid "Search every message"
-msgstr ""
+msgstr "Rechercher dans tous les messages"
 
 #. screen: knowledge; ctx: label; tier: T3
 msgctxt "knowledge.added"
 msgid "Added {when}"
-msgstr ""
+msgstr "Ajouté le {when}"
 
 #. screen: knowledge; ctx: tooltip; tier: T2
 msgctxt "knowledge.delete_document"
 msgid "Delete this document"
-msgstr ""
+msgstr "Supprimer ce document"
 
 #. screen: knowledge; ctx: error; tier: T2
 msgctxt "knowledge.documents_failed"
 msgid "Could not load the documents"
-msgstr ""
+msgstr "Impossible de charger les documents"
 
 #. screen: knowledge; ctx: error; tier: T2
 #. Why a picked file is refused when it holds nothing.
 msgctxt "knowledge.file_empty"
 msgid "This file is empty."
-msgstr ""
+msgstr "Ce fichier est vide."
 
 #. screen: knowledge; ctx: error; tier: T2
 #. Why a picked file is refused when it holds no words.
 msgctxt "knowledge.file_no_text"
 msgid "This file has no text to add."
-msgstr ""
+msgstr "Ce fichier ne contient aucun texte."
 
 #. screen: knowledge; ctx: error; tier: T2
 #. Why a picked file is refused when it is not plain text.
 msgctxt "knowledge.file_not_text"
 msgid "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead."
-msgstr ""
+msgstr "Seul un fichier en texte brut (.txt ou .md) peut être lu. Pour un autre type de document, copiez-en plutôt le texte dans le champ de texte."
 
 #. screen: knowledge; ctx: error; tier: T2
 #. Why a picked file is refused for its size.
 msgctxt "knowledge.file_too_large"
 msgid "The file must be 1 MB or smaller."
-msgstr ""
+msgstr "Le fichier ne doit pas dépasser 1 Mo."
 
 #. screen: knowledge; ctx: error; tier: T2
 #. Why a picked file is refused when the desktop could not read it.
 msgctxt "knowledge.file_unreadable"
 msgid "This file could not be read."
-msgstr ""
+msgstr "Impossible de lire ce fichier."
 
 #. screen: knowledge; ctx: label; tier: T3
 #. How many pieces a document was cut into for answers.
 msgctxt "knowledge.pieces"
 msgid "{count} piece"
 msgid_plural "{count} pieces"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{count} segment"
+msgstr[1] "{count} segments"
+msgstr[2] "{count} segments"
 
 #. screen: file_chooser; ctx: label; tier: T3
 #. The file chooser's filter for plain text files (.txt and .md).
 msgctxt "knowledge.text_files_filter"
 msgid "Text files"
-msgstr ""
+msgstr "Fichiers texte"
 
 #. screen: knowledge_view; ctx: title; tier: T3
 #. In knowledge-view.ui.
 msgctxt "knowledge_view.add_document"
 msgid "Add a document"
-msgstr ""
+msgstr "Ajouter un document"
 
 #. screen: knowledge_view; ctx: button; tier: T3
 #. In knowledge-view.ui.
 msgctxt "knowledge_view.add_document_button"
 msgid "Add document"
-msgstr ""
+msgstr "Ajouter un document"
 
 #. screen: knowledge_view; ctx: title; tier: T3
 #. In knowledge-view.ui.
 msgctxt "knowledge_view.documents"
 msgid "Documents"
-msgstr ""
+msgstr "Documents"
 
 #. screen: knowledge_view; ctx: a11y; tier: T3
 #. In knowledge-view.ui.
 msgctxt "knowledge_view.documents_text"
 msgid "The document's text"
-msgstr ""
+msgstr "Texte du document"
 
 #. screen: knowledge_view; ctx: body; tier: T3
 #. In knowledge-view.ui. What a file fills, what it may be, and that nothing is sent yet.
 msgctxt "knowledge_view.file_hint"
 msgid "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document."
-msgstr ""
+msgstr "Un fichier en texte brut (.txt ou .md) d'au plus 1 Mo remplit le titre et le texte. Rien n'est ajouté avant que vous appuyiez sur Ajouter un document."
 
 #. screen: knowledge_view; ctx: button; tier: T3
 #. In knowledge-view.ui. The button that fills the form from a text file; also the file chooser's title.
 msgctxt "knowledge_view.read_text_file"
 msgid "Read a text file"
-msgstr ""
+msgstr "Importer un fichier texte"
 
 #. screen: knowledge_view; ctx: label; tier: T3
 #. In knowledge-view.ui.
 msgctxt "knowledge_view.title"
 msgid "Title"
-msgstr ""
+msgstr "Titre"
 
 #. screen: knowledge_view; ctx: title; tier: T3
 #. In knowledge-view.ui.
 msgctxt "knowledge_view.where_answers_come_from"
 msgid "Where answers come from"
-msgstr ""
+msgstr "Source des réponses"
 
 #. screen: marketplace; ctx: label; tier: T3
 #. Carrier tab, A2P 10DLC registration: the list of the carrier's campaign types (customer care, low volume, marketing, 2FA).
 msgctxt "marketplace.campaign_type"
 msgid "Campaign type"
-msgstr ""
+msgstr "Type de campagne"
 
 #. screen: marketplace; ctx: label; tier: T1
 msgctxt "marketplace.monthly"
 msgid "{price} a month"
-msgstr ""
+msgstr "{price} par mois"
 
 #. screen: marketplace; ctx: label; tier: T3
 msgctxt "marketplace.offered_by"
 msgid "Offered by {carrier}"
-msgstr ""
+msgstr "Proposé par {carrier}"
 
 #. screen: marketplace; ctx: label; tier: T3
 #. Carrier tab, toll-free verification: a description of how recipients opt in to the business's text messages.
 msgctxt "marketplace.opt_in_flow"
 msgid "How people agree to the messages (optional)"
-msgstr ""
+msgstr "Comment les gens consentent aux messages (facultatif)"
 
 #. screen: marketplace_page; ctx: label; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.area_code"
 msgid "Area code"
-msgstr ""
+msgstr "Indicatif régional"
 
 #. screen: marketplace_page; ctx: label; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.country_code"
 msgid "Country code"
-msgstr ""
+msgstr "Code de pays"
 
 #. screen: marketplace_page; ctx: button; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.find_number"
 msgid "Find a number"
-msgstr ""
+msgstr "Trouver un numéro"
 
 #. screen: marketplace_page; ctx: label; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.number_type"
 msgid "Number type"
-msgstr ""
+msgstr "Type de numéro"
 
 #. screen: marketplace_page; ctx: button; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.numbers"
 msgid "Your numbers"
-msgstr ""
+msgstr "Vos numéros"
 
 #. screen: marketplace_page; ctx: a11y; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.numbers_a11y"
 msgid "Your numbers"
-msgstr ""
+msgstr "Vos numéros"
 
 #. screen: marketplace_page; ctx: a11y; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.numbers_sale"
 msgid "Numbers for sale"
-msgstr ""
+msgstr "Numéros en vente"
 
 #. screen: marketplace_page; ctx: button; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.search"
 msgid "Search"
-msgstr ""
+msgstr "Rechercher"
 
 #. screen: marketplace_page; ctx: body; tier: T3
 #. In marketplace-page.ui.
 msgctxt "marketplace_page.type_area_code_search_whole"
 msgid "Type an area code, or search the whole country. Results come from your carrier."
-msgstr ""
+msgstr "Tapez un indicatif régional ou cherchez partout au pays. Les résultats viennent de votre transporteur."
 
 #. screen: meetings; ctx: label; tier: T3
 msgctxt "meeting.ended"
 msgid "Ended"
-msgstr ""
+msgstr "Fin"
 
 #. screen: meetings; ctx: label; tier: T3
 msgctxt "meeting.length"
 msgid "Length"
-msgstr ""
+msgstr "Durée"
 
 #. screen: meetings; ctx: label; tier: T3
 msgctxt "meeting.people"
 msgid "People"
-msgstr ""
+msgstr "Personnes"
 
 #. screen: meetings; ctx: label; tier: T3
 msgctxt "meeting.started"
 msgid "Started"
-msgstr ""
+msgstr "Début"
 
 #. screen: meetings; ctx: label; tier: T3
 msgctxt "meeting.status"
 msgid "Status"
-msgstr ""
+msgstr "État"
 
 #. screen: meeting_record; ctx: title; tier: T3
 #. In meeting-record.ui.
 msgctxt "meeting_record.action_items"
 msgid "Action items"
-msgstr ""
+msgstr "Actions à faire"
 
 #. screen: meeting_record; ctx: title; tier: T3
 #. In meeting-record.ui.
 msgctxt "meeting_record.could_not_load_meeting"
 msgid "Could not load this meeting"
-msgstr ""
+msgstr "Impossible de charger cette réunion"
 
 #. screen: meeting_record; ctx: title; tier: T3
 #. In meeting-record.ui.
 msgctxt "meeting_record.meeting"
 msgid "Meeting"
-msgstr ""
+msgstr "Réunion"
 
 #. screen: meeting_record; ctx: title; tier: T3
 #. In meeting-record.ui.
 msgctxt "meeting_record.minutes"
 msgid "Minutes"
-msgstr ""
+msgstr "Procès-verbal"
 
 #. screen: members; ctx: body; tier: T3
 msgctxt "members.agency_only"
 msgid "Only an agency member can add members, change their roles or remove them."
-msgstr ""
+msgstr "Seul un membre ayant le rôle Agence peut ajouter des membres, changer leurs rôles ou les retirer."
 
 #. screen: members; ctx: error; tier: T2
 msgctxt "members.failed_title"
 msgid "Could not load the members"
-msgstr ""
+msgstr "Impossible de charger les membres"
 
 #. screen: members; ctx: button; tier: T2
 msgctxt "members.remove"
 msgid "Remove from this workspace"
-msgstr ""
+msgstr "Retirer de cet espace de travail"
 
 #. screen: members; ctx: label; tier: T3
 msgctxt "members.role"
 msgid "Role"
-msgstr ""
+msgstr "Rôle"
 
 #. screen: members; ctx: label; tier: T3
 msgctxt "members.unknown_role"
 msgid "{role} · A role this app does not know, which it treats as no access."
-msgstr ""
+msgstr "{role} · rôle inconnu de cette application, qui le traite comme un rôle sans accès."
 
 #. screen: members_view; ctx: button; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.add"
 msgid "Add"
-msgstr ""
+msgstr "Ajouter"
 
 #. screen: members_view; ctx: title; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.add_member"
 msgid "Add a member"
-msgstr ""
+msgstr "Ajouter un membre"
 
 #. screen: members_view; ctx: title; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.members"
 msgid "Members"
-msgstr ""
+msgstr "Membres"
 
 #. screen: members_view; ctx: label; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.new_name"
 msgid "New name"
-msgstr ""
+msgstr "Nouveau nom"
 
 #. screen: members_view; ctx: label; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.now"
 msgid "Now"
-msgstr ""
+msgstr "Actuel"
 
 #. screen: members_view; ctx: button; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.rename_workspace"
 msgid "Rename the workspace"
-msgstr ""
+msgstr "Renommer l'espace de travail"
 
 #. screen: members_view; ctx: label; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.role"
 msgid "Role"
-msgstr ""
+msgstr "Rôle"
 
 #. screen: members_view; ctx: title; tier: T3
 #. In members-view.ui.
 msgctxt "members_view.workspaces_name"
 msgid "The workspace's name"
-msgstr ""
+msgstr "Nom de l'espace de travail"
 
 #. screen: messaging; ctx: error; tier: T2
 msgctxt "messaging.accounts_failed"
 msgid "Could not load the carrier accounts"
-msgstr ""
+msgstr "Impossible de charger les comptes de transporteur"
 
 #. screen: messaging; ctx: label; tier: T3
 #. A chip on the default carrier account.
 msgctxt "messaging.default"
 msgid "Default"
-msgstr ""
+msgstr "Par défaut"
 
 #. screen: messaging; ctx: label; tier: T3
 #. What a channel's sender picker shows when the channel has no sender of its own.
 msgctxt "messaging.default_sender"
 msgid "The default account"
-msgstr ""
+msgstr "Le compte par défaut"
 
 #. screen: messaging; ctx: tooltip; tier: T3
 msgctxt "messaging.edit_account"
 msgid "Edit this account"
-msgstr ""
+msgstr "Modifier ce compte"
 
 #. screen: messaging; ctx: button; tier: T3
 msgctxt "messaging.make_default"
 msgid "Make default"
-msgstr ""
+msgstr "Définir par défaut"
 
 #. screen: messaging; ctx: label; tier: T3
 msgctxt "messaging.no_numbers"
 msgid "No numbers"
-msgstr ""
+msgstr "Aucun numéro"
 
 #. screen: messaging; ctx: tooltip; tier: T2
 msgctxt "messaging.remove_account"
 msgid "Remove this account"
-msgstr ""
+msgstr "Retirer ce compte"
 
 #. screen: messaging; ctx: label; tier: T3
 msgctxt "messaging.unlisted_account"
 msgid "An account that is not listed"
-msgstr ""
+msgstr "Un compte absent de la liste"
 
 #. screen: messaging; ctx: title; tier: T3
 msgctxt "messaging_form.add_title"
 msgid "Add a carrier account"
-msgstr ""
+msgstr "Ajouter un compte de transporteur"
 
 #. screen: messaging_form; ctx: label; tier: T3
 #. In messaging-form.ui.
 msgctxt "messaging_form.carrier"
 msgid "Carrier"
-msgstr ""
+msgstr "Transporteur"
 
 #. screen: messaging_form; ctx: button; tier: T3
 #. In messaging-form.ui.
 msgctxt "messaging_form.check_these_keys"
 msgid "Check these keys"
-msgstr ""
+msgstr "Vérifier ces clés"
 
 #. screen: messaging; ctx: title; tier: T3
 msgctxt "messaging_form.edit_title"
 msgid "Edit the carrier account"
-msgstr ""
+msgstr "Modifier le compte de transporteur"
 
 #. screen: messaging_form; ctx: title; tier: T3
 #. In messaging-form.ui.
 msgctxt "messaging_form.keys"
 msgid "Keys"
-msgstr ""
+msgstr "Clés"
 
 #. screen: messaging; ctx: body; tier: T3
 msgctxt "messaging_form.keys_needed"
 msgid "Every key the carrier needs, typed in full."
-msgstr ""
+msgstr "Saisissez au complet toutes les clés exigées par le transporteur."
 
 #. screen: messaging_form; ctx: label; tier: T3
 #. In messaging-form.ui.
 msgctxt "messaging_form.make_default_sender"
 msgid "Make it the default sender"
-msgstr ""
+msgstr "En faire l'expéditeur par défaut"
 
 #. screen: messaging_form; ctx: title; tier: T3
 #. In messaging-form.ui.
 msgctxt "messaging_form.phone_numbers"
 msgid "Phone numbers"
-msgstr ""
+msgstr "Numéros de téléphone"
 
 #. screen: messaging_form; ctx: a11y; tier: T3
 #. In messaging-form.ui.
 msgctxt "messaging_form.phone_numbers_one_per_line"
 msgid "Phone numbers, one per line"
-msgstr ""
+msgstr "Numéros de téléphone, un par ligne"
 
 #. screen: messaging; ctx: body; tier: T3
 msgctxt "messaging_form.test_passed"
 msgid "The carrier accepted these keys."
-msgstr ""
+msgstr "Le transporteur a accepté ces clés."
 
 #. screen: messaging; ctx: body; tier: T3
 msgctxt "messaging_form.test_passed_for"
 msgid "The carrier accepted these keys, for {account}."
-msgstr ""
+msgstr "Le transporteur a accepté ces clés pour le compte {account}."
 
 #. screen: messaging; ctx: error; tier: T2
 msgctxt "messaging_form.test_rejected"
 msgid "The carrier refused these keys: {reason}"
-msgstr ""
+msgstr "Le transporteur a refusé ces clés : {reason}"
 
 #. screen: messaging; ctx: body; tier: T3
 msgctxt "messaging_form.test_running"
 msgid "Asking the carrier."
-msgstr ""
+msgstr "En attente du transporteur."
 
 #. screen: messaging; ctx: error; tier: T2
 msgctxt "messaging_form.test_unreachable"
 msgid "The carrier could not be asked, so nothing is known about these keys. {failure}"
-msgstr ""
+msgstr "Le transporteur n'a pas pu être interrogé, donc l'état de ces clés est inconnu. {failure}"
 
 #. screen: messaging_form; ctx: label; tier: T3
 #. In messaging-form.ui.
 msgctxt "messaging_form.whose_account"
 msgid "Whose account"
-msgstr ""
+msgstr "Titulaire du compte"
 
 #. screen: messaging_view; ctx: button; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.add_account"
 msgid "Add an account"
-msgstr ""
+msgstr "Ajouter un compte"
 
 #. screen: messaging_view; ctx: body; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.bought_workspace_distronodes_own_carrier"
 msgid "Bought for this workspace on Distronode's own carrier account. They are not an account of this workspace's, so they cannot be chosen as a sender."
-msgstr ""
+msgstr "Ces numéros ont été achetés pour cet espace de travail sur le compte de transporteur de Distronode. Comme ce compte n'appartient pas à l'espace de travail, ces numéros ne peuvent pas servir d'expéditeur."
 
 #. screen: messaging_view; ctx: title; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.carrier_accounts"
 msgid "Carrier accounts"
-msgstr ""
+msgstr "Comptes de transporteur"
 
 #. screen: messaging_view; ctx: body; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.channel_without_sender_own_sends"
 msgid "A channel without a sender of its own sends from the default account."
-msgstr ""
+msgstr "Un canal sans son propre expéditeur envoie à partir du compte par défaut."
 
 #. screen: messaging_view; ctx: label; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.mobile_number"
 msgid "Mobile number"
-msgstr ""
+msgstr "Cellulaire"
 
 #. screen: messaging_view; ctx: title; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.numbers_held_distronode"
 msgid "Numbers held by Distronode"
-msgstr ""
+msgstr "Numéros détenus par Distronode"
 
 #. screen: messaging_view; ctx: title; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.owners_mobile_number"
 msgid "The owner's mobile number"
-msgstr ""
+msgstr "Cellulaire du propriétaire"
 
 #. screen: messaging_view; ctx: button; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.save_number"
 msgid "Save number"
-msgstr ""
+msgstr "Enregistrer"
 
 #. screen: messaging_view; ctx: title; tier: T3
 #. In messaging-view.ui.
 msgctxt "messaging_view.sender_each_channel"
 msgid "Sender for each channel"
-msgstr ""
+msgstr "Expéditeur de chaque canal"
 
 #. screen: notifications; ctx: notification; tier: T0
 #. A notification's heading naming another workspace: "Incoming call in Bravo Client".
 msgctxt "notification.in_workspace"
 msgid "{heading} in {workspace}"
-msgstr ""
+msgstr "{heading} dans {workspace}"
 
 #. screen: overview; ctx: label; tier: T3
 msgctxt "overview.calls_this_week"
 msgid "Calls this week"
-msgstr ""
+msgstr "Appels cette semaine"
 
 #. screen: overview; ctx: label; tier: T3
 msgctxt "overview.contacts"
 msgid "Contacts"
-msgstr ""
+msgstr "Contacts"
 
 #. screen: overview; ctx: error; tier: T2
 msgctxt "overview.failed_title"
 msgid "Could not load the overview"
-msgstr ""
+msgstr "Impossible de charger la vue d'ensemble"
 
 #. screen: overview_page; ctx: body; tier: T3
 #. In overview-page.ui.
 msgctxt "overview_page.no_calls_yet_they_appear"
 msgid "No calls yet. They appear here as your receptionist answers them."
-msgstr ""
+msgstr "Aucun appel pour l'instant. Ceux que votre réceptionniste prendra s'afficheront ici."
 
 #. screen: overview_page; ctx: title; tier: T3
 #. In overview-page.ui.
 msgctxt "overview_page.recent_calls"
 msgid "Recent calls"
-msgstr ""
+msgstr "Appels récents"
 
 #. screen: persona; ctx: body; tier: T3
 msgctxt "persona.options_loading"
 msgid "Reading the languages this workspace may use."
-msgstr ""
+msgstr "Chargement des langues permises dans cet espace de travail."
 
 #. screen: persona_view; ctx: label; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.answer_length"
 msgid "Answer length"
-msgstr ""
+msgstr "Longueur des réponses"
 
 #. screen: persona_view; ctx: label; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.greeting"
 msgid "Greeting"
-msgstr ""
+msgstr "Message d'accueil"
 
 #. screen: persona_view; ctx: body; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.how_behaves_written_into_every"
 msgid "How it behaves, written into every call's instructions."
-msgstr ""
+msgstr "Le comportement de l'agent, intégré aux instructions de chaque appel."
 
 #. screen: persona_view; ctx: label; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.language"
 msgid "Language"
-msgstr ""
+msgstr "Langue"
 
 #. screen: persona_view; ctx: title; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.language_answers"
 msgid "Language and answers"
-msgstr ""
+msgstr "Langue et réponses"
 
 #. screen: persona_view; ctx: button; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.open_voice_studio"
 msgid "Open Voice Studio"
-msgstr ""
+msgstr "Ouvrir Voice Studio"
 
 #. screen: persona_view; ctx: title; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.personality"
 msgid "Personality"
-msgstr ""
+msgstr "Personnalité"
 
 #. screen: persona_view; ctx: a11y; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.personality_a11y"
 msgid "Personality"
-msgstr ""
+msgstr "Personnalité"
 
 #. screen: persona_view; ctx: button; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.try_receptionist"
 msgid "Try this receptionist"
-msgstr ""
+msgstr "Appeler la réceptionniste"
 
 #. screen: persona_view; ctx: label; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.voice_engine"
 msgid "Voice engine"
-msgstr ""
+msgstr "Moteur vocal"
 
 #. screen: persona_view; ctx: title; tier: T3
 #. In persona-view.ui.
 msgctxt "persona_view.what_says"
 msgid "What it says"
-msgstr ""
+msgstr "Ce qu'elle dit"
 
 #. screen: reply_box; ctx: button; tier: T3
 #. In reply-box.ui.
 msgctxt "reply_box.send"
 msgid "Send"
-msgstr ""
+msgstr "Envoyer"
 
 #. screen: report; ctx: button; tier: T3
 #. Under AI-written content (a call's summary, an HQ answer): opens the dialog that reports it to Distronode.
 msgctxt "report.button"
 msgid "Report"
-msgstr ""
+msgstr "Signaler"
 
 #. screen: report; ctx: a11y; tier: T3
 #. The name a screen reader says for the Report button.
 msgctxt "report.button_a11y"
 msgid "Report this AI-generated content"
-msgstr ""
+msgstr "Signaler ce contenu généré par l'IA"
 
 #. screen: report; ctx: a11y; tier: T3
 #. The name a screen reader says for the line in the report dialog that says why it cannot be sent now.
 msgctxt "report.not_sent_a11y"
 msgid "Report not sent"
-msgstr ""
+msgstr "Signalement non envoyé"
 
 #. screen: report; ctx: button; tier: T3
 #. In place of Report for a member whose role cannot send support requests: opens the support page in the browser.
 msgctxt "report.on_web"
 msgid "Report on the web"
-msgstr ""
+msgstr "Signaler sur le Web"
 
 #. screen: report; ctx: a11y; tier: T3
 #. The name a screen reader says for the Report on the web button.
 msgctxt "report.on_web_a11y"
 msgid "Report this AI-generated content on the support website"
-msgstr ""
+msgstr "Signaler ce contenu généré par l'IA sur le site Web de soutien"
 
 #. screen: report; ctx: body; tier: T3
 #. The banner at the top of the window while a report is on its way.
 msgctxt "report.sending"
 msgid "Sending your report."
-msgstr ""
+msgstr "Envoi du signalement."
 
 #. screen: rooms; ctx: label; tier: T3
 msgctxt "rooms.a_guest"
 msgid "A guest"
-msgstr ""
+msgstr "Personne invitée"
 
 #. screen: rooms; ctx: toast; tier: T3
 msgctxt "rooms.guest_link_copied"
 msgid "Guest link copied."
-msgstr ""
+msgstr "Lien d'invitation copié."
 
 #. screen: rooms; ctx: label; tier: T3
 msgctxt "rooms.in_progress"
 msgid "In progress"
-msgstr ""
+msgstr "En cours"
 
 #. screen: rooms; ctx: body; tier: T3
 msgctxt "rooms.in_room"
 msgid "In the room."
-msgstr ""
+msgstr "Dans la salle."
 
 #. screen: rooms; ctx: body; tier: T3
 msgctxt "rooms.joining"
 msgid "Joining the room."
-msgstr ""
+msgstr "Connexion à la salle en cours."
 
 #. screen: rooms; ctx: body; tier: T3
 msgctxt "rooms.nobody_else"
 msgid "Nobody else is here yet."
-msgstr ""
+msgstr "Personne d'autre pour l'instant."
 
 #. screen: rooms; ctx: label; tier: T3
 msgctxt "rooms.people"
 msgid "{count} person"
 msgid_plural "{count} people"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{count} personne"
+msgstr[1] "{count} personnes"
+msgstr[2] "{count} personnes"
 
 #. screen: rooms; ctx: button; tier: T3
 msgctxt "rooms.rejoin"
 msgid "Rejoin"
-msgstr ""
+msgstr "Rejoindre"
 
 #. screen: rooms; ctx: title; tier: T3
 msgctxt "rooms.room_title"
 msgid "Room \"{name}\""
-msgstr ""
+msgstr "Salle « {name} »"
 
 #. screen: rooms; ctx: body; tier: T3
 #. names are the others in the room, joined by commas.
 msgctxt "rooms.with"
 msgid "With {names}."
-msgstr ""
+msgstr "Avec {names}."
 
 #. screen: rooms_page; ctx: button; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.copy_guest_link"
 msgid "Copy guest link"
-msgstr ""
+msgstr "Copier le lien d'invitation"
 
 #. screen: rooms_page; ctx: tooltip; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.copy_link_lets_someone_without"
 msgid "Copy a link that lets someone without an account join this room"
-msgstr ""
+msgstr "Copiez un lien qui permet à une personne sans compte de rejoindre cette salle"
 
 #. screen: rooms_page; ctx: button; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.join"
 msgid "Join"
-msgstr ""
+msgstr "Rejoindre"
 
 #. screen: rooms_page; ctx: button; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.leave_room"
 msgid "Leave the room"
-msgstr ""
+msgstr "Quitter la salle"
 
 #. screen: rooms_page; ctx: title; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.meetings"
 msgid "Meetings"
-msgstr ""
+msgstr "Réunions"
 
 #. screen: rooms_page; ctx: a11y; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.meetings_a11y"
 msgid "Meetings"
-msgstr ""
+msgstr "Réunions"
 
 #. screen: rooms_page; ctx: body; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.most_recent_meetings_held_workspaces"
 msgid "The most recent meetings held in this workspace's rooms. Open one to read its minutes and transcript."
-msgstr ""
+msgstr "Les réunions récentes des salles de cet espace de travail. Ouvrez-en une pour lire son procès-verbal et sa transcription."
 
 #. screen: rooms_page; ctx: label; tier: T3
 #. In rooms-page.ui.
 msgctxt "rooms_page.room_name"
 msgid "Room name"
-msgstr ""
+msgstr "Nom de salle"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.account"
 msgid "Account"
-msgstr ""
+msgstr "Compte"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.analytics"
 msgid "Analytics"
-msgstr ""
+msgstr "Analytique"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.billing"
 msgid "Billing"
-msgstr ""
+msgstr "Facturation"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.blocked_callers"
 msgid "Blocked callers"
-msgstr ""
+msgstr "Appelants bloqués"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.booking_pages"
 msgid "Booking pages"
-msgstr ""
+msgstr "Pages de réservation"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.call"
 msgid "Call"
-msgstr ""
+msgstr "Appel"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.call_handling"
 msgid "Call handling"
-msgstr ""
+msgstr "Gestion des appels"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.calls"
 msgid "Calls"
-msgstr ""
+msgstr "Appels"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.contact"
 msgid "Contact"
-msgstr ""
+msgstr "Contact"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.contacts"
 msgid "Contacts"
-msgstr ""
+msgstr "Contacts"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.conversation"
 msgid "Conversation"
-msgstr ""
+msgstr "Conversation"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.devices"
 msgid "Devices"
-msgstr ""
+msgstr "Appareils"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.dialler"
 msgid "Dialler"
-msgstr ""
+msgstr "Clavier"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.district_hq"
 msgid "District HQ"
-msgstr ""
+msgstr "District HQ"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.help_desk"
 msgid "Help desk"
-msgstr ""
+msgstr "Comptoir clients"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.help_desk_settings"
 msgid "Help desk settings"
-msgstr ""
+msgstr "Paramètres du comptoir"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.inbox"
 msgid "Inbox"
-msgstr ""
+msgstr "Boîte de réception"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.knowledge"
 msgid "Knowledge"
-msgstr ""
+msgstr "Connaissances"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.meeting_rooms"
 msgid "Meeting rooms"
-msgstr ""
+msgstr "Salles de réunion"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.members"
 msgid "Members"
-msgstr ""
+msgstr "Membres"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.messaging_accounts"
 msgid "Messaging accounts"
-msgstr ""
+msgstr "Comptes de messagerie"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.overview"
 msgid "Overview"
-msgstr ""
+msgstr "Vue d'ensemble"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.persona"
 msgid "Persona"
-msgstr ""
+msgstr "Persona"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.phone_numbers"
 msgid "Phone numbers"
-msgstr ""
+msgstr "Numéros de téléphone"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.routing_rules"
 msgid "Routing rules"
-msgstr ""
+msgstr "Règles d'acheminement"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.skills"
 msgid "Skills"
-msgstr ""
+msgstr "Compétences"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.support"
 msgid "Support"
-msgstr ""
+msgstr "Soutien"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.support_request"
 msgid "Support request"
-msgstr ""
+msgstr "Demande de soutien"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.ticket"
 msgid "Ticket"
-msgstr ""
+msgstr "Billet"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.transfer_directory"
 msgid "Transfer directory"
-msgstr ""
+msgstr "Répertoire de transfert"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.voice"
 msgid "Voice"
-msgstr ""
+msgstr "Voix"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.workflows"
 msgid "Workflows"
-msgstr ""
+msgstr "Flux de travail"
 
 #. screen: navigation; ctx: title; tier: T3
 #. The heading over the workspace's rows in the sidebar.
 msgctxt "route.workspace"
 msgid "Workspace"
-msgstr ""
+msgstr "Espace de travail"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.workspace_settings"
 msgid "Workspace settings"
-msgstr ""
+msgstr "Paramètres de l'espace"
 
 #. screen: routing; ctx: label; tier: T3
 msgctxt "routing.caller_detail"
 msgid "Caller detail"
-msgstr ""
+msgstr "Champ du contact"
 
 #. screen: routing; ctx: label; tier: T3
 msgctxt "routing.compared_by"
 msgid "Compared by"
-msgstr ""
+msgstr "Comparaison"
 
 #. screen: routing; ctx: label; tier: T3
 msgctxt "routing.engine"
 msgid "Engine"
-msgstr ""
+msgstr "Moteur"
 
 #. screen: routing; ctx: label; tier: T3
 msgctxt "routing.instruction"
 msgid "Instruction"
-msgstr ""
+msgstr "Consigne"
 
 #. screen: routing; ctx: body; tier: T3
 msgctxt "routing.kept_keys"
 msgid "Also stored: {keys}. Kept as they are when the rules are saved."
-msgstr ""
+msgstr "Autres champs stockés : {keys}. Ils sont conservés tels quels à la sauvegarde."
 
 #. screen: routing; ctx: label; tier: T3
 msgctxt "routing.no_condition"
 msgid "No condition set here"
-msgstr ""
+msgstr "Aucune condition définie"
 
 #. screen: routing; ctx: label; tier: T3
 #. A rule with no engine of its own uses the persona's.
 msgctxt "routing.persona_engine"
 msgid "The persona's own"
-msgstr ""
+msgstr "Celui de la persona"
 
 #. screen: routing; ctx: tooltip; tier: T2
 msgctxt "routing.remove_rule"
 msgid "Remove this rule"
-msgstr ""
+msgstr "Supprimer cette règle"
 
 #. screen: routing; ctx: title; tier: T3
 msgctxt "routing.rule_title"
 msgid "Rule {number}"
-msgstr ""
+msgstr "Règle {number}"
 
 #. screen: routing; ctx: label; tier: T3
 msgctxt "routing.value"
 msgid "Value"
-msgstr ""
+msgstr "Valeur"
 
 #. screen: routing; ctx: label; tier: T3
 msgctxt "routing.voice"
 msgid "Voice"
-msgstr ""
+msgstr "Voix"
 
 #. screen: routing_view; ctx: button; tier: T3
 #. In routing-view.ui.
 msgctxt "routing_view.add_rule"
 msgid "Add a rule"
-msgstr ""
+msgstr "Ajouter une règle"
 
 #. screen: routing_view; ctx: body; tier: T3
 #. In routing-view.ui.
 msgctxt "routing_view.checked_order_caller_who_matches"
 msgid "Checked in this order. A caller who matches a rule gets its voice and instruction."
-msgstr ""
+msgstr "Les règles sont vérifiées dans cet ordre. Si un appelant correspond à une règle, l'appel utilise la voix et la consigne de cette règle."
 
 #. screen: routing_view; ctx: button; tier: T3
 #. In routing-view.ui.
 msgctxt "routing_view.replace_rules"
 msgid "Replace the rules"
-msgstr ""
+msgstr "Remplacer les règles"
 
 #. screen: routing_view; ctx: title; tier: T3
 #. In routing-view.ui.
 msgctxt "routing_view.rules"
 msgid "Rules"
-msgstr ""
+msgstr "Règles"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. Screen-reader name of the row of buttons above the bookings list that picks which bookings it shows: upcoming, past, cancelled or all.
 msgctxt "scheduling_admin.bookings_views_a11y"
 msgid "Which bookings to show"
-msgstr ""
+msgstr "Quels rendez-vous afficher"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a booking coming up on the booking pages' overview: when it is, who booked and what, and its status (Confirmed, Cancelled...).
 msgctxt "scheduling_admin.coming_up_row_a11y"
 msgid "{when}, {subtitle}, {status}"
-msgstr ""
+msgstr "{when}, {subtitle}, {status}"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a control that acts on one item of a list in the booking pages' sections: what it does or sets (Remove, Edit, Priority, Role...), then the item's name (a host, a booking question, an option).
 msgctxt "scheduling_admin.control_of_a11y"
 msgid "{control}: {name}"
-msgstr ""
+msgstr "{control} : {name}"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a row of the booking desk on the booking pages' overview: the row's label (Calendar, Working hours...), then what it shows.
 msgctxt "scheduling_admin.desk_row_a11y"
 msgid "{label}: {value}"
-msgstr ""
+msgstr "{label} : {value}"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. Screen-reader name of the row of buttons at the top of the booking pages' developer section that picks what it shows: the API keys, the connected apps, or the webhooks.
 msgctxt "scheduling_admin.developer_tabs_a11y"
 msgid "Which developer settings to show"
-msgstr ""
+msgstr "Quels paramètres de développeur afficher"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for an event type in the booking pages' list: its name, how long it runs and where (30 min, Phone), its state (Active, Inactive, Archived), and its public booking page's address or Not public.
 msgctxt "scheduling_admin.event_type_row_a11y"
 msgid "{name}, {subtitle}, {state}, {booking_page}"
-msgstr ""
+msgstr "{name}, {subtitle}, {state}, {booking_page}"
 
 #. screen: scheduling_admin; ctx: title; tier: T3
 #. Heading over why a section of the booking pages (the event types, the bookings, the team...) could not be read. The reason is under it.
 msgctxt "scheduling_admin.failed_title"
 msgid "Could not load this section"
-msgstr ""
+msgstr "Impossible de charger cette section"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for the choice of a host's role on an event type (Required, Rotation, Optional); the host's name follows.
 msgctxt "scheduling_admin.host_role"
 msgid "Role"
-msgstr ""
+msgstr "Rôle"
 
 #. screen: scheduling_admin; ctx: title; tier: T3
 #. Heading over the people who could take an event type's bookings and are not hosts yet, each with an Add button, in the booking pages' hosts dialog.
 msgctxt "scheduling_admin.hosts_add_heading"
 msgid "Add a host"
-msgstr ""
+msgstr "Ajouter un hôte"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for the box where the member types when a window of their working hours ends (17:00); which window follows, as in Closes: Monday, range 1.
 msgctxt "scheduling_admin.hours_closes_a11y"
 msgid "Closes"
-msgstr ""
+msgstr "Fin"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for the box where the member types when a window of their working hours starts (09:00); which window follows, as in Opens: Monday, range 1.
 msgctxt "scheduling_admin.hours_opens_a11y"
 msgid "Opens"
-msgstr ""
+msgstr "Début"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. A screen reader's name for one window of a day in the working hours editor: the weekday (Monday), then which of that day's ranges it is, counting from 1. Follows a control's name, as in Remove: Monday, range 2. Range is the editor's own word (Add range).
 msgctxt "scheduling_admin.hours_window_a11y"
 msgid "{day}, range {number}"
-msgstr ""
+msgstr "{day}, plage {number}"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a part of a booking pages section still being read.
 msgctxt "scheduling_admin.loading_a11y"
 msgid "Loading"
-msgstr ""
+msgstr "Chargement"
 
 #. screen: scheduling_admin; ctx: title; tier: T3
 #. Question asked before an image of the booking pages is removed (the logo, the banner, or the member's own profile picture). The booking pages' own sentence saying images save at once is under it.
 msgctxt "scheduling_admin.settings_remove_image_question"
 msgid "Remove this image?"
-msgstr ""
+msgstr "Retirer cette image?"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. Screen-reader name of the row of buttons at the top of the booking pages' settings that picks what they show: the booking page, the booking assistant, your profile or your notifications.
 msgctxt "scheduling_admin.settings_tabs_a11y"
 msgid "Which settings to show"
-msgstr ""
+msgstr "Quels paramètres afficher"
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a person on the booking pages' team section: their name, their address and workspace role (Agency, Client, Removed from the workspace), and where they stand with the scheduler (Host, Not set up yet, Archived).
 msgctxt "scheduling_admin.team_member_row_a11y"
 msgid "{name}, {subtitle}, {state}"
-msgstr ""
+msgstr "{name}, {subtitle}, {state}"
 
 #. screen: scheduling_admin; ctx: format; tier: T3
 #. The second line of a booking that stops a scheduler account being archived, under the event type's name: who booked it, then when it starts (15 August 2026, 14:30).
 msgctxt "scheduling_admin.upcoming_booking_line"
 msgid "{who} · {when}"
-msgstr ""
+msgstr "{who} · {when}"
 
 #. screen: scheduling_page; ctx: label; tier: T3
 #. In scheduling-page.ui.
 msgctxt "scheduling_page.booking_page"
 msgid "Booking page"
-msgstr ""
+msgstr "Page de réservation"
 
 #. screen: scheduling_page; ctx: button; tier: T3
 #. In scheduling-page.ui.
 msgctxt "scheduling_page.check_again"
 msgid "Check again"
-msgstr ""
+msgstr "Revérifier"
 
 #. screen: scheduling_page; ctx: label; tier: T3
 #. In scheduling-page.ui.
 msgctxt "scheduling_page.last_live"
 msgid "Last live"
-msgstr ""
+msgstr "Dernière mise en ligne"
 
 #. screen: scheduling_page; ctx: button; tier: T3
 #. In scheduling-page.ui.
 msgctxt "scheduling_page.turn_booking_pages"
 msgid "Turn on booking pages"
-msgstr ""
+msgstr "Activer les pages de réservation"
 
 #. screen: scheduling_page; ctx: label; tier: T3
 #. In scheduling-page.ui.
 msgctxt "scheduling_page.what_went_wrong"
 msgid "What went wrong"
-msgstr ""
+msgstr "Cause du problème"
 
 #. screen: session; ctx: body; tier: T3
 msgctxt "session.retrying"
 msgid "District AI will try again by itself."
-msgstr ""
+msgstr "District AI réessaiera automatiquement."
 
 #. screen: session; ctx: body; tier: T3
 msgctxt "session.signed_out_body"
 msgid "Sign in again whenever you are ready."
-msgstr ""
+msgstr "Reconnectez-vous au moment qui vous convient."
 
 #. screen: session; ctx: title; tier: T3
 msgctxt "session.signing_in"
 msgid "Signing in"
-msgstr ""
+msgstr "Connexion"
 
 #. screen: session; ctx: title; tier: T3
 msgctxt "session.signing_out"
 msgid "Signing out"
-msgstr ""
+msgstr "Déconnexion en cours"
 
 #. screen: session; ctx: body; tier: T3
 msgctxt "session.signing_out_everywhere"
 msgid "Every device is signed out. Removing your sign-in from this computer."
-msgstr ""
+msgstr "Tous les appareils sont déconnectés. Suppression de vos informations de connexion ici."
 
 #. screen: session; ctx: body; tier: T3
 msgctxt "session.signing_out_this_device"
 msgid "Telling District AI, then removing your sign-in from this computer."
-msgstr ""
+msgstr "Envoi de l'avis à District AI, puis suppression de vos informations de connexion ici."
 
 #. screen: session; ctx: body; tier: T2
 msgctxt "session.welcome_body"
 msgid "Sign in with your District AI account. Signing in happens in your browser, so this app never sees your password."
-msgstr ""
+msgstr "Connectez-vous avec votre compte District AI. La connexion se fait dans votre navigateur : cette application ne voit jamais votre mot de passe."
 
 #. screen: session; ctx: title; tier: T3
 msgctxt "session.welcome_title"
 msgid "Welcome to District AI"
-msgstr ""
+msgstr "Bienvenue dans District AI"
 
 #. screen: session_page; ctx: button; tier: T3
 #. In session-page.ui.
 msgctxt "session_page.sign_browser"
 msgid "Sign in with your browser"
-msgstr ""
+msgstr "Se connecter avec le navigateur"
 
 #. screen: session_page; ctx: button; tier: T3
 #. In session-page.ui.
 msgctxt "session_page.sign_out_again"
 msgid "Sign out again"
-msgstr ""
+msgstr "Réessayer la déconnexion"
 
 #. screen: settings; ctx: label; tier: T3
 msgctxt "settings.not_chosen"
 msgid "Not chosen"
-msgstr ""
+msgstr "Non choisi"
 
 #. screen: settings; ctx: button; tier: T3
 msgctxt "settings.read_again"
 msgid "Read them again"
-msgstr ""
+msgstr "Actualiser"
 
 #. screen: settings; ctx: title; tier: T3
 #. A save landed but the settings could not be read back; not a failure.
 msgctxt "settings.stale_title"
 msgid "Saved"
-msgstr ""
+msgstr "Enregistré"
 
 #. screen: settings_page; ctx: body; tier: T3
 #. In settings-page.ui.
 msgctxt "settings_page.choose_section_read_settings"
 msgid "Choose a section to read its settings."
-msgstr ""
+msgstr "Choisissez une section pour voir ses paramètres."
 
 #. screen: settings_page; ctx: title; tier: T3
 #. In settings-page.ui.
 msgctxt "settings_page.no_section_open"
 msgid "No section open"
-msgstr ""
+msgstr "Aucune section ouverte"
 
 #. screen: settings_page; ctx: title; tier: T3
 #. In settings-page.ui.
 msgctxt "settings_page.section"
 msgid "Section"
-msgstr ""
+msgstr "Section"
 
 #. screen: settings_page; ctx: a11y; tier: T3
 #. In settings-page.ui.
 msgctxt "settings_page.settings_sections"
 msgid "Settings sections"
-msgstr ""
+msgstr "Sections de paramètres"
 
 #. screen: settings_page; ctx: title; tier: T3
 #. In settings-page.ui.
 msgctxt "settings_page.workspace_settings"
 msgid "Workspace settings"
-msgstr ""
+msgstr "Paramètres de l'espace"
 
 #. screen: file_chooser; ctx: label; tier: T3
 #. The file chooser's filter for image files.
 msgctxt "shared.images_filter"
 msgid "Images"
-msgstr ""
+msgstr "Images"
 
 #. screen: inbox; ctx: title; tier: T3
 #. The heading over today's messages.
 msgctxt "shared.today"
 msgid "Today"
-msgstr ""
+msgstr "Aujourd'hui"
 
 #. screen: inbox; ctx: title; tier: T3
 msgctxt "shared.yesterday"
 msgid "Yesterday"
-msgstr ""
+msgstr "Hier"
 
 #. screen: session; ctx: body; tier: T2
 msgctxt "store.memory_only"
 msgid "No keyring is available, so your sign-in is kept only until District AI quits. Start a keyring (for example GNOME Keyring or KeePassXC) and open the app again to stay signed in."
-msgstr ""
+msgstr "Aucun trousseau disponible : vos informations de connexion ne sont conservées que jusqu'à la fermeture de District AI. Démarrez un trousseau (p. ex. GNOME Keyring ou KeePassXC) et rouvrez l'application pour conserver votre session."
 
 #. screen: support; ctx: label; tier: T3
 #. A support request still being opened has no reference yet.
 msgctxt "support.not_filed"
 msgid "Not filed yet"
-msgstr ""
+msgstr "Pas encore créée"
 
 #. screen: support_page; ctx: body; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.choose_request_read_our_replies"
 msgid "Choose a request to read our replies and answer them."
-msgstr ""
+msgstr "Choisissez une demande pour lire nos réponses et y répondre."
 
 #. screen: support_page; ctx: button; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.new_request"
 msgid "New request"
-msgstr ""
+msgstr "Nouvelle demande"
 
 #. screen: support_page; ctx: title; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.no_request_open"
 msgid "No request open"
-msgstr ""
+msgstr "Aucune demande ouverte"
 
 #. screen: support_page; ctx: label; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.open"
 msgid "Open"
-msgstr ""
+msgstr "Ouverte"
 
 #. screen: support_page; ctx: a11y; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.open_requests"
 msgid "Open requests"
-msgstr ""
+msgstr "Demandes ouvertes"
 
 #. screen: support_page; ctx: label; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.resolved"
 msgid "Resolved"
-msgstr ""
+msgstr "Réglée"
 
 #. screen: support_page; ctx: a11y; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.resolved_requests"
 msgid "Resolved requests"
-msgstr ""
+msgstr "Demandes réglées"
 
 #. screen: support_page; ctx: title; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.support"
 msgid "Support"
-msgstr ""
+msgstr "Soutien"
 
 #. screen: support_page; ctx: title; tier: T3
 #. In support-page.ui.
 msgctxt "support_page.support_request"
 msgid "Support request"
-msgstr ""
+msgstr "Demande de soutien"
 
 #. screen: support; ctx: error; tier: T2
 msgctxt "support_request.failed_title"
 msgid "Could not load this request"
-msgstr ""
+msgstr "Impossible de charger cette demande"
 
 #. screen: inbox; ctx: title; tier: T3
 #. The title of the file chooser.
 msgctxt "thread.attach_image_title"
 msgid "Attach an image"
-msgstr ""
+msgstr "Joindre une image"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.delivered"
 msgid "Delivered"
-msgstr ""
+msgstr "Livré"
 
 #. screen: inbox; ctx: label; tier: T3
 #. The channel a message went by.
 msgctxt "thread.email"
 msgid "Email"
-msgstr ""
+msgstr "Courriel"
 
 #. screen: inbox; ctx: error; tier: T2
 msgctxt "thread.failed_title"
 msgid "Could not load this conversation"
-msgstr ""
+msgstr "Impossible de charger cette conversation"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.image_number"
 msgid "Image {number}"
-msgstr ""
+msgstr "Image {number}"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.images_attached"
 msgid "{count} image attached"
 msgid_plural "{count} images attached"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{count} image jointe"
+msgstr[1] "{count} images jointes"
+msgstr[2] "{count} images jointes"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.incoming_call"
 msgid "Incoming call"
-msgstr ""
+msgstr "Appel entrant"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.missed_call"
 msgid "Missed call"
-msgstr ""
+msgstr "Appel manqué"
 
 #. screen: inbox; ctx: body; tier: T3
 msgctxt "thread.no_messages"
 msgid "No messages in this conversation yet."
-msgstr ""
+msgstr "Pas encore de message dans cette conversation."
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.not_delivered"
 msgid "Not delivered"
-msgstr ""
+msgstr "Non livré"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.outgoing_call"
 msgid "Outgoing call"
-msgstr ""
+msgstr "Appel sortant"
 
 #. screen: inbox; ctx: label; tier: T3
 #. A message the recipient has read.
 msgctxt "thread.read"
 msgid "Read"
-msgstr ""
+msgstr "Lu"
 
 #. screen: inbox; ctx: tooltip; tier: T3
 #. name is thread.image_number: "Remove Image 2".
 msgctxt "thread.remove_image"
 msgid "Remove {name}"
-msgstr ""
+msgstr "Retirer {name}"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.reply_by_email"
 msgid "Email to {address}"
-msgstr ""
+msgstr "Courriel à {address}"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.reply_by_text"
 msgid "Text message to {number}"
-msgstr ""
+msgstr "Texto à {number}"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.sending"
 msgid "Sending"
-msgstr ""
+msgstr "Envoi en cours"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.sent"
 msgid "Sent"
-msgstr ""
+msgstr "Envoyé"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.uploading_image"
 msgid "Uploading the image"
-msgstr ""
+msgstr "Téléversement de l'image"
 
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.whatsapp"
@@ -2951,306 +2951,306 @@ msgstr "WhatsApp"
 #. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.writing_reply"
 msgid "Writing a reply"
-msgstr ""
+msgstr "Rédaction en cours"
 
 #. screen: thread_view; ctx: tooltip; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.attach_image"
 msgid "Attach an image"
-msgstr ""
+msgstr "Joindre une image"
 
 #. screen: thread_view; ctx: a11y; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.attach_image_a11y"
 msgid "Attach an image"
-msgstr ""
+msgstr "Joindre une image"
 
 #. screen: thread_view; ctx: button; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.draft_reply_ai"
 msgid "Draft a reply with AI"
-msgstr ""
+msgstr "Ébaucher une réponse par IA"
 
 #. screen: thread_view; ctx: button; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.older_messages"
 msgid "Older messages"
-msgstr ""
+msgstr "Anciens messages"
 
 #. screen: thread_view; ctx: a11y; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.send"
 msgid "Send"
-msgstr ""
+msgstr "Envoyer"
 
 #. screen: thread_view; ctx: tooltip; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.send_enter"
 msgid "Send (Enter)"
-msgstr ""
+msgstr "Envoyer (Entrée)"
 
 #. screen: thread_view; ctx: label; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.shift_enter_new_line"
 msgid "Shift+Enter for a new line"
-msgstr ""
+msgstr "Maj+Entrée pour une nouvelle ligne"
 
 #. screen: thread_view; ctx: label; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.start_conversation"
 msgid "The start of this conversation"
-msgstr ""
+msgstr "Début de cette conversation"
 
 #. screen: thread_view; ctx: tooltip; tier: T3
 #. In thread-view.ui.
 msgctxt "thread_view.writes_suggested_reply_into_box"
 msgid "Writes a suggested reply into the box for you to read before sending. Each suggestion is billed."
-msgstr ""
+msgstr "Ce bouton écrit une suggestion de réponse dans le champ, à relire avant l'envoi. Chaque suggestion est facturée."
 
 #. screen: ticket_form; ctx: title; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.customer"
 msgid "The customer"
-msgstr ""
+msgstr "Le client"
 
 #. screen: ticket_form; ctx: title; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.message"
 msgid "Message"
-msgstr ""
+msgstr "Message"
 
 #. screen: ticket_form; ctx: a11y; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.message_a11y"
 msgid "Message"
-msgstr ""
+msgstr "Message"
 
 #. screen: support; ctx: body; tier: T3
 msgctxt "ticket_form.needs"
 msgid "A subject of {min} to {max} characters, and a message."
-msgstr ""
+msgstr "Requis : un objet de {min} à {max} caractères et un message."
 
 #. screen: support; ctx: title; tier: T3
 msgctxt "ticket_form.new_support_request"
 msgid "New support request"
-msgstr ""
+msgstr "Nouvelle demande de soutien"
 
 #. screen: desk; ctx: title; tier: T3
 msgctxt "ticket_form.new_ticket"
 msgid "New ticket"
-msgstr ""
+msgstr "Nouveau billet"
 
 #. screen: ticket_form; ctx: body; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.optional_replies_emailed_address_given"
 msgid "Optional. Replies are emailed to the address given here, when the desk emails customers."
-msgstr ""
+msgstr "Facultatif. Si le comptoir envoie des courriels aux clients, vos réponses sont envoyées à l'adresse indiquée ici."
 
 #. screen: desk; ctx: button; tier: T3
 #. Opens a new help desk ticket.
 msgctxt "ticket_form.raise"
 msgid "Raise"
-msgstr ""
+msgstr "Créer"
 
 #. screen: ticket_form; ctx: label; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.subject"
 msgid "Subject"
-msgstr ""
+msgstr "Objet"
 
 #. screen: ticket_form; ctx: label; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.what_about"
 msgid "What is it about"
-msgstr ""
+msgstr "De quoi s'agit-il"
 
 #. screen: tools_view; ctx: title; tier: T3
 #. In tools-view.ui.
 msgctxt "tools_view.call"
 msgid "On a call"
-msgstr ""
+msgstr "Pendant un appel"
 
 #. screen: tools_view; ctx: label; tier: T3
 #. In tools-view.ui.
 msgctxt "tools_view.research_contacts"
 msgid "Research contacts"
-msgstr ""
+msgstr "Recherche externe"
 
 #. screen: tools_view; ctx: button; tier: T3
 #. In tools-view.ui.
 msgctxt "tools_view.save_capabilities"
 msgid "Save capabilities"
-msgstr ""
+msgstr "Enregistrer les capacités"
 
 #. screen: tools_view; ctx: button; tier: T3
 #. In tools-view.ui.
 msgctxt "tools_view.save_research_setting"
 msgid "Save research setting"
-msgstr ""
+msgstr "Enregistrer ce paramètre"
 
 #. screen: tools_view; ctx: body; tier: T3
 #. In tools-view.ui.
 msgctxt "tools_view.what_receptionist_may_do_saving"
 msgid "What the receptionist may do. Saving replaces the stored list with these switches."
-msgstr ""
+msgstr "Ce que la réceptionniste peut faire. Si vous enregistrez, ces interrupteurs remplacent la liste stockée."
 
 #. screen: transcript; ctx: a11y; tier: T3
 #. A transcript line's screen-reader text, and what is announced when it is final.
 msgctxt "transcript.line"
 msgid "{speaker}: {text}"
-msgstr ""
+msgstr "{speaker} : {text}"
 
 #. screen: transcript; ctx: a11y; tier: T3
 #. A transcript line's screen-reader text with its note, such as interrupted.
 msgctxt "transcript.line_note"
 msgid "{speaker}: {text} ({note})"
-msgstr ""
+msgstr "{speaker} : {text} ({note})"
 
 #. screen: transcript; ctx: label; tier: T3
 #. What shows when no live transcript can be shown for the call. The core has no words for this state (its `status()` is `None`); the call log has the transcript once the call is over.
 msgctxt "transcript.unavailable"
 msgid "No live transcript for this call. Its transcript is in the call log after the call."
-msgstr ""
+msgstr "Aucune transcription en direct pour cet appel. Sa transcription figurera ensuite dans le journal des appels."
 
 #. screen: window; ctx: menu; tier: T3
 #. In window.ui.
 msgctxt "window.about_district_ai"
 msgid "_About District AI"
-msgstr ""
+msgstr "À _propos de District AI"
 
 #. screen: window; ctx: tooltip; tier: T3
 #. In window.ui.
 msgctxt "window.back"
 msgid "Back"
-msgstr ""
+msgstr "Précédent"
 
 #. screen: window; ctx: a11y; tier: T3
 #. In window.ui.
 msgctxt "window.back_a11y"
 msgid "Back"
-msgstr ""
+msgstr "Précédent"
 
 #. screen: window; ctx: tooltip; tier: T3
 #. In window.ui.
 msgctxt "window.main_menu"
 msgid "Main Menu"
-msgstr ""
+msgstr "Menu principal"
 
 #. screen: window; ctx: a11y; tier: T3
 #. In window.ui.
 msgctxt "window.main_menu_a11y"
 msgid "Main Menu"
-msgstr ""
+msgstr "Menu principal"
 
 #. screen: window; ctx: title; tier: T3
 #. In window.ui.
 msgctxt "window.overview"
 msgid "Overview"
-msgstr ""
+msgstr "Vue d'ensemble"
 
 #. screen: window; ctx: menu; tier: T3
 #. In window.ui.
 msgctxt "window.quit"
 msgid "_Quit"
-msgstr ""
+msgstr "_Quitter"
 
 #. screen: window; ctx: tooltip; tier: T3
 #. In window.ui.
 msgctxt "window.refresh"
 msgid "Refresh"
-msgstr ""
+msgstr "Actualiser"
 
 #. screen: window; ctx: a11y; tier: T3
 #. In window.ui.
 msgctxt "window.refresh_a11y"
 msgid "Refresh"
-msgstr ""
+msgstr "Actualiser"
 
 #. screen: navigation; ctx: button; tier: T3
 msgctxt "window.refresh_button"
 msgid "Refresh"
-msgstr ""
+msgstr "Actualiser"
 
 #. screen: window; ctx: tooltip; tier: T3
 #. In window.ui.
 msgctxt "window.workspace"
 msgid "Workspace"
-msgstr ""
+msgstr "Espace de travail"
 
 #. screen: workflows; ctx: label; tier: T3
 msgctxt "workflows.action_result"
 msgid "{action}: {outcome}"
-msgstr ""
+msgstr "{action} : {outcome}"
 
 #. screen: workflows; ctx: label; tier: T3
 #. status is the run's stored status in lower case.
 msgctxt "workflows.last_run"
 msgid "{trigger} · Last run {status}, {when}"
-msgstr ""
+msgstr "{trigger} · dernière exécution : {status}, {when}"
 
 #. screen: workflows; ctx: button; tier: T3
 msgctxt "workflows.more_runs"
 msgid "More runs"
-msgstr ""
+msgstr "Afficher plus d'exécutions"
 
 #. screen: workflows; ctx: label; tier: T3
 msgctxt "workflows.not_run"
 msgid "{trigger} · Not run yet"
-msgstr ""
+msgstr "{trigger} · pas encore exécuté"
 
 #. screen: workflows; ctx: label; tier: T3
 msgctxt "workflows.outcome_reason"
 msgid "{outcome} ({reason})"
-msgstr ""
+msgstr "{outcome} ({reason})"
 
 #. screen: workflows; ctx: body; tier: T3
 msgctxt "workflows.reading_runs"
 msgid "Reading runs."
-msgstr ""
+msgstr "Chargement des exécutions."
 
 #. screen: workflows; ctx: a11y; tier: T3
 msgctxt "workflows.turn_on"
 msgid "Turn on {name}"
-msgstr ""
+msgstr "Activer {name}"
 
 #. screen: workflows_page; ctx: label; tier: T3
 #. In workflows-page.ui.
 msgctxt "workflows_page.batch_size"
 msgid "Batch size"
-msgstr ""
+msgstr "Taille du lot"
 
 #. screen: workflows_page; ctx: label; tier: T3
 #. In workflows-page.ui.
 msgctxt "workflows_page.goal"
 msgid "Goal"
-msgstr ""
+msgstr "Objectif"
 
 #. screen: workflows_page; ctx: button; tier: T3
 #. In workflows-page.ui.
 msgctxt "workflows_page.pause_campaign"
 msgid "Pause campaign"
-msgstr ""
+msgstr "Mettre la campagne en pause"
 
 #. screen: workflows_page; ctx: button; tier: T3
 #. In workflows-page.ui.
 msgctxt "workflows_page.resume_campaign"
 msgid "Resume campaign"
-msgstr ""
+msgstr "Reprendre la campagne"
 
 #. screen: workflows_page; ctx: title; tier: T3
 #. In workflows-page.ui.
 msgctxt "workflows_page.workflows"
 msgid "Workflows"
-msgstr ""
+msgstr "Flux de travail"
 
 #. screen: workflows_page; ctx: a11y; tier: T3
 #. In workflows-page.ui.
 msgctxt "workflows_page.workflows_a11y"
 msgid "Workflows"
-msgstr ""
+msgstr "Flux de travail"
 
 #. screen: workflows_page; ctx: body; tier: T3
 #. In workflows-page.ui.
 msgctxt "workflows_page.workflows_built_edited_district_ai"
 msgid "Workflows are built and edited on the District AI website. Here you can turn each on or off and see what its runs did."
-msgstr ""
+msgstr "Les flux de travail se créent et se modifient sur le site Web de District AI. Ici, activez ou désactivez chacun et voyez le résultat de ses exécutions."

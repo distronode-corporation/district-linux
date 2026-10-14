@@ -35,6 +35,11 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   as before.
 - A call's sentiment `negative` reads "Friction", and a transfer status `success`
   "Transferred", as the portal labels them. Every other word is unchanged.
+- The catalogs carry their reviewed Canadian French (fr-CA): 572 entries in
+  `crates/district-app/l10n/linux.toml` and `scheduling.toml`, regenerated into
+  `src/l10n/text.rs` and `po/fr.po`, so `FR_COMPLETE` is true. French stays switched off:
+  the `fr-ca` feature is still not among district-app's default features, and the package
+  check that holds a French-off build to no catalog is unchanged.
 
 ### Added
 

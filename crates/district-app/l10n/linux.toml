@@ -5,688 +5,928 @@ apple = false
 
 [about.copyright]
 en = "Copyright 2026 Distronode Corporation"
+fr = "Droit d'auteur 2026 Distronode Corporation"
 ctx = "legal"
 screen = "about"
 tier = "T0"
+state = "reviewed"
 
 [account.version]
 en = "Version {version}"
+fr = "Version {version}"
 ctx = "label"
 screen = "account"
 args = { version = "str" }
+state = "reviewed"
+same_ok = true
 
 [account_page.account]
 en = "Your account"
+fr = "Votre compte"
 ctx = "title"
 screen = "account_page"
+state = "reviewed"
 note = "In account-page.ui."
 
 [account_page.computer]
 en = "This computer"
+fr = "Cet ordinateur"
 ctx = "title"
 screen = "account_page"
+state = "reviewed"
 note = "In account-page.ui."
 
 [account_page.delete_account]
 en = "Delete your account"
+fr = "Supprimer votre compte"
 ctx = "label"
 screen = "account_page"
+state = "reviewed"
 note = "In account-page.ui."
 
 [account_page.device_name]
 en = "Device name"
+fr = "Nom d'appareil"
 ctx = "label"
 screen = "account_page"
+state = "reviewed"
 note = "In account-page.ui."
 
 [account_page.devices]
 en = "Devices"
+fr = "Appareils"
 ctx = "label"
 screen = "account_page"
+state = "reviewed"
 note = "In account-page.ui."
 
 [account_page.district_ai_linux]
 en = "District AI for Linux"
+fr = "District AI pour Linux"
 ctx = "label"
 screen = "account_page"
+state = "reviewed"
 note = "In account-page.ui."
 
 [account_page.sign_out]
 en = "Sign out"
+fr = "Se déconnecter"
 ctx = "label"
 screen = "account_page"
+state = "reviewed"
 note = "In account-page.ui."
 
 [account_page.start_at_login]
 en = "Start at login"
+fr = "Lancer à l'ouverture de session"
 ctx = "label"
 screen = "account_page"
 tier = "T2"
+state = "reviewed"
 note = "In account-page.ui. A switch: the app starts in the background when the user logs in to the computer. Off until turned on."
 
 [account_page.start_at_login_body]
 en = "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it."
+fr = "Ouvrir District AI en arrière-plan à l'ouverture de votre session, pour que les appels sonnent ici avant que vous ouvriez la fenêtre. Fermer la fenêtre ne l'arrête pas; «\u00A0Quitter\u00A0» l'arrête."
 ctx = "body"
 screen = "account_page"
 tier = "T2"
+state = "reviewed"
 note = "In account-page.ui. Under the Start at login switch."
 
 [analytics.calls_per_day]
 en = "Calls per day"
+fr = "Appels par jour"
 ctx = "title"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.calls_per_week]
 en = "Calls per week"
+fr = "Appels par semaine"
 ctx = "title"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.history_call_minutes]
 en = "Call minutes"
+fr = "Minutes d'appel"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.history_messages]
 en = "Messages"
+fr = "Messages"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
+same_ok = true
 
 [analytics.history_month]
 en = "Month"
+fr = "Mois"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.history_row]
 en = "{month}: {minutes} call minutes, {messages} messages"
+fr = "{month}\u00A0: minutes d'appel, {minutes}; messages, {messages}"
 ctx = "a11y"
 screen = "analytics"
 args = { month = "str", minutes = "str", messages = "str" }
+state = "reviewed"
 
 [analytics.report_title]
 en = "Calls over {range}"
+fr = "Appels sur {range}"
 ctx = "title"
 screen = "analytics"
 args = { range = "str" }
+state = "reviewed"
 note = "The range is \"the last 7 days\" and the like."
 
 [analytics.tile_abandoned]
 en = "Abandoned"
+fr = "Abandonné"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.tile_average_call]
 en = "Average call"
+fr = "Durée moyenne"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.tile_calls]
 en = "Calls"
+fr = "Appels"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.tile_converted]
 en = "Converted"
+fr = "Conversions"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
 
 [analytics.tile_missed]
 en = "Missed"
+fr = "Manqué"
 ctx = "label"
 screen = "analytics"
+state = "reviewed"
 
 [analytics_page.call_funnel]
 en = "Call funnel"
+fr = "Entonnoir d'appels"
 ctx = "label"
 screen = "analytics_page"
+state = "reviewed"
 note = "In analytics-page.ui."
 
 [analytics_page.caller_sentiment]
 en = "Caller sentiment"
+fr = "Sentiment de l'appelant"
 ctx = "label"
 screen = "analytics_page"
+state = "reviewed"
 note = "In analytics-page.ui."
 
 [analytics_page.n30_days]
 en = "30 days"
+fr = "30 jours"
 ctx = "button"
 screen = "analytics_page"
+state = "reviewed"
 note = "In analytics-page.ui."
 
 [analytics_page.n7_days]
 en = "7 days"
+fr = "7 jours"
 ctx = "button"
 screen = "analytics_page"
+state = "reviewed"
 note = "In analytics-page.ui."
 
 [analytics_page.n90_days]
 en = "90 days"
+fr = "90 jours"
 ctx = "button"
 screen = "analytics_page"
+state = "reviewed"
 note = "In analytics-page.ui."
 
 [analytics_page.period]
 en = "Period"
+fr = "Période"
 ctx = "a11y"
 screen = "analytics_page"
+state = "reviewed"
 note = "In analytics-page.ui."
 
 [analytics_page.recent_months]
 en = "Recent months"
+fr = "Derniers mois"
 ctx = "title"
 screen = "analytics_page"
+state = "reviewed"
 note = "In analytics-page.ui."
 
 [audition.connected]
 en = "On the call with your receptionist."
+fr = "En appel avec votre réceptionniste."
 ctx = "body"
 screen = "persona"
+state = "reviewed"
 
 [audition.connecting]
 en = "Connecting to your receptionist."
+fr = "Connexion à votre réceptionniste en cours."
 ctx = "body"
 screen = "persona"
+state = "reviewed"
 
 [audition.ended]
 en = "The audition ended."
+fr = "L'essai est terminé."
 ctx = "body"
 screen = "persona"
+state = "reviewed"
 
 [audition.starting]
 en = "Starting the call."
+fr = "Lancement de l'appel."
 ctx = "body"
 screen = "persona"
+state = "reviewed"
 
 [audition_dialog.another_audition_can_start_few]
 en = "Another audition can start in a few seconds."
+fr = "Un autre aperçu pourra démarrer dans quelques secondes."
 ctx = "body"
 screen = "audition_dialog"
+state = "reviewed"
 note = "In audition-dialog.ui."
 
 [audition_dialog.start]
 en = "Start"
+fr = "Démarrer"
 ctx = "button"
 screen = "audition_dialog"
+state = "reviewed"
 note = "In audition-dialog.ui."
 
 [audition_dialog.stop]
 en = "Stop"
+fr = "Arrêter"
 ctx = "button"
 screen = "audition_dialog"
+state = "reviewed"
 note = "In audition-dialog.ui."
 
 [background.portal_reason]
 en = "So that calls handed to this computer ring while the District AI window is closed."
+fr = "Pour que les appels destinés à cet ordinateur sonnent pendant que la fenêtre de District AI est fermée."
 ctx = "body"
 screen = "background"
 tier = "T2"
+state = "reviewed"
 note = "Why the app asks the desktop to run in the background; the desktop may show it in its permission question."
 
 [background.status]
 en = "Ringing for calls handed to this computer"
+fr = "Sonnerie des appels destinés à cet ordinateur"
 ctx = "label"
 screen = "background"
 tier = "T2"
+state = "reviewed"
 note = "The app's status in GNOME's Background Apps list while it runs with no window. At most 96 characters."
 
 [background.tray_open]
 en = "Open District AI"
+fr = "Ouvrir District AI"
 ctx = "menu"
 screen = "background"
 tier = "T2"
+state = "reviewed"
 note = "The tray icon's menu: brings the window back."
 
 [background.tray_quit]
 en = "Quit"
+fr = "Quitter"
 ctx = "menu"
 screen = "background"
 tier = "T2"
+state = "reviewed"
 note = "The tray icon's menu: quits the app, so calls stop ringing on this computer."
 
 [background.tray_title]
 en = "District AI"
+fr = "District AI"
 ctx = "label"
 screen = "background"
 tier = "T0"
+state = "reviewed"
+same_ok = true
 note = "The tray icon's name. The product name, not translated."
 
 [billing.amount_off]
 en = "{amount} off"
+fr = "{amount} de rabais"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { amount = "money" }
+state = "reviewed"
 
 [billing.ends]
 en = "Ends {date}"
+fr = "Fin le {date}"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { date = "str" }
+state = "reviewed"
 
 [billing.minutes]
 en.one = "{count} minute"
 en.other = "{count} minutes"
+fr.one = "{count} minute"
+fr.other = "{count} minutes"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { count = "int" }
+state = "reviewed"
+same_ok = true
 
 [billing.minutes_included]
 en = "{minutes} included"
+fr = "{minutes} incluses"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { minutes = "str" }
+state = "reviewed"
 note = "minutes is billing.minutes: \"500 minutes included\"."
 
 [billing.not_recorded_included]
 en.one = "{not_recorded}. {count} minute is included."
 en.other = "{not_recorded}. {count} minutes are included."
+fr.one = "{not_recorded}. {count} minute est incluse."
+fr.other = "{not_recorded}. {count} minutes sont incluses."
 ctx = "body"
 screen = "billing"
 tier = "T1"
 args = { not_recorded = "str", count = "int" }
+state = "reviewed"
 note = "not_recorded is the core's \"Not recorded\"."
 
 [billing.percent_off]
 en = "{percent}% off"
+fr = "{percent}\u00A0% de rabais"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { percent = "str" }
+state = "reviewed"
 
 [billing.renews]
 en = "Renews {date}"
+fr = "Renouvellement le {date}"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { date = "str" }
+state = "reviewed"
 
 [billing.used_minute]
 en = "{used} minute"
+fr = "{used} minute"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { used = "str" }
+state = "reviewed"
+same_ok = true
 note = "Exactly one minute used."
 
 [billing.used_minutes]
 en = "{used} minutes"
+fr = "{used} minutes"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { used = "str" }
+state = "reviewed"
+same_ok = true
 note = "Any other number of minutes used, possibly with decimals."
 
 [billing.used_of_included]
 en = "{used} of {included}"
+fr = "{used} sur {included}"
 ctx = "label"
 screen = "billing"
 tier = "T1"
 args = { used = "str", included = "str" }
+state = "reviewed"
 note = "Minutes used this month of those included: \"12 of 500 minutes\"."
 
 [billing.view_invoice]
 en = "View"
+fr = "Afficher"
 ctx = "button"
 screen = "billing"
 tier = "T1"
+state = "reviewed"
 note = "Opens an invoice."
 
 [billing_page.call_minutes_month]
 en = "Call minutes this month"
+fr = "Minutes d'appel ce mois-ci"
 ctx = "label"
 screen = "billing_page"
+state = "reviewed"
 note = "In billing-page.ui."
 
 [billing_page.call_minutes_used_those_included]
 en = "Call minutes used of those included"
+fr = "Minutes d'appel utilisées sur celles incluses"
 ctx = "a11y"
 screen = "billing_page"
+state = "reviewed"
 note = "In billing-page.ui."
 
 [billing_page.invoices]
 en = "Invoices"
+fr = "Factures"
 ctx = "title"
 screen = "billing_page"
+state = "reviewed"
 note = "In billing-page.ui."
 
 [billing_page.invoices_a11y]
 en = "Invoices"
+fr = "Factures"
 ctx = "a11y"
 screen = "billing_page"
+state = "reviewed"
 note = "In billing-page.ui."
 
 [billing_page.subscription]
 en = "Subscription"
+fr = "Abonnement"
 ctx = "title"
 screen = "billing_page"
+state = "reviewed"
 note = "In billing-page.ui."
 
 [blocked.empty_body]
 en = "Callers you block from a contact's page are listed here, where you can unblock them."
+fr = "Les appelants que vous bloquez depuis la page d'un contact figurent ici, où vous pouvez les débloquer."
 ctx = "body"
 screen = "contacts"
+state = "reviewed"
 
 [blocked.when]
 en = "Blocked {when}"
+fr = "Bloqué\u00A0: {when}"
 ctx = "label"
 screen = "contacts"
 args = { when = "date" }
+state = "reviewed"
 
 [blocked_view.blocked_callers]
 en = "Blocked callers"
+fr = "Appelants bloqués"
 ctx = "title"
 screen = "blocked_view"
+state = "reviewed"
 note = "In blocked-view.ui."
 
 [blocked_view.blocked_callers_a11y]
 en = "Blocked callers"
+fr = "Appelants bloqués"
 ctx = "a11y"
 screen = "blocked_view"
+state = "reviewed"
 note = "In blocked-view.ui."
 
 [blocked_view.their_conversations_calls_do_not]
 en = "Their conversations and calls do not appear in this workspace."
+fr = "Leurs conversations et appels n'apparaissent pas dans cet espace de travail."
 ctx = "body"
 screen = "blocked_view"
+state = "reviewed"
 note = "In blocked-view.ui."
 
 [call.action_items]
 en = "Action items"
+fr = "Actions à faire"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.callers_number]
 en = "Caller's number"
+fr = "Numéro de l'appelant"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.direction]
 en = "Direction"
+fr = "Sens"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.email_sent_to]
 en = "Email sent to"
+fr = "Courriel envoyé à"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.failed_title]
 en = "Could not load this call"
+fr = "Impossible de charger cet appel"
 ctx = "error"
 screen = "calls"
 tier = "T2"
+state = "reviewed"
 
 [call.key_points]
 en = "Key points"
+fr = "Points clés"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.objections]
 en = "Objections"
+fr = "Objections"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
+same_ok = true
 
 [call.outcome]
 en = "Outcome"
+fr = "Résultat"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.placed_from]
 en = "Placed from"
+fr = "Appel passé depuis"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.sentiment]
 en = "Sentiment"
+fr = "Sentiment"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
+same_ok = true
 
 [call.status]
 en = "Status"
+fr = "État"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.topics]
 en = "Topics"
+fr = "Sujets"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.transfer]
 en = "Transfer"
+fr = "Transfert"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call.why_transferred]
 en = "Why it was transferred"
+fr = "Motif du transfert"
 ctx = "label"
 screen = "calls"
+state = "reviewed"
 
 [call_bar.answer]
 en = "Answer"
+fr = "Répondre"
 ctx = "button"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_bar.call]
 en = "Call"
+fr = "Appel"
 ctx = "a11y"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_bar.decline]
 en = "Decline"
+fr = "Refuser"
 ctx = "button"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_bar.hang_up]
 en = "Hang up"
+fr = "Raccrocher"
 ctx = "a11y"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_bar.hang_up_ctrl_shift_h]
 en = "Hang up (Ctrl+Shift+H)"
+fr = "Raccrocher (Ctrl+Maj+H)"
 ctx = "tooltip"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_bar.incoming_call]
 en = "Incoming call"
+fr = "Appel entrant"
 ctx = "a11y"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_bar.microphone_tooltip]
 en = "{action} (Ctrl+D)"
+fr = "{action} (Ctrl+D)"
 ctx = "tooltip"
 screen = "call"
 args = { action = "str" }
+state = "reviewed"
+same_ok = true
 note = "action is \"Mute\" or \"Unmute\"; Ctrl+D is the shortcut."
 
 [call_bar.mute]
 en = "Mute"
+fr = "Couper le micro"
 ctx = "a11y"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_bar.mute_ctrl_d]
 en = "Mute (Ctrl+D)"
+fr = "Couper le micro (Ctrl+D)"
 ctx = "tooltip"
 screen = "call_bar"
+state = "reviewed"
 note = "In call-bar.ui."
 
 [call_handling.presence_failed]
 en = "Could not read whether you are rung"
+fr = "Impossible de savoir si vos appareils sonnent"
 ctx = "error"
 screen = "call_handling"
 tier = "T2"
+state = "reviewed"
 
 [call_handling.ring_seconds]
 en = "{seconds} seconds"
+fr = "{seconds} secondes"
 ctx = "label"
 screen = "call_handling"
 args = { seconds = "int" }
+state = "reviewed"
 note = "How long devices ring; never fewer than 2 seconds."
 
 [call_handling_view.availability]
 en = "Your availability"
+fr = "Votre disponibilité"
 ctx = "title"
 screen = "call_handling_view"
+state = "reviewed"
 note = "In call-handling-view.ui."
 
 [call_handling_view.every_member_workspace]
 en = "For every member of this workspace."
+fr = "Pour chaque membre de cet espace de travail."
 ctx = "body"
 screen = "call_handling_view"
+state = "reviewed"
 note = "In call-handling-view.ui."
 
 [call_handling_view.how_long_devices_ring]
 en = "How long your devices ring"
+fr = "Durée de sonnerie de vos appareils"
 ctx = "label"
 screen = "call_handling_view"
+state = "reviewed"
 note = "In call-handling-view.ui."
 
 [call_handling_view.how_long_devices_ring_seconds]
 en = "How long your devices ring, in seconds"
+fr = "Durée de sonnerie de vos appareils, en secondes"
 ctx = "a11y"
 screen = "call_handling_view"
+state = "reviewed"
 note = "In call-handling-view.ui."
 
 [call_handling_view.ring_me_calls]
 en = "Ring me for calls"
+fr = "Mes appareils sonnent"
 ctx = "label"
 screen = "call_handling_view"
+state = "reviewed"
 note = "In call-handling-view.ui."
 
 [call_handling_view.whether_own_devices_ring_workspaces]
 en = "Whether your own devices ring for this workspace's calls. A change is sent at once."
+fr = "Vos propres appareils sonnent-ils pour les appels de cet espace de travail? Tout changement est immédiat."
 ctx = "body"
 screen = "call_handling_view"
+state = "reviewed"
 note = "In call-handling-view.ui."
 
 [call_handling_view.who_answers]
 en = "Who answers"
+fr = "Qui répond"
 ctx = "title"
 screen = "call_handling_view"
+state = "reviewed"
 note = "In call-handling-view.ui."
 
 [call_view.analysis]
 en = "Analysis"
+fr = "Analyse"
 ctx = "title"
 screen = "call_view"
+state = "reviewed"
 note = "In call-view.ui."
 
 [call_view.follow_up_sent]
 en = "Follow-up sent"
+fr = "Suivi envoyé"
 ctx = "title"
 screen = "call_view"
+state = "reviewed"
 note = "In call-view.ui."
 
 [call_view.summary]
 en = "Summary"
+fr = "Résumé"
 ctx = "title"
 screen = "call_view"
+state = "reviewed"
 note = "In call-view.ui."
 
 [calls_page.call]
 en = "Call"
+fr = "Appel"
 ctx = "title"
 screen = "calls_page"
+state = "reviewed"
 note = "In calls-page.ui."
 
 [calls_page.calls]
 en = "Calls"
+fr = "Appels"
 ctx = "a11y"
 screen = "calls_page"
+state = "reviewed"
 note = "In calls-page.ui."
 
 [calls_page.choose_call_see_summary_transcript]
 en = "Choose a call to see its summary and transcript."
+fr = "Choisissez un appel pour voir son résumé et sa transcription."
 ctx = "body"
 screen = "calls_page"
+state = "reviewed"
 note = "In calls-page.ui."
 
 [calls_page.no_call_open]
 en = "No call open"
+fr = "Aucun appel sélectionné"
 ctx = "title"
 screen = "calls_page"
+state = "reviewed"
 note = "In calls-page.ui."
 
 [calls_page.place_call]
 en = "Place a call"
+fr = "Passer un appel"
 ctx = "button"
 screen = "calls_page"
+state = "reviewed"
 note = "In calls-page.ui."
 
 [chart.columns_empty]
 en = "{what}: nothing to show."
+fr = "{what}\u00A0: rien à afficher."
 ctx = "a11y"
 screen = "analytics"
 args = { what = "str" }
+state = "reviewed"
 
 [chart.columns_summary]
 en = "{what}: {bars}. The most was {most}, on {label}."
+fr = "{what}\u00A0: {bars}. Valeur la plus élevée\u00A0: {most} ({label})."
 ctx = "a11y"
 screen = "analytics"
 args = { what = "str", bars = "str", most = "str", label = "str" }
+state = "reviewed"
 note = "A column chart read aloud: its name, each bar (\"Mon 3, Tue 5\"), then the largest value and its bar."
 
 [chart.sentiment_summary]
 en = "Caller sentiment: {bands}."
+fr = "Sentiment de l'appelant\u00A0: {bands}."
 ctx = "a11y"
 screen = "analytics"
 args = { bands = "str" }
+state = "reviewed"
 note = "Each band is \"Positive 2 (67%)\", joined by commas."
 
 [common.calls]
 en = "Calls"
+fr = "Appels"
 ctx = "title"
 screen = "common"
+state = "reviewed"
 note = "In account-page.ui, analytics-page.ui, calls-page.ui."
 
 [common.cancel]
 en = "Cancel"
+fr = "Annuler"
 ctx = "button"
 screen = "common"
+state = "reviewed"
 note = "In contact-form.ui, messaging-form.ui, session-page.ui, ticket-form.ui."
 
 [common.carrier]
 en = "Carrier"
+fr = "Transporteur"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 note = "The phone company that holds a number."
 
 [common.conversation]
 en = "Conversation"
+fr = "Conversation"
 ctx = "label"
 screen = "common"
+state = "reviewed"
+same_ok = true
 note = "In desk-ticket-view.ui, support-request-view.ui."
 
 [common.details]
 en = "Details"
+fr = "Détails"
 ctx = "title"
 screen = "common"
+state = "reviewed"
 note = "In call-view.ui, contact-view.ui."
 
 [common.dismiss]
 en = "Dismiss"
+fr = "Fermer"
 ctx = "tooltip"
 screen = "common"
+state = "reviewed"
 note = "In blocked-view.ui, call-bar.ui, contact-view.ui, desk-page.ui, save-notice.ui, support-page.ui, thread-view.ui."
 
 [common.dismiss_a11y]
 en = "Dismiss"
+fr = "Fermer"
 ctx = "a11y"
 screen = "common"
+state = "reviewed"
 note = "In blocked-view.ui, call-bar.ui, contact-view.ui, desk-page.ui, save-notice.ui, support-page.ui, thread-view.ui."
 
 [common.dismiss_button]
 en = "Dismiss"
+fr = "Fermer"
 ctx = "button"
 screen = "common"
+state = "reviewed"
 note = "In desk-settings-view.ui, devices-page.ui, reply-box.ui, rooms-page.ui, scheduling-page.ui, window.ui, workflows-page.ui."
 
 [common.district_ai]
@@ -704,2220 +944,3022 @@ fixed = true
 
 [common.email_address]
 en = "Email address"
+fr = "Adresse courriel"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 note = "In contact-form.ui, members-view.ui, ticket-form.ui."
 
 [common.help_desk]
 en = "Help desk"
+fr = "Comptoir clients"
 ctx = "title"
 screen = "common"
+state = "reviewed"
 note = "In desk-page.ui, desk-settings-view.ui."
 
 [common.line_type]
 en = "Line type"
+fr = "Type de ligne"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 
 [common.location]
 en = "Location"
+fr = "Lieu"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 
 [common.months_usage]
 en = "This month's usage"
+fr = "Utilisation du mois"
 ctx = "title"
 screen = "common"
+state = "reviewed"
 note = "In analytics-page.ui, billing-page.ui."
 
 [common.mute]
 en = "Mute"
+fr = "Couper le micro"
 ctx = "button"
 screen = "common"
+state = "reviewed"
 
 [common.name]
 en = "Name"
+fr = "Nom"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 note = "In contact-form.ui, directory-view.ui, messaging-form.ui, persona-view.ui, ticket-form.ui."
 
 [common.phone_number]
 en = "Phone number"
+fr = "Numéro de téléphone"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 note = "In contact-form.ui, directory-view.ui, ticket-form.ui."
 
 [common.reply]
 en = "Reply"
+fr = "Réponse"
 ctx = "a11y"
 screen = "common"
+state = "reviewed"
 note = "In reply-box.ui, thread-view.ui."
 
 [common.reply_sent]
 en = "Reply sent."
+fr = "Réponse envoyée."
 ctx = "toast"
 screen = "common"
+state = "reviewed"
 
 [common.save]
 en = "Save"
+fr = "Enregistrer"
 ctx = "button"
 screen = "common"
+state = "reviewed"
 note = "In call-handling-view.ui, desk-settings-view.ui, messaging-form.ui, persona-view.ui."
 
 [common.setting_app_does_not_know]
 en = "A setting this app does not know"
+fr = "Paramètre inconnu de cette application"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 note = "In call-handling-view.ui, knowledge-view.ui."
 
 [common.stored_as]
 en = "Stored as \"{value}\"."
+fr = "Valeur stockée\u00A0: «\u00A0{value}\u00A0»."
 ctx = "body"
 screen = "common"
 args = { value = "str" }
+state = "reviewed"
 note = "A setting value this app does not know, quoted as stored."
 
 [common.text_message]
 en = "Text message"
+fr = "Texto"
 ctx = "label"
 screen = "common"
+state = "reviewed"
 
 [common.transcript]
 en = "Transcript"
+fr = "Transcription"
 ctx = "title"
 screen = "common"
+state = "reviewed"
 note = "In call-view.ui, meeting-record.ui."
 
 [common.try_again]
 en = "Try again"
+fr = "Réessayer"
 ctx = "button"
 screen = "common"
+state = "reviewed"
 note = "In analytics-page.ui, billing-page.ui, blocked-view.ui, call-handling-view.ui, call-view.ui, calls-page.ui, contact-view.ui, contacts-page.ui, desk-page.ui, desk-settings-view.ui, desk-ticket-view.ui, devices-page.ui, hq-page.ui, inbox-page.ui, knowledge-view.ui, marketplace-page.ui, messaging-view.ui, overview-page.ui, persona-view.ui, rooms-page.ui, scheduling-page.ui, session-page.ui, support-page.ui, support-request-view.ui, thread-view.ui, workflows-page.ui."
 
 [common.unmute]
 en = "Unmute"
+fr = "Rétablir le micro"
 ctx = "button"
 screen = "common"
+state = "reviewed"
 
 [contact.added]
 en = "Added"
+fr = "Ajouté"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.block]
 en = "Block"
+fr = "Bloquer"
 ctx = "button"
 screen = "contacts"
+state = "reviewed"
 
 [contact.budget]
 en = "Budget"
+fr = "Budget"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
+same_ok = true
 
 [contact.busy_blocking]
 en = "Blocking the caller"
+fr = "Blocage de l'appelant"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.busy_clearing_research]
 en = "Clearing research"
+fr = "Effacement de la recherche externe"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.busy_deleting]
 en = "Deleting the contact"
+fr = "Suppression du contact"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.busy_saving]
 en = "Saving the contact"
+fr = "Sauvegarde du contact"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.busy_starting_research]
 en = "Starting research"
+fr = "Lancement de la recherche externe"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.busy_unblocking]
 en = "Unblocking the caller"
+fr = "Déblocage de l'appelant"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.caller_blocked]
 en = "Caller blocked."
+fr = "Appelant bloqué."
 ctx = "toast"
 screen = "contacts"
+state = "reviewed"
 
 [contact.caller_unblocked]
 en = "Caller unblocked."
+fr = "Appelant débloqué."
 ctx = "toast"
 screen = "contacts"
+state = "reviewed"
 
 [contact.company]
 en = "Company"
+fr = "Entreprise"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.failed_title]
 en = "Could not load this contact"
+fr = "Impossible de charger ce contact"
 ctx = "error"
 screen = "contacts"
 tier = "T2"
+state = "reviewed"
 
 [contact.industry]
 en = "Industry"
+fr = "Secteur"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.last_changed]
 en = "Last changed"
+fr = "Mis à jour"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.latest_context]
 en = "Latest context"
+fr = "Contexte récent"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_cleared]
 en = "Research cleared."
+fr = "Recherche externe effacée."
 ctx = "toast"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_complete]
 en = "Complete"
+fr = "Terminé"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_did_not_finish]
 en = "Did not finish"
+fr = "Non terminée"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_not_run]
 en = "Not run"
+fr = "Non lancée"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_queued]
 en = "Queued"
+fr = "En attente"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 note = "Where a contact's web research stands."
 
 [contact.research_searching]
 en = "Searching the web"
+fr = "Recherche sur le Web"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_started]
 en = "Research started. The result appears here when it is ready."
+fr = "Recherche externe lancée. Le résultat apparaîtra ici une fois prêt."
 ctx = "toast"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_status]
 en = "Status"
+fr = "État"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_why_not_finished]
 en = "Why it did not finish"
+fr = "Raison de l'interruption"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.research_writing]
 en = "Writing the summary"
+fr = "Rédaction du résumé"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.saved]
 en = "Contact saved."
+fr = "Contact enregistré."
 ctx = "toast"
 screen = "contacts"
+state = "reviewed"
 
 [contact.timeline]
 en = "Timeline"
+fr = "Chronologie"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact.unblock]
 en = "Unblock"
+fr = "Débloquer"
 ctx = "button"
 screen = "contacts"
+state = "reviewed"
 
 [contact.website]
 en = "Website"
+fr = "Site"
 ctx = "label"
 screen = "contacts"
+state = "reviewed"
 
 [contact_form.add]
 en = "Add"
+fr = "Ajouter"
 ctx = "button"
 screen = "contacts"
+state = "reviewed"
 
 [contact_form.add_title]
 en = "Add contact"
+fr = "Nouveau contact"
 ctx = "title"
 screen = "contacts"
+state = "reviewed"
 
 [contact_form.contact_needs_name_phone_number]
 en = "A contact needs a name, and a phone number or an email address."
+fr = "Un contact requiert un nom et un numéro de téléphone ou une adresse courriel."
 ctx = "body"
 screen = "contact_form"
+state = "reviewed"
 note = "In contact-form.ui."
 
 [contact_form.edit_title]
 en = "Edit contact"
+fr = "Modifier le contact"
 ctx = "title"
 screen = "contacts"
+state = "reviewed"
 
 [contact_view.block]
 en = "Block"
+fr = "Bloquer"
 ctx = "button"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.blocked]
 en = "Blocked"
+fr = "Bloqué"
 ctx = "label"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.clear_research]
 en = "Clear research"
+fr = "Effacer la recherche externe"
 ctx = "button"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.delete]
 en = "Delete"
+fr = "Supprimer"
 ctx = "button"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.edit]
 en = "Edit"
+fr = "Modifier"
 ctx = "button"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.have_read_only_access_workspace]
 en = "You have read-only access to this workspace, so you cannot change contacts."
+fr = "Votre accès à cet espace de travail est en lecture seule. Vous ne pouvez modifier aucun contact."
 ctx = "body"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.phone_number]
 en = "Phone number"
+fr = "Numéro de téléphone"
 ctx = "title"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.research]
 en = "Research"
+fr = "Recherche externe"
 ctx = "title"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.research_looks_contact_up_web]
 en = "Research looks this contact up on the web and writes a summary. Each run is billed."
+fr = "La recherche externe consulte le Web au sujet de ce contact et en rédige un résumé. Chaque recherche externe est facturée."
 ctx = "body"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contact_view.run_research]
 en = "Run research"
+fr = "Lancer la recherche externe"
 ctx = "button"
 screen = "contact_view"
+state = "reviewed"
 note = "In contact-view.ui."
 
 [contacts.added]
 en = "Contact added."
+fr = "Contact ajouté."
 ctx = "toast"
 screen = "contacts"
+state = "reviewed"
 
 [contacts.count]
 en.one = "{count} contact"
 en.other = "{count} contacts"
+fr.one = "{count} contact"
+fr.other = "{count} contacts"
 ctx = "label"
 screen = "contacts"
 args = { count = "int" }
+state = "reviewed"
+same_ok = true
 
 [contacts.deleted]
 en = "Contact deleted."
+fr = "Contact supprimé."
 ctx = "toast"
 screen = "contacts"
+state = "reviewed"
 
 [contacts_page.add_contact]
 en = "Add contact"
+fr = "Ajouter un contact"
 ctx = "button"
 screen = "contacts_page"
+state = "reviewed"
 note = "In contacts-page.ui."
 
 [contacts_page.blocked_callers]
 en = "Blocked callers"
+fr = "Appelants bloqués"
 ctx = "button"
 screen = "contacts_page"
+state = "reviewed"
 note = "In contacts-page.ui."
 
 [contacts_page.choose_contact_see_their_details]
 en = "Choose a contact to see their details."
+fr = "Choisissez un contact pour afficher sa fiche."
 ctx = "body"
 screen = "contacts_page"
+state = "reviewed"
 note = "In contacts-page.ui."
 
 [contacts_page.contact]
 en = "Contact"
+fr = "Contact"
 ctx = "title"
 screen = "contacts_page"
+state = "reviewed"
+same_ok = true
 note = "In contacts-page.ui."
 
 [contacts_page.contacts]
 en = "Contacts"
+fr = "Contacts"
 ctx = "title"
 screen = "contacts_page"
+state = "reviewed"
+same_ok = true
 note = "In contacts-page.ui."
 
 [contacts_page.contacts_a11y]
 en = "Contacts"
+fr = "Contacts"
 ctx = "a11y"
 screen = "contacts_page"
+state = "reviewed"
+same_ok = true
 note = "In contacts-page.ui."
 
 [contacts_page.no_contact_open]
 en = "No contact open"
+fr = "Aucun contact sélectionné"
 ctx = "title"
 screen = "contacts_page"
+state = "reviewed"
 note = "In contacts-page.ui."
 
 [desk.every_ticket]
 en = "Every ticket"
+fr = "Tous les billets"
 ctx = "label"
 screen = "desk"
+state = "reviewed"
 note = "The help desk filter that shows all tickets."
 
 [desk.no_customer_details]
 en = "No customer details"
+fr = "Client non indiqué"
 ctx = "label"
 screen = "desk"
+state = "reviewed"
 
 [desk.waiting]
 en = "Waiting"
+fr = "En attente"
 ctx = "label"
 screen = "desk"
+state = "reviewed"
 note = "A ticket waiting on the customer, in a list row with little room."
 
 [desk_page.choose_ticket_read_reply]
 en = "Choose a ticket to read it and reply."
+fr = "Choisissez un billet pour le lire et y répondre."
 ctx = "body"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_page.new_ticket]
 en = "New ticket"
+fr = "Nouveau billet"
 ctx = "button"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_page.no_ticket_open]
 en = "No ticket open"
+fr = "Aucun billet sélectionné"
 ctx = "title"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_page.settings]
 en = "Settings"
+fr = "Paramètres"
 ctx = "button"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_page.ticket]
 en = "Ticket"
+fr = "Billet"
 ctx = "title"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_page.tickets]
 en = "Tickets"
+fr = "Billets"
 ctx = "a11y"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_page.which_tickets_show]
 en = "Which tickets to show"
+fr = "Billets à afficher"
 ctx = "tooltip"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_page.which_tickets_show_a11y]
 en = "Which tickets to show"
+fr = "Billets à afficher"
 ctx = "a11y"
 screen = "desk_page"
+state = "reviewed"
 note = "In desk-page.ui."
 
 [desk_settings.choose_logo]
 en = "Choose a logo"
+fr = "Choisir un logo"
 ctx = "title"
 screen = "desk_settings"
+state = "reviewed"
 note = "The title of the file chooser."
 
 [desk_settings.logo_published]
 en = "A logo is published."
+fr = "Un logo est publié."
 ctx = "body"
 screen = "desk_settings"
+state = "reviewed"
 
 [desk_settings.logo_updated]
 en = "Logo updated."
+fr = "Logo mis à jour."
 ctx = "toast"
 screen = "desk_settings"
+state = "reviewed"
 
 [desk_settings.no_logo]
 en = "No logo yet."
+fr = "Aucun logo."
 ctx = "body"
 screen = "desk_settings"
+state = "reviewed"
 
 [desk_settings.saved]
 en = "Settings saved."
+fr = "Paramètres enregistrés."
 ctx = "toast"
 screen = "desk_settings"
+state = "reviewed"
 
 [desk_settings_view.choose_image]
 en = "Choose an image"
+fr = "Choisir une image"
 ctx = "button"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.email_customers_replies]
 en = "Email customers your replies"
+fr = "Envoyer vos réponses aux clients par courriel"
 ctx = "label"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.leave_name_blank_show_customers]
 en = "Leave the name blank to show customers the workspace's own name."
+fr = "Laissez le nom vide pour montrer aux clients le nom de l'espace de travail."
 ctx = "body"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.logo]
 en = "Logo"
+fr = "Logo"
 ctx = "title"
 screen = "desk_settings_view"
+state = "reviewed"
+same_ok = true
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.logo_label]
 en = "Logo"
+fr = "Logo"
 ctx = "label"
 screen = "desk_settings_view"
+state = "reviewed"
+same_ok = true
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.name_customers_see]
 en = "Name customers see"
+fr = "Nom affiché aux clients"
 ctx = "label"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.remove]
 en = "Remove"
+fr = "Retirer"
 ctx = "button"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.shown_customers_help_desks_pages]
 en = "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
+fr = "Affiché aux clients sur les pages du comptoir. Une image PNG, JPEG ou WebP; District AI en vérifie la taille et les dimensions."
 ctx = "body"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.take_tickets]
 en = "Take tickets"
+fr = "Recevoir des billets"
 ctx = "label"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.while_desk_off_no_tickets]
 en = "While the desk is off, no tickets are recorded."
+fr = "Quand le comptoir est désactivé, aucun billet n'est consigné."
 ctx = "body"
 screen = "desk_settings_view"
+state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_ticket.came_in_by]
 en = "Came in by"
+fr = "Canal"
 ctx = "label"
 screen = "desk"
+state = "reviewed"
 note = "The channel a ticket arrived through."
 
 [desk_ticket.emailed]
 en = "The customer was emailed your reply."
+fr = "Votre réponse a été envoyée au client par courriel."
 ctx = "body"
 screen = "desk"
+state = "reviewed"
 
 [desk_ticket.failed_title]
 en = "Could not load this ticket"
+fr = "Impossible de charger ce billet"
 ctx = "error"
 screen = "desk"
 tier = "T2"
+state = "reviewed"
 
 [desk_ticket.not_emailed]
 en = "The customer was not emailed this reply."
+fr = "Aucun courriel n'a été envoyé au client pour cette réponse."
 ctx = "body"
 screen = "desk"
+state = "reviewed"
 
 [desk_ticket.raised]
 en = "Raised"
+fr = "Créé le"
 ctx = "label"
 screen = "desk"
+state = "reviewed"
 note = "When the ticket was opened."
 
 [desk_ticket.resolved_at]
 en = "Resolved"
+fr = "Réglée"
 ctx = "label"
 screen = "desk"
+state = "reviewed"
 note = "When the ticket was resolved."
 
 [desk_ticket_view.customer]
 en = "Customer"
+fr = "Client"
 ctx = "title"
 screen = "desk_ticket_view"
+state = "reviewed"
 note = "In desk-ticket-view.ui."
 
 [desk_ticket_view.open]
 en = "Open"
+fr = "Ouverte"
 ctx = "button"
 screen = "desk_ticket_view"
+state = "reviewed"
+fr_variant = "desk ticket status (contract label), not the verb"
 note = "In desk-ticket-view.ui."
 
 [desk_ticket_view.resolved]
 en = "Resolved"
+fr = "Réglée"
 ctx = "button"
 screen = "desk_ticket_view"
+state = "reviewed"
 note = "In desk-ticket-view.ui."
 
 [desk_ticket_view.status]
 en = "Status"
+fr = "État"
 ctx = "a11y"
 screen = "desk_ticket_view"
+state = "reviewed"
 note = "In desk-ticket-view.ui."
 
 [desk_ticket_view.waiting]
 en = "Waiting"
+fr = "En attente"
 ctx = "button"
 screen = "desk_ticket_view"
+state = "reviewed"
 note = "In desk-ticket-view.ui."
 
 [desk_ticket_view.waiting_customer]
 en = "Waiting on the customer"
+fr = "En attente du client"
 ctx = "tooltip"
 screen = "desk_ticket_view"
+state = "reviewed"
 note = "In desk-ticket-view.ui."
 
 [devices.last_active]
 en = "Last active {when}"
+fr = "Dernière activité\u00A0: {when}"
 ctx = "label"
 screen = "devices"
 args = { when = "date" }
+state = "reviewed"
 
 [devices.sign_out]
 en = "Sign out"
+fr = "Se déconnecter"
 ctx = "button"
 screen = "devices"
 tier = "T2"
+state = "reviewed"
 
 [devices.sign_out_question]
 en = "Sign out?"
+fr = "Déconnecter?"
 ctx = "title"
 screen = "devices"
 tier = "T2"
+state = "reviewed"
 
 [devices_page.devices_last_active_time_when]
 en = "A device's last active time is when it last renewed its sign-in, which can trail real use by up to ten minutes."
+fr = "La dernière activité d'un appareil correspond à sa dernière reconnexion automatique, qui peut avoir jusqu'à dix minutes de retard sur l'utilisation réelle."
 ctx = "body"
 screen = "devices_page"
+state = "reviewed"
 note = "In devices-page.ui."
 
 [devices_page.sign_out_every_device]
 en = "Sign out of every device"
+fr = "Déconnecter tous les appareils"
 ctx = "button"
 screen = "devices_page"
+state = "reviewed"
 note = "In devices-page.ui."
 
 [devices_page.signed_devices]
 en = "Signed-in devices"
+fr = "Appareils connectés"
 ctx = "title"
 screen = "devices_page"
+state = "reviewed"
 note = "In devices-page.ui."
 
 [dialer_page.call]
 en = "Call"
+fr = "Appeler"
 ctx = "button"
 screen = "dialer_page"
+state = "reviewed"
 note = "In dialer-page.ui."
 
 [dialer_page.delete_last_digit]
 en = "Delete the last digit"
+fr = "Effacer le dernier chiffre"
 ctx = "tooltip"
 screen = "dialer_page"
+state = "reviewed"
 note = "In dialer-page.ui."
 
 [dialer_page.delete_last_digit_a11y]
 en = "Delete the last digit"
+fr = "Effacer le dernier chiffre"
 ctx = "a11y"
 screen = "dialer_page"
+state = "reviewed"
 note = "In dialer-page.ui."
 
 [dialer_page.keypad]
 en = "Keypad"
+fr = "Clavier"
 ctx = "a11y"
 screen = "dialer_page"
+state = "reviewed"
 note = "In dialer-page.ui."
 
 [dialer_page.number_call]
 en = "Number to call"
+fr = "Numéro à appeler"
 ctx = "a11y"
 screen = "dialer_page"
+state = "reviewed"
 note = "In dialer-page.ui."
 
 [dialer_page.type_paste_number]
 en = "Type or paste a number"
+fr = "Tapez ou collez un numéro"
 ctx = "placeholder"
 screen = "dialer_page"
+state = "reviewed"
 note = "In dialer-page.ui."
 
 [directory.no_name]
 en = "No name"
+fr = "Aucun nom"
 ctx = "label"
 screen = "directory"
+state = "reviewed"
 
 [directory.no_phone_number]
 en = "No phone number, so nobody can be put through"
+fr = "Aucun numéro de téléphone, donc aucun transfert possible"
 ctx = "label"
 screen = "directory"
+state = "reviewed"
 
 [directory.remove]
 en = "Remove from the directory"
+fr = "Retirer du répertoire"
 ctx = "tooltip"
 screen = "directory"
+state = "reviewed"
 
 [directory_view.add_list]
 en = "Add to the list"
+fr = "Ajouter à la liste"
 ctx = "button"
 screen = "directory_view"
+state = "reviewed"
 note = "In directory-view.ui."
 
 [directory_view.add_someone]
 en = "Add someone"
+fr = "Ajouter une personne"
 ctx = "title"
 screen = "directory_view"
+state = "reviewed"
 note = "In directory-view.ui."
 
 [directory_view.replace_directory]
 en = "Replace the directory"
+fr = "Remplacer le répertoire"
 ctx = "button"
 screen = "directory_view"
+state = "reviewed"
 note = "In directory-view.ui."
 
 [directory_view.transfer_targets]
 en = "Transfer targets"
+fr = "Destinations de transfert"
 ctx = "title"
 screen = "directory_view"
+state = "reviewed"
 note = "In directory-view.ui."
 
 [guard.discard]
 en = "Discard"
+fr = "Abandonner"
 ctx = "button"
 screen = "settings"
 tier = "T2"
+state = "reviewed"
 
 [guard.discard_body]
 en = "What you changed in this section has not been saved, and leaving it drops those changes."
+fr = "Vos modifications dans cette section ne sont pas enregistrées; si vous la quittez, elles seront perdues."
 ctx = "body"
 screen = "settings"
 tier = "T2"
+state = "reviewed"
 
 [guard.discard_title]
 en = "Discard your changes?"
+fr = "Abandonner vos modifications?"
 ctx = "title"
 screen = "settings"
 tier = "T2"
+state = "reviewed"
 
 [guard.keep_editing]
 en = "Keep editing"
+fr = "Continuer la modification"
 ctx = "button"
 screen = "settings"
+state = "reviewed"
 
 [hq.unknown_note]
 en = "The change may have been made before the answer was lost. Check before confirming again."
+fr = "Le changement a peut-être été effectué avant la perte de la connexion. Vérifiez avant de confirmer de nouveau."
 ctx = "body"
 screen = "hq"
 tier = "T2"
+state = "reviewed"
 
 [hq.viewer_note]
 en = "Nothing has been changed. Only an agency or client member of this workspace can confirm a change."
+fr = "Rien n'a été modifié. Seul un membre ayant le rôle Agence ou Client dans cet espace de travail peut confirmer un changement."
 ctx = "body"
 screen = "hq"
+state = "reviewed"
 
 [hq_page.ask]
 en = "Ask"
+fr = "Demander"
 ctx = "button"
 screen = "hq_page"
+state = "reviewed"
 note = "In hq-page.ui."
 
 [hq_page.ask_district_hq]
 en = "Ask District HQ"
+fr = "Poser une question à District HQ"
 ctx = "placeholder"
 screen = "hq_page"
+state = "reviewed"
 note = "In hq-page.ui."
 
 [hq_page.ask_district_hq_a11y]
 en = "Ask District HQ"
+fr = "Poser une question à District HQ"
 ctx = "a11y"
 screen = "hq_page"
+state = "reviewed"
 note = "In hq-page.ui."
 
 [hq_page.conversation_district_hq]
 en = "Conversation with District HQ"
+fr = "Conversation avec District HQ"
 ctx = "a11y"
 screen = "hq_page"
+state = "reviewed"
 note = "In hq-page.ui."
 
 [hq_page.each_question_answered_ai_model]
 en = "Each question is answered by an AI model, which is billed. A change it proposes is made only when you confirm it."
+fr = "Chaque question est traitée par un modèle d'IA, ce qui est facturé. Un changement qu'il propose n'est effectué que lorsque vous le confirmez."
 ctx = "body"
 screen = "hq_page"
+state = "reviewed"
 note = "In hq-page.ui."
 
 [inbox.draft]
 en = "Draft"
+fr = "Brouillon"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 note = "A small chip on a conversation with a saved reply."
 
 [inbox.draft_saved]
 en = "reply saved as a draft"
+fr = "réponse enregistrée comme brouillon"
 ctx = "a11y"
 screen = "inbox"
+state = "reviewed"
 note = "Read aloud for a conversation row, after a comma, so lower case."
 
 [inbox.hit_subject]
 en = "{subject}: {body}"
+fr = "{subject}\u00A0: {body}"
 ctx = "label"
 screen = "inbox"
 args = { subject = "str", body = "str" }
+state = "reviewed"
 note = "A matching email: its subject, then its text."
 
 [inbox.preview_own]
 en = "You: {text}"
+fr = "Vous\u00A0: {text}"
 ctx = "label"
 screen = "inbox"
 args = { text = "str" }
+state = "reviewed"
 note = "The latest message of a conversation, sent by the workspace itself."
 
 [inbox.search_failed]
 en = "Could not search"
+fr = "Recherche impossible"
 ctx = "error"
 screen = "inbox"
 tier = "T2"
+state = "reviewed"
 
 [inbox.unread]
 en.one = "{count} unread"
 en.other = "{count} unread"
+fr.one = "{count} non lu"
+fr.other = "{count} non lus"
 ctx = "a11y"
 screen = "inbox"
 args = { count = "int" }
+state = "reviewed"
 note = "Read aloud for a conversation row: unread messages."
 
 [inbox_page.choose_conversation_read_reply]
 en = "Choose a conversation to read it and reply."
+fr = "Choisissez une conversation pour la lire et y répondre."
 ctx = "body"
 screen = "inbox_page"
+state = "reviewed"
 note = "In inbox-page.ui."
 
 [inbox_page.conversation]
 en = "Conversation"
+fr = "Conversation"
 ctx = "title"
 screen = "inbox_page"
+state = "reviewed"
+same_ok = true
 note = "In inbox-page.ui."
 
 [inbox_page.conversations]
 en = "Conversations"
+fr = "Conversations"
 ctx = "title"
 screen = "inbox_page"
+state = "reviewed"
+same_ok = true
 note = "In inbox-page.ui."
 
 [inbox_page.conversations_a11y]
 en = "Conversations"
+fr = "Conversations"
 ctx = "a11y"
 screen = "inbox_page"
+state = "reviewed"
+same_ok = true
 note = "In inbox-page.ui."
 
 [inbox_page.matching_messages]
 en = "Matching messages"
+fr = "Messages trouvés"
 ctx = "a11y"
 screen = "inbox_page"
+state = "reviewed"
 note = "In inbox-page.ui."
 
 [inbox_page.new_message]
 en = "New message"
+fr = "Nouveau message"
 ctx = "tooltip"
 screen = "inbox_page"
+state = "reviewed"
 note = "In inbox-page.ui. The button beside the inbox search that starts a new conversation."
 
 [inbox_page.new_message_a11y]
 en = "New message"
+fr = "Nouveau message"
 ctx = "a11y"
 screen = "inbox_page"
+state = "reviewed"
 note = "In inbox-page.ui. The name a screen reader says for the button that starts a new conversation."
 
 [inbox_page.no_conversation_open]
 en = "No conversation open"
+fr = "Aucune conversation sélectionnée"
 ctx = "title"
 screen = "inbox_page"
+state = "reviewed"
 note = "In inbox-page.ui."
 
 [inbox_page.search_every_message]
 en = "Search every message"
+fr = "Rechercher dans tous les messages"
 ctx = "placeholder"
 screen = "inbox_page"
+state = "reviewed"
 note = "In inbox-page.ui."
 
 [inbox_page.search_every_message_a11y]
 en = "Search every message"
+fr = "Rechercher dans tous les messages"
 ctx = "a11y"
 screen = "inbox_page"
+state = "reviewed"
 note = "In inbox-page.ui."
 
 [knowledge.added]
 en = "Added {when}"
+fr = "Ajouté le {when}"
 ctx = "label"
 screen = "knowledge"
 args = { when = "date" }
+state = "reviewed"
 
 [knowledge.delete_document]
 en = "Delete this document"
+fr = "Supprimer ce document"
 ctx = "tooltip"
 screen = "knowledge"
 tier = "T2"
+state = "reviewed"
 
 [knowledge.documents_failed]
 en = "Could not load the documents"
+fr = "Impossible de charger les documents"
 ctx = "error"
 screen = "knowledge"
 tier = "T2"
+state = "reviewed"
 
 [knowledge.file_empty]
 en = "This file is empty."
+fr = "Ce fichier est vide."
 ctx = "error"
 screen = "knowledge"
 tier = "T2"
+state = "reviewed"
 note = "Why a picked file is refused when it holds nothing."
 
 [knowledge.file_no_text]
 en = "This file has no text to add."
+fr = "Ce fichier ne contient aucun texte."
 ctx = "error"
 screen = "knowledge"
 tier = "T2"
+state = "reviewed"
 note = "Why a picked file is refused when it holds no words."
 
 [knowledge.file_not_text]
 en = "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead."
+fr = "Seul un fichier en texte brut (.txt ou .md) peut être lu. Pour un autre type de document, copiez-en plutôt le texte dans le champ de texte."
 ctx = "error"
 screen = "knowledge"
 tier = "T2"
+state = "reviewed"
 note = "Why a picked file is refused when it is not plain text."
 
 [knowledge.file_too_large]
 en = "The file must be 1 MB or smaller."
+fr = "Le fichier ne doit pas dépasser 1 Mo."
 ctx = "error"
 screen = "knowledge"
 tier = "T2"
+state = "reviewed"
 note = "Why a picked file is refused for its size."
 
 [knowledge.file_unreadable]
 en = "This file could not be read."
+fr = "Impossible de lire ce fichier."
 ctx = "error"
 screen = "knowledge"
 tier = "T2"
+state = "reviewed"
 note = "Why a picked file is refused when the desktop could not read it."
 
 [knowledge.pieces]
 en.one = "{count} piece"
 en.other = "{count} pieces"
+fr.one = "{count} segment"
+fr.other = "{count} segments"
 ctx = "label"
 screen = "knowledge"
 args = { count = "int" }
+state = "reviewed"
 note = "How many pieces a document was cut into for answers."
 
 [knowledge.text_files_filter]
 en = "Text files"
+fr = "Fichiers texte"
 ctx = "label"
 screen = "file_chooser"
 tier = "T3"
+state = "reviewed"
 note = "The file chooser's filter for plain text files (.txt and .md)."
 
 [knowledge_view.add_document]
 en = "Add a document"
+fr = "Ajouter un document"
 ctx = "title"
 screen = "knowledge_view"
+state = "reviewed"
 note = "In knowledge-view.ui."
 
 [knowledge_view.add_document_button]
 en = "Add document"
+fr = "Ajouter un document"
 ctx = "button"
 screen = "knowledge_view"
+state = "reviewed"
 note = "In knowledge-view.ui."
 
 [knowledge_view.documents]
 en = "Documents"
+fr = "Documents"
 ctx = "title"
 screen = "knowledge_view"
+state = "reviewed"
+same_ok = true
 note = "In knowledge-view.ui."
 
 [knowledge_view.documents_text]
 en = "The document's text"
+fr = "Texte du document"
 ctx = "a11y"
 screen = "knowledge_view"
+state = "reviewed"
 note = "In knowledge-view.ui."
 
 [knowledge_view.file_hint]
 en = "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document."
+fr = "Un fichier en texte brut (.txt ou .md) d'au plus 1 Mo remplit le titre et le texte. Rien n'est ajouté avant que vous appuyiez sur Ajouter un document."
 ctx = "body"
 screen = "knowledge_view"
 tier = "T3"
+state = "reviewed"
 note = "In knowledge-view.ui. What a file fills, what it may be, and that nothing is sent yet."
 
 [knowledge_view.read_text_file]
 en = "Read a text file"
+fr = "Importer un fichier texte"
 ctx = "button"
 screen = "knowledge_view"
 tier = "T3"
+state = "reviewed"
 note = "In knowledge-view.ui. The button that fills the form from a text file; also the file chooser's title."
 
 [knowledge_view.title]
 en = "Title"
+fr = "Titre"
 ctx = "label"
 screen = "knowledge_view"
+state = "reviewed"
 note = "In knowledge-view.ui."
 
 [knowledge_view.where_answers_come_from]
 en = "Where answers come from"
+fr = "Source des réponses"
 ctx = "title"
 screen = "knowledge_view"
+state = "reviewed"
 note = "In knowledge-view.ui."
 
 [marketplace.campaign_type]
 en = "Campaign type"
+fr = "Type de campagne"
 ctx = "label"
 screen = "marketplace"
+state = "reviewed"
 note = "Carrier tab, A2P 10DLC registration: the list of the carrier's campaign types (customer care, low volume, marketing, 2FA)."
 
 [marketplace.monthly]
 en = "{price} a month"
+fr = "{price} par mois"
 ctx = "label"
 screen = "marketplace"
 tier = "T1"
 args = { price = "money" }
+state = "reviewed"
 
 [marketplace.offered_by]
 en = "Offered by {carrier}"
+fr = "Proposé par {carrier}"
 ctx = "label"
 screen = "marketplace"
 args = { carrier = "str" }
+state = "reviewed"
 
 [marketplace.opt_in_flow]
 en = "How people agree to the messages (optional)"
+fr = "Comment les gens consentent aux messages (facultatif)"
 ctx = "label"
 screen = "marketplace"
+state = "reviewed"
 note = "Carrier tab, toll-free verification: a description of how recipients opt in to the business's text messages."
 
 [marketplace_page.area_code]
 en = "Area code"
+fr = "Indicatif régional"
 ctx = "label"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.country_code]
 en = "Country code"
+fr = "Code de pays"
 ctx = "label"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.find_number]
 en = "Find a number"
+fr = "Trouver un numéro"
 ctx = "button"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.number_type]
 en = "Number type"
+fr = "Type de numéro"
 ctx = "label"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.numbers]
 en = "Your numbers"
+fr = "Vos numéros"
 ctx = "button"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.numbers_a11y]
 en = "Your numbers"
+fr = "Vos numéros"
 ctx = "a11y"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.numbers_sale]
 en = "Numbers for sale"
+fr = "Numéros en vente"
 ctx = "a11y"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.search]
 en = "Search"
+fr = "Rechercher"
 ctx = "button"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [marketplace_page.type_area_code_search_whole]
 en = "Type an area code, or search the whole country. Results come from your carrier."
+fr = "Tapez un indicatif régional ou cherchez partout au pays. Les résultats viennent de votre transporteur."
 ctx = "body"
 screen = "marketplace_page"
+state = "reviewed"
 note = "In marketplace-page.ui."
 
 [meeting.ended]
 en = "Ended"
+fr = "Fin"
 ctx = "label"
 screen = "meetings"
+state = "reviewed"
 
 [meeting.length]
 en = "Length"
+fr = "Durée"
 ctx = "label"
 screen = "meetings"
+state = "reviewed"
 
 [meeting.people]
 en = "People"
+fr = "Personnes"
 ctx = "label"
 screen = "meetings"
+state = "reviewed"
 
 [meeting.started]
 en = "Started"
+fr = "Début"
 ctx = "label"
 screen = "meetings"
+state = "reviewed"
 
 [meeting.status]
 en = "Status"
+fr = "État"
 ctx = "label"
 screen = "meetings"
+state = "reviewed"
 
 [meeting_record.action_items]
 en = "Action items"
+fr = "Actions à faire"
 ctx = "title"
 screen = "meeting_record"
+state = "reviewed"
 note = "In meeting-record.ui."
 
 [meeting_record.could_not_load_meeting]
 en = "Could not load this meeting"
+fr = "Impossible de charger cette réunion"
 ctx = "title"
 screen = "meeting_record"
+state = "reviewed"
 note = "In meeting-record.ui."
 
 [meeting_record.meeting]
 en = "Meeting"
+fr = "Réunion"
 ctx = "title"
 screen = "meeting_record"
+state = "reviewed"
 note = "In meeting-record.ui."
 
 [meeting_record.minutes]
 en = "Minutes"
+fr = "Procès-verbal"
 ctx = "title"
 screen = "meeting_record"
+state = "reviewed"
 note = "In meeting-record.ui."
 
 [members.agency_only]
 en = "Only an agency member can add members, change their roles or remove them."
+fr = "Seul un membre ayant le rôle Agence peut ajouter des membres, changer leurs rôles ou les retirer."
 ctx = "body"
 screen = "members"
+state = "reviewed"
 
 [members.failed_title]
 en = "Could not load the members"
+fr = "Impossible de charger les membres"
 ctx = "error"
 screen = "members"
 tier = "T2"
+state = "reviewed"
 
 [members.remove]
 en = "Remove from this workspace"
+fr = "Retirer de cet espace de travail"
 ctx = "button"
 screen = "members"
 tier = "T2"
+state = "reviewed"
 
 [members.role]
 en = "Role"
+fr = "Rôle"
 ctx = "label"
 screen = "members"
+state = "reviewed"
 
 [members.unknown_role]
 en = "{role} · A role this app does not know, which it treats as no access."
+fr = "{role} · rôle inconnu de cette application, qui le traite comme un rôle sans accès."
 ctx = "label"
 screen = "members"
 args = { role = "str" }
+state = "reviewed"
 
 [members_view.add]
 en = "Add"
+fr = "Ajouter"
 ctx = "button"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [members_view.add_member]
 en = "Add a member"
+fr = "Ajouter un membre"
 ctx = "title"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [members_view.members]
 en = "Members"
+fr = "Membres"
 ctx = "title"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [members_view.new_name]
 en = "New name"
+fr = "Nouveau nom"
 ctx = "label"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [members_view.now]
 en = "Now"
+fr = "Actuel"
 ctx = "label"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [members_view.rename_workspace]
 en = "Rename the workspace"
+fr = "Renommer l'espace de travail"
 ctx = "button"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [members_view.role]
 en = "Role"
+fr = "Rôle"
 ctx = "label"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [members_view.workspaces_name]
 en = "The workspace's name"
+fr = "Nom de l'espace de travail"
 ctx = "title"
 screen = "members_view"
+state = "reviewed"
 note = "In members-view.ui."
 
 [messaging.accounts_failed]
 en = "Could not load the carrier accounts"
+fr = "Impossible de charger les comptes de transporteur"
 ctx = "error"
 screen = "messaging"
 tier = "T2"
+state = "reviewed"
 
 [messaging.default]
 en = "Default"
+fr = "Par défaut"
 ctx = "label"
 screen = "messaging"
+state = "reviewed"
 note = "A chip on the default carrier account."
 
 [messaging.default_sender]
 en = "The default account"
+fr = "Le compte par défaut"
 ctx = "label"
 screen = "messaging"
+state = "reviewed"
 note = "What a channel's sender picker shows when the channel has no sender of its own."
 
 [messaging.edit_account]
 en = "Edit this account"
+fr = "Modifier ce compte"
 ctx = "tooltip"
 screen = "messaging"
+state = "reviewed"
 
 [messaging.make_default]
 en = "Make default"
+fr = "Définir par défaut"
 ctx = "button"
 screen = "messaging"
+state = "reviewed"
 
 [messaging.no_numbers]
 en = "No numbers"
+fr = "Aucun numéro"
 ctx = "label"
 screen = "messaging"
+state = "reviewed"
 
 [messaging.remove_account]
 en = "Remove this account"
+fr = "Retirer ce compte"
 ctx = "tooltip"
 screen = "messaging"
 tier = "T2"
+state = "reviewed"
 
 [messaging.unlisted_account]
 en = "An account that is not listed"
+fr = "Un compte absent de la liste"
 ctx = "label"
 screen = "messaging"
+state = "reviewed"
 
 [messaging_form.add_title]
 en = "Add a carrier account"
+fr = "Ajouter un compte de transporteur"
 ctx = "title"
 screen = "messaging"
+state = "reviewed"
 
 [messaging_form.carrier]
 en = "Carrier"
+fr = "Transporteur"
 ctx = "label"
 screen = "messaging_form"
+state = "reviewed"
 note = "In messaging-form.ui."
 
 [messaging_form.check_these_keys]
 en = "Check these keys"
+fr = "Vérifier ces clés"
 ctx = "button"
 screen = "messaging_form"
+state = "reviewed"
 note = "In messaging-form.ui."
 
 [messaging_form.edit_title]
 en = "Edit the carrier account"
+fr = "Modifier le compte de transporteur"
 ctx = "title"
 screen = "messaging"
+state = "reviewed"
 
 [messaging_form.keys]
 en = "Keys"
+fr = "Clés"
 ctx = "title"
 screen = "messaging_form"
+state = "reviewed"
 note = "In messaging-form.ui."
 
 [messaging_form.keys_needed]
 en = "Every key the carrier needs, typed in full."
+fr = "Saisissez au complet toutes les clés exigées par le transporteur."
 ctx = "body"
 screen = "messaging"
+state = "reviewed"
 
 [messaging_form.make_default_sender]
 en = "Make it the default sender"
+fr = "En faire l'expéditeur par défaut"
 ctx = "label"
 screen = "messaging_form"
+state = "reviewed"
 note = "In messaging-form.ui."
 
 [messaging_form.phone_numbers]
 en = "Phone numbers"
+fr = "Numéros de téléphone"
 ctx = "title"
 screen = "messaging_form"
+state = "reviewed"
 note = "In messaging-form.ui."
 
 [messaging_form.phone_numbers_one_per_line]
 en = "Phone numbers, one per line"
+fr = "Numéros de téléphone, un par ligne"
 ctx = "a11y"
 screen = "messaging_form"
+state = "reviewed"
 note = "In messaging-form.ui."
 
 [messaging_form.test_passed]
 en = "The carrier accepted these keys."
+fr = "Le transporteur a accepté ces clés."
 ctx = "body"
 screen = "messaging"
+state = "reviewed"
 
 [messaging_form.test_passed_for]
 en = "The carrier accepted these keys, for {account}."
+fr = "Le transporteur a accepté ces clés pour le compte {account}."
 ctx = "body"
 screen = "messaging"
 args = { account = "str" }
+state = "reviewed"
 
 [messaging_form.test_rejected]
 en = "The carrier refused these keys: {reason}"
+fr = "Le transporteur a refusé ces clés\u00A0: {reason}"
 ctx = "error"
 screen = "messaging"
 tier = "T2"
 args = { reason = "str" }
+state = "reviewed"
 
 [messaging_form.test_running]
 en = "Asking the carrier."
+fr = "En attente du transporteur."
 ctx = "body"
 screen = "messaging"
+state = "reviewed"
 
 [messaging_form.test_unreachable]
 en = "The carrier could not be asked, so nothing is known about these keys. {failure}"
+fr = "Le transporteur n'a pas pu être interrogé, donc l'état de ces clés est inconnu. {failure}"
 ctx = "error"
 screen = "messaging"
 tier = "T2"
 args = { failure = "str" }
+state = "reviewed"
 
 [messaging_form.whose_account]
 en = "Whose account"
+fr = "Titulaire du compte"
 ctx = "label"
 screen = "messaging_form"
+state = "reviewed"
 note = "In messaging-form.ui."
 
 [messaging_view.add_account]
 en = "Add an account"
+fr = "Ajouter un compte"
 ctx = "button"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.bought_workspace_distronodes_own_carrier]
 en = "Bought for this workspace on Distronode's own carrier account. They are not an account of this workspace's, so they cannot be chosen as a sender."
+fr = "Ces numéros ont été achetés pour cet espace de travail sur le compte de transporteur de Distronode. Comme ce compte n'appartient pas à l'espace de travail, ces numéros ne peuvent pas servir d'expéditeur."
 ctx = "body"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.carrier_accounts]
 en = "Carrier accounts"
+fr = "Comptes de transporteur"
 ctx = "title"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.channel_without_sender_own_sends]
 en = "A channel without a sender of its own sends from the default account."
+fr = "Un canal sans son propre expéditeur envoie à partir du compte par défaut."
 ctx = "body"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.mobile_number]
 en = "Mobile number"
+fr = "Cellulaire"
 ctx = "label"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.numbers_held_distronode]
 en = "Numbers held by Distronode"
+fr = "Numéros détenus par Distronode"
 ctx = "title"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.owners_mobile_number]
 en = "The owner's mobile number"
+fr = "Cellulaire du propriétaire"
 ctx = "title"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.save_number]
 en = "Save number"
+fr = "Enregistrer"
 ctx = "button"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [messaging_view.sender_each_channel]
 en = "Sender for each channel"
+fr = "Expéditeur de chaque canal"
 ctx = "title"
 screen = "messaging_view"
+state = "reviewed"
 note = "In messaging-view.ui."
 
 [notification.in_workspace]
 en = "{heading} in {workspace}"
+fr = "{heading} dans {workspace}"
 ctx = "notification"
 screen = "notifications"
 tier = "T0"
 args = { heading = "str", workspace = "str" }
+state = "reviewed"
 note = "A notification's heading naming another workspace: \"Incoming call in Bravo Client\"."
 
 [overview.calls_this_week]
 en = "Calls this week"
+fr = "Appels cette semaine"
 ctx = "label"
 screen = "overview"
+state = "reviewed"
 
 [overview.contacts]
 en = "Contacts"
+fr = "Contacts"
 ctx = "label"
 screen = "overview"
+state = "reviewed"
+same_ok = true
 
 [overview.failed_title]
 en = "Could not load the overview"
+fr = "Impossible de charger la vue d'ensemble"
 ctx = "error"
 screen = "overview"
 tier = "T2"
+state = "reviewed"
 
 [overview_page.no_calls_yet_they_appear]
 en = "No calls yet. They appear here as your receptionist answers them."
+fr = "Aucun appel pour l'instant. Ceux que votre réceptionniste prendra s'afficheront ici."
 ctx = "body"
 screen = "overview_page"
+state = "reviewed"
 note = "In overview-page.ui."
 
 [overview_page.recent_calls]
 en = "Recent calls"
+fr = "Appels récents"
 ctx = "title"
 screen = "overview_page"
+state = "reviewed"
 note = "In overview-page.ui."
 
 [persona.options_loading]
 en = "Reading the languages this workspace may use."
+fr = "Chargement des langues permises dans cet espace de travail."
 ctx = "body"
 screen = "persona"
+state = "reviewed"
 
 [persona_view.answer_length]
 en = "Answer length"
+fr = "Longueur des réponses"
 ctx = "label"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.greeting]
 en = "Greeting"
+fr = "Message d'accueil"
 ctx = "label"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.how_behaves_written_into_every]
 en = "How it behaves, written into every call's instructions."
+fr = "Le comportement de l'agent, intégré aux instructions de chaque appel."
 ctx = "body"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.language]
 en = "Language"
+fr = "Langue"
 ctx = "label"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.language_answers]
 en = "Language and answers"
+fr = "Langue et réponses"
 ctx = "title"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.open_voice_studio]
 en = "Open Voice Studio"
+fr = "Ouvrir Voice Studio"
 ctx = "button"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.personality]
 en = "Personality"
+fr = "Personnalité"
 ctx = "title"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.personality_a11y]
 en = "Personality"
+fr = "Personnalité"
 ctx = "a11y"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.try_receptionist]
 en = "Try this receptionist"
+fr = "Appeler la réceptionniste"
 ctx = "button"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.voice_engine]
 en = "Voice engine"
+fr = "Moteur vocal"
 ctx = "label"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [persona_view.what_says]
 en = "What it says"
+fr = "Ce qu'elle dit"
 ctx = "title"
 screen = "persona_view"
+state = "reviewed"
 note = "In persona-view.ui."
 
 [reply_box.send]
 en = "Send"
+fr = "Envoyer"
 ctx = "button"
 screen = "reply_box"
+state = "reviewed"
 note = "In reply-box.ui."
 
 [report.button]
 en = "Report"
+fr = "Signaler"
 ctx = "button"
 screen = "report"
+state = "reviewed"
 note = "Under AI-written content (a call's summary, an HQ answer): opens the dialog that reports it to Distronode."
 
 [report.button_a11y]
 en = "Report this AI-generated content"
+fr = "Signaler ce contenu généré par l'IA"
 ctx = "a11y"
 screen = "report"
+state = "reviewed"
 note = "The name a screen reader says for the Report button."
 
 [report.not_sent_a11y]
 en = "Report not sent"
+fr = "Signalement non envoyé"
 ctx = "a11y"
 screen = "report"
+state = "reviewed"
 note = "The name a screen reader says for the line in the report dialog that says why it cannot be sent now."
 
 [report.on_web]
 en = "Report on the web"
+fr = "Signaler sur le Web"
 ctx = "button"
 screen = "report"
+state = "reviewed"
 note = "In place of Report for a member whose role cannot send support requests: opens the support page in the browser."
 
 [report.on_web_a11y]
 en = "Report this AI-generated content on the support website"
+fr = "Signaler ce contenu généré par l'IA sur le site Web de soutien"
 ctx = "a11y"
 screen = "report"
+state = "reviewed"
 note = "The name a screen reader says for the Report on the web button."
 
 [report.sending]
 en = "Sending your report."
+fr = "Envoi du signalement."
 ctx = "body"
 screen = "report"
+state = "reviewed"
 note = "The banner at the top of the window while a report is on its way."
 
 [rooms.a_guest]
 en = "A guest"
+fr = "Personne invitée"
 ctx = "label"
 screen = "rooms"
+state = "reviewed"
 
 [rooms.guest_link_copied]
 en = "Guest link copied."
+fr = "Lien d'invitation copié."
 ctx = "toast"
 screen = "rooms"
+state = "reviewed"
 
 [rooms.in_progress]
 en = "In progress"
+fr = "En cours"
 ctx = "label"
 screen = "rooms"
+state = "reviewed"
 
 [rooms.in_room]
 en = "In the room."
+fr = "Dans la salle."
 ctx = "body"
 screen = "rooms"
+state = "reviewed"
 
 [rooms.joining]
 en = "Joining the room."
+fr = "Connexion à la salle en cours."
 ctx = "body"
 screen = "rooms"
+state = "reviewed"
 
 [rooms.nobody_else]
 en = "Nobody else is here yet."
+fr = "Personne d'autre pour l'instant."
 ctx = "body"
 screen = "rooms"
+state = "reviewed"
 
 [rooms.people]
 en.one = "{count} person"
 en.other = "{count} people"
+fr.one = "{count} personne"
+fr.other = "{count} personnes"
 ctx = "label"
 screen = "rooms"
 args = { count = "int" }
+state = "reviewed"
 
 [rooms.rejoin]
 en = "Rejoin"
+fr = "Rejoindre"
 ctx = "button"
 screen = "rooms"
+state = "reviewed"
 
 [rooms.room_title]
 en = "Room \"{name}\""
+fr = "Salle «\u00A0{name}\u00A0»"
 ctx = "title"
 screen = "rooms"
 args = { name = "str" }
+state = "reviewed"
 
 [rooms.with]
 en = "With {names}."
+fr = "Avec {names}."
 ctx = "body"
 screen = "rooms"
 args = { names = "str" }
+state = "reviewed"
 note = "names are the others in the room, joined by commas."
 
 [rooms_page.copy_guest_link]
 en = "Copy guest link"
+fr = "Copier le lien d'invitation"
 ctx = "button"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [rooms_page.copy_link_lets_someone_without]
 en = "Copy a link that lets someone without an account join this room"
+fr = "Copiez un lien qui permet à une personne sans compte de rejoindre cette salle"
 ctx = "tooltip"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [rooms_page.join]
 en = "Join"
+fr = "Rejoindre"
 ctx = "button"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [rooms_page.leave_room]
 en = "Leave the room"
+fr = "Quitter la salle"
 ctx = "button"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [rooms_page.meetings]
 en = "Meetings"
+fr = "Réunions"
 ctx = "title"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [rooms_page.meetings_a11y]
 en = "Meetings"
+fr = "Réunions"
 ctx = "a11y"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [rooms_page.most_recent_meetings_held_workspaces]
 en = "The most recent meetings held in this workspace's rooms. Open one to read its minutes and transcript."
+fr = "Les réunions récentes des salles de cet espace de travail. Ouvrez-en une pour lire son procès-verbal et sa transcription."
 ctx = "body"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [rooms_page.room_name]
 en = "Room name"
+fr = "Nom de salle"
 ctx = "label"
 screen = "rooms_page"
+state = "reviewed"
 note = "In rooms-page.ui."
 
 [route.account]
 en = "Account"
+fr = "Compte"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.analytics]
 en = "Analytics"
+fr = "Analytique"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.billing]
 en = "Billing"
+fr = "Facturation"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.blocked_callers]
 en = "Blocked callers"
+fr = "Appelants bloqués"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.booking_pages]
 en = "Booking pages"
+fr = "Pages de réservation"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.call]
 en = "Call"
+fr = "Appel"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.call_handling]
 en = "Call handling"
+fr = "Gestion des appels"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.calls]
 en = "Calls"
+fr = "Appels"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.contact]
 en = "Contact"
+fr = "Contact"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
+same_ok = true
 
 [route.contacts]
 en = "Contacts"
+fr = "Contacts"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
+same_ok = true
 
 [route.conversation]
 en = "Conversation"
+fr = "Conversation"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
+same_ok = true
 
 [route.devices]
 en = "Devices"
+fr = "Appareils"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.dialler]
 en = "Dialler"
+fr = "Clavier"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.district_hq]
 en = "District HQ"
+fr = "District HQ"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
+same_ok = true
 
 [route.help_desk]
 en = "Help desk"
+fr = "Comptoir clients"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.help_desk_settings]
 en = "Help desk settings"
+fr = "Paramètres du comptoir"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.inbox]
 en = "Inbox"
+fr = "Boîte de réception"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.knowledge]
 en = "Knowledge"
+fr = "Connaissances"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.meeting_rooms]
 en = "Meeting rooms"
+fr = "Salles de réunion"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.members]
 en = "Members"
+fr = "Membres"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.messaging_accounts]
 en = "Messaging accounts"
+fr = "Comptes de messagerie"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.overview]
 en = "Overview"
+fr = "Vue d'ensemble"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.persona]
 en = "Persona"
+fr = "Persona"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
+same_ok = true
 
 [route.phone_numbers]
 en = "Phone numbers"
+fr = "Numéros de téléphone"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.routing_rules]
 en = "Routing rules"
+fr = "Règles d'acheminement"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.skills]
 en = "Skills"
+fr = "Compétences"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.support]
 en = "Support"
+fr = "Soutien"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.support_request]
 en = "Support request"
+fr = "Demande de soutien"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.ticket]
 en = "Ticket"
+fr = "Billet"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.transfer_directory]
 en = "Transfer directory"
+fr = "Répertoire de transfert"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.voice]
 en = "Voice"
+fr = "Voix"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.workflows]
 en = "Workflows"
+fr = "Flux de travail"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [route.workspace]
 en = "Workspace"
+fr = "Espace de travail"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 note = "The heading over the workspace's rows in the sidebar."
 
 [route.workspace_settings]
 en = "Workspace settings"
+fr = "Paramètres de l'espace"
 ctx = "title"
 screen = "navigation"
+state = "reviewed"
 
 [routing.caller_detail]
 en = "Caller detail"
+fr = "Champ du contact"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 
 [routing.compared_by]
 en = "Compared by"
+fr = "Comparaison"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 
 [routing.engine]
 en = "Engine"
+fr = "Moteur"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 
 [routing.instruction]
 en = "Instruction"
+fr = "Consigne"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 
 [routing.kept_keys]
 en = "Also stored: {keys}. Kept as they are when the rules are saved."
+fr = "Autres champs stockés\u00A0: {keys}. Ils sont conservés tels quels à la sauvegarde."
 ctx = "body"
 screen = "routing"
 args = { keys = "str" }
+state = "reviewed"
 
 [routing.no_condition]
 en = "No condition set here"
+fr = "Aucune condition définie"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 
 [routing.persona_engine]
 en = "The persona's own"
+fr = "Celui de la persona"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 note = "A rule with no engine of its own uses the persona's."
 
 [routing.remove_rule]
 en = "Remove this rule"
+fr = "Supprimer cette règle"
 ctx = "tooltip"
 screen = "routing"
 tier = "T2"
+state = "reviewed"
 
 [routing.rule_title]
 en = "Rule {number}"
+fr = "Règle {number}"
 ctx = "title"
 screen = "routing"
 args = { number = "int" }
+state = "reviewed"
 
 [routing.value]
 en = "Value"
+fr = "Valeur"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 
 [routing.voice]
 en = "Voice"
+fr = "Voix"
 ctx = "label"
 screen = "routing"
+state = "reviewed"
 
 [routing_view.add_rule]
 en = "Add a rule"
+fr = "Ajouter une règle"
 ctx = "button"
 screen = "routing_view"
+state = "reviewed"
 note = "In routing-view.ui."
 
 [routing_view.checked_order_caller_who_matches]
 en = "Checked in this order. A caller who matches a rule gets its voice and instruction."
+fr = "Les règles sont vérifiées dans cet ordre. Si un appelant correspond à une règle, l'appel utilise la voix et la consigne de cette règle."
 ctx = "body"
 screen = "routing_view"
+state = "reviewed"
 note = "In routing-view.ui."
 
 [routing_view.replace_rules]
 en = "Replace the rules"
+fr = "Remplacer les règles"
 ctx = "button"
 screen = "routing_view"
+state = "reviewed"
 note = "In routing-view.ui."
 
 [routing_view.rules]
 en = "Rules"
+fr = "Règles"
 ctx = "title"
 screen = "routing_view"
+state = "reviewed"
 note = "In routing-view.ui."
 
 [scheduling_page.booking_page]
 en = "Booking page"
+fr = "Page de réservation"
 ctx = "label"
 screen = "scheduling_page"
+state = "reviewed"
 note = "In scheduling-page.ui."
 
 [scheduling_page.check_again]
 en = "Check again"
+fr = "Revérifier"
 ctx = "button"
 screen = "scheduling_page"
+state = "reviewed"
 note = "In scheduling-page.ui."
 
 [scheduling_page.last_live]
 en = "Last live"
+fr = "Dernière mise en ligne"
 ctx = "label"
 screen = "scheduling_page"
+state = "reviewed"
 note = "In scheduling-page.ui."
 
 [scheduling_page.turn_booking_pages]
 en = "Turn on booking pages"
+fr = "Activer les pages de réservation"
 ctx = "button"
 screen = "scheduling_page"
+state = "reviewed"
 note = "In scheduling-page.ui."
 
 [scheduling_page.what_went_wrong]
 en = "What went wrong"
+fr = "Cause du problème"
 ctx = "label"
 screen = "scheduling_page"
+state = "reviewed"
 note = "In scheduling-page.ui."
 
 [session.retrying]
 en = "District AI will try again by itself."
+fr = "District AI réessaiera automatiquement."
 ctx = "body"
 screen = "session"
+state = "reviewed"
 
 [session.signed_out_body]
 en = "Sign in again whenever you are ready."
+fr = "Reconnectez-vous au moment qui vous convient."
 ctx = "body"
 screen = "session"
+state = "reviewed"
 
 [session.signing_in]
 en = "Signing in"
+fr = "Connexion"
 ctx = "title"
 screen = "session"
+state = "reviewed"
 
 [session.signing_out]
 en = "Signing out"
+fr = "Déconnexion en cours"
 ctx = "title"
 screen = "session"
+state = "reviewed"
 
 [session.signing_out_everywhere]
 en = "Every device is signed out. Removing your sign-in from this computer."
+fr = "Tous les appareils sont déconnectés. Suppression de vos informations de connexion ici."
 ctx = "body"
 screen = "session"
+state = "reviewed"
 
 [session.signing_out_this_device]
 en = "Telling District AI, then removing your sign-in from this computer."
+fr = "Envoi de l'avis à District AI, puis suppression de vos informations de connexion ici."
 ctx = "body"
 screen = "session"
+state = "reviewed"
 
 [session.welcome_body]
 en = "Sign in with your District AI account. Signing in happens in your browser, so this app never sees your password."
+fr = "Connectez-vous avec votre compte District AI. La connexion se fait dans votre navigateur\u00A0: cette application ne voit jamais votre mot de passe."
 ctx = "body"
 screen = "session"
 tier = "T2"
+state = "reviewed"
 
 [session.welcome_title]
 en = "Welcome to District AI"
+fr = "Bienvenue dans District AI"
 ctx = "title"
 screen = "session"
+state = "reviewed"
 
 [session_page.sign_browser]
 en = "Sign in with your browser"
+fr = "Se connecter avec le navigateur"
 ctx = "button"
 screen = "session_page"
+state = "reviewed"
 note = "In session-page.ui."
 
 [session_page.sign_out_again]
 en = "Sign out again"
+fr = "Réessayer la déconnexion"
 ctx = "button"
 screen = "session_page"
+state = "reviewed"
 note = "In session-page.ui."
 
 [settings.not_chosen]
 en = "Not chosen"
+fr = "Non choisi"
 ctx = "label"
 screen = "settings"
+state = "reviewed"
 
 [settings.read_again]
 en = "Read them again"
+fr = "Actualiser"
 ctx = "button"
 screen = "settings"
+state = "reviewed"
 
 [settings.stale_title]
 en = "Saved"
+fr = "Enregistré"
 ctx = "title"
 screen = "settings"
+state = "reviewed"
 note = "A save landed but the settings could not be read back; not a failure."
 
 [settings_page.choose_section_read_settings]
 en = "Choose a section to read its settings."
+fr = "Choisissez une section pour voir ses paramètres."
 ctx = "body"
 screen = "settings_page"
+state = "reviewed"
 note = "In settings-page.ui."
 
 [settings_page.no_section_open]
 en = "No section open"
+fr = "Aucune section ouverte"
 ctx = "title"
 screen = "settings_page"
+state = "reviewed"
 note = "In settings-page.ui."
 
 [settings_page.section]
 en = "Section"
+fr = "Section"
 ctx = "title"
 screen = "settings_page"
+state = "reviewed"
+same_ok = true
 note = "In settings-page.ui."
 
 [settings_page.settings_sections]
 en = "Settings sections"
+fr = "Sections de paramètres"
 ctx = "a11y"
 screen = "settings_page"
+state = "reviewed"
 note = "In settings-page.ui."
 
 [settings_page.workspace_settings]
 en = "Workspace settings"
+fr = "Paramètres de l'espace"
 ctx = "title"
 screen = "settings_page"
+state = "reviewed"
 note = "In settings-page.ui."
 
 [shared.images_filter]
 en = "Images"
+fr = "Images"
 ctx = "label"
 screen = "file_chooser"
+state = "reviewed"
+same_ok = true
 note = "The file chooser's filter for image files."
 
 [shared.today]
 en = "Today"
+fr = "Aujourd'hui"
 ctx = "title"
 screen = "inbox"
+state = "reviewed"
 note = "The heading over today's messages."
 
 [shared.yesterday]
 en = "Yesterday"
+fr = "Hier"
 ctx = "title"
 screen = "inbox"
+state = "reviewed"
 
 [store.memory_only]
 en = "No keyring is available, so your sign-in is kept only until District AI quits. Start a keyring (for example GNOME Keyring or KeePassXC) and open the app again to stay signed in."
+fr = "Aucun trousseau disponible\u00A0: vos informations de connexion ne sont conservées que jusqu'à la fermeture de District AI. Démarrez un trousseau (p. ex. GNOME Keyring ou KeePassXC) et rouvrez l'application pour conserver votre session."
 ctx = "body"
 screen = "session"
 tier = "T2"
+state = "reviewed"
 
 [support.not_filed]
 en = "Not filed yet"
+fr = "Pas encore créée"
 ctx = "label"
 screen = "support"
+state = "reviewed"
 note = "A support request still being opened has no reference yet."
 
 [support_page.choose_request_read_our_replies]
 en = "Choose a request to read our replies and answer them."
+fr = "Choisissez une demande pour lire nos réponses et y répondre."
 ctx = "body"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.new_request]
 en = "New request"
+fr = "Nouvelle demande"
 ctx = "button"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.no_request_open]
 en = "No request open"
+fr = "Aucune demande ouverte"
 ctx = "title"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.open]
 en = "Open"
+fr = "Ouverte"
 ctx = "label"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.open_requests]
 en = "Open requests"
+fr = "Demandes ouvertes"
 ctx = "a11y"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.resolved]
 en = "Resolved"
+fr = "Réglée"
 ctx = "label"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.resolved_requests]
 en = "Resolved requests"
+fr = "Demandes réglées"
 ctx = "a11y"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.support]
 en = "Support"
+fr = "Soutien"
 ctx = "title"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_page.support_request]
 en = "Support request"
+fr = "Demande de soutien"
 ctx = "title"
 screen = "support_page"
+state = "reviewed"
 note = "In support-page.ui."
 
 [support_request.failed_title]
 en = "Could not load this request"
+fr = "Impossible de charger cette demande"
 ctx = "error"
 screen = "support"
 tier = "T2"
+state = "reviewed"
 
 [thread.attach_image_title]
 en = "Attach an image"
+fr = "Joindre une image"
 ctx = "title"
 screen = "inbox"
+state = "reviewed"
 note = "The title of the file chooser."
 
 [thread.delivered]
 en = "Delivered"
+fr = "Livré"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.email]
 en = "Email"
+fr = "Courriel"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 note = "The channel a message went by."
 
 [thread.failed_title]
 en = "Could not load this conversation"
+fr = "Impossible de charger cette conversation"
 ctx = "error"
 screen = "inbox"
 tier = "T2"
+state = "reviewed"
 
 [thread.image_number]
 en = "Image {number}"
+fr = "Image {number}"
 ctx = "label"
 screen = "inbox"
 args = { number = "int" }
+state = "reviewed"
+same_ok = true
 
 [thread.images_attached]
 en.one = "{count} image attached"
 en.other = "{count} images attached"
+fr.one = "{count} image jointe"
+fr.other = "{count} images jointes"
 ctx = "label"
 screen = "inbox"
 args = { count = "int" }
+state = "reviewed"
 
 [thread.incoming_call]
 en = "Incoming call"
+fr = "Appel entrant"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.missed_call]
 en = "Missed call"
+fr = "Appel manqué"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.no_messages]
 en = "No messages in this conversation yet."
+fr = "Pas encore de message dans cette conversation."
 ctx = "body"
 screen = "inbox"
+state = "reviewed"
 
 [thread.not_delivered]
 en = "Not delivered"
+fr = "Non livré"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.outgoing_call]
 en = "Outgoing call"
+fr = "Appel sortant"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.read]
 en = "Read"
+fr = "Lu"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 note = "A message the recipient has read."
 
 [thread.remove_image]
 en = "Remove {name}"
+fr = "Retirer {name}"
 ctx = "tooltip"
 screen = "inbox"
 args = { name = "str" }
+state = "reviewed"
 note = "name is thread.image_number: \"Remove Image 2\"."
 
 [thread.reply_by_email]
 en = "Email to {address}"
+fr = "Courriel à {address}"
 ctx = "label"
 screen = "inbox"
 args = { address = "str" }
+state = "reviewed"
 
 [thread.reply_by_text]
 en = "Text message to {number}"
+fr = "Texto à {number}"
 ctx = "label"
 screen = "inbox"
 args = { number = "str" }
+state = "reviewed"
 
 [thread.sending]
 en = "Sending"
+fr = "Envoi en cours"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.sent]
 en = "Sent"
+fr = "Envoyé"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.uploading_image]
 en = "Uploading the image"
+fr = "Téléversement de l'image"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread.whatsapp]
 en = "WhatsApp"
@@ -2927,318 +3969,427 @@ fixed = true
 
 [thread.writing_reply]
 en = "Writing a reply"
+fr = "Rédaction en cours"
 ctx = "label"
 screen = "inbox"
+state = "reviewed"
 
 [thread_view.attach_image]
 en = "Attach an image"
+fr = "Joindre une image"
 ctx = "tooltip"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.attach_image_a11y]
 en = "Attach an image"
+fr = "Joindre une image"
 ctx = "a11y"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.draft_reply_ai]
 en = "Draft a reply with AI"
+fr = "Ébaucher une réponse par IA"
 ctx = "button"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.older_messages]
 en = "Older messages"
+fr = "Anciens messages"
 ctx = "button"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.send]
 en = "Send"
+fr = "Envoyer"
 ctx = "a11y"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.send_enter]
 en = "Send (Enter)"
+fr = "Envoyer (Entrée)"
 ctx = "tooltip"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.shift_enter_new_line]
 en = "Shift+Enter for a new line"
+fr = "Maj+Entrée pour une nouvelle ligne"
 ctx = "label"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.start_conversation]
 en = "The start of this conversation"
+fr = "Début de cette conversation"
 ctx = "label"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [thread_view.writes_suggested_reply_into_box]
 en = "Writes a suggested reply into the box for you to read before sending. Each suggestion is billed."
+fr = "Ce bouton écrit une suggestion de réponse dans le champ, à relire avant l'envoi. Chaque suggestion est facturée."
 ctx = "tooltip"
 screen = "thread_view"
+state = "reviewed"
 note = "In thread-view.ui."
 
 [ticket_form.customer]
 en = "The customer"
+fr = "Le client"
 ctx = "title"
 screen = "ticket_form"
+state = "reviewed"
 note = "In ticket-form.ui."
 
 [ticket_form.message]
 en = "Message"
+fr = "Message"
 ctx = "title"
 screen = "ticket_form"
+state = "reviewed"
+same_ok = true
 note = "In ticket-form.ui."
 
 [ticket_form.message_a11y]
 en = "Message"
+fr = "Message"
 ctx = "a11y"
 screen = "ticket_form"
+state = "reviewed"
+same_ok = true
 note = "In ticket-form.ui."
 
 [ticket_form.needs]
 en = "A subject of {min} to {max} characters, and a message."
+fr = "Requis\u00A0: un objet de {min} à {max} caractères et un message."
 ctx = "body"
 screen = "support"
 args = { min = "int", max = "int" }
+state = "reviewed"
 
 [ticket_form.new_support_request]
 en = "New support request"
+fr = "Nouvelle demande de soutien"
 ctx = "title"
 screen = "support"
+state = "reviewed"
 
 [ticket_form.new_ticket]
 en = "New ticket"
+fr = "Nouveau billet"
 ctx = "title"
 screen = "desk"
+state = "reviewed"
 
 [ticket_form.optional_replies_emailed_address_given]
 en = "Optional. Replies are emailed to the address given here, when the desk emails customers."
+fr = "Facultatif. Si le comptoir envoie des courriels aux clients, vos réponses sont envoyées à l'adresse indiquée ici."
 ctx = "body"
 screen = "ticket_form"
+state = "reviewed"
 note = "In ticket-form.ui."
 
 [ticket_form.raise]
 en = "Raise"
+fr = "Créer"
 ctx = "button"
 screen = "desk"
+state = "reviewed"
 note = "Opens a new help desk ticket."
 
 [ticket_form.subject]
 en = "Subject"
+fr = "Objet"
 ctx = "label"
 screen = "ticket_form"
+state = "reviewed"
 note = "In ticket-form.ui."
 
 [ticket_form.what_about]
 en = "What is it about"
+fr = "De quoi s'agit-il"
 ctx = "label"
 screen = "ticket_form"
+state = "reviewed"
 note = "In ticket-form.ui."
 
 [tools_view.call]
 en = "On a call"
+fr = "Pendant un appel"
 ctx = "title"
 screen = "tools_view"
+state = "reviewed"
 note = "In tools-view.ui."
 
 [tools_view.research_contacts]
 en = "Research contacts"
+fr = "Recherche externe"
 ctx = "label"
 screen = "tools_view"
+state = "reviewed"
 note = "In tools-view.ui."
 
 [tools_view.save_capabilities]
 en = "Save capabilities"
+fr = "Enregistrer les capacités"
 ctx = "button"
 screen = "tools_view"
+state = "reviewed"
 note = "In tools-view.ui."
 
 [tools_view.save_research_setting]
 en = "Save research setting"
+fr = "Enregistrer ce paramètre"
 ctx = "button"
 screen = "tools_view"
+state = "reviewed"
 note = "In tools-view.ui."
 
 [tools_view.what_receptionist_may_do_saving]
 en = "What the receptionist may do. Saving replaces the stored list with these switches."
+fr = "Ce que la réceptionniste peut faire. Si vous enregistrez, ces interrupteurs remplacent la liste stockée."
 ctx = "body"
 screen = "tools_view"
+state = "reviewed"
 note = "In tools-view.ui."
 
 [transcript.line]
 en = "{speaker}: {text}"
+fr = "{speaker}\u00A0: {text}"
 ctx = "a11y"
 screen = "transcript"
 tier = "T3"
 args = { speaker = "str", text = "str" }
+state = "reviewed"
 note = "A transcript line's screen-reader text, and what is announced when it is final."
 
 [transcript.line_note]
 en = "{speaker}: {text} ({note})"
+fr = "{speaker}\u00A0: {text} ({note})"
 ctx = "a11y"
 screen = "transcript"
 tier = "T3"
 args = { speaker = "str", text = "str", note = "str" }
+state = "reviewed"
 note = "A transcript line's screen-reader text with its note, such as interrupted."
 
 [transcript.unavailable]
 en = "No live transcript for this call. Its transcript is in the call log after the call."
+fr = "Aucune transcription en direct pour cet appel. Sa transcription figurera ensuite dans le journal des appels."
 ctx = "label"
 screen = "transcript"
 tier = "T3"
+state = "reviewed"
 note = "What shows when no live transcript can be shown for the call. The core has no words for this state (its `status()` is `None`); the call log has the transcript once the call is over."
 
 [window.about_district_ai]
 en = "_About District AI"
+fr = "À _propos de District AI"
 ctx = "menu"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.back]
 en = "Back"
+fr = "Précédent"
 ctx = "tooltip"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.back_a11y]
 en = "Back"
+fr = "Précédent"
 ctx = "a11y"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.main_menu]
 en = "Main Menu"
+fr = "Menu principal"
 ctx = "tooltip"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.main_menu_a11y]
 en = "Main Menu"
+fr = "Menu principal"
 ctx = "a11y"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.overview]
 en = "Overview"
+fr = "Vue d'ensemble"
 ctx = "title"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.quit]
 en = "_Quit"
+fr = "_Quitter"
 ctx = "menu"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.refresh]
 en = "Refresh"
+fr = "Actualiser"
 ctx = "tooltip"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.refresh_a11y]
 en = "Refresh"
+fr = "Actualiser"
 ctx = "a11y"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [window.refresh_button]
 en = "Refresh"
+fr = "Actualiser"
 ctx = "button"
 screen = "navigation"
+state = "reviewed"
 
 [window.workspace]
 en = "Workspace"
+fr = "Espace de travail"
 ctx = "tooltip"
 screen = "window"
+state = "reviewed"
 note = "In window.ui."
 
 [workflows.action_result]
 en = "{action}: {outcome}"
+fr = "{action}\u00A0: {outcome}"
 ctx = "label"
 screen = "workflows"
 args = { action = "str", outcome = "str" }
+state = "reviewed"
 
 [workflows.last_run]
 en = "{trigger} · Last run {status}, {when}"
+fr = "{trigger} · dernière exécution\u00A0: {status}, {when}"
 ctx = "label"
 screen = "workflows"
 args = { trigger = "str", status = "str", when = "date" }
+state = "reviewed"
 note = "status is the run's stored status in lower case."
 
 [workflows.more_runs]
 en = "More runs"
+fr = "Afficher plus d'exécutions"
 ctx = "button"
 screen = "workflows"
+state = "reviewed"
 
 [workflows.not_run]
 en = "{trigger} · Not run yet"
+fr = "{trigger} · pas encore exécuté"
 ctx = "label"
 screen = "workflows"
 args = { trigger = "str" }
+state = "reviewed"
 
 [workflows.outcome_reason]
 en = "{outcome} ({reason})"
+fr = "{outcome} ({reason})"
 ctx = "label"
 screen = "workflows"
 args = { outcome = "str", reason = "str" }
+state = "reviewed"
+same_ok = true
 
 [workflows.reading_runs]
 en = "Reading runs."
+fr = "Chargement des exécutions."
 ctx = "body"
 screen = "workflows"
+state = "reviewed"
 
 [workflows.turn_on]
 en = "Turn on {name}"
+fr = "Activer {name}"
 ctx = "a11y"
 screen = "workflows"
 args = { name = "str" }
+state = "reviewed"
 
 [workflows_page.batch_size]
 en = "Batch size"
+fr = "Taille du lot"
 ctx = "label"
 screen = "workflows_page"
+state = "reviewed"
 note = "In workflows-page.ui."
 
 [workflows_page.goal]
 en = "Goal"
+fr = "Objectif"
 ctx = "label"
 screen = "workflows_page"
+state = "reviewed"
 note = "In workflows-page.ui."
 
 [workflows_page.pause_campaign]
 en = "Pause campaign"
+fr = "Mettre la campagne en pause"
 ctx = "button"
 screen = "workflows_page"
+state = "reviewed"
 note = "In workflows-page.ui."
 
 [workflows_page.resume_campaign]
 en = "Resume campaign"
+fr = "Reprendre la campagne"
 ctx = "button"
 screen = "workflows_page"
+state = "reviewed"
 note = "In workflows-page.ui."
 
 [workflows_page.workflows]
 en = "Workflows"
+fr = "Flux de travail"
 ctx = "title"
 screen = "workflows_page"
+state = "reviewed"
 note = "In workflows-page.ui."
 
 [workflows_page.workflows_a11y]
 en = "Workflows"
+fr = "Flux de travail"
 ctx = "a11y"
 screen = "workflows_page"
+state = "reviewed"
 note = "In workflows-page.ui."
 
 [workflows_page.workflows_built_edited_district_ai]
 en = "Workflows are built and edited on the District AI website. Here you can turn each on or off and see what its runs did."
+fr = "Les flux de travail se créent et se modifient sur le site Web de District AI. Ici, activez ou désactivez chacun et voyez le résultat de ses exécutions."
 ctx = "body"
 screen = "workflows_page"
+state = "reviewed"
 note = "In workflows-page.ui."
