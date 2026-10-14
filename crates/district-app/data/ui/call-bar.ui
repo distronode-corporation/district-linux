@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- The strip under every signed-in screen while a call is ringing or under
      way: the ring with Answer and Decline, the call with its duration, mute
-     and hang up, and the call's connection notice. It outlives navigation.
+     and hang up, the call's live transcript under it, and the call's
+     connection notice. It outlives navigation.
      src/pages/call_bar.rs fills it. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
@@ -230,6 +231,9 @@
               </object>
             </child>
           </object>
+        </child>
+        <child>
+          <object class="DistrictTranscriptPanel" id="transcript"/>
         </child>
       </object>
     </property>

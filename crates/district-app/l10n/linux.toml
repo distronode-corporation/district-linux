@@ -2919,6 +2919,29 @@ ctx = "body"
 screen = "tools_view"
 note = "In tools-view.ui."
 
+[transcript.line]
+en = "{speaker}: {text}"
+ctx = "a11y"
+screen = "transcript"
+tier = "T3"
+args = { speaker = "str", text = "str" }
+note = "A transcript line's screen-reader text, and what is announced when it is final."
+
+[transcript.line_note]
+en = "{speaker}: {text} ({note})"
+ctx = "a11y"
+screen = "transcript"
+tier = "T3"
+args = { speaker = "str", text = "str", note = "str" }
+note = "A transcript line's screen-reader text with its note, such as interrupted."
+
+[transcript.unavailable]
+en = "No live transcript for this call. Its transcript is in the call log after the call."
+ctx = "label"
+screen = "transcript"
+tier = "T3"
+note = "What shows when no live transcript can be shown for the call. The core has no words for this state (its `status()` is `None`); the call log has the transcript once the call is over."
+
 [window.about_district_ai]
 en = "_About District AI"
 ctx = "menu"

@@ -44,6 +44,7 @@ mod support_request;
 mod thread;
 mod ticket_form;
 mod tools;
+mod transcript;
 mod voice_studio;
 mod workflows;
 

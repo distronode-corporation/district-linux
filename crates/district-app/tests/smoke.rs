@@ -44,8 +44,8 @@ use district_auth::{
 };
 use district_core::{
     ActiveCall, CALL_TICK, ContactWritten, CoreConfig, DialerScreen, DisconnectReason, Effect,
-    Event, HAND_OFF_CALLBACK_WAIT, IncomingRing, MediaEvent, MediaSession, MediaUpdate,
-    MicrophoneState, Notification, NotificationAction, NotificationTarget, Notifier,
+    Event, HAND_OFF_CALLBACK_WAIT, IncomingRing, LiveTranscript, MediaEvent, MediaSession,
+    MediaUpdate, MicrophoneState, Notification, NotificationAction, NotificationTarget, Notifier,
     PRESENCE_RETRY, PREVIEW_COOLDOWN, Participant, PresenceState, RING_DEADLINE, RestoreError,
     RingSurface, Route, SignedInSession, Ticket, Urgency, UrlOpener,
 };
@@ -2626,6 +2626,22 @@ fn scheduling_screen(smoke: &Smoke) {
 /// The hand-off's first leg, after a press: the service's start page opened
 /// in the browser with a fresh `state`, which is never printed, and a wait for
 /// the browser's answer. Returns the `state`.
+/// The recorded transcript frame `name`, about the call `district-dial.json`
+/// placed, with `edit` made to its data, as the workspace's socket delivers it.
+fn transcript_frame(smoke: &Smoke, name: &str, edit: impl FnOnce(&mut serde_json::Value)) {
+    let dial: serde_json::Value = fixture("district-dial.json");
+    let call_id = dial["callId"].as_str().expect("the dial names its call");
+    let mut envelope: TelemetryEnvelope = fixture(name);
+    envelope.workspace_id = AGENCY.to_owned();
+    envelope.call_id = call_id.to_owned();
+    envelope.data["callId"] = serde_json::json!(call_id);
+    edit(&mut envelope.data);
+    smoke.answer(Event::Live(WorkspaceUpdate {
+        workspace_id: AGENCY.to_owned(),
+        update: LiveUpdate::Event(envelope),
+    }));
+}
+
 fn hand_off_started(smoke: &Smoke) -> String {
     let start = smoke.take("OpenOneTimeUrl");
     let Effect::OpenOneTimeUrl { url } = &start else {
@@ -3632,6 +3648,35 @@ fn dialing(smoke: &Smoke) {
         smoke.wait_over(CALL_TICK);
     }
     assert_eq!(smoke.label("call_status"), "00:03");
+
+    // The live transcript, under the strip: connecting, then the lines said
+    // so far, and a line still being heard, provisional.
+    assert!(smoke.shown("transcript"));
+    assert_eq!(smoke.label("transcript_heading"), LiveTranscript::HEADING);
+    assert_eq!(smoke.label("transcript_status"), LiveTranscript::CONNECTING);
+    assert!(
+        smoke.pending("WatchTranscript"),
+        "asked for once the call has an id"
+    );
+    transcript_frame(smoke, "telemetry-event-transcript-snapshot.json", |_| {});
+    assert_eq!(smoke.label("transcript_status"), LiveTranscript::LIVE);
+    assert_eq!(smoke.count("transcript-line"), 2);
+    transcript_frame(
+        smoke,
+        "telemetry-event-transcript-segment-interim.json",
+        |data| {
+            let segment = &mut data["segment"];
+            segment["segmentId"] = serde_json::json!("item_c3");
+            segment["index"] = serde_json::json!(2);
+            segment["seq"] = serde_json::json!(3);
+            segment["speaker"] = serde_json::json!("agent");
+            segment["speakerName"] = serde_json::json!("Ava");
+            segment["text"] = serde_json::json!("Of course. Morning or");
+        },
+    );
+    assert_eq!(smoke.count("transcript-line"), 3);
+    assert!(smoke.shows_text("Of course. Morning or"));
+    smoke.shot("145a-call-transcript");
     let mute = smoke
         .mapped("call_mute_button")
         .downcast::<gtk::Button>()
@@ -3712,11 +3757,18 @@ fn dialing(smoke: &Smoke) {
     );
     assert!(smoke.shows_text(ActiveCall::ENDED_NOTE));
     assert!(!smoke.shown("hang_up_button") && !smoke.shown("call_mute_button"));
+    // The lines stay, and the full transcript is read after a wait.
+    assert_eq!(smoke.label("transcript_status"), LiveTranscript::ENDED);
+    assert_eq!(smoke.count("transcript-line"), 3);
     assert!(smoke.sensitive("call_button"), "free to call again");
     smoke.shot("150-call-ended");
     smoke.forget();
     smoke.click("call_dismiss");
     assert!(!smoke.shown("call_strip"));
+    assert!(
+        !smoke.shown("transcript"),
+        "the transcript goes with the call"
+    );
     let bottom = smoke
         .find("signed_in_view")
         .downcast::<adw::ToolbarView>()

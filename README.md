@@ -30,7 +30,8 @@ brings a District AI workspace to the Linux desktop:
 - **Contacts:** the workspace's contacts, and the callers it has blocked.
 - **Calls on the desktop,** in a build with calls, as the packages are: a call
   handed to you rings on this computer, a dialler places your own without
-  picking up a phone, and meeting rooms are joined the same way, audio only.
+  picking up a phone, the call's live transcript shows under it, and meeting
+  rooms are joined the same way, audio only.
 - **The rest of the workspace:** District HQ, analytics, the help desk, support
   requests, workflows, booking pages, and the phone numbers and billing, read
   only.

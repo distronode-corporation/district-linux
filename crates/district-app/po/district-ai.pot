@@ -2847,6 +2847,24 @@ msgctxt "tools_view.what_receptionist_may_do_saving"
 msgid "What the receptionist may do. Saving replaces the stored list with these switches."
 msgstr ""
 
+#. screen: transcript; ctx: a11y; tier: T3
+#. A transcript line's screen-reader text, and what is announced when it is final.
+msgctxt "transcript.line"
+msgid "{speaker}: {text}"
+msgstr ""
+
+#. screen: transcript; ctx: a11y; tier: T3
+#. A transcript line's screen-reader text with its note, such as interrupted.
+msgctxt "transcript.line_note"
+msgid "{speaker}: {text} ({note})"
+msgstr ""
+
+#. screen: transcript; ctx: label; tier: T3
+#. What shows when no live transcript can be shown for the call. The core has no words for this state (its `status()` is `None`); the call log has the transcript once the call is over.
+msgctxt "transcript.unavailable"
+msgid "No live transcript for this call. Its transcript is in the call log after the call."
+msgstr ""
+
 #. screen: window; ctx: menu; tier: T3
 #. In window.ui.
 msgctxt "window.about_district_ai"

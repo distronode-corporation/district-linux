@@ -1060,6 +1060,12 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::tools_view_save_research_setting(Locale::FrCa), "Save research setting");
     assert_eq!(text::tools_view_what_receptionist_may_do_saving(Locale::En), "What the receptionist may do. Saving replaces the stored list with these switches.");
     assert_eq!(text::tools_view_what_receptionist_may_do_saving(Locale::FrCa), "What the receptionist may do. Saving replaces the stored list with these switches.");
+    assert_eq!(text::transcript_line(Locale::En, "{speaker}", "{text}"), "{speaker}: {text}");
+    assert_eq!(text::transcript_line(Locale::FrCa, "{speaker}", "{text}"), "{speaker}: {text}");
+    assert_eq!(text::transcript_line_note(Locale::En, "{speaker}", "{text}", "{note}"), "{speaker}: {text} ({note})");
+    assert_eq!(text::transcript_line_note(Locale::FrCa, "{speaker}", "{text}", "{note}"), "{speaker}: {text} ({note})");
+    assert_eq!(text::transcript_unavailable(Locale::En), "No live transcript for this call. Its transcript is in the call log after the call.");
+    assert_eq!(text::transcript_unavailable(Locale::FrCa), "No live transcript for this call. Its transcript is in the call log after the call.");
     assert_eq!(text::window_about_district_ai(Locale::En), "_About District AI");
     assert_eq!(text::window_about_district_ai(Locale::FrCa), "_About District AI");
     assert_eq!(text::window_back(Locale::En), "Back");

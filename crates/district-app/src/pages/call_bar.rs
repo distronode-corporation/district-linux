@@ -10,6 +10,7 @@
 //! - The call: who it is with (the number dialled, or "Caller"), where it
 //!   stands or how long it has been answered, mute and hang up; once over, how
 //!   it ended, until it is put away.
+//! - The call's live transcript, under the call ([`TranscriptPanel`]).
 //! - The call's connection notice (reconnecting, audio that could not be
 //!   decrypted, a microphone that could not be used) as a banner above them.
 
@@ -27,6 +28,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::notifications;
 use crate::pages::shared::{draw_line, draw_spinner};
+use crate::pages::transcript::TranscriptPanel;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -183,6 +185,8 @@ mod imp {
         pub hang_up_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub call_dismiss: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub transcript: TemplateChild<TranscriptPanel>,
         pub sink: OnceCell<EventSink>,
         /// The call ringing, as last drawn: what Answer and Decline name.
         pub ringing: std::cell::RefCell<String>,
@@ -197,6 +201,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            TranscriptPanel::static_type();
             klass.bind_template();
         }
 
@@ -285,6 +290,7 @@ impl CallBar {
             ring.and_then(|ring| notifications::elsewhere(signed_in, &ring.workspace_id));
         self.draw_ring(ring, elsewhere);
         self.draw_call(call, session);
+        imp.transcript.update(call.and_then(ActiveCall::transcript));
         imp.strip_separator
             .set_visible(ring.is_some() && call.is_some());
         let notice = session.and_then(MediaSession::notice);
