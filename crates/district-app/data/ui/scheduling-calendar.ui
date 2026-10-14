@@ -1,13 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The booking pages' calendar section: the member's own calendars.
-     src/pages/scheduling_admin/calendar.rs fills it. -->
+<!-- The booking pages' calendar section: the member's own calendars, a card
+     per connected account and the card that connects another. What depends
+     on what was read (the frame, the cards, the buttons, the dialogs)
+     src/pages/scheduling_admin/calendar.rs builds. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
   <template class="DistrictSchedulingCalendarPane" parent="AdwBin">
     <property name="child">
-      <object class="AdwStatusPage" id="calendar_placeholder">
-        <property name="icon-name">x-office-calendar-symbolic</property>
+      <object class="GtkScrolledWindow" id="calendar_scroller">
+        <property name="hscrollbar-policy">never</property>
+        <property name="vexpand">true</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">760</property>
+            <property name="child">
+              <object class="GtkBox" id="calendar_column">
+                <property name="orientation">vertical</property>
+                <property name="spacing">18</property>
+                <property name="margin-top">18</property>
+                <property name="margin-bottom">18</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+              </object>
+            </property>
+          </object>
+        </property>
       </object>
     </property>
   </template>
