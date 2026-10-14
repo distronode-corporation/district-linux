@@ -667,6 +667,18 @@ impl Asking {
         wanted: Option<Ask<'_>>,
         answer: impl Fn(bool) + 'static,
     ) {
+        self.sync_keeping(parent, wanted, None, answer);
+    }
+
+    /// [`sync`](Self::sync), with the way out labelled `keep` (the core's
+    /// "Keep it connected") instead of Cancel when there is one.
+    pub(crate) fn sync_keeping(
+        &self,
+        parent: &impl IsA<gtk::Widget>,
+        wanted: Option<Ask<'_>>,
+        keep: Option<&str>,
+        answer: impl Fn(bool) + 'static,
+    ) {
         let mut asking = self.0.borrow_mut();
         // The same question stays, answered or not: an answer is on its way
         // to the core, and asking again before it lands would ask twice.
@@ -691,7 +703,10 @@ impl Asking {
             None => split_question(ask.question),
         };
         let dialog = adw::AlertDialog::new(Some(heading), Some(body).filter(|b| !b.is_empty()));
-        dialog.add_response("cancel", text::common_cancel(lang()));
+        dialog.add_response(
+            "cancel",
+            keep.unwrap_or_else(|| text::common_cancel(lang())),
+        );
         dialog.add_response("confirm", ask.action);
         dialog.set_response_appearance(
             "confirm",
