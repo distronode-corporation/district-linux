@@ -177,8 +177,21 @@ pub(crate) fn confirm_once<P: Sends + IsA<gtk::Widget>>(
     yes: Event,
     no: Event,
 ) {
+    confirm_once_keeping(asking, page, wanted, None, yes, no);
+}
+
+/// [`confirm_once`], with the way out labelled `keep` instead of Cancel when
+/// there is one (the core's own words for not doing it).
+pub(crate) fn confirm_once_keeping<P: Sends + IsA<gtk::Widget>>(
+    asking: &Asking,
+    page: &P,
+    wanted: Option<Ask<'_>>,
+    keep: Option<&str>,
+    yes: Event,
+    no: Event,
+) {
     let weak = page.downgrade();
-    asking.sync(page, wanted, move |confirmed| {
+    asking.sync_keeping(page, wanted, keep, move |confirmed| {
         if let Some(page) = weak.upgrade() {
             page.send(if confirmed { yes.clone() } else { no.clone() });
         }

@@ -4342,6 +4342,28 @@ fn scheduling_calendar(smoke: &Smoke) {
     assert!(smoke.shown("calendar-loading"));
     scheduling_reads(smoke, read);
     assert!(!smoke.shown("calendar-refresh"));
+    // Coming back to the window reads it again on its own, once; the
+    // window was not left while the sign-in was on its way, and nothing is
+    // read for an activity that finds no page open.
+    smoke.click("calendar-connect");
+    come_back(smoke);
+    assert!(
+        !smoke.pending("SchedulingAdmin"),
+        "the sign-in is on its way"
+    );
+    smoke.reply("SchedulingSignIn", |ticket| Event::SchedulingSignInReady {
+        ticket,
+        result: Ok(SchedulingSecret::new(
+            "https://scheduler.example.com/sso/two",
+        )),
+    });
+    smoke.take("OpenOneTimeUrl");
+    assert!(smoke.shows_text("Finish in the browser, then come back and refresh this page."));
+    come_back(smoke);
+    assert!(smoke.shown("calendar-loading"));
+    scheduling_reads(smoke, read);
+    come_back(smoke);
+    assert!(!smoke.pending("SchedulingAdmin"), "once");
 
     // One account's calendars: a failed read tried again, a switch and a
     // destination chosen, saved whole, then the account receiving bookings.
@@ -4464,6 +4486,14 @@ fn scheduling_calendar(smoke: &Smoke) {
     smoke.click("calendar-disconnect");
     assert_eq!(questions(smoke), 1);
     assert!(smoke.shows_text("Disconnect ada@example.com?"));
+    assert_eq!(
+        question(smoke)
+            .expect("asked")
+            .response_label("cancel")
+            .as_str(),
+        "Keep it connected",
+        "the core's way out"
+    );
     smoke.respond("cancel");
     assert!(!smoke.pending("SchedulingAdmin"));
     smoke.click("calendar-disconnect");
@@ -4504,6 +4534,15 @@ fn scheduling_calendar(smoke: &Smoke) {
     smoke.click("back_button");
     assert!(smoke.shown("scheduling-section-calendar"));
     smoke.forget();
+}
+
+/// The member comes back to the window, as the desktop tells it: its
+/// `is-active` changes, and it is active.
+fn come_back(smoke: &Smoke) {
+    let window = smoke.window();
+    assert!(window.is_active(), "the window has the focus");
+    window.notify("is-active");
+    smoke.pump();
 }
 
 /// The desktop hands the app `link`, as it does the browser's answer.

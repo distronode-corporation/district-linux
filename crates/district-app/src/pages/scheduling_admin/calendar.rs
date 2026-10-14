@@ -17,13 +17,14 @@
 //! dashboard, never to the app, so nothing tells the app it is done: while
 //! the sign-in is on its way the buttons wait beside a spinner, and once the
 //! page is open the section says to finish in the browser and offers Refresh
-//! in place, which reads what is connected. Every calendar write touches only
+//! in place, which reads what is connected. Coming back to the window does
+//! the same on its own, once, as Android re-reads on resume. Every calendar write touches only
 //! the member's own calendars, so a viewer may make them too. The dialogs are
 //! in [`dialog`].
 
 mod dialog;
 
-use std::cell::{OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
 
 use district_core::scheduling_admin::{
@@ -34,7 +35,7 @@ use district_core::{Event, SchedulingSection, SignedIn, Tone};
 use district_model::SchedulingCalendarStatus;
 
 use self::dialog::{DialogSlot, Send};
-use super::common::{LoadFrame, confirm_once, failure_line};
+use super::common::{LoadFrame, confirm_once_keeping, failure_line};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
@@ -86,6 +87,14 @@ pub(crate) fn disconnect_outcome(state: &DisconnectState) -> Option<(String, Ton
         .then(|| (last_destination.to_owned(), Tone::Warning))
 }
 
+/// Whether the window coming back (`active`) reads the section again: only
+/// while the consent page is open in the browser, and not while the sign-in
+/// is still on its way (reading again would drop it).
+pub(crate) fn rereads_on_return(section: Option<&CalendarSection>, active: bool) -> bool {
+    active
+        && section.is_some_and(|section| section.connect.opened.is_some() && !section.connect.busy)
+}
+
 mod imp {
     use super::*;
 
@@ -106,6 +115,11 @@ mod imp {
         pub connects: RefCell<Vec<gtk::Button>>,
         pub asking: Asking,
         pub dialog: DialogSlot,
+        /// The section as last drawn waits for the browser: the window
+        /// coming back reads it again.
+        pub handed_off: Rc<Cell<bool>>,
+        /// Whether the window's activity is watched yet.
+        pub watching: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -312,6 +326,8 @@ impl CalendarPane {
     pub(crate) fn update(&self, signed_in: &SignedIn, _section: &SchedulingSection) {
         let imp = self.imp();
         let section = signed_in.scheduling_admin.calendar.as_ref();
+        imp.handed_off.set(rereads_on_return(section, true));
+        self.watch_window();
         self.draw(section);
         imp.dialog.sync(
             self.upcast_ref(),
@@ -320,8 +336,8 @@ impl CalendarPane {
         );
         match section.and_then(disconnect_question) {
             Some((key, heading)) => {
-                let [.., action, confirm, _, _] = CalendarSection::labels();
-                confirm_once(
+                let [.., action, confirm, keep, _] = CalendarSection::labels();
+                confirm_once_keeping(
                     &imp.asking,
                     self,
                     Some(Ask {
@@ -331,12 +347,38 @@ impl CalendarPane {
                         action,
                         destructive: true,
                     }),
+                    Some(keep),
                     calendar_event(CalendarEvent::ConfirmDisconnect),
                     calendar_event(CalendarEvent::CancelDisconnect),
                 );
             }
             None => imp.asking.close(),
         }
+    }
+
+    /// Reads the section again when the window becomes active while the
+    /// consent page is open in the browser: the browser never comes back to
+    /// the app, but the member does. Hooked once, to the window the pane is
+    /// in.
+    fn watch_window(&self) {
+        let imp = self.imp();
+        if imp.watching.get() {
+            return;
+        }
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+        imp.watching.set(true);
+        let (pane, handed_off) = (self.downgrade(), Rc::clone(&imp.handed_off));
+        window.connect_is_active_notify(move |window| {
+            if let Some(pane) = pane.upgrade()
+                && window.is_active()
+                && pane.is_mapped()
+                && handed_off.replace(false)
+            {
+                pane.send(Event::Refresh);
+            }
+        });
     }
 
     fn draw(&self, section: Option<&CalendarSection>) {
@@ -498,6 +540,7 @@ impl CalendarPane {
         let imp = self.imp();
         imp.dialog.close();
         imp.asking.close();
+        imp.handed_off.set(false);
         imp.cards.replace(None);
         imp.offered.replace(None);
     }
@@ -579,6 +622,25 @@ mod tests {
             disconnect_outcome(&state),
             Some(("No.".to_owned(), Tone::Danger))
         );
+    }
+
+    #[test]
+    fn only_a_page_open_in_the_browser_is_read_again_on_return() {
+        let mut section = section(Vec::new());
+        assert!(!rereads_on_return(None, true));
+        assert!(
+            !rereads_on_return(Some(&section), true),
+            "nothing handed off"
+        );
+        section.connect.opened = Some("google".to_owned());
+        section.connect.busy = true;
+        assert!(
+            !rereads_on_return(Some(&section), true),
+            "the sign-in is on its way"
+        );
+        section.connect.busy = false;
+        assert!(rereads_on_return(Some(&section), true));
+        assert!(!rereads_on_return(Some(&section), false), "still away");
     }
 
     #[test]
