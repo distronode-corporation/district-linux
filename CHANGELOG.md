@@ -15,13 +15,17 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Changed
 
-- Built on District AI core for Rust 4.0.0-beta.2, which writes its words from a catalog
-  in the language the app chooses (`CoreConfig::locale`). The numbers page's note is
-  the core's `MarketplaceScreen::scope_note`, which replaces its read-only note.
-- Every word the app writes itself comes from one catalog,
-  `crates/district-app/l10n/linux.toml`, keyed: the `.ui` templates mark each string
-  `translatable="yes"` with its key as the `context`, looked up in the `district-ai`
-  gettext domain (`po/`), and the Rust code calls an accessor generated for each key.
+- Built on District AI core for Rust 4.0.0-beta.3. Since 4.0.0-beta.2 the core writes
+  its words from a catalog in the language the app chooses (`CoreConfig::locale`), and
+  the numbers page's note is the core's `MarketplaceScreen::scope_note`, which replaces
+  its read-only note. 4.0.0-beta.3 adds the booking pages' administration
+  (`Route::SchedulingAdmin`).
+- Every word the app writes itself comes from its catalogs,
+  `crates/district-app/l10n/linux.toml` and, for the booking pages,
+  `crates/district-app/l10n/scheduling.toml`, keyed: the `.ui` templates mark each
+  string `translatable="yes"` with its key as the `context`, looked up in the
+  `district-ai` gettext domain (`po/`), and the Rust code calls an accessor generated
+  for each key.
   `scripts/gen-l10n.py --check` holds the generated files to the catalog, and a test
   holds each template string to the catalog's English for its key.
 - Closing the window no longer quits while you are signed in: the app keeps running, so
@@ -78,6 +82,27 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   billed), and files the A2P 10DLC and toll-free registrations (each confirmed first).
   One change runs at a time, and one that may have happened even though its answer was
   lost is not offered again. Buying a number stays on the web.
+- The booking pages are managed in the app, as District AI for iOS manages them, in
+  place of "Manage on the web" and its browser hand-off. The booking pages screen lists
+  the sections, each read from the core:
+  - the overview: the booking desk at a glance and what is coming up;
+  - bookings, in four views a page at a time, and one booking: cancel (with a reason),
+    move to another day and time, and hand over to another host;
+  - event types: create, edit, switch on or off, archive, send a test email, delete,
+    and each type's hosts and routing and its questions;
+  - working hours, a week at a time, and dated overrides;
+  - calendars: Google and Microsoft through a single-use browser sign-in (read again
+    when the window comes back), CalDAV through a form, the calendars that are checked
+    for conflicts and the one that receives bookings, and disconnect;
+  - the team: members, teams and their hosts, and archiving a scheduler account once
+    it has no upcoming bookings;
+  - developer: API keys and connected apps with the MCP address, and webhooks with
+    their deliveries (a new key and a signing secret are shown once);
+  - settings: the booking page and its images, the assistant, and the member's
+    profile and notifications.
+
+  Every removal is asked once, in the core's words, and every control has a
+  screen-reader name.
 
 ## [2.2.0] - 2026-10-13
 
