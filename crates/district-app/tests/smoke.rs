@@ -47,10 +47,10 @@ use district_auth::{
 };
 use district_core::{
     ActiveCall, CALL_TICK, ContactWritten, CoreConfig, DialerScreen, DisconnectReason, Effect,
-    Event, HAND_OFF_CALLBACK_WAIT, IncomingRing, LiveTranscript, MediaEvent, MediaSession,
-    MediaUpdate, MicrophoneState, Notification, NotificationAction, NotificationTarget, Notifier,
-    NumberAnswer, PRESENCE_RETRY, PREVIEW_COOLDOWN, Participant, PresenceState, RING_DEADLINE,
-    RestoreError, RingSurface, Route, SignedInSession, Ticket, Urgency, UrlOpener,
+    Event, IncomingRing, LiveTranscript, MediaEvent, MediaSession, MediaUpdate, MicrophoneState,
+    Notification, NotificationAction, NotificationTarget, Notifier, NumberAnswer, PRESENCE_RETRY,
+    PREVIEW_COOLDOWN, Participant, PresenceState, RING_DEADLINE, RestoreError, RingSurface, Route,
+    SignedInSession, Ticket, Urgency, UrlOpener,
 };
 use district_host::SleepHandler;
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
@@ -63,11 +63,11 @@ use district_model::{
     HqPromptResponse, KnowledgeListResponse, KnowledgeModeResponse, MarkReadResponse,
     MeetingSummary, MessageSearchHit, MessageSearchResponse, MessageThreadResponse,
     MessagingResponse, NativeDevice, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse,
-    PersonaOptionsResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingHandOffResponse,
-    SchedulingStatusResponse, SendMessageResponse, SupportRequestsResponse, TelemetryEnvelope,
-    TimelineResponse, UnreadCountResponse, UsageHistoryResponse, VoiceStudioResponse,
-    WorkflowListResponse, WorkflowRun, WorkflowRunsResponse, WorkspaceBillingResponse,
-    WorkspaceConfigResponse, WorkspaceListResponse,
+    PersonaOptionsResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingStatusResponse,
+    SendMessageResponse, SupportRequestsResponse, TelemetryEnvelope, TimelineResponse,
+    UnreadCountResponse, UsageHistoryResponse, VoiceStudioResponse, WorkflowListResponse,
+    WorkflowRun, WorkflowRunsResponse, WorkspaceBillingResponse, WorkspaceConfigResponse,
+    WorkspaceListResponse,
 };
 use gtk::{gdk, gio, glib};
 use gtk4 as gtk;
@@ -2932,8 +2932,8 @@ fn workflows_screen(smoke: &Smoke) {
 }
 
 /// Booking pages: a failed read, being set up, never set up, turning them on
-/// with a setup that fails and one that lands, live, the hand-off to the web
-/// and its refusal, and a workspace not offered them.
+/// with a setup that fails and one that lands, live with its sections, a
+/// section opened and left, and a workspace not offered them.
 fn scheduling_screen(smoke: &Smoke) {
     smoke.activate("sidebar-booking");
     let status = |smoke: &Smoke, result: Result<SchedulingStatusResponse, ApiError>| {
@@ -2985,102 +2985,45 @@ fn scheduling_screen(smoke: &Smoke) {
     status(smoke, Ok(fixture("district-scheduling-status-ready.json")));
     smoke.forget();
     assert!(smoke.shows_text("Your booking page is live."));
-    assert!(smoke.shown("web_button"));
     smoke.shot("65-booking-live");
 
-    // The hand-off: the press opens the service's start page in the browser,
-    // with a fresh `state`, and waits for the browser's answer.
-    smoke.click("web_button");
-    let state = hand_off_started(smoke);
-    assert!(smoke.shown("busy_spinner"));
-    assert!(
-        smoke.sensitive("web_button"),
-        "pressable while the browser is awaited, to start over"
-    );
-    // A link that does not answer this hand-off is dropped and leaves it
-    // waiting: a stray or forged one cannot cancel it, or ask for the link.
-    hand_over(
-        smoke,
-        &format!("districtai://handoff?state=another-state&nonce={NONCE}"),
-    );
-    hand_over(
-        smoke,
-        &format!("districtai://handoff?state={state}&nonce=short"),
-    );
-    assert!(!smoke.pending("RequestSchedulingHandOff"));
-    assert!(smoke.shown("busy_spinner"));
-    // The browser's answer, which the desktop hands over as a link, goes to
-    // the core as it arrived; the link to the web is then asked for, bound to
-    // that browser by its nonce.
-    hand_over(
-        smoke,
-        &format!("districtai://handoff?state={state}&nonce={NONCE}"),
-    );
-    let asked = smoke.take("RequestSchedulingHandOff");
-    let Effect::RequestSchedulingHandOff {
-        nonce: Some(nonce), ..
-    } = &asked
-    else {
-        unreachable!("the answer binds the hand-off: {asked:?}")
-    };
-    assert_eq!(nonce.as_str(), NONCE);
-    assert!(!format!("{asked:?}").contains(NONCE), "never printed");
-    assert!(smoke.shown("busy_spinner"));
-    assert!(
-        !smoke.sensitive("web_button"),
-        "not while the link is asked for"
-    );
-    // The wait the answer ended is no longer awaited.
-    smoke.take_wait(HAND_OFF_CALLBACK_WAIT);
-    // The link: opened at once, never shown.
-    let hand_off: SchedulingHandOffResponse = desktop_fixture("district-scheduling-handoff.json");
-    let secret = hand_off.url.clone();
-    smoke.answer(Event::SchedulingHandOffReady {
-        ticket: ticket(&asked),
-        result: Ok(hand_off),
-    });
-    let opened = smoke.take("OpenOneTimeUrl");
-    let Effect::OpenOneTimeUrl { url } = &opened else {
-        unreachable!()
-    };
-    assert_eq!(url.expose(), secret);
-    assert!(!format!("{opened:?}").contains(&secret), "never printed");
-    assert!(!smoke.shows_part(&secret), "never shown");
-    assert!(!smoke.shown("busy_spinner"));
-    assert!(smoke.sensitive("web_button"));
-
-    // No browser took the start page: the hand-off is given up, not asked
-    // for unbound, and the button is free again.
-    smoke.click("web_button");
-    hand_off_started(smoke);
-    smoke.answer(Event::UrlOpenFailed);
-    assert!(!smoke.shown("busy_spinner"));
-    assert!(smoke.sensitive("web_button"));
-    assert!(!smoke.pending("RequestSchedulingHandOff"));
-    // The window says no browser opened; that notice is the window's.
-    smoke.answer(Event::DismissNotice);
+    // Live, the sections are listed, each opening its own screen: the
+    // overview reads the register, and the status afresh, which scopes it.
+    for name in [
+        "overview",
+        "event-types",
+        "hours",
+        "bookings",
+        "calendar",
+        "team",
+        "settings",
+        "developer",
+    ] {
+        assert!(smoke.shown(&format!("scheduling-section-{name}")), "{name}");
+    }
+    assert!(smoke.shows_text("Manage"));
+    assert!(smoke.shows_text("Event types"));
+    smoke.activate("scheduling-section-overview");
+    assert!(smoke.shown("scheduling_areas"));
+    assert!(smoke.pending("SchedulingAdmin"));
+    status(smoke, Ok(fixture("district-scheduling-status-ready.json")));
     smoke.forget();
-
-    // A browser that never answers: after the wait the link is asked for
-    // unbound, and here refused.
-    smoke.click("web_button");
-    hand_off_started(smoke);
-    smoke.wait_over(HAND_OFF_CALLBACK_WAIT);
-    let unbound = smoke.take("RequestSchedulingHandOff");
-    assert!(
-        matches!(
-            unbound,
-            Effect::RequestSchedulingHandOff { nonce: None, .. }
-        ),
-        "asked for unbound: {unbound:?}"
+    // Back leads to the booking pages screen, as the core's parent says.
+    smoke.click("back_button");
+    assert!(smoke.shown("scheduling-section-overview"));
+    assert!(!smoke.shown("scheduling_areas"));
+    smoke.activate("scheduling-section-team");
+    assert!(smoke.shown("team_placeholder"));
+    smoke.click("back_button");
+    smoke.forget();
+    // Nothing here hands the browser off any more: a hand-off link the
+    // desktop passes on answers nothing, and is dropped.
+    hand_over(
+        smoke,
+        &format!("districtai://handoff?state=a-state&nonce={NONCE}"),
     );
-    smoke.answer(Event::SchedulingHandOffReady {
-        ticket: ticket(&unbound),
-        result: Err(ApiError::Forbidden(ErrorDetail::default())),
-    });
-    assert!(smoke.shown("notice_box"));
-    smoke.shot("66-booking-refused");
-    smoke.click("notice_dismiss");
+    assert!(!smoke.pending("RequestSchedulingHandOff"));
+    assert!(!smoke.pending("OpenOneTimeUrl"));
     smoke.click("refresh_button");
     status(
         smoke,
@@ -3091,7 +3034,7 @@ fn scheduling_screen(smoke: &Smoke) {
         }),
     );
     assert!(smoke.shows_text("Booking pages are not offered to this workspace."));
-    assert!(!smoke.shown("enable_button") && !smoke.shown("web_button"));
+    assert!(!smoke.shown("enable_button") && !smoke.shown("scheduling-section-overview"));
     smoke.forget();
 }
 
@@ -3112,18 +3055,6 @@ fn transcript_frame(smoke: &Smoke, name: &str, edit: impl FnOnce(&mut serde_json
         workspace_id: AGENCY.to_owned(),
         update: LiveUpdate::Event(envelope),
     }));
-}
-
-fn hand_off_started(smoke: &Smoke) -> String {
-    let start = smoke.take("OpenOneTimeUrl");
-    let Effect::OpenOneTimeUrl { url } = &start else {
-        unreachable!()
-    };
-    let (page, state) = url.expose().split_once("?state=").expect("a state");
-    assert_eq!(page, "https://www.distronode.com/dashboard/handoff/start");
-    assert!(!format!("{start:?}").contains(state), "never printed");
-    assert!(smoke.pending("Wait"));
-    state.to_owned()
 }
 
 /// The desktop hands the app `link`, as it does the browser's answer.

@@ -1,15 +1,15 @@
 //! Booking pages: where the workspace's booking pages stand, turning them on
-//! where the service says the member may, and managing them on the web.
-//!
-//! Managing them goes through a link the service mints on request, which signs
-//! the browser in. The core hands it straight to the desktop's opener; this
-//! screen never holds it, shows it or keeps it, and says only that it is being
-//! asked for.
+//! where the service says the member may, and, once they are live, their
+//! sections (the overview, the event types, the hours, the bookings, the
+//! calendars, the team, the settings and the developer settings), each a
+//! screen of its own in the app ([`SchedulingAdminPage`](super::SchedulingAdminPage)).
+//! Which sections are listed, and their names, are the core's.
 
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 
 use district_core::{
-    Event, SchedulingEvent, SchedulingPresentation, SchedulingScreen, SchedulingStatus,
+    Event, Route, SchedulingEvent, SchedulingPresentation, SchedulingScreen, SchedulingSection,
+    SchedulingStatus,
 };
 
 use crate::adw;
@@ -17,9 +17,17 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang};
+use crate::pages::scheduling_admin::area_name;
+use crate::pages::shared::clear_list;
 use crate::pages::shared::{draw_spinner, failure_text, when_text};
-use crate::pages::{Sends, escape, on_click};
+use crate::pages::{Sends, escape, on_activate, on_click};
 use crate::sink::EventSink;
+
+/// The name of a section's row on the booking pages screen, for tests and
+/// accessibility tools: `scheduling-section-overview`.
+pub(crate) fn section_row_name(section: &SchedulingSection) -> String {
+    format!("scheduling-section-{}", area_name(section))
+}
 
 /// The icon for where the booking pages stand.
 pub(crate) fn state_icon(presentation: &SchedulingPresentation) -> &'static str {
@@ -72,12 +80,16 @@ mod imp {
         #[template_child]
         pub check_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub web_button: TemplateChild<gtk::Button>,
-        #[template_child]
         pub busy_spinner: TemplateChild<gtk::Spinner>,
         #[template_child]
-        pub web_caption: TemplateChild<gtk::Label>,
+        pub sections_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub sections_heading: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub sections_list: TemplateChild<gtk::ListBox>,
         pub sink: OnceCell<EventSink>,
+        /// The sections the list was last built with.
+        pub sections: RefCell<Vec<SchedulingSection>>,
     }
 
     #[glib::object_subclass]
@@ -106,11 +118,6 @@ mod imp {
                 &self.enable_button,
                 &*page,
                 scheduling(SchedulingEvent::Enable),
-            );
-            on_click(
-                &self.web_button,
-                &*page,
-                scheduling(SchedulingEvent::ManageOnWeb),
             );
             on_click(
                 &self.notice_dismiss,
@@ -207,16 +214,44 @@ impl SchedulingPage {
         imp.notice_box.set_visible(notice.is_some());
         imp.notice_label
             .set_label(notice.as_deref().unwrap_or_default());
-        let busy = screen.enabling || screen.opening();
-        draw_spinner(&imp.busy_spinner, busy);
+        draw_spinner(&imp.busy_spinner, screen.enabling);
         imp.enable_button.set_visible(shown.offers_enable(status));
         imp.enable_button.set_sensitive(!screen.enabling);
         imp.check_button.set_visible(shown.offers_refresh());
-        imp.web_button.set_visible(shown.offers_web());
-        // Pressable while the browser is awaited, to start over if it never
-        // answered; not while the link is being asked for.
-        imp.web_button.set_sensitive(!screen.minting());
-        imp.web_caption.set_visible(shown.offers_web());
+        self.draw_sections(&screen.sections());
+    }
+
+    /// The sections, each a row that opens it: built again only when the
+    /// core lists others.
+    fn draw_sections(&self, sections: &[SchedulingSection]) {
+        let imp = self.imp();
+        imp.sections_box.set_visible(!sections.is_empty());
+        if *imp.sections.borrow() == sections {
+            return;
+        }
+        imp.sections.replace(sections.to_vec());
+        let heading = SchedulingScreen::sections_heading();
+        imp.sections_heading.set_label(heading);
+        imp.sections_list
+            .update_property(&[gtk::accessible::Property::Label(heading)]);
+        clear_list(&imp.sections_list);
+        for section in sections {
+            imp.sections_list.append(&self.section_row(section));
+        }
+    }
+
+    fn section_row(&self, section: &SchedulingSection) -> adw::ActionRow {
+        let row = adw::ActionRow::builder()
+            .use_markup(false)
+            .title(section.title())
+            .subtitle(section.subtitle().unwrap_or_default())
+            .activatable(true)
+            .name(section_row_name(section))
+            .build();
+        row.add_suffix(&gtk::Image::from_icon_name("go-next-symbolic"));
+        let route = Route::SchedulingAdmin(section.clone());
+        on_activate(&row, self, move || Event::Navigate(route.clone()));
+        row
     }
 }
 
@@ -225,6 +260,18 @@ mod tests {
     use district_model::SchedulingTenant;
 
     use super::*;
+
+    #[test]
+    fn each_section_row_has_a_name_of_its_own() {
+        let names: Vec<String> = SchedulingSection::listed()
+            .iter()
+            .map(section_row_name)
+            .collect();
+        assert_eq!(names[0], "scheduling-section-overview");
+        for (index, name) in names.iter().enumerate() {
+            assert!(!names[..index].contains(name), "{name}");
+        }
+    }
 
     #[test]
     fn each_state_has_its_icon() {

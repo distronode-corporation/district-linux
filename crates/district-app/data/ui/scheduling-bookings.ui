@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The booking pages' bookings section: every booking a page at a time, and one booking.
+     src/pages/scheduling_admin/bookings.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSchedulingBookingsPane" parent="AdwBin">
+    <property name="child">
+      <object class="AdwStatusPage" id="bookings_placeholder">
+        <property name="icon-name">x-office-calendar-symbolic</property>
+      </object>
+    </property>
+  </template>
+</interface>

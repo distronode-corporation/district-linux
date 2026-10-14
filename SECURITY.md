@@ -153,26 +153,12 @@ How the app is built, so a report can say which part of it breaks.
 
 ### Hand-offs and meeting rooms
 
-- Managing booking pages opens the web in the system browser through a link the
-  service mints on request. The link carries a code good for one sign-in within a
-  minute: it is asked for when the user asks to go, opened at once, and never
-  shown, logged, stored or cached. It is opened only when it is on the service's own
-  address over HTTPS (the host is compared up to the `/` after it), and a link
-  that arrives after the user opened another workspace or signed out is not opened
-  at all.
-- That link is bound to the browser the app opened. The press first opens the
-  service's hand-off start page with a fresh `state`; the browser answers through a
-  `districtai://handoff` link, which the desktop hands to the app as it hands the
-  sign-in's `districtai://auth`, carrying a one-time nonce that the service also
-  keeps in that browser as a short-lived cookie; and the link is asked for with that
-  nonce, so it signs in only the browser holding the cookie. A `districtai://handoff`
-  link that does not answer the hand-off under way (another `state`, a malformed
-  nonce, or none awaited) is dropped and leaves it waiting, so a stray or forged
-  link cannot cancel or complete one. If the browser does not answer within ten
-  seconds the link is asked for unbound, which the service accepts until it
-  requires the binding; if no browser took the start page, the hand-off is given
-  up. The `state` and the nonce are kept in memory only, never logged, and
-  redacted from `Debug`.
+- Booking pages and their sections are managed in the app, so no screen opens
+  the web signed in any more. A `districtai://handoff` link the desktop hands
+  over is still passed to the core, as the sign-in's `districtai://auth` is, and
+  the core drops any link that does not answer a hand-off under way (another
+  `state`, a malformed nonce, or none awaited, which is always the case here), so
+  a stray or forged link does nothing.
 - A meeting room is named only by `meet_<workspace>_<name>`, built in one place.
   The service mints credentials for one other kind of room, an AI video avatar
   session that is billed, and the client has no way to name one.

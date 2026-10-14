@@ -24,6 +24,15 @@
     <file>ui/billing-page.ui</file>
     <file>ui/workflows-page.ui</file>
     <file>ui/scheduling-page.ui</file>
+    <file>ui/scheduling-admin-page.ui</file>
+    <file>ui/scheduling-overview.ui</file>
+    <file>ui/scheduling-event-types.ui</file>
+    <file>ui/scheduling-hours.ui</file>
+    <file>ui/scheduling-bookings.ui</file>
+    <file>ui/scheduling-calendar.ui</file>
+    <file>ui/scheduling-team.ui</file>
+    <file>ui/scheduling-settings.ui</file>
+    <file>ui/scheduling-developer.ui</file>
     <file>ui/desk-page.ui</file>
     <file>ui/desk-ticket-view.ui</file>
     <file>ui/desk-settings-view.ui</file>

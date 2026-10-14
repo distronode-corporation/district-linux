@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The booking pages' event types section: the event types, and one event type.
+     src/pages/scheduling_admin/event_types.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSchedulingEventTypesPane" parent="AdwBin">
+    <property name="child">
+      <object class="AdwStatusPage" id="event_types_placeholder">
+        <property name="icon-name">x-office-calendar-symbolic</property>
+      </object>
+    </property>
+  </template>
+</interface>

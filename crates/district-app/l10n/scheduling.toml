@@ -1,0 +1,11 @@
+[meta]
+catalog = "linux_scheduling"
+platform = "gtk"
+apple = false
+
+[scheduling_admin.failed_title]
+en = "Could not load this section"
+ctx = "title"
+screen = "scheduling_admin"
+tier = "T3"
+note = "Heading over why a section of the booking pages (the event types, the bookings, the team...) could not be read. The reason is under it."

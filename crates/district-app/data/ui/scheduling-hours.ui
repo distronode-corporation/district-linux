@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The booking pages' hours section: the weekly hours, and the dated overrides.
+     src/pages/scheduling_admin/hours.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSchedulingHoursPane" parent="AdwBin">
+    <property name="child">
+      <object class="AdwStatusPage" id="hours_placeholder">
+        <property name="icon-name">x-office-calendar-symbolic</property>
+      </object>
+    </property>
+  </template>
+</interface>

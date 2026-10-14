@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The booking pages' developer section: API keys, connected apps and webhooks.
+     src/pages/scheduling_admin/developer.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSchedulingDeveloperPane" parent="AdwBin">
+    <property name="child">
+      <object class="AdwStatusPage" id="developer_placeholder">
+        <property name="icon-name">x-office-calendar-symbolic</property>
+      </object>
+    </property>
+  </template>
+</interface>

@@ -382,7 +382,7 @@ blocked callers, District HQ (a question, an answer in Markdown and its links, a
 change proposed, dismissed and confirmed), analytics and its charts, the phone
 numbers and their search, a number's routing reapplied and its release, the
 carrier tab (a trunk, the passcode sender, a lookup, both registrations), billing, workflows with their runs, switches and the
-campaign's question, booking pages and the hand-off to the web, the help desk
+campaign's question, booking pages and their sections, the help desk
 (the queue, raising a ticket, a ticket's status and reply, the settings and a logo
 picked in the file chooser), support requests (raising one, a reply, closing one),
 the meeting rooms lobby and a meeting's record, the workspace settings (each

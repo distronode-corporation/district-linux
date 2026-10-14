@@ -302,6 +302,14 @@
                                         </child>
                                         <child>
                                           <object class="GtkStackPage">
+                                            <property name="name">scheduling-admin</property>
+                                            <property name="child">
+                                              <object class="DistrictSchedulingAdminPage" id="scheduling_admin_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
                                             <property name="name">desk</property>
                                             <property name="child">
                                               <object class="DistrictDeskPage" id="desk_page"/>
