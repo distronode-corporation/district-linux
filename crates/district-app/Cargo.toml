@@ -138,8 +138,10 @@ depends = "$auto, libpulse0, libgtk-4-media-gstreamer, gstreamer1.0-plugins-base
 recommends = "gnome-keyring | kwallet6 | keepassxc, xdg-desktop-portal, pipewire-pulse | pulseaudio"
 assets = [
   ["target/release/district-ai", "usr/bin/", "755"],
-  ["data/com.distronode.DistrictAI.desktop", "usr/share/applications/", "644"],
-  ["data/com.distronode.DistrictAI.metainfo.xml", "usr/share/metainfo/", "644"],
+  # Written by scripts/build-deb.sh: the files under data/, with the catalog's
+  # French beside the English when French is on.
+  ["target/release/metadata/com.distronode.DistrictAI.desktop", "usr/share/applications/", "644"],
+  ["target/release/metadata/com.distronode.DistrictAI.metainfo.xml", "usr/share/metainfo/", "644"],
   ["data/icons/hicolor/scalable/apps/com.distronode.DistrictAI.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
   ["data/icons/hicolor/symbolic/apps/com.distronode.DistrictAI-symbolic.svg", "usr/share/icons/hicolor/symbolic/apps/", "644"],
   # Written by scripts/build-deb.sh: the D-Bus service from its template, with

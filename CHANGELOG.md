@@ -72,6 +72,12 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Added
 
+- The desktop entry and the AppStream metadata are written from the catalog: their
+  words are keys of `crates/district-app/l10n/linux.toml` (`desktop.*`, `metainfo.*`),
+  and `scripts/gen-l10n.py` writes both files from templates beside them, with the same
+  English words as before. With French on, the packages install them with the catalog's
+  French beside the English (`Comment[fr]=`, `xml:lang="fr"`), and deb.yml and
+  flatpak.yml check that they hold French exactly when the catalog ships.
 - Canadian French behind the `fr-ca` cargo feature, off by default and in every package:
   the app follows a French desktop (`glib::language_names`), the core and gettext are
   checked to agree at start-up, and the packages carry the compiled catalog only with

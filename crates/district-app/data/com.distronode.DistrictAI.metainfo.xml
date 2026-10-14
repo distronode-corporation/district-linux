@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2026 Distronode Corporation -->
+<!-- Written by scripts/gen-l10n.py from the .in template beside it and
+     the catalog's metainfo.* keys: edit those, not this file. -->
 <component type="desktop-application">
   <id>com.distronode.DistrictAI</id>
   <metadata_license>CC0-1.0</metadata_license>

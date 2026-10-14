@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Distronode Corporation -->
+<component type="desktop-application">
+  <id>com.distronode.DistrictAI</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+
+  <name>@metainfo.name@</name>
+  <!-- Software-centre guidelines: 35 characters at most, no full stop.
+       The desktop entry's Comment says the same. -->
+  <summary>@metainfo.summary@</summary>
+  <description>
+    <p>@metainfo.description.p1@</p>
+    <ul>
+      <li>@metainfo.description.li1@</li>
+      <li>@metainfo.description.li2@</li>
+      <li>@metainfo.description.li3@</li>
+      <li>@metainfo.description.li4@</li>
+      <li>@metainfo.description.li5@</li>
+      <li>@metainfo.description.li6@</li>
+      <li>@metainfo.description.li7@</li>
+      <li>@metainfo.description.li8@</li>
+    </ul>
+    <p>@metainfo.description.p2@</p>
+  </description>
+
+  <developer id="com.distronode">
+    <name>Distronode Corporation</name>
+  </developer>
+
+  <launchable type="desktop-id">com.distronode.DistrictAI.desktop</launchable>
+  <provides>
+    <binary>district-ai</binary>
+  </provides>
+
+  <url type="homepage">https://www.distronode.com</url>
+  <url type="bugtracker">https://github.com/distronode-corporation/district-linux/issues</url>
+  <url type="vcs-browser">https://github.com/distronode-corporation/district-linux</url>
+  <url type="contribute">https://github.com/distronode-corporation/district-linux/blob/main/CONTRIBUTING.md</url>
+
+  <!-- Each banner wants a colour of its own lightness: the dark theme's light
+       teal accent on a light banner, the light theme's deep teal on a dark
+       one. Both are district_core::palette's, which a test holds them to. -->
+  <branding>
+    <color type="primary" scheme_preference="light">#67cded</color>
+    <color type="primary" scheme_preference="dark">#01657d</color>
+  </branding>
+
+  <!-- OARS 1.1, where an attribute left out is "none". The app shows no
+       content of its own: what it carries is what people send each other
+       through a District AI workspace, and what that costs. -->
+  <content_rating type="oars-1.1">
+    <!-- The inbox sends and receives text messages and emails between the
+         workspace's members and anyone who writes to the business, and nothing
+         moderates them. -->
+    <content_attribute id="social-chat">intense</content_attribute>
+    <!-- Calls on the desktop and meeting rooms carry live audio between the
+         member and whoever calls, is called or joins, unmoderated. -->
+    <content_attribute id="social-audio">intense</content_attribute>
+    <!-- Contacts' email addresses and phone numbers are shared with every member
+         of the workspace, and replies can go out by email. -->
+    <content_attribute id="social-contacts">intense</content_attribute>
+    <!-- Everything goes through the District AI service's online API. The app
+         sends no crash reports, analytics or diagnostics. -->
+    <content_attribute id="social-info">mild</content_attribute>
+    <!-- Messages sent, calls placed and the AI features (a reply written by
+         AI, a District HQ question, a persona audition, a knowledge document)
+         are billed to the workspace's District AI account. -->
+    <content_attribute id="money-purchasing">intense</content_attribute>
+  </content_rating>
+
+  <!-- The pictures are the PNGs under data/screenshots/, drawn from the real
+       window by tests/store_screenshots.rs. A store takes a picture's link as
+       given, so a link names a tag, never a branch, which moves. The links name this release's own tag, v followed by the version
+       in Cargo.toml: the metadata at a tag then names the pictures that tag
+       holds, so a release needs no second change to point at its pictures,
+       and a store's pictures change only with a release, as the app does. A
+       commit could not be named that way, because the commit that changes a
+       picture cannot name itself. Until the tag is pushed, and while the
+       repository is private, the links answer nothing; nothing reads them
+       before a release. scripts/check-version.py holds the tag to the
+       version, and scripts/check-screenshots.py holds each link to a
+       committed picture and each committed picture to a link. -->
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call-log.png</image>
+      <caption>@metainfo.screenshot_caption.call_log@</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/inbox.png</image>
+      <caption>@metainfo.screenshot_caption.inbox@</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call.png</image>
+      <caption>@metainfo.screenshot_caption.call@</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/contacts.png</image>
+      <caption>@metainfo.screenshot_caption.contacts@</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/overview.png</image>
+      <caption>@metainfo.screenshot_caption.overview@</caption>
+    </screenshot>
+  </screenshots>
+
+  <!-- The newest release comes first and is always the version in Cargo.toml.
+       Until CHANGELOG.md has a section for that version it is
+       type="development"; releasing it makes it a stable release (no type)
+       with the date of its CHANGELOG.md section. scripts/check-version.py
+       holds all of that. -->
+  <releases>
+    <release version="2.2.0" date="2026-10-13">
+      <description>
+        <p>@metainfo.release_2_2_0.p@</p>
+        <ul>
+          <li>@metainfo.release_2_2_0.li1@</li>
+          <li>@metainfo.release_2_2_0.li2@</li>
+          <li>@metainfo.release_2_2_0.li3@</li>
+          <li>@metainfo.release_2_2_0.li4@</li>
+        </ul>
+      </description>
+    </release>
+    <release version="2.1.0" date="2026-10-05">
+      <description>
+        <p>@metainfo.release_2_1_0.p@</p>
+        <ul>
+          <li>@metainfo.release_2_1_0.li1@</li>
+          <li>@metainfo.release_2_1_0.li2@</li>
+          <li>@metainfo.release_2_1_0.li3@</li>
+        </ul>
+      </description>
+    </release>
+    <release version="2.0.0" date="2026-10-04"/>
+    <release version="1.0.0" date="2026-10-02"/>
+    <release version="0.1.0" date="2026-09-28"/>
+  </releases>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+
+  <keywords>@metainfo.keywords@</keywords>
+</component>

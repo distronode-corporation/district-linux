@@ -1280,6 +1280,30 @@ msgctxt "desk_ticket_view.waiting_customer"
 msgid "Waiting on the customer"
 msgstr "En attente du client"
 
+#. screen: desktop; ctx: label; tier: T3
+#. The desktop entry's Comment; the same words as the metainfo summary. 35 characters at most.
+msgctxt "desktop.comment"
+msgid "Your AI receptionist on the desktop"
+msgstr "Réceptionniste IA sur votre bureau"
+
+#. screen: desktop; ctx: label; tier: T3
+#. The desktop entry's GenericName.
+msgctxt "desktop.generic_name"
+msgid "AI Receptionist"
+msgstr "Réceptionniste IA"
+
+#. screen: desktop; ctx: label; tier: T3
+#. The desktop entry's Keywords: search words, each ended by a semicolon, the last included.
+msgctxt "desktop.keywords"
+msgid "calls;phone;receptionist;voice;inbox;messages;contacts;"
+msgstr "appels;téléphone;réceptionniste;voix;boîte de réception;messages;contacts;"
+
+#. screen: desktop; ctx: label; tier: T3
+#. The desktop entry's Name. A mark: never translated.
+msgctxt "desktop.name"
+msgid "District AI"
+msgstr "District AI"
+
 #. screen: devices; ctx: label; tier: T3
 msgctxt "devices.last_active"
 msgid "Last active {when}"
@@ -2038,6 +2062,168 @@ msgstr "Enregistrer"
 msgctxt "messaging_view.sender_each_channel"
 msgid "Sender for each channel"
 msgstr "Expéditeur de chaque canal"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li1"
+msgid "The call log, with each call's summary and transcript"
+msgstr "Le journal des appels, avec le résumé et la transcription de chaque appel"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li2"
+msgid "One inbox for your customers' text messages and emails, with a reply written by AI when you ask for one"
+msgstr "Une seule boîte de réception pour les textos et les courriels de vos clients, avec une réponse rédigée par l'IA quand vous en demandez une"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li3"
+msgid "Your contacts, and the callers you have blocked"
+msgstr "Vos contacts et les appelants que vous avez bloqués"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li4"
+msgid "Calls handed to you ring on this computer, and a dialler places your own"
+msgstr "Les appels qui vous sont transférés sonnent sur cet ordinateur, et vous passez les vôtres depuis le clavier de composition"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li5"
+msgid "Meeting rooms, audio only, and each meeting's record"
+msgstr "Des salles de réunion, en audio seulement, et le dossier de chaque réunion"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li6"
+msgid "District HQ, which answers questions about your workspace, and analytics of your calls"
+msgstr "District HQ, qui répond à vos questions sur votre espace de travail, et l'analytique de vos appels"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li7"
+msgid "Your receptionist's settings in District Studio: its persona and language, its voice part by part, its skills, what it knows, and where it sends calls"
+msgstr "Les paramètres de votre réceptionniste dans District Studio : sa persona et sa langue, sa voix élément par élément, ses compétences, ce qu'elle sait et où elle achemine les appels"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.li8"
+msgid "The help desk, support requests, workflows and booking pages"
+msgstr "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.p1"
+msgid "District AI answers your business's phone calls with an AI receptionist. This app brings your District AI workspace to the Linux desktop, so you can see what the receptionist handled, reply to your customers and take calls yourself."
+msgstr "District AI répond aux appels de votre entreprise grâce à une réceptionniste IA. Cette application amène votre espace de travail District AI sur le bureau Linux : vous voyez ce que la réceptionniste a traité, vous répondez à vos clients et vous prenez des appels vous-même."
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The app's description in its AppStream metadata, as software centres show it.
+msgctxt "metainfo.description.p2"
+msgid "You need a District AI account. What you can see and change follows your role in each workspace, and taking or placing calls needs a role that allows them. The app signs in through your web browser, so it never sees your password, and it follows your system's light and dark style."
+msgstr "Un compte District AI est nécessaire. Ce que vous pouvez voir et modifier dépend de votre rôle dans chaque espace de travail, et prendre ou passer des appels exige un rôle qui le permet. L'application se connecte par votre navigateur Web, elle ne voit donc jamais votre mot de passe, et elle suit le style clair ou sombre de votre système."
+
+#. screen: metainfo; ctx: label; tier: T3
+#. AppStream keywords, comma-separated here; each becomes its own <keyword>.
+msgctxt "metainfo.keywords"
+msgid "calls, phone, receptionist, voice, inbox, contacts"
+msgstr "appels, téléphone, réceptionniste, voix, boîte de réception, contacts"
+
+#. screen: metainfo; ctx: label; tier: T3
+#. The app's name in its AppStream metadata. A mark: never translated.
+msgctxt "metainfo.name"
+msgid "District AI"
+msgstr "District AI"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_1_0.li1"
+msgid "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_1_0.li2"
+msgid "Workspace: messaging accounts, members and phone numbers"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_1_0.li3"
+msgid "Screen titles follow the service: Voice, Skills and Knowledge"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_1_0.p"
+msgid "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names."
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_2_0.li1"
+msgid "A link to the web dashboard no longer signs in someone else's browser"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_2_0.li2"
+msgid "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_2_0.li3"
+msgid "A reply typed just before quitting is saved"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_2_0.li4"
+msgid "Built on District AI core for Rust 3.1.1, shared with District AI for Windows"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_2_2_0.p"
+msgid "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does."
+msgstr ""
+
+#. screen: metainfo; ctx: label; tier: T3
+#. A screenshot's caption in the AppStream metadata.
+msgctxt "metainfo.screenshot_caption.call"
+msgid "A call placed from the desktop, with mute and hang up always in reach"
+msgstr "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main"
+
+#. screen: metainfo; ctx: label; tier: T3
+#. A screenshot's caption in the AppStream metadata.
+msgctxt "metainfo.screenshot_caption.call_log"
+msgid "The call log, with each call's summary and transcript"
+msgstr "Le journal des appels, avec le résumé et la transcription de chaque appel"
+
+#. screen: metainfo; ctx: label; tier: T3
+#. A screenshot's caption in the AppStream metadata.
+msgctxt "metainfo.screenshot_caption.contacts"
+msgid "Your contacts, with each customer's details"
+msgstr "Vos contacts, avec les coordonnées de chaque client"
+
+#. screen: metainfo; ctx: label; tier: T3
+#. A screenshot's caption in the AppStream metadata.
+msgctxt "metainfo.screenshot_caption.inbox"
+msgid "Your customers' text messages and emails in one inbox"
+msgstr "Les textos et les courriels de vos clients dans une seule boîte de réception"
+
+#. screen: metainfo; ctx: label; tier: T3
+#. A screenshot's caption in the AppStream metadata.
+msgctxt "metainfo.screenshot_caption.overview"
+msgid "The workspace at a glance, with its latest calls"
+msgstr "L'espace de travail en un coup d'œil, avec ses derniers appels"
+
+#. screen: metainfo; ctx: label; tier: T3
+#. AppStream summary: 35 characters at most, no full stop. The desktop entry's Comment says the same.
+msgctxt "metainfo.summary"
+msgid "Your AI receptionist on the desktop"
+msgstr "Réceptionniste IA sur votre bureau"
 
 #. screen: notifications; ctx: notification; tier: T0
 #. A notification's heading naming another workspace: "Incoming call in Bravo Client".

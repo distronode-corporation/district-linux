@@ -1779,6 +1779,37 @@ screen = "desk_ticket_view"
 state = "reviewed"
 note = "In desk-ticket-view.ui."
 
+[desktop.comment]
+en = "Your AI receptionist on the desktop"
+fr = "Réceptionniste IA sur votre bureau"
+ctx = "label"
+screen = "desktop"
+state = "draft"
+note = "The desktop entry's Comment; the same words as the metainfo summary. 35 characters at most."
+
+[desktop.generic_name]
+en = "AI Receptionist"
+fr = "Réceptionniste IA"
+ctx = "label"
+screen = "desktop"
+state = "draft"
+note = "The desktop entry's GenericName."
+
+[desktop.keywords]
+en = "calls;phone;receptionist;voice;inbox;messages;contacts;"
+fr = "appels;téléphone;réceptionniste;voix;boîte de réception;messages;contacts;"
+ctx = "label"
+screen = "desktop"
+state = "draft"
+note = "The desktop entry's Keywords: search words, each ended by a semicolon, the last included."
+
+[desktop.name]
+en = "District AI"
+ctx = "label"
+screen = "desktop"
+fixed = true
+note = "The desktop entry's Name. A mark: never translated."
+
 [devices.last_active]
 en = "Last active {when}"
 fr = "Dernière activité\u00A0: {when}"
@@ -2839,6 +2870,203 @@ ctx = "title"
 screen = "messaging_view"
 state = "reviewed"
 note = "In messaging-view.ui."
+
+[metainfo.description.li1]
+en = "The call log, with each call's summary and transcript"
+fr = "Le journal des appels, avec le résumé et la transcription de chaque appel"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.li2]
+en = "One inbox for your customers' text messages and emails, with a reply written by AI when you ask for one"
+fr = "Une seule boîte de réception pour les textos et les courriels de vos clients, avec une réponse rédigée par l'IA quand vous en demandez une"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.li3]
+en = "Your contacts, and the callers you have blocked"
+fr = "Vos contacts et les appelants que vous avez bloqués"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.li4]
+en = "Calls handed to you ring on this computer, and a dialler places your own"
+fr = "Les appels qui vous sont transférés sonnent sur cet ordinateur, et vous passez les vôtres depuis le clavier de composition"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.li5]
+en = "Meeting rooms, audio only, and each meeting's record"
+fr = "Des salles de réunion, en audio seulement, et le dossier de chaque réunion"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.li6]
+en = "District HQ, which answers questions about your workspace, and analytics of your calls"
+fr = "District HQ, qui répond à vos questions sur votre espace de travail, et l'analytique de vos appels"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.li7]
+en = "Your receptionist's settings in District Studio: its persona and language, its voice part by part, its skills, what it knows, and where it sends calls"
+fr = "Les paramètres de votre réceptionniste dans District Studio\u00A0: sa persona et sa langue, sa voix élément par élément, ses compétences, ce qu'elle sait et où elle achemine les appels"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.li8]
+en = "The help desk, support requests, workflows and booking pages"
+fr = "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.p1]
+en = "District AI answers your business's phone calls with an AI receptionist. This app brings your District AI workspace to the Linux desktop, so you can see what the receptionist handled, reply to your customers and take calls yourself."
+fr = "District AI répond aux appels de votre entreprise grâce à une réceptionniste IA. Cette application amène votre espace de travail District AI sur le bureau Linux\u00A0: vous voyez ce que la réceptionniste a traité, vous répondez à vos clients et vous prenez des appels vous-même."
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.description.p2]
+en = "You need a District AI account. What you can see and change follows your role in each workspace, and taking or placing calls needs a role that allows them. The app signs in through your web browser, so it never sees your password, and it follows your system's light and dark style."
+fr = "Un compte District AI est nécessaire. Ce que vous pouvez voir et modifier dépend de votre rôle dans chaque espace de travail, et prendre ou passer des appels exige un rôle qui le permet. L'application se connecte par votre navigateur Web, elle ne voit donc jamais votre mot de passe, et elle suit le style clair ou sombre de votre système."
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The app's description in its AppStream metadata, as software centres show it."
+
+[metainfo.keywords]
+en = "calls, phone, receptionist, voice, inbox, contacts"
+fr = "appels, téléphone, réceptionniste, voix, boîte de réception, contacts"
+ctx = "label"
+screen = "metainfo"
+state = "draft"
+note = "AppStream keywords, comma-separated here; each becomes its own <keyword>."
+
+[metainfo.name]
+en = "District AI"
+ctx = "label"
+screen = "metainfo"
+fixed = true
+note = "The app's name in its AppStream metadata. A mark: never translated."
+
+[metainfo.release_2_1_0.li1]
+en = "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge"
+ctx = "body"
+screen = "metainfo"
+note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_1_0.li2]
+en = "Workspace: messaging accounts, members and phone numbers"
+ctx = "body"
+screen = "metainfo"
+note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_1_0.li3]
+en = "Screen titles follow the service: Voice, Skills and Knowledge"
+ctx = "body"
+screen = "metainfo"
+note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_1_0.p]
+en = "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names."
+ctx = "body"
+screen = "metainfo"
+note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_2_0.li1]
+en = "A link to the web dashboard no longer signs in someone else's browser"
+ctx = "body"
+screen = "metainfo"
+note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_2_0.li2]
+en = "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio"
+ctx = "body"
+screen = "metainfo"
+note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_2_0.li3]
+en = "A reply typed just before quitting is saved"
+ctx = "body"
+screen = "metainfo"
+note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_2_0.li4]
+en = "Built on District AI core for Rust 3.1.1, shared with District AI for Windows"
+ctx = "body"
+screen = "metainfo"
+note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_2_2_0.p]
+en = "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does."
+ctx = "body"
+screen = "metainfo"
+note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.screenshot_caption.call]
+en = "A call placed from the desktop, with mute and hang up always in reach"
+fr = "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main"
+ctx = "label"
+screen = "metainfo"
+state = "draft"
+note = "A screenshot's caption in the AppStream metadata."
+
+[metainfo.screenshot_caption.call_log]
+en = "The call log, with each call's summary and transcript"
+fr = "Le journal des appels, avec le résumé et la transcription de chaque appel"
+ctx = "label"
+screen = "metainfo"
+state = "draft"
+note = "A screenshot's caption in the AppStream metadata."
+
+[metainfo.screenshot_caption.contacts]
+en = "Your contacts, with each customer's details"
+fr = "Vos contacts, avec les coordonnées de chaque client"
+ctx = "label"
+screen = "metainfo"
+state = "draft"
+note = "A screenshot's caption in the AppStream metadata."
+
+[metainfo.screenshot_caption.inbox]
+en = "Your customers' text messages and emails in one inbox"
+fr = "Les textos et les courriels de vos clients dans une seule boîte de réception"
+ctx = "label"
+screen = "metainfo"
+state = "draft"
+note = "A screenshot's caption in the AppStream metadata."
+
+[metainfo.screenshot_caption.overview]
+en = "The workspace at a glance, with its latest calls"
+fr = "L'espace de travail en un coup d'œil, avec ses derniers appels"
+ctx = "label"
+screen = "metainfo"
+state = "draft"
+note = "A screenshot's caption in the AppStream metadata."
+
+[metainfo.summary]
+en = "Your AI receptionist on the desktop"
+fr = "Réceptionniste IA sur votre bureau"
+ctx = "label"
+screen = "metainfo"
+state = "draft"
+note = "AppStream summary: 35 characters at most, no full stop. The desktop entry's Comment says the same."
 
 [notification.in_workspace]
 en = "{heading} in {workspace}"

@@ -1,3 +1,5 @@
+# Written by scripts/gen-l10n.py from the .in template beside it and the
+# catalog's desktop.* keys: edit those, not this file.
 [Desktop Entry]
 Type=Application
 Name=District AI
