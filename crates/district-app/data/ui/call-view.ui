@@ -106,6 +106,14 @@
                 <child>
                   <object class="AdwPreferencesGroup" id="summary_group">
                     <property name="title" translatable="yes" context="call_view.summary">Summary</property>
+                    <property name="header-suffix">
+                      <object class="GtkButton" id="report_button">
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </property>
                     <child>
                       <object class="GtkLabel" id="summary">
                         <property name="xalign">0</property>

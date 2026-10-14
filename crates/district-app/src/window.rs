@@ -11,8 +11,8 @@ use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
     CallEvent, CallLog, Capabilities, ContactList, ConversationList, Event, LiveStatus,
-    MicrophoneState, Model, Route, SessionState, SignedIn, ThreadHistory, WorkspaceSection,
-    Workspaces, WorkspacesState,
+    MicrophoneState, Model, Route, SessionState, SignedIn, SupportEvent, ThreadHistory,
+    WorkspaceSection, Workspaces, WorkspacesState,
 };
 
 use crate::adw;
@@ -24,7 +24,7 @@ use crate::pages::{
     AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
     DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
     SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage, WorkflowsPage, draw_line,
-    draw_spinner, in_contacts, in_desk, in_settings, in_support,
+    draw_spinner, in_contacts, in_desk, in_settings, in_support, report,
 };
 
 /// The window action that turns the microphone on or off, and its shortcut.
@@ -98,6 +98,8 @@ mod imp {
         pub notice_banner: TemplateChild<adw::Banner>,
         #[template_child]
         pub live_banner: TemplateChild<adw::Banner>,
+        #[template_child]
+        pub report_banner: TemplateChild<adw::Banner>,
         #[template_child]
         pub page_stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -189,6 +191,7 @@ mod imp {
             self.keyring_banner.set_use_markup(false);
             self.notice_banner.set_use_markup(false);
             self.live_banner.set_use_markup(false);
+            self.report_banner.set_use_markup(false);
             let weak = window.downgrade();
             self.back_button.connect_clicked(move |_| {
                 if let Some(window) = weak.upgrade() {
@@ -224,6 +227,12 @@ mod imp {
             self.live_banner.connect_button_clicked(move |_| {
                 if let Some(window) = weak.upgrade() {
                     window.send(Event::Refresh);
+                }
+            });
+            let weak = window.downgrade();
+            self.report_banner.connect_button_clicked(move |_| {
+                if let Some(window) = weak.upgrade() {
+                    window.send(Event::Support(SupportEvent::DismissReport));
                 }
             });
             for split in [
@@ -528,6 +537,14 @@ impl DistrictWindow {
                 .then_some(text::window_refresh_button(lang())),
         );
         imp.live_banner.set_revealed(live.is_some());
+        report::track(&signed_in.support);
+        let report_status = signed_in.support.report_status();
+        let report = report::banner(report_status.as_ref());
+        let (report_line, closable) = report.unwrap_or_default();
+        imp.report_banner.set_title(report_line);
+        imp.report_banner
+            .set_button_label(closable.then_some(text::common_dismiss_button(lang())));
+        imp.report_banner.set_revealed(report.is_some());
         if *route != Route::Devices {
             imp.devices_page.ask(None);
         }

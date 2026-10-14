@@ -2183,6 +2183,42 @@ ctx = "button"
 screen = "reply_box"
 note = "In reply-box.ui."
 
+[report.button]
+en = "Report"
+ctx = "button"
+screen = "report"
+note = "Under AI-written content (a call's summary, an HQ answer): opens the dialog that reports it to Distronode."
+
+[report.button_a11y]
+en = "Report this AI-generated content"
+ctx = "a11y"
+screen = "report"
+note = "The name a screen reader says for the Report button."
+
+[report.not_sent_a11y]
+en = "Report not sent"
+ctx = "a11y"
+screen = "report"
+note = "The name a screen reader says for the line in the report dialog that says why it cannot be sent now."
+
+[report.on_web]
+en = "Report on the web"
+ctx = "button"
+screen = "report"
+note = "In place of Report for a member whose role cannot send support requests: opens the support page in the browser."
+
+[report.on_web_a11y]
+en = "Report this AI-generated content on the support website"
+ctx = "a11y"
+screen = "report"
+note = "The name a screen reader says for the Report on the web button."
+
+[report.sending]
+en = "Sending your report."
+ctx = "body"
+screen = "report"
+note = "The banner at the top of the window while a report is on its way."
+
 [rooms.a_guest]
 en = "A guest"
 ctx = "label"

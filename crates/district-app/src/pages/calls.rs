@@ -260,7 +260,7 @@ impl CallsPage {
         match open {
             Some(screen) => {
                 imp.detail_stack.set_visible_child_name("call");
-                imp.call_view.update(screen);
+                imp.call_view.update(screen, &signed_in.capabilities());
             }
             None => imp.detail_stack.set_visible_child_name("none"),
         }

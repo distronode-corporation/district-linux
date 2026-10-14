@@ -3392,6 +3392,60 @@ pub fn reply_box_send(l: Locale) -> &'static str {
     }
 }
 
+/// `report.button`
+#[must_use]
+pub fn report_button(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Report",
+        Locale::FrCa => "Report",
+    }
+}
+
+/// `report.button_a11y`
+#[must_use]
+pub fn report_button_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Report this AI-generated content",
+        Locale::FrCa => "Report this AI-generated content",
+    }
+}
+
+/// `report.not_sent_a11y`
+#[must_use]
+pub fn report_not_sent_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Report not sent",
+        Locale::FrCa => "Report not sent",
+    }
+}
+
+/// `report.on_web`
+#[must_use]
+pub fn report_on_web(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Report on the web",
+        Locale::FrCa => "Report on the web",
+    }
+}
+
+/// `report.on_web_a11y`
+#[must_use]
+pub fn report_on_web_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Report this AI-generated content on the support website",
+        Locale::FrCa => "Report this AI-generated content on the support website",
+    }
+}
+
+/// `report.sending`
+#[must_use]
+pub fn report_sending(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Sending your report.",
+        Locale::FrCa => "Sending your report.",
+    }
+}
+
 /// `rooms.a_guest`
 #[must_use]
 pub fn rooms_a_guest(l: Locale) -> &'static str {
