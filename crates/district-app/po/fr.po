@@ -2578,6 +2578,24 @@ msgid "Add a host"
 msgstr ""
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for the box where the member types when a window of their working hours ends (17:00); which window follows, as in Closes: Monday, range 1.
+msgctxt "scheduling_admin.hours_closes_a11y"
+msgid "Closes"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for the box where the member types when a window of their working hours starts (09:00); which window follows, as in Opens: Monday, range 1.
+msgctxt "scheduling_admin.hours_opens_a11y"
+msgid "Opens"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. A screen reader's name for one window of a day in the working hours editor: the weekday (Monday), then which of that day's ranges it is, counting from 1. Follows a control's name, as in Remove: Monday, range 2. Range is the editor's own word (Add range).
+msgctxt "scheduling_admin.hours_window_a11y"
+msgid "{day}, range {number}"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a part of a booking pages section still being read.
 msgctxt "scheduling_admin.loading_a11y"
 msgid "Loading"

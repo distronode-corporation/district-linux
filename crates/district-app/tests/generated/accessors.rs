@@ -952,6 +952,12 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::scheduling_admin_host_role(Locale::FrCa), "Role");
     assert_eq!(text::scheduling_admin_hosts_add_heading(Locale::En), "Add a host");
     assert_eq!(text::scheduling_admin_hosts_add_heading(Locale::FrCa), "Add a host");
+    assert_eq!(text::scheduling_admin_hours_closes_a11y(Locale::En), "Closes");
+    assert_eq!(text::scheduling_admin_hours_closes_a11y(Locale::FrCa), "Closes");
+    assert_eq!(text::scheduling_admin_hours_opens_a11y(Locale::En), "Opens");
+    assert_eq!(text::scheduling_admin_hours_opens_a11y(Locale::FrCa), "Opens");
+    assert_eq!(text::scheduling_admin_hours_window_a11y(Locale::En, "{day}", 1204), "{day}, range 1204");
+    assert_eq!(text::scheduling_admin_hours_window_a11y(Locale::FrCa, "{day}", 1204), "{day}, range 1204");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::En), "Loading");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::FrCa), "Loading");
     assert_eq!(text::scheduling_page_booking_page(Locale::En), "Booking page");
