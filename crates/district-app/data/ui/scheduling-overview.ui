@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The booking pages' overview section: the register: the booking desk at a glance, and what is coming up.
+     src/pages/scheduling_admin/overview.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSchedulingOverviewPane" parent="AdwBin">
+    <property name="child">
+      <object class="AdwStatusPage" id="overview_placeholder">
+        <property name="icon-name">x-office-calendar-symbolic</property>
+      </object>
+    </property>
+  </template>
+</interface>

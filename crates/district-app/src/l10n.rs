@@ -1,9 +1,10 @@
 //! The app's words, in English and Canadian French, and the language it
 //! writes in.
 //!
-//! One catalog, `l10n/linux.toml`, holds every string the app writes itself,
-//! keyed. `tools/l10n/l10n.py` generates it two ways (`scripts/gen-l10n.py`,
-//! which CI runs with `--check`):
+//! Two catalogs hold every string the app writes itself, keyed:
+//! `l10n/linux.toml`, and `l10n/scheduling.toml` for the booking pages'
+//! sections. `tools/l10n/l10n.py` generates them together, two ways
+//! (`scripts/gen-l10n.py`, which CI runs with `--check`):
 //!
 //! - `po/district-ai.pot` and `po/fr.po`, for the `.ui` templates. Each of
 //!   their strings is marked `translatable="yes"` with its catalog key as the
@@ -32,7 +33,7 @@ pub use district_core::l10n::strings as core_text;
 
 use crate::gtk::glib;
 
-/// The accessors generated from `l10n/linux.toml`, one per key (`call.status`
+/// The accessors generated from `l10n/*.toml`, one per key (`call.status`
 /// is `call_status`), each a function of the [`Locale`].
 #[rustfmt::skip]
 #[path = "l10n/text.rs"]

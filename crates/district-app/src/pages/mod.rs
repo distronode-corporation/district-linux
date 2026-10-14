@@ -38,6 +38,7 @@ mod rooms;
 mod routing;
 mod save_notice;
 mod scheduling;
+mod scheduling_admin;
 mod session;
 mod settings;
 mod settings_kit;
@@ -66,6 +67,7 @@ pub(crate) use marketplace::MarketplacePage;
 pub(crate) use overview::OverviewPage;
 pub(crate) use rooms::RoomsPage;
 pub(crate) use scheduling::SchedulingPage;
+pub(crate) use scheduling_admin::SchedulingAdminPage;
 pub(crate) use session::SessionPage;
 pub(crate) use settings::{SettingsPage, in_section as in_settings};
 pub(crate) use shared::{draw_line, draw_spinner};
@@ -131,7 +133,7 @@ mod tests {
     use super::*;
 
     /// Every template the window is built from.
-    const TEMPLATES: [(&str, &str); 43] = [
+    const TEMPLATES: [(&str, &str); 52] = [
         ("window.ui", include_str!("../../data/ui/window.ui")),
         (
             "session-page.ui",
@@ -192,6 +194,42 @@ mod tests {
         (
             "scheduling-page.ui",
             include_str!("../../data/ui/scheduling-page.ui"),
+        ),
+        (
+            "scheduling-admin-page.ui",
+            include_str!("../../data/ui/scheduling-admin-page.ui"),
+        ),
+        (
+            "scheduling-overview.ui",
+            include_str!("../../data/ui/scheduling-overview.ui"),
+        ),
+        (
+            "scheduling-event-types.ui",
+            include_str!("../../data/ui/scheduling-event-types.ui"),
+        ),
+        (
+            "scheduling-hours.ui",
+            include_str!("../../data/ui/scheduling-hours.ui"),
+        ),
+        (
+            "scheduling-bookings.ui",
+            include_str!("../../data/ui/scheduling-bookings.ui"),
+        ),
+        (
+            "scheduling-calendar.ui",
+            include_str!("../../data/ui/scheduling-calendar.ui"),
+        ),
+        (
+            "scheduling-team.ui",
+            include_str!("../../data/ui/scheduling-team.ui"),
+        ),
+        (
+            "scheduling-settings.ui",
+            include_str!("../../data/ui/scheduling-settings.ui"),
+        ),
+        (
+            "scheduling-developer.ui",
+            include_str!("../../data/ui/scheduling-developer.ui"),
         ),
         ("desk-page.ui", include_str!("../../data/ui/desk-page.ui")),
         (

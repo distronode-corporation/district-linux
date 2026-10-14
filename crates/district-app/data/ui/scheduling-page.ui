@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Booking pages: where the workspace's booking pages stand, turning them
-     on, and managing them on the web through a one-time link that is never
-     shown here. src/pages/scheduling.rs fills it. -->
+     on, and, once they are live, the list of their sections, each managed in
+     the app. src/pages/scheduling.rs fills it. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
@@ -161,15 +161,6 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkButton" id="web_button">
-                                <property name="label" translatable="yes" context="scheduling_page.manage_web">Manage on the web</property>
-                                <style>
-                                  <class name="pill"/>
-                                  <class name="suggested-action"/>
-                                </style>
-                              </object>
-                            </child>
-                            <child>
                               <object class="GtkSpinner" id="busy_spinner">
                                 <property name="visible">False</property>
                               </object>
@@ -177,14 +168,26 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="web_caption">
-                            <property name="label" translatable="yes" context="scheduling_page.opens_booking_pages_district_ai">Opens the booking pages on the District AI website in your browser, signed in as you.</property>
-                            <property name="wrap">True</property>
-                            <property name="justify">center</property>
-                            <style>
-                              <class name="dim-label"/>
-                              <class name="caption"/>
-                            </style>
+                          <object class="GtkBox" id="sections_box">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">6</property>
+                            <property name="visible">False</property>
+                            <child>
+                              <object class="GtkLabel" id="sections_heading">
+                                <property name="xalign">0</property>
+                                <style>
+                                  <class name="heading"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkListBox" id="sections_list">
+                                <property name="selection-mode">none</property>
+                                <style>
+                                  <class name="boxed-list"/>
+                                </style>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>

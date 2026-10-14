@@ -23,8 +23,8 @@ use crate::l10n::{lang, text};
 use crate::pages::{
     AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
     DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
-    SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage, WorkflowsPage, draw_line,
-    draw_spinner, in_contacts, in_desk, in_settings, in_support, report,
+    SchedulingAdminPage, SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage,
+    WorkflowsPage, draw_line, draw_spinner, in_contacts, in_desk, in_settings, in_support, report,
 };
 
 /// The window action that turns the microphone on or off, and its shortcut.
@@ -127,6 +127,8 @@ mod imp {
         #[template_child]
         pub scheduling_page: TemplateChild<SchedulingPage>,
         #[template_child]
+        pub scheduling_admin_page: TemplateChild<SchedulingAdminPage>,
+        #[template_child]
         pub desk_page: TemplateChild<DeskPage>,
         #[template_child]
         pub support_page: TemplateChild<SupportPage>,
@@ -168,6 +170,7 @@ mod imp {
             BillingPage::static_type();
             WorkflowsPage::static_type();
             SchedulingPage::static_type();
+            SchedulingAdminPage::static_type();
             DeskPage::static_type();
             SupportPage::static_type();
             RoomsPage::static_type();
@@ -292,6 +295,7 @@ impl DistrictWindow {
         imp.billing_page.set_sink(sink.clone());
         imp.workflows_page.set_sink(sink.clone());
         imp.scheduling_page.set_sink(sink.clone());
+        imp.scheduling_admin_page.set_sink(sink.clone());
         imp.desk_page.set_sink(sink.clone());
         imp.support_page.set_sink(sink.clone());
         imp.rooms_page.set_sink(sink.clone());
@@ -441,6 +445,9 @@ impl DistrictWindow {
         }
         if !showing(in_settings) {
             imp.settings_page.leave();
+        }
+        if !showing(|route| matches!(route, Route::SchedulingAdmin(_))) {
+            imp.scheduling_admin_page.leave();
         }
     }
 
@@ -605,10 +612,13 @@ impl DistrictWindow {
                 imp.page_stack.set_visible_child_name("workflows");
                 imp.workflows_page.update(signed_in);
             }
-            // The sections draw on the booking pages screen until each has its own.
-            Route::Scheduling | Route::SchedulingAdmin(_) => {
+            Route::Scheduling => {
                 imp.page_stack.set_visible_child_name("scheduling");
                 imp.scheduling_page.update(&signed_in.scheduling);
+            }
+            Route::SchedulingAdmin(section) => {
+                imp.page_stack.set_visible_child_name("scheduling-admin");
+                imp.scheduling_admin_page.update(signed_in, section);
             }
             Route::Desk | Route::DeskTicket { .. } | Route::DeskSettings => {
                 imp.page_stack.set_visible_child_name("desk");
@@ -727,7 +737,8 @@ fn refresh_state(signed_in: &SignedIn) -> (bool, bool) {
         | Route::Workflows
         | Route::DeskTicket { .. }
         | Route::DeskSettings
-        | Route::SupportRequest { .. } => (true, false),
+        | Route::SupportRequest { .. }
+        | Route::SchedulingAdmin(_) => (true, false),
         _ => (false, false),
     }
 }

@@ -103,7 +103,7 @@ jobs:
           set -euo pipefail
           python3 scripts/gen-l10n.py --check
           if python3 scripts/french-enabled.py; then
-            python3 tools/l10n/l10n.py check --require fr-CA crates/district-app/l10n/linux.toml
+            python3 tools/l10n/l10n.py check --require fr-CA crates/district-app/l10n/linux.toml crates/district-app/l10n/scheduling.toml
           fi
 
       - name: Expose the bare version

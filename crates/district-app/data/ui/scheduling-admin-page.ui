@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The booking pages' sections, one child each, named as
+     src/pages/scheduling_admin/mod.rs's area_name names them. Each section
+     draws in its own template (scheduling-<area>.ui). -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictSchedulingAdminPage" parent="AdwBin">
+    <property name="child">
+      <object class="GtkStack" id="scheduling_areas">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">overview</property>
+            <property name="child">
+              <object class="DistrictSchedulingOverviewPane" id="overview_pane"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">event-types</property>
+            <property name="child">
+              <object class="DistrictSchedulingEventTypesPane" id="event_types_pane"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">hours</property>
+            <property name="child">
+              <object class="DistrictSchedulingHoursPane" id="hours_pane"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">bookings</property>
+            <property name="child">
+              <object class="DistrictSchedulingBookingsPane" id="bookings_pane"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">calendar</property>
+            <property name="child">
+              <object class="DistrictSchedulingCalendarPane" id="calendar_pane"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">team</property>
+            <property name="child">
+              <object class="DistrictSchedulingTeamPane" id="team_pane"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">settings</property>
+            <property name="child">
+              <object class="DistrictSchedulingSettingsPane" id="settings_pane"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">developer</property>
+            <property name="child">
+              <object class="DistrictSchedulingDeveloperPane" id="developer_pane"/>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
