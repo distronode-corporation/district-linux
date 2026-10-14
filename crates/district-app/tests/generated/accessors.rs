@@ -962,6 +962,10 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::scheduling_admin_hours_window_a11y(Locale::FrCa, "{day}", 1204), "{day}, range 1204");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::En), "Loading");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::FrCa), "Loading");
+    assert_eq!(text::scheduling_admin_settings_remove_image_question(Locale::En), "Remove this image?");
+    assert_eq!(text::scheduling_admin_settings_remove_image_question(Locale::FrCa), "Remove this image?");
+    assert_eq!(text::scheduling_admin_settings_tabs_a11y(Locale::En), "Which settings to show");
+    assert_eq!(text::scheduling_admin_settings_tabs_a11y(Locale::FrCa), "Which settings to show");
     assert_eq!(text::scheduling_admin_team_member_row_a11y(Locale::En, "{name}", "{subtitle}", "{state}"), "{name}, {subtitle}, {state}");
     assert_eq!(text::scheduling_admin_team_member_row_a11y(Locale::FrCa, "{name}", "{subtitle}", "{state}"), "{name}, {subtitle}, {state}");
     assert_eq!(text::scheduling_admin_upcoming_booking_line(Locale::En, "{who}", "{when}"), "{who} · {when}");

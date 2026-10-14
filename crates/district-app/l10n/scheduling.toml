@@ -99,6 +99,20 @@ screen = "scheduling_admin"
 tier = "T3"
 note = "What a screen reader says for a part of a booking pages section still being read."
 
+[scheduling_admin.settings_remove_image_question]
+en = "Remove this image?"
+ctx = "title"
+screen = "scheduling_admin"
+tier = "T3"
+note = "Question asked before an image of the booking pages is removed (the logo, the banner, or the member's own profile picture). The booking pages' own sentence saying images save at once is under it."
+
+[scheduling_admin.settings_tabs_a11y]
+en = "Which settings to show"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+note = "Screen-reader name of the row of buttons at the top of the booking pages' settings that picks what they show: the booking page, the booking assistant, your profile or your notifications."
+
 [scheduling_admin.team_member_row_a11y]
 en = "{name}, {subtitle}, {state}"
 ctx = "a11y"

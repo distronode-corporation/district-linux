@@ -5144,6 +5144,316 @@ fn scheduling_developer(smoke: &Smoke) {
     smoke.forget();
 }
 
+/// Shows the settings' tab at `index` (the booking page, the assistant,
+/// the profile, the notifications), as a person presses it.
+fn settings_tab(smoke: &Smoke, index: usize) {
+    smoke
+        .nth::<gtk::ToggleButton>("settings-tab", index)
+        .emit_clicked();
+    smoke.pump();
+}
+
+/// Presses the button labelled `label` of the question on screen, as a
+/// person does: the question closes itself.
+fn press_response(smoke: &Smoke, label: &str) {
+    let question = question(smoke).expect("a question on screen");
+    descendants(question.upcast_ref())
+        .into_iter()
+        .filter_map(|widget| widget.downcast::<gtk::Button>().ok())
+        .find(|button| button.label().as_deref() == Some(label))
+        .unwrap_or_else(|| panic!("no {label} in the question"))
+        .emit_clicked();
+    smoke.pump();
+}
+
+/// A PNG written for a settings image, named after it.
+fn settings_picture(name: &str) -> PathBuf {
+    let picture =
+        std::env::temp_dir().join(format!("district-smoke-{name}-{}.png", std::process::id()));
+    fs::write(&picture, PNG).expect("the picture is written");
+    picture
+}
+
+/// The booking pages' settings: the booking page failing, then read; its
+/// editor refusing a link, then saving, with a logo uploaded and removed
+/// (asked once); the assistant turned on with instructions; the profile
+/// refused without a name, then saved, with a picture; and a notification
+/// switched on and saved.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn scheduling_settings(smoke: &Smoke) {
+    use district_model::{
+        SchedulingAdminData as Data, SchedulingAdminRequest as Request, SchedulingBranding,
+        SchedulingLlmSettings, SchedulingLocaleOption, SchedulingMe, SchedulingOk,
+        SchedulingUploadResult, SchedulingUploadTarget,
+    };
+    const LOGO: &str = "https://cdn.example.com/acme/logo.png";
+    let me = || SchedulingMe {
+        name: "Ada Lovelace".to_owned(),
+        timezone: "America/Toronto".to_owned(),
+        time_format: "12h".to_owned(),
+        week_start: 0,
+        date_format: "mdy".to_owned(),
+        notify_confirmation: true,
+        notify_host_booking: true,
+        ..SchedulingMe::default()
+    };
+    let locale = |code: &str, name: &str| SchedulingLocaleOption {
+        code: code.to_owned(),
+        name: name.to_owned(),
+    };
+    let branding = move |logo: &str| SchedulingBranding {
+        business_name: "Acme Dental".to_owned(),
+        logo_url: logo.to_owned(),
+        logo_height: 32,
+        logo_opacity: 100,
+        banner_opacity: 80,
+        fallback_locale: "en".to_owned(),
+        supported_locales: Some(vec![locale("en", "English"), locale("fr", "Français")]),
+        ..SchedulingBranding::default()
+    };
+
+    // The booking page shows first: failing with Try again, then read.
+    smoke.activate("scheduling-section-settings");
+    assert!(smoke.shown("settings-booking-page-loading"));
+    assert_eq!(smoke.count("settings-tab"), 4);
+    scheduling_reads(smoke, |_| Err(server_error()));
+    assert!(smoke.shown("settings-booking-page-failed"));
+    smoke.click("settings-booking-page-retry");
+    scheduling_reads(smoke, |request| match request {
+        Request::Branding => Ok(Data::Branding(branding(""))),
+        other => unreachable!("{other:?}"),
+    });
+    assert!(smoke.shows_text("Acme Dental") && smoke.shows_text("English"));
+    assert!(smoke.shows_text("Not set"), "no logo yet");
+
+    // Its editor refuses a link that is not one, then saves.
+    smoke.click("settings-edit-booking-page");
+    assert!(smoke.shown("settings-branding-dialog"));
+    smoke.type_into("settings-branding-privacy", "acme privacy");
+    smoke.click("settings-branding-save");
+    assert!(smoke.shows_text("Give the full address, starting with https://"));
+    assert!(!smoke.pending("SchedulingAdmin"), "nothing sent");
+    smoke.type_into("settings-branding-privacy", "https://acme.example/privacy");
+    assert!(!smoke.shown("settings-branding-rejected"));
+    choose(
+        smoke,
+        &combo(smoke, "settings-branding-locale", 0),
+        "Français",
+    );
+    smoke.click("settings-branding-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchBranding(patch) = request else {
+        panic!("not the booking page's save: {request:?}")
+    };
+    assert_eq!(patch.privacy_url, "https://acme.example/privacy");
+    assert_eq!(patch.fallback_locale, "fr");
+    assert_eq!((patch.logo_height, patch.banner_opacity), (32, 80));
+    let mut saved = branding("");
+    saved.privacy_url.clone_from(&patch.privacy_url);
+    saved.fallback_locale = "fr".to_owned();
+    admin_answer(smoke, ticket, Ok(Data::Branding(saved.clone())));
+    assert!(smoke.shows_text("Booking page saved"));
+
+    // A logo saves as soon as it is chosen, and the page is read again.
+    assert!(!smoke.shown("settings-logo-remove"), "no logo to remove");
+    let picture = settings_picture("logo");
+    pick(smoke, "settings-logo-choose", &picture);
+    wait_for(smoke, "SchedulingAdmin");
+    fs::remove_file(&picture).ok();
+    let (ticket, request) = admin_request(smoke);
+    let Request::Upload(upload) = request else {
+        panic!("not an upload: {request:?}")
+    };
+    assert_eq!(upload.target, SchedulingUploadTarget::Logo);
+    assert_eq!(
+        (upload.mime_type.as_str(), upload.bytes.as_slice()),
+        ("image/png", &PNG[..])
+    );
+    assert!(
+        !smoke.sensitive("settings-banner-choose"),
+        "one image at a time"
+    );
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::Uploaded(SchedulingUploadResult {
+            logo_url: Some(LOGO.to_owned()),
+            ..SchedulingUploadResult::default()
+        })),
+    );
+    assert!(smoke.shows_text("Logo uploaded"));
+    let mut with_logo = saved.clone();
+    with_logo.logo_url = LOGO.to_owned();
+    scheduling_reads(smoke, |request| match request {
+        Request::Branding => Ok(Data::Branding(with_logo.clone())),
+        other => unreachable!("{other:?}"),
+    });
+    assert!(smoke.shows_text(LOGO));
+
+    // Removing it is asked once: no keeps it, yes removes it.
+    smoke.click("settings-logo-remove");
+    assert_eq!(questions(smoke), 1);
+    assert!(smoke.shows_text("Remove this image?"));
+    press_response(smoke, "Cancel");
+    assert_eq!(questions(smoke), 0);
+    assert!(!smoke.pending("SchedulingAdmin"), "nothing removed on a no");
+    smoke.click("settings-logo-remove");
+    press_response(smoke, "Remove");
+    assert_eq!(questions(smoke), 0);
+    let (ticket, request) = admin_request(smoke);
+    assert_eq!(request, Request::DeleteLogo);
+    admin_answer(smoke, ticket, Ok(Data::Done(SchedulingOk { ok: true })));
+    assert!(smoke.shows_text("Logo removed"));
+    scheduling_reads(smoke, |_| Ok(Data::Branding(saved.clone())));
+    assert!(!smoke.shown("settings-logo-remove"));
+    smoke.click("settings-branding-cancel");
+    assert!(!smoke.shown("settings-branding-dialog"));
+    assert!(smoke.shows_text("Français"), "the page as saved");
+
+    // The assistant: read when its tab first shows, saved once changed.
+    settings_tab(smoke, 1);
+    assert!(smoke.shown("settings-assistant-loading"));
+    scheduling_reads(smoke, |request| match request {
+        Request::Llm => Ok(Data::Llm(SchedulingLlmSettings::default())),
+        other => unreachable!("{other:?}"),
+    });
+    assert!(smoke.shows_text("Off"));
+    smoke.click("settings-edit-assistant");
+    assert!(
+        !smoke.sensitive("settings-assistant-save"),
+        "nothing changed"
+    );
+    assert!(smoke.shown("settings-assistant-placeholder"));
+    smoke
+        .nth::<adw::SwitchRow>("settings-assistant-enabled", 0)
+        .set_active(true);
+    smoke
+        .text_view("settings-assistant-instructions")
+        .set_text("We are closed on public holidays.");
+    smoke.pump();
+    assert!(!smoke.shown("settings-assistant-placeholder"));
+    smoke.click("settings-assistant-save");
+    let (ticket, request) = admin_request(smoke);
+    assert_eq!(
+        request,
+        Request::PatchLlm {
+            enabled: Some(true),
+            extra_instructions: Some("We are closed on public holidays.".to_owned()),
+        }
+    );
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::Llm(SchedulingLlmSettings {
+            enabled: true,
+            extra_instructions: "We are closed on public holidays.".to_owned(),
+        })),
+    );
+    assert!(smoke.shows_text("Booking assistant saved"));
+    smoke.click("settings-assistant-cancel");
+    assert!(smoke.shows_text("On") && smoke.shows_text("We are closed on public holidays."));
+
+    // The profile: refused without a name, then saved with its formats.
+    settings_tab(smoke, 2);
+    scheduling_reads(smoke, |request| match request {
+        Request::Me => Ok(Data::Me(me())),
+        other => unreachable!("{other:?}"),
+    });
+    assert!(smoke.shows_text("Ada Lovelace") && smoke.shows_text("12-hour (2:30 pm)"));
+    assert!(smoke.shows_text("Sunday") && smoke.shows_text("12/31/2026"));
+    smoke.click("settings-edit-profile");
+    smoke.type_into("settings-profile-name", " ");
+    smoke.click("settings-profile-save");
+    assert!(smoke.shows_text("Give your name."));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.type_into("settings-profile-name", "Ada King");
+    choose(
+        smoke,
+        &combo(smoke, "settings-profile-time-format", 0),
+        "24-hour (14:30)",
+    );
+    choose(
+        smoke,
+        &combo(smoke, "settings-profile-week-start", 0),
+        "Monday",
+    );
+    assert_eq!(
+        chosen(&combo(smoke, "settings-profile-timezone", 0)),
+        "America/Toronto"
+    );
+    smoke.click("settings-profile-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchMe(patch) = request else {
+        panic!("not the profile's save: {request:?}")
+    };
+    assert_eq!(patch.name.as_deref(), Some("Ada King"));
+    assert_eq!(patch.timezone.as_deref(), Some("America/Toronto"));
+    assert_eq!(patch.time_format.as_deref(), Some("24h"));
+    assert_eq!(patch.week_start, Some(1));
+    let mut king = me();
+    king.name = "Ada King".to_owned();
+    king.time_format = "24h".to_owned();
+    king.week_start = 1;
+    admin_answer(smoke, ticket, Ok(Data::Me(king.clone())));
+    assert!(smoke.shows_text("Profile saved"));
+
+    // A picture saves as soon as it is chosen, where it was published.
+    let picture = settings_picture("avatar");
+    pick(smoke, "settings-avatar-choose", &picture);
+    wait_for(smoke, "SchedulingAdmin");
+    fs::remove_file(&picture).ok();
+    let (ticket, request) = admin_request(smoke);
+    assert!(
+        matches!(&request, Request::Upload(upload) if upload.target == SchedulingUploadTarget::Avatar)
+    );
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::Uploaded(SchedulingUploadResult {
+            avatar_url: Some("https://cdn.example.com/ada.png".to_owned()),
+            ..SchedulingUploadResult::default()
+        })),
+    );
+    assert!(smoke.shows_text("Profile picture uploaded"));
+    assert!(smoke.shows_text("https://cdn.example.com/ada.png"));
+    smoke.click("settings-profile-cancel");
+    assert!(smoke.shows_text("Ada King") && smoke.shows_text("Monday"));
+
+    // The notifications share the profile's read: one switched on, saved.
+    settings_tab(smoke, 3);
+    assert!(!smoke.pending("SchedulingAdmin"), "already read");
+    assert!(smoke.shows_text("As an attendee") && smoke.shows_text("As a host"));
+    smoke.click("settings-edit-notifications");
+    assert_eq!(smoke.count("settings-notify"), 7);
+    smoke
+        .nth::<adw::SwitchRow>("settings-notify", 1)
+        .set_active(true);
+    smoke.pump();
+    smoke.click("settings-notifications-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchMe(patch) = request else {
+        panic!("not the notifications' save: {request:?}")
+    };
+    assert_eq!(
+        (
+            patch.notify_confirmation,
+            patch.notify_cancellation,
+            patch.notify_reminder
+        ),
+        (Some(true), Some(true), Some(false))
+    );
+    let mut notified = king;
+    notified.notify_cancellation = true;
+    admin_answer(smoke, ticket, Ok(Data::Me(notified)));
+    assert!(smoke.shows_text("Notifications saved"));
+    smoke.click("settings-notifications-cancel");
+    assert!(!smoke.shown("settings-notifications-dialog"));
+    smoke.forget();
+    smoke.click("back_button");
+    assert!(smoke.shown("scheduling-section-settings"));
+    smoke.forget();
+}
+
 /// The member comes back to the window, as the desktop tells it: its
 /// `is-active` changes, and it is active.
 fn come_back(smoke: &Smoke) {
@@ -8831,6 +9141,7 @@ fn main() {
     scheduling_bookings(&smoke);
     scheduling_calendar(&smoke);
     scheduling_developer(&smoke);
+    scheduling_settings(&smoke);
     desk_screens(&smoke);
     support_screens(&smoke);
     rooms_screen(&smoke);
