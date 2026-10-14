@@ -12,9 +12,13 @@
 # versions into Depends.
 #
 # The package's metadata, assets and dependencies are [package.metadata.deb] in
-# crates/district-app/Cargo.toml. Three of its assets are written here first, into
+# crates/district-app/Cargo.toml. Five of its assets are written here first, into
 # target/release, where that list names them:
 #
+# - the desktop entry and the AppStream metadata, into target/release/metadata:
+#   the English files committed under crates/district-app/data, or, with French
+#   on, the same files with the catalog's French beside the English, written by
+#   scripts/gen-l10n.py --french-metadata (deb.yml checks which);
 # - the D-Bus service, from its template with /usr/bin for @bindir@, because
 #   the desktop starts what its Exec names without searching PATH;
 # - libwebrtc's licence texts (the LICENSE.md beside the library
@@ -43,6 +47,16 @@ fi
 target="$(cargo metadata --format-version 1 --no-deps --locked \
   | python3 -c 'import json, sys; print(json.load(sys.stdin)["target_directory"])')"
 mkdir -p "$target/release"
+
+metadata="$target/release/metadata"
+rm -rf "$metadata"
+mkdir -p "$metadata"
+if python3 scripts/french-enabled.py > /dev/null; then
+  python3 scripts/gen-l10n.py --french-metadata "$metadata" > /dev/null
+else
+  cp crates/district-app/data/com.distronode.DistrictAI.desktop \
+    crates/district-app/data/com.distronode.DistrictAI.metainfo.xml "$metadata/"
+fi
 
 service="$target/release/com.distronode.DistrictAI.service"
 sed 's|@bindir@|/usr/bin|' crates/district-app/data/com.distronode.DistrictAI.service.in > "$service"

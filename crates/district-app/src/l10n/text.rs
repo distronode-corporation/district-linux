@@ -3,7 +3,7 @@
 use district_core::Locale;
 
 /// True when every entry has French; until then the French arm carries the English.
-pub const FR_COMPLETE: bool = true;
+pub const FR_COMPLETE: bool = false;
 
 /// `about.copyright`
 #[must_use]
@@ -2066,6 +2066,42 @@ pub fn desk_ticket_view_waiting_customer(l: Locale) -> &'static str {
     }
 }
 
+/// `desktop.comment`
+#[must_use]
+pub fn desktop_comment(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Your AI receptionist on the desktop",
+        Locale::FrCa => "Réceptionniste IA sur votre bureau",
+    }
+}
+
+/// `desktop.generic_name`
+#[must_use]
+pub fn desktop_generic_name(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "AI Receptionist",
+        Locale::FrCa => "Réceptionniste IA",
+    }
+}
+
+/// `desktop.keywords`
+#[must_use]
+pub fn desktop_keywords(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "calls;phone;receptionist;voice;inbox;messages;contacts;",
+        Locale::FrCa => "appels;téléphone;réceptionniste;voix;boîte de réception;messages;contacts;",
+    }
+}
+
+/// `desktop.name`
+#[must_use]
+pub fn desktop_name(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District AI",
+        Locale::FrCa => "District AI",
+    }
+}
+
 /// `devices.last_active`
 #[must_use]
 pub fn devices_last_active(l: Locale, when: &str) -> String {
@@ -3281,6 +3317,249 @@ pub fn messaging_view_sender_each_channel(l: Locale) -> &'static str {
     match l {
         Locale::En => "Sender for each channel",
         Locale::FrCa => "Expéditeur de chaque canal",
+    }
+}
+
+/// `metainfo.description.li1`
+#[must_use]
+pub fn metainfo_description_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The call log, with each call's summary and transcript",
+        Locale::FrCa => "Le journal des appels, avec le résumé et la transcription de chaque appel",
+    }
+}
+
+/// `metainfo.description.li2`
+#[must_use]
+pub fn metainfo_description_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "One inbox for your customers' text messages and emails, with a reply written by AI when you ask for one",
+        Locale::FrCa => "Une seule boîte de réception pour les textos et les courriels de vos clients, avec une réponse rédigée par l'IA quand vous en demandez une",
+    }
+}
+
+/// `metainfo.description.li3`
+#[must_use]
+pub fn metainfo_description_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Your contacts, and the callers you have blocked",
+        Locale::FrCa => "Vos contacts et les appelants que vous avez bloqués",
+    }
+}
+
+/// `metainfo.description.li4`
+#[must_use]
+pub fn metainfo_description_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Calls handed to you ring on this computer, and a dialler places your own",
+        Locale::FrCa => "Les appels qui vous sont transférés sonnent sur cet ordinateur, et vous passez les vôtres depuis le clavier de composition",
+    }
+}
+
+/// `metainfo.description.li5`
+#[must_use]
+pub fn metainfo_description_li5(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Meeting rooms, audio only, and each meeting's record",
+        Locale::FrCa => "Des salles de réunion, en audio seulement, et le dossier de chaque réunion",
+    }
+}
+
+/// `metainfo.description.li6`
+#[must_use]
+pub fn metainfo_description_li6(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District HQ, which answers questions about your workspace, and analytics of your calls",
+        Locale::FrCa => "District HQ, qui répond à vos questions sur votre espace de travail, et l'analytique de vos appels",
+    }
+}
+
+/// `metainfo.description.li7`
+#[must_use]
+pub fn metainfo_description_li7(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Your receptionist's settings in District Studio: its persona and language, its voice part by part, its skills, what it knows, and where it sends calls",
+        Locale::FrCa => "Les paramètres de votre réceptionniste dans District Studio\u{00A0}: sa persona et sa langue, sa voix élément par élément, ses compétences, ce qu'elle sait et où elle achemine les appels",
+    }
+}
+
+/// `metainfo.description.li8`
+#[must_use]
+pub fn metainfo_description_li8(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The help desk, support requests, workflows and booking pages",
+        Locale::FrCa => "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation",
+    }
+}
+
+/// `metainfo.description.p1`
+#[must_use]
+pub fn metainfo_description_p1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District AI answers your business's phone calls with an AI receptionist. This app brings your District AI workspace to the Linux desktop, so you can see what the receptionist handled, reply to your customers and take calls yourself.",
+        Locale::FrCa => "District AI répond aux appels de votre entreprise grâce à une réceptionniste IA. Cette application amène votre espace de travail District AI sur le bureau Linux\u{00A0}: vous voyez ce que la réceptionniste a traité, vous répondez à vos clients et vous prenez des appels vous-même.",
+    }
+}
+
+/// `metainfo.description.p2`
+#[must_use]
+pub fn metainfo_description_p2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "You need a District AI account. What you can see and change follows your role in each workspace, and taking or placing calls needs a role that allows them. The app signs in through your web browser, so it never sees your password, and it follows your system's light and dark style.",
+        Locale::FrCa => "Un compte District AI est nécessaire. Ce que vous pouvez voir et modifier dépend de votre rôle dans chaque espace de travail, et prendre ou passer des appels exige un rôle qui le permet. L'application se connecte par votre navigateur Web, elle ne voit donc jamais votre mot de passe, et elle suit le style clair ou sombre de votre système.",
+    }
+}
+
+/// `metainfo.keywords`
+#[must_use]
+pub fn metainfo_keywords(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "calls, phone, receptionist, voice, inbox, contacts",
+        Locale::FrCa => "appels, téléphone, réceptionniste, voix, boîte de réception, contacts",
+    }
+}
+
+/// `metainfo.name`
+#[must_use]
+pub fn metainfo_name(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District AI",
+        Locale::FrCa => "District AI",
+    }
+}
+
+/// `metainfo.release_2_1_0.li1`
+#[must_use]
+pub fn metainfo_release_2_1_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge",
+        Locale::FrCa => "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge",
+    }
+}
+
+/// `metainfo.release_2_1_0.li2`
+#[must_use]
+pub fn metainfo_release_2_1_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Workspace: messaging accounts, members and phone numbers",
+        Locale::FrCa => "Workspace: messaging accounts, members and phone numbers",
+    }
+}
+
+/// `metainfo.release_2_1_0.li3`
+#[must_use]
+pub fn metainfo_release_2_1_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Screen titles follow the service: Voice, Skills and Knowledge",
+        Locale::FrCa => "Screen titles follow the service: Voice, Skills and Knowledge",
+    }
+}
+
+/// `metainfo.release_2_1_0.p`
+#[must_use]
+pub fn metainfo_release_2_1_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names.",
+        Locale::FrCa => "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names.",
+    }
+}
+
+/// `metainfo.release_2_2_0.li1`
+#[must_use]
+pub fn metainfo_release_2_2_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A link to the web dashboard no longer signs in someone else's browser",
+        Locale::FrCa => "A link to the web dashboard no longer signs in someone else's browser",
+    }
+}
+
+/// `metainfo.release_2_2_0.li2`
+#[must_use]
+pub fn metainfo_release_2_2_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio",
+        Locale::FrCa => "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio",
+    }
+}
+
+/// `metainfo.release_2_2_0.li3`
+#[must_use]
+pub fn metainfo_release_2_2_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A reply typed just before quitting is saved",
+        Locale::FrCa => "A reply typed just before quitting is saved",
+    }
+}
+
+/// `metainfo.release_2_2_0.li4`
+#[must_use]
+pub fn metainfo_release_2_2_0_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Built on District AI core for Rust 3.1.1, shared with District AI for Windows",
+        Locale::FrCa => "Built on District AI core for Rust 3.1.1, shared with District AI for Windows",
+    }
+}
+
+/// `metainfo.release_2_2_0.p`
+#[must_use]
+pub fn metainfo_release_2_2_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does.",
+        Locale::FrCa => "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does.",
+    }
+}
+
+/// `metainfo.screenshot_caption.call`
+#[must_use]
+pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A call placed from the desktop, with mute and hang up always in reach",
+        Locale::FrCa => "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main",
+    }
+}
+
+/// `metainfo.screenshot_caption.call_log`
+#[must_use]
+pub fn metainfo_screenshot_caption_call_log(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The call log, with each call's summary and transcript",
+        Locale::FrCa => "Le journal des appels, avec le résumé et la transcription de chaque appel",
+    }
+}
+
+/// `metainfo.screenshot_caption.contacts`
+#[must_use]
+pub fn metainfo_screenshot_caption_contacts(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Your contacts, with each customer's details",
+        Locale::FrCa => "Vos contacts, avec les coordonnées de chaque client",
+    }
+}
+
+/// `metainfo.screenshot_caption.inbox`
+#[must_use]
+pub fn metainfo_screenshot_caption_inbox(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Your customers' text messages and emails in one inbox",
+        Locale::FrCa => "Les textos et les courriels de vos clients dans une seule boîte de réception",
+    }
+}
+
+/// `metainfo.screenshot_caption.overview`
+#[must_use]
+pub fn metainfo_screenshot_caption_overview(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The workspace at a glance, with its latest calls",
+        Locale::FrCa => "L'espace de travail en un coup d'œil, avec ses derniers appels",
+    }
+}
+
+/// `metainfo.summary`
+#[must_use]
+pub fn metainfo_summary(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Your AI receptionist on the desktop",
+        Locale::FrCa => "Réceptionniste IA sur votre bureau",
     }
 }
 

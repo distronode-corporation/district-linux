@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=@desktop.name@
+GenericName=@desktop.generic_name@
+Comment=@desktop.comment@
+Icon=com.distronode.DistrictAI
+Exec=district-ai %U
+Terminal=false
+StartupNotify=true
+DBusActivatable=true
+Categories=Network;Telephony;
+Keywords=@desktop.keywords@
+MimeType=x-scheme-handler/districtai;

@@ -27,6 +27,10 @@ on:
       # The French catalog, and the switch that decides whether it ships.
       - "crates/district-app/po/**"
       - "scripts/french-enabled.py"
+      # The catalog and the generator the desktop entry and metadata come from.
+      - "crates/district-app/l10n/**"
+      - "scripts/gen-l10n.py"
+      - "tools/l10n/**"
       - "scripts/third-party-licenses.sh"
       - "scripts/fetch-libwebrtc.sh"
       - "about.toml"
@@ -211,6 +215,23 @@ jobs:
             fi
           elif [ -n "$catalogs" ]; then
             echo "::error::French is off, and the package holds catalogs: $catalogs"
+            fail=1
+          fi
+          # And the desktop entry and the metadata carry French exactly when
+          # the catalog does (scripts/gen-l10n.py --french-metadata).
+          french_metadata=0
+          for found in \
+            "$(grep -c 'xml:lang="fr"' "$RUNNER_TEMP/deb/usr/share/metainfo/com.distronode.DistrictAI.metainfo.xml" || true)" \
+            "$(grep -c '^[A-Za-z]*\[fr\]=' "$RUNNER_TEMP/deb/usr/share/applications/com.distronode.DistrictAI.desktop" || true)"; do
+            if [ "$found" -gt 0 ]; then french_metadata=$((french_metadata + 1)); fi
+          done
+          if python3 scripts/french-enabled.py; then
+            if [ "$french_metadata" -ne 2 ]; then
+              echo "::error::French is on, and the desktop entry or the metadata has no French"
+              fail=1
+            fi
+          elif [ "$french_metadata" -ne 0 ]; then
+            echo "::error::French is off, and the desktop entry or the metadata holds French"
             fail=1
           fi
           exec_line="$(grep '^Exec=' "$RUNNER_TEMP/deb/usr/share/dbus-1/services/com.distronode.DistrictAI.service")"

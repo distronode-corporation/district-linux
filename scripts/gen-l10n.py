@@ -23,6 +23,20 @@ tools/l10n/l10n.py writes:
                                          text (src/l10n.rs includes it in the
                                          unit tests, unformatted)
 
+  crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
+  crates/district-app/data/com.distronode.DistrictAI.desktop
+                                         the AppStream metadata and the desktop
+                                         entry, from their `.in` templates and
+                                         the catalog's metainfo.* and desktop.*
+                                         keys, in English only
+
+    python3 scripts/gen-l10n.py --french-metadata DIR
+
+writes the same two files into DIR with the catalog's French beside the
+English (`xml:lang="fr"` elements, `Name[fr]=` keys) wherever an entry has
+French. The packages install those only with French on
+(scripts/french-enabled.py), so a French-off build's files stay English.
+
 `--check` also verifies tools/l10n/ against its SHA256SUMS (`l10n.py vendor
 --check`), so the vendored tools are the monorepo's, unedited. The test
 `l10n::templates` in the app holds every `.ui` string to the .pot's English
@@ -34,9 +48,12 @@ Python 3.11 or newer, standard library only.
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
+from xml.sax.saxutils import escape as xml_escape
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOL = ROOT / "tools" / "l10n" / "l10n.py"
@@ -46,6 +63,11 @@ CATALOGS = [
 RUST = ROOT / "crates" / "district-app" / "src" / "l10n" / "text.rs"
 PO = ROOT / "crates" / "district-app" / "po"
 ACCESSORS = ROOT / "crates" / "district-app" / "tests" / "generated" / "accessors.rs"
+DATA = ROOT / "crates" / "district-app" / "data"
+# The metadata written from a template, by the name it is installed under.
+METADATA = ("com.distronode.DistrictAI.metainfo.xml", "com.distronode.DistrictAI.desktop")
+# The column the AppStream description's text wraps at.
+WRAP = 80
 OPTS = (
     "--opt",
     "locale_path=district_core::Locale",
@@ -131,6 +153,80 @@ def accessor_test() -> str:
     return "\n".join(lines) + "\n"
 
 
+def metadata_text(name: str, french: bool) -> str:
+    """`name` written from DATA/`name`.in: each `@key@` placeholder becomes
+    the catalog's English for that key, and, with `french`, its French
+    beside it wherever the entry has any."""
+    cats = L10N.load_valid([str(path) for path in CATALOGS])
+    entries = {e.key: e for e in L10N.all_entries(cats)}
+    template = (DATA / f"{name}.in").read_text(encoding="utf-8")
+
+    def entry(key: str):
+        if key not in entries:
+            raise SystemExit(f"{name}.in names {key}, which no catalog has")
+        e = entries[key]
+        fr = e.fr if french and not e.fixed else None
+        return e.en, fr
+
+    out = []
+    if name.endswith(".desktop"):
+        out.append("# Written by scripts/gen-l10n.py from the .in template beside it and the")
+        out.append("# catalog's desktop.* keys: edit those, not this file.")
+        for line in template.split("\n"):
+            m = re.fullmatch(r"([A-Za-z]+)=@([\w.]+)@", line)
+            if not m:
+                out.append(line)
+                continue
+            field, key = m.groups()
+            en, fr = entry(key)
+            out.append(f"{field}={en}")
+            if fr is not None:
+                out.append(f"{field}[fr]={fr}")
+        return "\n".join(out)
+    for line in template.split("\n"):
+        m = re.fullmatch(r"(\s*)<(\w+)>@([\w.]+)@</\2>", line)
+        if not m:
+            out.append(line)
+            if line.startswith("<!-- Copyright"):
+                out.append(
+                    "<!-- Written by scripts/gen-l10n.py from the .in template beside it and\n"
+                    "     the catalog's metainfo.* keys: edit those, not this file. -->"
+                )
+            continue
+        indent, tag, key = m.groups()
+        en, fr = entry(key)
+        for lang, text in (("", en), (' xml:lang="fr"', fr)):
+            if text is None:
+                continue
+            text = xml_escape(text)
+            if tag == "p":
+                out.append(f"{indent}<p{lang}>")
+                out.extend(wrap(text, indent + "  ", indent + "  "))
+                out.append(f"{indent}</p>")
+            elif tag == "li":
+                out.extend(wrap(f"<li{lang}>{text}</li>", indent, indent + "  "))
+            elif tag == "keywords":
+                if not lang:
+                    out.append(f"{indent}<keywords>")
+                out.extend(f"{indent}  <keyword{lang}>{word}</keyword>" for word in text.split(", "))
+            else:
+                out.append(f"{indent}<{tag}{lang}>{text}</{tag}>")
+        if tag == "keywords":
+            out.append(f"{indent}</keywords>")
+    return "\n".join(out)
+
+
+def wrap(text: str, first: str, rest: str) -> list[str]:
+    return textwrap.wrap(
+        text,
+        WRAP,
+        initial_indent=first,
+        subsequent_indent=rest,
+        break_on_hyphens=False,
+        break_long_words=False,
+    )
+
+
 L10N = load_tool()
 
 
@@ -139,6 +235,13 @@ def run(*args: str) -> int:
 
 
 def main(argv: list[str]) -> int:
+    if len(argv) == 2 and argv[0] == "--french-metadata":
+        out = Path(argv[1])
+        out.mkdir(parents=True, exist_ok=True)
+        for name in METADATA:
+            (out / name).write_text(metadata_text(name, french=True), encoding="utf-8")
+            print(f"wrote {out / name}")
+        return 0
     if argv not in ([], ["--check"]):
         print(__doc__, file=sys.stderr)
         return 2
@@ -156,6 +259,10 @@ def main(argv: list[str]) -> int:
         if not failed and ACCESSORS.read_text(encoding="utf-8") != accessor_test():
             print(f"{ACCESSORS.relative_to(ROOT)} differs from what the catalog produces (run scripts/gen-l10n.py)")
             failed = 1
+        for name in METADATA:
+            if not failed and (DATA / name).read_text(encoding="utf-8") != metadata_text(name, french=False):
+                print(f"{(DATA / name).relative_to(ROOT)} differs from what its template and the catalog produce (run scripts/gen-l10n.py)")
+                failed = 1
         return 1 if failed else 0
     catalogs = [str(path) for path in CATALOGS]
     failed = run("fmt", *catalogs)
@@ -166,6 +273,8 @@ def main(argv: list[str]) -> int:
     if not failed:
         ACCESSORS.parent.mkdir(parents=True, exist_ok=True)
         ACCESSORS.write_text(accessor_test(), encoding="utf-8")
+        for name in METADATA:
+            (DATA / name).write_text(metadata_text(name, french=False), encoding="utf-8")
     return 1 if failed else 0
 
 

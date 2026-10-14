@@ -93,8 +93,16 @@ modules:
             crates/district-app/po/fr.po
         fi
         data=crates/district-app/data
-        install -Dm644 "$data/$FLATPAK_ID.desktop" -t "$FLATPAK_DEST/share/applications"
-        install -Dm644 "$data/$FLATPAK_ID.metainfo.xml" -t "$FLATPAK_DEST/share/metainfo"
+        # The desktop entry and the metadata: the English files under data/,
+        # or with French on the same files with the catalog's French beside
+        # the English (flatpak.yml checks which).
+        metadata="$data"
+        if python3 scripts/french-enabled.py; then
+          metadata="$PWD/metadata-fr"
+          python3 scripts/gen-l10n.py --french-metadata "$metadata"
+        fi
+        install -Dm644 "$metadata/$FLATPAK_ID.desktop" -t "$FLATPAK_DEST/share/applications"
+        install -Dm644 "$metadata/$FLATPAK_ID.metainfo.xml" -t "$FLATPAK_DEST/share/metainfo"
         install -Dm644 "$data/icons/hicolor/scalable/apps/$FLATPAK_ID.svg" \
           -t "$FLATPAK_DEST/share/icons/hicolor/scalable/apps"
         install -Dm644 "$data/icons/hicolor/symbolic/apps/$FLATPAK_ID-symbolic.svg" \

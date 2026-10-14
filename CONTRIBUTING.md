@@ -337,7 +337,13 @@ request:
    notes.
 3. Make the newest `<release>` in the AppStream metadata that version, stable
    (no `type`), with the same date, and move its screenshot links to the new
-   tag, `vX.Y.Z` (see "Store screenshots").
+   tag, `vX.Y.Z` (see "Store screenshots"). The metadata and the desktop entry
+   are written by `python3 scripts/gen-l10n.py` from their `.in` templates in
+   `crates/district-app/data/` and the catalog's `metainfo.*` and `desktop.*`
+   keys in `crates/district-app/l10n/linux.toml`: edit those (a release's notes
+   are keys of their own, `metainfo.release_X_Y_Z.*`), then run the script.
+   With French on, the packages install the same files with the catalog's
+   French beside the English (`--french-metadata`).
 4. Name the new version wherever README.md and SECURITY.md name the current
    release: the status line, the install section's package names and commands,
    and the supported series.
@@ -475,8 +481,12 @@ python3 scripts/check-public-hygiene.py
 python3 scripts/check-coverage.py --self-test
 python3 scripts/check-screenshots.py --self-test
 python3 scripts/check-screenshots.py
+python3 scripts/gen-l10n.py --check
 desktop-file-validate crates/district-app/data/com.distronode.DistrictAI.desktop
 appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
+python3 scripts/gen-l10n.py --french-metadata /tmp/district-french   # as French on installs them
+desktop-file-validate /tmp/district-french/com.distronode.DistrictAI.desktop
+appstreamcli validate --no-net /tmp/district-french/com.distronode.DistrictAI.metainfo.xml
 scripts/flatpak-cargo-sources.sh --check
 ```
 
