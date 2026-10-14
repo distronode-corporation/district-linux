@@ -137,14 +137,15 @@ jobs:
       # ([package.metadata.deb] in crates/district-app/Cargo.toml says why each
       # of those is there), sorted by cargo-deb. A change to either is a change
       # to what a user's machine must have, so it fails here until this list is
-      # changed with it.
+      # changed with it. libgtk-4-1 (>= 4.13.8) is gtk_accessible_announce,
+      # which the app calls (GTK 4.14, the floor the README states).
       - name: The package declares exactly what it needs
         env:
           VERSION: ${{ steps.version.outputs.version }}
           WANT_DEPENDS: >-
             gstreamer1.0-plugins-base, gstreamer1.0-plugins-good,
             libadwaita-1-0 (>= 1.5~beta), libc6 (>= 2.39), libcairo2 (>= 1.2.4),
-            libglib2.0-0t64 (>= 2.58.0), libgtk-4-1 (>= 4.12.0),
+            libglib2.0-0t64 (>= 2.58.0), libgtk-4-1 (>= 4.13.8),
             libgtk-4-media-gstreamer, libpango-1.0-0 (>= 1.14.0), libpulse0
           WANT_RECOMMENDS: >-
             gnome-keyring | kwallet6 | keepassxc, xdg-desktop-portal,

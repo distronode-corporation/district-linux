@@ -145,6 +145,16 @@ row.unread .conversation-title {
   min-height: 40px;
 }
 
+/* The call's live transcript, under the strip; a line still being heard is
+   provisional. */
+.transcript-panel {
+  padding: 0 12px 8px 12px;
+}
+
+.transcript-interim {
+  font-style: italic;
+}
+
 .call-button.muted {
   background-color: alpha(@warning_bg_color, 0.22);
   color: @warning_color;

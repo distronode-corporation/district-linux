@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The call's live transcript, under the call strip: who said what so far,
+     a line still being heard drawn as provisional, where the transcript
+     stands, and once the call is over the full transcript. It folds away,
+     keeps the newest line in view unless the member has scrolled up to read,
+     and a screen reader hears each line once, when it is final.
+     src/pages/transcript.rs fills it. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictTranscriptPanel" parent="AdwBin">
+    <property name="visible">False</property>
+    <property name="child">
+      <object class="GtkExpander" id="expander">
+        <property name="expanded">True</property>
+        <style>
+          <class name="transcript-panel"/>
+        </style>
+        <property name="label-widget">
+          <object class="GtkBox">
+            <property name="spacing">12</property>
+            <child>
+              <object class="GtkLabel" id="transcript_heading">
+                <property name="xalign">0</property>
+                <property name="use-markup">False</property>
+                <style>
+                  <class name="heading"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="transcript_status">
+                <property name="xalign">0</property>
+                <property name="wrap">True</property>
+                <property name="use-markup">False</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </property>
+        <property name="child">
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">8</property>
+            <property name="margin-top">6</property>
+            <child>
+              <object class="GtkLabel" id="transcript_incomplete">
+                <property name="xalign">0</property>
+                <property name="wrap">True</property>
+                <property name="use-markup">False</property>
+                <property name="visible">False</property>
+                <style>
+                  <class name="caption"/>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="transcript_waiting">
+                <property name="xalign">0</property>
+                <property name="wrap">True</property>
+                <property name="use-markup">False</property>
+                <property name="visible">False</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="transcript_lines_scroller">
+                <property name="hscrollbar-policy">never</property>
+                <property name="propagate-natural-height">True</property>
+                <property name="max-content-height">220</property>
+                <property name="child">
+                  <object class="GtkBox" id="transcript_lines">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <property name="accessible-role">list</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="transcript_full_note_box">
+                <property name="spacing">8</property>
+                <property name="visible">False</property>
+                <child>
+                  <object class="GtkSpinner" id="transcript_full_spinner">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="transcript_full_note">
+                    <property name="xalign">0</property>
+                    <property name="hexpand">True</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="transcript_full_scroller">
+                <property name="hscrollbar-policy">never</property>
+                <property name="propagate-natural-height">True</property>
+                <property name="max-content-height">220</property>
+                <property name="visible">False</property>
+                <property name="child">
+                  <object class="GtkLabel" id="transcript_full_text">
+                    <property name="xalign">0</property>
+                    <property name="yalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="wrap-mode">word-char</property>
+                    <property name="selectable">True</property>
+                    <property name="use-markup">False</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

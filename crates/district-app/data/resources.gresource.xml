@@ -47,6 +47,7 @@
     <file>ui/messaging-form.ui</file>
     <file>ui/members-view.ui</file>
     <file>ui/call-bar.ui</file>
+    <file>ui/transcript-panel.ui</file>
     <file>ui/dialer-page.ui</file>
     <file>style.css</file>
     <file>sounds/ringtone.wav</file>

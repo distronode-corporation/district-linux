@@ -33,6 +33,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   checked to agree at start-up, and the packages carry the compiled catalog only with
   the feature on. Until then deb.yml and flatpak.yml, which a release runs, fail a
   package that holds a catalog.
+- The call's live transcript, under the call strip, as District AI for Windows shows it:
+  who said what so far, a line still being heard in a quieter italic until it is final,
+  where the transcript stands (connecting, live, reconnecting, ended, or none for this
+  call), a note when earlier lines are missing, and once the call is over the full
+  transcript the service keeps. It folds away, keeps the newest line in view unless you
+  have scrolled up to read, and a screen reader hears each line once, when it is final.
+  2.2.0 asked for the transcript during a call and did not show it; this version does.
 
 ## [2.2.0] - 2026-10-13
 

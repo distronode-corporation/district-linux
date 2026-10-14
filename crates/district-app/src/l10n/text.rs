@@ -4640,6 +4640,33 @@ pub fn tools_view_what_receptionist_may_do_saving(l: Locale) -> &'static str {
     }
 }
 
+/// `transcript.line`
+#[must_use]
+pub fn transcript_line(l: Locale, speaker: &str, text: &str) -> String {
+    match l {
+        Locale::En => format!("{speaker}: {text}"),
+        Locale::FrCa => format!("{speaker}: {text}"),
+    }
+}
+
+/// `transcript.line_note`
+#[must_use]
+pub fn transcript_line_note(l: Locale, speaker: &str, text: &str, note: &str) -> String {
+    match l {
+        Locale::En => format!("{speaker}: {text} ({note})"),
+        Locale::FrCa => format!("{speaker}: {text} ({note})"),
+    }
+}
+
+/// `transcript.unavailable`
+#[must_use]
+pub fn transcript_unavailable(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "No live transcript for this call. Its transcript is in the call log after the call.",
+        Locale::FrCa => "No live transcript for this call. Its transcript is in the call log after the call.",
+    }
+}
+
 /// `window.about_district_ai`
 #[must_use]
 pub fn window_about_district_ai(l: Locale) -> &'static str {
