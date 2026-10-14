@@ -722,7 +722,15 @@ mod tests {
             }))
             .expect("an entry");
         let line = account_line(&entry);
-        assert!(line.starts_with("Main \u{b7} Connected"), "{line}");
-        assert!(line.contains("12.50") && line.contains('3'), "{line}");
+        // The messages leave the line out: it holds an account's balance,
+        // which is not printed, even from a test.
+        assert!(
+            line.starts_with("Main \u{b7} Connected"),
+            "the account, then its state"
+        );
+        assert!(
+            line.contains("12.50") && line.contains('3'),
+            "the balance and the count"
+        );
     }
 }
