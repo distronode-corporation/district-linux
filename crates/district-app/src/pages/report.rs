@@ -213,7 +213,10 @@ pub(crate) fn open<P: Sends>(page: &P, anchor: &gtk::Widget, offer: Offer, targe
     content.append(&note_view);
     dialog.set_extra_child(Some(&content));
     let page = page.downgrade();
-    dialog.connect_response(None, move |_, response| {
+    dialog.connect_response(None, move |dialog, response| {
+        // Closed here as well as by its own buttons, so that a response
+        // however it came leaves no dialog behind.
+        dialog.close();
         let note = buffer
             .text(&buffer.start_iter(), &buffer.end_iter(), false)
             .trim()
