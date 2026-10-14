@@ -433,6 +433,9 @@ impl DistrictWindow {
         if !showing(in_support) {
             imp.support_page.leave();
         }
+        if !showing(|route| *route == Route::Marketplace) {
+            imp.marketplace_page.leave();
+        }
         if !showing(|route| *route == Route::Rooms) {
             imp.rooms_page.leave();
         }

@@ -612,10 +612,14 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::knowledge_view_title(Locale::FrCa), "Title");
     assert_eq!(text::knowledge_view_where_answers_come_from(Locale::En), "Where answers come from");
     assert_eq!(text::knowledge_view_where_answers_come_from(Locale::FrCa), "Where answers come from");
+    assert_eq!(text::marketplace_campaign_type(Locale::En), "Campaign type");
+    assert_eq!(text::marketplace_campaign_type(Locale::FrCa), "Campaign type");
     assert_eq!(text::marketplace_monthly(Locale::En, "{price}"), "{price} a month");
     assert_eq!(text::marketplace_monthly(Locale::FrCa, "{price}"), "{price} a month");
     assert_eq!(text::marketplace_offered_by(Locale::En, "{carrier}"), "Offered by {carrier}");
     assert_eq!(text::marketplace_offered_by(Locale::FrCa, "{carrier}"), "Offered by {carrier}");
+    assert_eq!(text::marketplace_opt_in_flow(Locale::En), "How people agree to the messages (optional)");
+    assert_eq!(text::marketplace_opt_in_flow(Locale::FrCa), "How people agree to the messages (optional)");
     assert_eq!(text::marketplace_page_area_code(Locale::En), "Area code");
     assert_eq!(text::marketplace_page_area_code(Locale::FrCa), "Area code");
     assert_eq!(text::marketplace_page_country_code(Locale::En), "Country code");

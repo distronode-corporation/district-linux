@@ -1654,6 +1654,12 @@ msgctxt "knowledge_view.where_answers_come_from"
 msgid "Where answers come from"
 msgstr ""
 
+#. screen: marketplace; ctx: label; tier: T3
+#. Carrier tab, A2P 10DLC registration: the list of the carrier's campaign types (customer care, low volume, marketing, 2FA).
+msgctxt "marketplace.campaign_type"
+msgid "Campaign type"
+msgstr ""
+
 #. screen: marketplace; ctx: label; tier: T1
 msgctxt "marketplace.monthly"
 msgid "{price} a month"
@@ -1662,6 +1668,12 @@ msgstr ""
 #. screen: marketplace; ctx: label; tier: T3
 msgctxt "marketplace.offered_by"
 msgid "Offered by {carrier}"
+msgstr ""
+
+#. screen: marketplace; ctx: label; tier: T3
+#. Carrier tab, toll-free verification: a description of how recipients opt in to the business's text messages.
+msgctxt "marketplace.opt_in_flow"
+msgid "How people agree to the messages (optional)"
 msgstr ""
 
 #. screen: marketplace_page; ctx: label; tier: T3

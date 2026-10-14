@@ -2654,6 +2654,15 @@ pub fn knowledge_view_where_answers_come_from(l: Locale) -> &'static str {
     }
 }
 
+/// `marketplace.campaign_type`
+#[must_use]
+pub fn marketplace_campaign_type(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Campaign type",
+        Locale::FrCa => "Campaign type",
+    }
+}
+
 /// `marketplace.monthly`
 #[must_use]
 pub fn marketplace_monthly(l: Locale, price: &str) -> String {
@@ -2669,6 +2678,15 @@ pub fn marketplace_offered_by(l: Locale, carrier: &str) -> String {
     match l {
         Locale::En => format!("Offered by {carrier}"),
         Locale::FrCa => format!("Offered by {carrier}"),
+    }
+}
+
+/// `marketplace.opt_in_flow`
+#[must_use]
+pub fn marketplace_opt_in_flow(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "How people agree to the messages (optional)",
+        Locale::FrCa => "How people agree to the messages (optional)",
     }
 }
 

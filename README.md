@@ -35,8 +35,10 @@ brings a District AI workspace to the Linux desktop:
   picking up a phone, the call's live transcript shows under it, and meeting
   rooms are joined the same way, audio only.
 - **The rest of the workspace:** District HQ, analytics, the help desk, support
-  requests, workflows, booking pages, and the phone numbers and billing, read
-  only.
+  requests, workflows, booking pages, billing (read only), and the phone
+  numbers: routing reapplied, a number released, a paid lookup, and the
+  carrier tab (accounts, SIP trunks, one-time passcodes, the A2P 10DLC and
+  toll-free registrations). Buying a number stays on the web.
 - **Workspace settings:** District Studio, the receptionist's settings as the
   web console groups them: Persona, Voice (recipes, the signal chain part by
   part, the time to first word and where each part is processed), Call handling

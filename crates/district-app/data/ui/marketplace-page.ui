@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Phone numbers, read only: the numbers the workspace holds, and a search
-     of the numbers for sale. Buying opens the web. src/pages/marketplace.rs
-     fills it. -->
+<!-- Phone numbers: the numbers the workspace holds, each with its routing
+     reapplied or released; a search of the numbers for sale; and the carrier
+     tab (src/pages/carrier.rs). Buying opens the web.
+     src/pages/marketplace.rs fills it. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
@@ -76,10 +77,19 @@
                         <property name="group">owned_tab</property>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkToggleButton" id="carrier_tab">
+                        <property name="group">owned_tab</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>
+                  <!-- Sized by the tab shown only: a tab out of sight (the
+                       carrier tab once shown wide) never holds the window
+                       wider than the narrow layout. -->
                   <object class="GtkStack" id="tab_stack">
+                    <property name="hhomogeneous">False</property>
                     <property name="vhomogeneous">False</property>
                     <child>
                       <object class="GtkStackPage">
@@ -154,6 +164,16 @@
                                 </property>
                               </object>
                             </child>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">carrier</property>
+                        <property name="child">
+                          <object class="GtkBox" id="carrier_box">
+                            <property name="orientation">vertical</property>
                           </object>
                         </property>
                       </object>

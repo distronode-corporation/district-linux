@@ -49,8 +49,8 @@ use district_core::{
     ActiveCall, CALL_TICK, ContactWritten, CoreConfig, DialerScreen, DisconnectReason, Effect,
     Event, HAND_OFF_CALLBACK_WAIT, IncomingRing, LiveTranscript, MediaEvent, MediaSession,
     MediaUpdate, MicrophoneState, Notification, NotificationAction, NotificationTarget, Notifier,
-    PRESENCE_RETRY, PREVIEW_COOLDOWN, Participant, PresenceState, RING_DEADLINE, RestoreError,
-    RingSurface, Route, SignedInSession, Ticket, Urgency, UrlOpener,
+    NumberAnswer, PRESENCE_RETRY, PREVIEW_COOLDOWN, Participant, PresenceState, RING_DEADLINE,
+    RestoreError, RingSurface, Route, SignedInSession, Ticket, Urgency, UrlOpener,
 };
 use district_host::SleepHandler;
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
@@ -2410,6 +2410,245 @@ fn numbers_screen(smoke: &Smoke) {
     assert_eq!(smoke.status_title("search_status"), "No matches");
     smoke.click("owned_tab");
     assert!(smoke.count("number-row") >= 1, "the numbers held again");
+    smoke.forget();
+    managing_numbers(smoke);
+    carrier_tab(smoke);
+}
+
+/// A model value from the JSON the service answers with.
+fn from_json<T: DeserializeOwned>(value: serde_json::Value) -> T {
+    serde_json::from_value(value).expect("the service's shape")
+}
+
+/// Answers the pending number management call with `result`, and says which
+/// call it was.
+fn number_call(smoke: &Smoke, result: Result<NumberAnswer, ApiError>) -> String {
+    let call = smoke.take("NumberAdmin");
+    let shown = format!("{call:?}");
+    smoke.answer(Event::NumberAdminDone {
+        ticket: ticket(&call),
+        result,
+    });
+    shown
+}
+
+/// A held number's routing reapplied, and its release asked, cancelled,
+/// confirmed and landed; then a release whose answer was lost, which is not
+/// offered again. A number Distronode holds says why nothing is offered.
+fn managing_numbers(smoke: &Smoke) {
+    smoke
+        .nth::<adw::ExpanderRow>("number-row", 0)
+        .set_expanded(true);
+    smoke
+        .nth::<adw::ExpanderRow>("number-row", 1)
+        .set_expanded(true);
+    smoke.pump();
+    assert!(smoke.shows_part("held on Distronode's carrier account"));
+    assert_eq!(
+        smoke.count("number-configure"),
+        1,
+        "only the number the workspace holds"
+    );
+    smoke.click("number-configure");
+    assert!(!smoke.sensitive("number-release"), "one write at a time");
+    let call = number_call(smoke, Ok(NumberAnswer::Configured));
+    assert!(call.contains("Configure(\"+14165550100\")"), "{call}");
+    assert!(smoke.shows_text("Routing reapplied."));
+    smoke.click("number-release");
+    assert!(smoke.shows_text("Release this number?"));
+    smoke.respond("cancel");
+    assert!(!smoke.pending("NumberAdmin"), "nothing released");
+    smoke.click("number-release");
+    smoke.respond("confirm");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::Released(from_json(
+            serde_json::json!({"success": true}),
+        ))),
+    );
+    assert!(call.contains("Release("), "{call}");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    smoke
+        .nth::<adw::ExpanderRow>("number-row", 0)
+        .set_expanded(true);
+    smoke.pump();
+    assert!(smoke.shows_text("Released."));
+    smoke.click("number-release");
+    smoke.respond("confirm");
+    number_call(smoke, Err(server_error()));
+    assert!(smoke.shows_part("not offered again"));
+    assert!(!smoke.sensitive("number-release"));
+    assert!(!smoke.sensitive("number-configure"));
+    smoke.shot("54-numbers-manage");
+    smoke.forget();
+}
+
+/// The carrier tab: the accounts, the trunks and the passcode sender read;
+/// the sender turned on; a trunk created; a paid lookup confirmed; both
+/// registrations filed; and a refresh that finds no carrier and fails the
+/// rest.
+fn carrier_tab(smoke: &Smoke) {
+    smoke.click("carrier_tab");
+    number_call(
+        smoke,
+        Ok(NumberAnswer::CarrierStatus(from_json(serde_json::json!({
+            "connected": true,
+            "providers": {
+                "twilio": {
+                    "connected": true,
+                    "accountName": "Main line",
+                    "balance": "12.50",
+                    "currency": "USD",
+                    "numberCount": 3
+                },
+                "telnyx": {"connected": false}
+            }
+        })))),
+    );
+    number_call(
+        smoke,
+        Ok(NumberAnswer::SipTrunks(from_json(
+            serde_json::json!({"success": true, "trunks": []}),
+        ))),
+    );
+    number_call(
+        smoke,
+        Ok(NumberAnswer::VerifyService(from_json(
+            serde_json::json!({"success": true, "enabled": false}),
+        ))),
+    );
+    assert!(smoke.shows_part("Main line"));
+    assert!(smoke.shows_part("Balance 12.50 USD"));
+    assert!(smoke.shows_text("No SIP trunks"));
+    assert!(smoke.shows_text("Not enabled"));
+    smoke.shot("55-numbers-carrier");
+
+    smoke.click("verify-enable");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::VerifyService(from_json(
+            serde_json::json!({"success": true, "enabled": true}),
+        ))),
+    );
+    assert!(call.contains("SetVerifyService(true)"), "{call}");
+    assert!(smoke.shows_text("Enabled"));
+
+    assert!(
+        !smoke.sensitive("sip-create"),
+        "a name, a domain and an address first"
+    );
+    smoke.type_into("sip-name", "Office PBX");
+    smoke.type_into("sip-domain", "office");
+    smoke.mapped_buffer("sip-ips").set_text("203.0.113.10");
+    smoke.pump();
+    smoke.click("sip-create");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::SipTrunkCreated(from_json(
+            serde_json::json!({
+                "success": true,
+                "trunk": {"id": "t1", "name": "Office PBX", "domain": "office.sip.twilio.com", "status": "active"}
+            }),
+        ))),
+    );
+    assert!(call.contains("CreateSipTrunk"), "{call}");
+    number_call(
+        smoke,
+        Ok(NumberAnswer::SipTrunks(from_json(serde_json::json!({
+            "success": true,
+            "trunks": [{
+                "id": "t1",
+                "name": "Office PBX",
+                "domain": "office.sip.twilio.com",
+                "ipAccessControlList": ["203.0.113.10"],
+                "domainSid": "SD1",
+                "ipAclSid": "AL1",
+                "status": "active"
+            }]
+        })))),
+    );
+    assert!(smoke.shows_text("Office PBX"));
+    let name = smoke
+        .mapped("sip-name")
+        .dynamic_cast::<gtk::Editable>()
+        .expect("an editable")
+        .text();
+    assert_eq!(name, "", "the form empties once the trunk is made");
+
+    smoke.type_into("lookup-row", "+14165550100");
+    smoke.click("lookup-button");
+    assert!(smoke.shows_text("Run a paid lookup?"));
+    smoke.respond("confirm");
+    number_call(
+        smoke,
+        Ok(NumberAnswer::LookedUp(from_json(serde_json::json!({
+            "success": true,
+            "info": {"valid": true, "phoneNumber": "+14165550100", "country": "CA", "type": "mobile", "carrier": "Rogers"}
+        })))),
+    );
+    assert!(smoke.shows_part("Rogers"));
+
+    smoke.type_into("a2p-business", "Acme Dental");
+    for (name, text) in [
+        ("a2p-description", "Appointment reminders."),
+        ("a2p-one", "Your cleaning is tomorrow at 9."),
+        ("a2p-two", "Reply C to confirm."),
+    ] {
+        smoke.mapped_buffer(name).set_text(text);
+    }
+    smoke.pump();
+    smoke.click("a2p-submit");
+    assert!(smoke.shows_text("Submit this registration?"));
+    smoke.respond("confirm");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::A2pRegistered(from_json(serde_json::json!({
+            "success": true, "status": "pending", "brandSid": "B", "messagingServiceSid": "M", "campaignSid": "C"
+        })))),
+    );
+    assert!(call.contains("Acme Dental"), "{call}");
+    assert!(smoke.shows_text("Submitted. The carrier reports pending."));
+
+    smoke.type_into("tfv-number", "+18005550188");
+    smoke.type_into("tfv-business", "Acme Dental");
+    smoke.type_into("tfv-opt-in-link", "https://example.com/opt-in.png");
+    smoke
+        .mapped("tfv-use-case")
+        .downcast::<adw::ComboRow>()
+        .unwrap()
+        .set_selected(1);
+    smoke.pump();
+    smoke.click("tfv-submit");
+    smoke.respond("confirm");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::TollFreeFiled(from_json(serde_json::json!({
+            "success": true, "status": "in review", "tfvSid": "T"
+        })))),
+    );
+    assert!(call.contains("Marketing"), "{call}");
+    assert!(smoke.shows_text("Submitted. The carrier reports in review."));
+
+    // Read again: no carrier, and the rest failing.
+    smoke.click("refresh_button");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    number_call(
+        smoke,
+        Ok(NumberAnswer::CarrierStatus(from_json(
+            serde_json::json!({"connected": false}),
+        ))),
+    );
+    number_call(smoke, Err(server_error()));
+    number_call(smoke, Err(server_error()));
+    assert!(smoke.shows_text("No carrier connected"));
+    assert!(smoke.shown("sip-failure"));
+    smoke.click("owned_tab");
     smoke.forget();
 }
 
