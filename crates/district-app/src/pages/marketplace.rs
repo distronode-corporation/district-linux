@@ -1,12 +1,17 @@
-//! Phone numbers, read only: the numbers the workspace holds, and a search of
-//! the numbers for sale. Nothing here buys, releases or changes a number; a
-//! member whose role could buy one is offered the web marketplace instead.
+//! Phone numbers: the numbers the workspace holds, each with its routing
+//! reapplied or released (behind the core's confirmation); a search of the
+//! numbers for sale; and the carrier tab ([`CarrierPanel`]). Nothing here buys
+//! a number: a member whose role could buy one is offered the web marketplace
+//! instead.
 
 use std::cell::{OnceCell, RefCell};
+use std::rc::Rc;
 
+use district_core::l10n::numbers_strings as ns;
 use district_core::{
-    Capabilities, Event, MarketplaceEvent, MarketplaceScreen, MarketplaceTab, NumberSearchForm,
-    NumberSearchState, OwnedNumbersList, format_phone_number, price_label,
+    Capabilities, Event, MarketplaceEvent, MarketplaceScreen, MarketplaceTab, NumberAdmin,
+    NumberAdminEvent, NumberSearchForm, NumberSearchState, OwnedNumbersList, format_phone_number,
+    number_actions_note, price_label,
 };
 use district_model::{AvailableNumber, OwnedNumber};
 
@@ -15,7 +20,10 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
-use crate::pages::shared::{Echo, clear_list, draw_line, failure_text, humanize};
+use crate::pages::carrier::{CarrierPanel, write_notice};
+use crate::pages::shared::{
+    Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, plain_label,
+};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -101,6 +109,98 @@ fn number_row(number: &str, subtitle: &str, price: Option<String>) -> adw::Actio
     row
 }
 
+/// The event that carries `event` to the core.
+fn numbers(event: NumberAdminEvent) -> Event {
+    Event::Marketplace(MarketplaceEvent::Numbers(event))
+}
+
+/// A held number's controls, drawn again as its write goes.
+#[derive(Debug)]
+pub struct NumberControls {
+    phone_number: String,
+    configure: gtk::Button,
+    release: gtk::Button,
+    notice: gtk::Label,
+}
+
+/// A held number as a row that opens on what can be done to it: reapply its
+/// routing or release it; or the sentence saying why nothing can (a number
+/// Distronode holds, or a viewer).
+fn owned_row(
+    page: &MarketplacePage,
+    number: &OwnedNumber,
+    can_change: bool,
+) -> (adw::ExpanderRow, Option<NumberControls>) {
+    let row = adw::ExpanderRow::builder()
+        .use_markup(false)
+        .title(format_phone_number(&number.phone_number))
+        .subtitle(owned_line(number))
+        .subtitle_lines(2)
+        .name("number-row")
+        .build();
+    if let Some(price) = monthly(number.monthly_price, None) {
+        row.add_suffix(
+            &gtk::Label::builder()
+                .label(price)
+                .valign(gtk::Align::Center)
+                .css_classes(["caption", "numeric"])
+                .build(),
+        );
+    }
+    let body = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(6)
+        .margin_top(12)
+        .margin_bottom(12)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+    row.add_row(&body);
+    if let Some(note) = number_actions_note(number, can_change) {
+        body.append(&plain_label(note, &["dim-label"]));
+        return (row, None);
+    }
+    let l = lang();
+    body.append(&plain_label(
+        ns::numbers_configure_caption(l),
+        &["caption", "dim-label"],
+    ));
+    let buttons = gtk::Box::builder().spacing(6).build();
+    let configure = gtk::Button::builder()
+        .label(ns::numbers_configure_action(l))
+        .name("number-configure")
+        .build();
+    let release = gtk::Button::builder()
+        .label(ns::numbers_release_action(l))
+        .name("number-release")
+        .css_classes(["destructive-action"])
+        .build();
+    buttons.append(&configure);
+    buttons.append(&release);
+    body.append(&buttons);
+    let notice = plain_label("", &["dim-label"]);
+    notice.set_widget_name("number-notice");
+    notice.set_visible(false);
+    body.append(&notice);
+    for (button, ask) in [
+        (
+            &configure,
+            NumberAdminEvent::Configure as fn(String) -> NumberAdminEvent,
+        ),
+        (&release, NumberAdminEvent::AskRelease),
+    ] {
+        let phone_number = number.phone_number.clone();
+        on_click(button, page, move || numbers(ask(phone_number.clone())));
+    }
+    let controls = NumberControls {
+        phone_number: number.phone_number.clone(),
+        configure,
+        release,
+        notice,
+    };
+    (row, Some(controls))
+}
+
 mod imp {
     use super::*;
 
@@ -121,6 +221,10 @@ mod imp {
         pub owned_tab: TemplateChild<gtk::ToggleButton>,
         #[template_child]
         pub search_tab: TemplateChild<gtk::ToggleButton>,
+        #[template_child]
+        pub carrier_tab: TemplateChild<gtk::ToggleButton>,
+        #[template_child]
+        pub carrier_box: TemplateChild<gtk::Box>,
         #[template_child]
         pub tab_stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -161,8 +265,15 @@ mod imp {
         pub country: RefCell<Echo>,
         /// Whether a field is being written from the model, not typed in.
         pub writing: std::cell::Cell<bool>,
-        /// The numbers the lists were last built from.
-        pub owned: RefCell<Option<Vec<OwnedNumber>>>,
+        /// The numbers the lists were last built from, and whether the held
+        /// ones were offered changes.
+        pub owned: RefCell<Option<(Vec<OwnedNumber>, bool)>>,
+        /// The held numbers' controls.
+        pub controls: RefCell<Vec<NumberControls>>,
+        /// The carrier tab.
+        pub carrier: OnceCell<Rc<CarrierPanel>>,
+        /// The confirmation the core is asking.
+        pub asking: Asking,
         pub found: RefCell<Option<Vec<AvailableNumber>>>,
     }
 
@@ -196,6 +307,10 @@ mod imp {
                 .collect();
             self.type_row
                 .set_model(Some(&gtk::StringList::new(&labels)));
+            self.carrier_tab.set_label(MarketplaceTab::carrier_label());
+            self.carrier
+                .set(CarrierPanel::new(&page, &self.carrier_box))
+                .ok();
             let search = || Event::Marketplace(MarketplaceEvent::Search);
             on_click(&self.web_button, &*page, || {
                 Event::Marketplace(MarketplaceEvent::OpenWeb)
@@ -206,6 +321,7 @@ mod imp {
             for (tab, which) in [
                 (&*self.owned_tab, MarketplaceTab::Owned),
                 (&*self.search_tab, MarketplaceTab::Search),
+                (&*self.carrier_tab, MarketplaceTab::Carrier),
             ] {
                 let weak = page.downgrade();
                 tab.connect_toggled(move |tab| {
@@ -306,11 +422,21 @@ impl MarketplacePage {
             .set_label(MarketplaceScreen::scope_note(capabilities));
         imp.web_box
             .set_visible(MarketplaceScreen::offers_web(capabilities));
-        let owned = screen.tab == MarketplaceTab::Owned;
-        imp.owned_tab.set_active(owned);
-        imp.search_tab.set_active(!owned);
-        imp.tab_stack
-            .set_visible_child_name(if owned { "owned" } else { "search" });
+        imp.owned_tab
+            .set_active(screen.tab == MarketplaceTab::Owned);
+        imp.search_tab
+            .set_active(screen.tab == MarketplaceTab::Search);
+        imp.carrier_tab
+            .set_active(screen.tab == MarketplaceTab::Carrier);
+        imp.tab_stack.set_visible_child_name(match screen.tab {
+            MarketplaceTab::Owned => "owned",
+            MarketplaceTab::Search => "search",
+            MarketplaceTab::Carrier => "carrier",
+        });
+        if let Some(carrier) = imp.carrier.get() {
+            carrier.update(&screen.admin, capabilities);
+        }
+        self.ask(&screen.admin);
         for (row, echo, value) in [
             (&*imp.area_row, &imp.area, &screen.form.area_code),
             (&*imp.country_row, &imp.country, &screen.form.country),
@@ -327,11 +453,63 @@ impl MarketplacePage {
         if let Some(selected) = selected.and_then(|index| u32::try_from(index).ok()) {
             imp.type_row.set_selected(selected);
         }
-        self.draw_owned(&screen.owned);
+        self.draw_owned(&screen.owned, capabilities.can_change);
+        self.draw_controls(&screen.admin);
         self.draw_search(&screen.search);
     }
 
-    fn draw_owned(&self, owned: &OwnedNumbersList) {
+    /// Opens the confirmation the core is asking, or closes one it has
+    /// stopped asking.
+    fn ask(&self, admin: &NumberAdmin) {
+        let page = self.downgrade();
+        let confirmation = admin.confirmation.as_ref();
+        let question = confirmation.map(|confirmation| confirmation.body());
+        self.imp().asking.sync(
+            self,
+            confirmation
+                .zip(question.as_deref())
+                .map(|(confirmation, question)| Ask {
+                    key: format!("{confirmation:?}"),
+                    heading: Some(confirmation.title()),
+                    question,
+                    action: admin
+                        .confirm_label()
+                        .unwrap_or_else(|| confirmation.action()),
+                    destructive: confirmation.is_destructive(),
+                }),
+            move |yes| {
+                if let Some(page) = page.upgrade() {
+                    page.send(numbers(if yes {
+                        NumberAdminEvent::Confirm
+                    } else {
+                        NumberAdminEvent::CancelConfirmation
+                    }));
+                }
+            },
+        );
+    }
+
+    /// The phone numbers screen is no longer showing: no confirmation
+    /// outlives it.
+    pub(crate) fn leave(&self) {
+        self.imp().asking.close();
+    }
+
+    /// The held numbers' controls as their write goes: none while one is on
+    /// its way or may have happened, and the notice under the number it was
+    /// for.
+    fn draw_controls(&self, admin: &NumberAdmin) {
+        let armed = admin.number_write.is_armed();
+        let notice = write_notice(&admin.number_write);
+        for controls in self.imp().controls.borrow().iter() {
+            controls.configure.set_sensitive(armed);
+            controls.release.set_sensitive(armed);
+            let mine = admin.number_written.as_deref() == Some(controls.phone_number.as_str());
+            draw_line(&controls.notice, notice.as_deref().filter(|_| mine));
+        }
+    }
+
+    fn draw_owned(&self, owned: &OwnedNumbersList, can_change: bool) {
         let imp = self.imp();
         let loading = matches!(
             owned,
@@ -364,16 +542,17 @@ impl MarketplacePage {
                 imp.owned_stack.set_visible_child_name("list");
                 let note = held.partial_note();
                 draw_line(&imp.partial_note, note.as_deref());
-                if imp.owned.borrow().as_ref() != Some(&held.numbers) {
+                let drawn = (held.numbers.clone(), can_change);
+                if imp.owned.borrow().as_ref() != Some(&drawn) {
                     clear_list(&imp.owned_list);
+                    let mut controls = Vec::new();
                     for number in &held.numbers {
-                        imp.owned_list.append(&number_row(
-                            &number.phone_number,
-                            &owned_line(number),
-                            monthly(number.monthly_price, None),
-                        ));
+                        let (row, offered) = owned_row(self, number, can_change);
+                        imp.owned_list.append(&row);
+                        controls.extend(offered);
                     }
-                    imp.owned.replace(Some(held.numbers.clone()));
+                    imp.controls.replace(controls);
+                    imp.owned.replace(Some(drawn));
                 }
             }
         }

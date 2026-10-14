@@ -1705,6 +1705,12 @@ ctx = "title"
 screen = "knowledge_view"
 note = "In knowledge-view.ui."
 
+[marketplace.campaign_type]
+en = "Campaign type"
+ctx = "label"
+screen = "marketplace"
+note = "Carrier tab, A2P 10DLC registration: the list of the carrier's campaign types (customer care, low volume, marketing, 2FA)."
+
 [marketplace.monthly]
 en = "{price} a month"
 ctx = "label"
@@ -1717,6 +1723,12 @@ en = "Offered by {carrier}"
 ctx = "label"
 screen = "marketplace"
 args = { carrier = "str" }
+
+[marketplace.opt_in_flow]
+en = "How people agree to the messages (optional)"
+ctx = "label"
+screen = "marketplace"
+note = "Carrier tab, toll-free verification: a description of how recipients opt in to the business's text messages."
 
 [marketplace_page.area_code]
 en = "Area code"

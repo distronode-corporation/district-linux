@@ -11,6 +11,7 @@ mod call;
 mod call_bar;
 mod call_handling;
 mod calls;
+mod carrier;
 mod compose_form;
 mod contact;
 mod contact_form;

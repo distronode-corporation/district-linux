@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Phone numbers, read only: the numbers the workspace holds, and a search
-     of the numbers for sale. Buying opens the web. src/pages/marketplace.rs
-     fills it. -->
+<!-- Phone numbers: the numbers the workspace holds, each with its routing
+     reapplied or released; a search of the numbers for sale; and the carrier
+     tab (src/pages/carrier.rs). Buying opens the web.
+     src/pages/marketplace.rs fills it. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
@@ -73,6 +74,11 @@
                     <child>
                       <object class="GtkToggleButton" id="search_tab">
                         <property name="label" translatable="yes" context="marketplace_page.find_number">Find a number</property>
+                        <property name="group">owned_tab</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkToggleButton" id="carrier_tab">
                         <property name="group">owned_tab</property>
                       </object>
                     </child>
@@ -154,6 +160,16 @@
                                 </property>
                               </object>
                             </child>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">carrier</property>
+                        <property name="child">
+                          <object class="GtkBox" id="carrier_box">
+                            <property name="orientation">vertical</property>
                           </object>
                         </property>
                       </object>
