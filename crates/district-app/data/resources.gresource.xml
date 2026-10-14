@@ -30,6 +30,7 @@
     <file>ui/support-page.ui</file>
     <file>ui/support-request-view.ui</file>
     <file>ui/reply-box.ui</file>
+    <file>ui/compose-form.ui</file>
     <file>ui/ticket-form.ui</file>
     <file>ui/rooms-page.ui</file>
     <file>ui/meeting-record.ui</file>

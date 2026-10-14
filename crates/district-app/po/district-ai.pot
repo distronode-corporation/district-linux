@@ -1512,6 +1512,18 @@ msgctxt "inbox_page.matching_messages"
 msgid "Matching messages"
 msgstr ""
 
+#. screen: inbox_page; ctx: tooltip; tier: T3
+#. In inbox-page.ui. The button beside the inbox search that starts a new conversation.
+msgctxt "inbox_page.new_message"
+msgid "New message"
+msgstr ""
+
+#. screen: inbox_page; ctx: a11y; tier: T3
+#. In inbox-page.ui. The name a screen reader says for the button that starts a new conversation.
+msgctxt "inbox_page.new_message_a11y"
+msgid "New message"
+msgstr ""
+
 #. screen: inbox_page; ctx: title; tier: T3
 #. In inbox-page.ui.
 msgctxt "inbox_page.no_conversation_open"

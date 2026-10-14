@@ -2435,6 +2435,24 @@ pub fn inbox_page_matching_messages(l: Locale) -> &'static str {
     }
 }
 
+/// `inbox_page.new_message`
+#[must_use]
+pub fn inbox_page_new_message(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "New message",
+        Locale::FrCa => "New message",
+    }
+}
+
+/// `inbox_page.new_message_a11y`
+#[must_use]
+pub fn inbox_page_new_message_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "New message",
+        Locale::FrCa => "New message",
+    }
+}
+
 /// `inbox_page.no_conversation_open`
 #[must_use]
 pub fn inbox_page_no_conversation_open(l: Locale) -> &'static str {

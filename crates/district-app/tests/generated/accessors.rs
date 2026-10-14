@@ -560,6 +560,10 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::inbox_page_conversations_a11y(Locale::FrCa), "Conversations");
     assert_eq!(text::inbox_page_matching_messages(Locale::En), "Matching messages");
     assert_eq!(text::inbox_page_matching_messages(Locale::FrCa), "Matching messages");
+    assert_eq!(text::inbox_page_new_message(Locale::En), "New message");
+    assert_eq!(text::inbox_page_new_message(Locale::FrCa), "New message");
+    assert_eq!(text::inbox_page_new_message_a11y(Locale::En), "New message");
+    assert_eq!(text::inbox_page_new_message_a11y(Locale::FrCa), "New message");
     assert_eq!(text::inbox_page_no_conversation_open(Locale::En), "No conversation open");
     assert_eq!(text::inbox_page_no_conversation_open(Locale::FrCa), "No conversation open");
     assert_eq!(text::inbox_page_search_every_message(Locale::En), "Search every message");
