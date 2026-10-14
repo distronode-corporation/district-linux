@@ -1,13 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The booking pages' bookings section: every booking a page at a time, and one booking.
-     src/pages/scheduling_admin/bookings.rs fills it. -->
+<!-- The booking pages' bookings section: every booking a page at a time
+     ("list"), and one booking ("detail"). What depends on what was read (the
+     frames, the rows, the dialogs) src/pages/scheduling_admin/bookings.rs
+     builds. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
   <template class="DistrictSchedulingBookingsPane" parent="AdwBin">
     <property name="child">
-      <object class="AdwStatusPage" id="bookings_placeholder">
-        <property name="icon-name">x-office-calendar-symbolic</property>
+      <object class="GtkStack" id="bookings_stack">
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">list</property>
+            <property name="child">
+              <object class="GtkScrolledWindow" id="bookings_scroller">
+                <property name="hscrollbar-policy">never</property>
+                <property name="vexpand">true</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">760</property>
+                    <property name="child">
+                      <object class="GtkBox" id="bookings_column">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <property name="margin-top">18</property>
+                        <property name="margin-bottom">18</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <child>
+                          <object class="GtkLabel" id="bookings_times_in">
+                            <property name="xalign">0</property>
+                            <property name="wrap">true</property>
+                            <style>
+                              <class name="caption"/>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="bookings_views">
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="linked"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">detail</property>
+            <property name="child">
+              <object class="GtkScrolledWindow">
+                <property name="hscrollbar-policy">never</property>
+                <property name="vexpand">true</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">760</property>
+                    <property name="child">
+                      <object class="GtkBox" id="booking_column">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="margin-top">18</property>
+                        <property name="margin-bottom">18</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <child>
+                          <object class="AdwPreferencesGroup" id="booking_manage_group">
+                            <child>
+                              <object class="GtkButton" id="booking_cancel_button">
+                                <property name="halign">start</property>
+                                <style>
+                                  <class name="destructive-action"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
       </object>
     </property>
   </template>

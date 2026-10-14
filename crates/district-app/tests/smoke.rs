@@ -3034,6 +3034,324 @@ fn scheduling_screen(smoke: &Smoke) {
     smoke.forget();
 }
 
+/// The pending scheduling administration request `wanted` picks, taken off
+/// the list, with its ticket.
+fn bookings_take(
+    smoke: &Smoke,
+    wanted: impl Fn(&district_model::SchedulingAdminRequest) -> bool,
+) -> (Ticket, district_model::SchedulingAdminRequest) {
+    let mut pending = smoke.script.pending.borrow_mut();
+    let index = pending
+        .iter()
+        .position(
+            |effect| matches!(effect, Effect::SchedulingAdmin { request, .. } if wanted(request)),
+        )
+        .unwrap_or_else(|| panic!("no such scheduling request among {pending:?}"));
+    match pending.remove(index) {
+        Some(Effect::SchedulingAdmin {
+            ticket, request, ..
+        }) => (ticket, *request),
+        _ => unreachable!(),
+    }
+}
+
+/// Answers the pending request `wanted` picks with the `data` of `body`, an
+/// answer as the route sends it, read as the request reads it; or with
+/// `error`.
+fn bookings_reply(
+    smoke: &Smoke,
+    wanted: impl Fn(&district_model::SchedulingAdminRequest) -> bool,
+    body: Result<serde_json::Value, ApiError>,
+) -> district_model::SchedulingAdminRequest {
+    let (ticket, request) = bookings_take(smoke, wanted);
+    let result = body.map(|body| {
+        district_model::SchedulingAdminReply::Done(
+            request
+                .decode(body["data"].clone())
+                .expect("the answer reads"),
+        )
+    });
+    smoke.answer(Event::SchedulingAdminAnswered { ticket, result });
+    request
+}
+
+/// A page of `count` upcoming bookings like the contract's first, ending far
+/// ahead so that each can still be acted on, out of `total`.
+fn bookings_page(first: usize, count: usize, total: i64) -> serde_json::Value {
+    let mut body: serde_json::Value = fixture("district-scheduling-bookings.json");
+    let template = body["data"]["items"][0].clone();
+    let items: Vec<serde_json::Value> = (first..first + count)
+        .map(|n| {
+            let mut item = template.clone();
+            item["id"] = format!("bk-smoke-{n}").into();
+            item["start_at"] = "2099-09-14T13:00:00Z".into();
+            item["end_at"] = "2099-09-14T13:30:00Z".into();
+            item
+        })
+        .collect();
+    body["data"]["items"] = items.into();
+    body["data"]["total"] = total.into();
+    body
+}
+
+/// Bookings: the list read once the status, the profile and the event types
+/// are in, a failed first page and Try again, the views, Load more with a
+/// failed page, one booking's answers and its cancel with a reason, and from
+/// the list a cancel refused for its reason, a move to another free time and
+/// a hand-over to another host.
+fn scheduling_bookings(smoke: &Smoke) {
+    use district_core::scheduling_admin::{BookingsSection, CancelDialog};
+    use district_model::SchedulingAdminRequest as Request;
+
+    let status = |smoke: &Smoke| {
+        smoke.reply("LoadSchedulingStatus", |ticket| {
+            Event::SchedulingStatusLoaded {
+                ticket,
+                result: Ok(fixture("district-scheduling-status-ready.json")),
+            }
+        });
+    };
+    let context = |smoke: &Smoke| {
+        status(smoke);
+        bookings_reply(
+            smoke,
+            |r| matches!(r, Request::Me),
+            Ok(fixture("district-scheduling-me.json")),
+        );
+        bookings_reply(
+            smoke,
+            |r| matches!(r, Request::EventTypes),
+            Ok(fixture("district-scheduling-event-types.json")),
+        );
+    };
+    let page = |r: &Request| matches!(r, Request::Bookings(_));
+    smoke.click("refresh_button");
+    status(smoke);
+    smoke.forget();
+    smoke.activate("scheduling-section-bookings");
+    assert!(
+        smoke.shown("bookings-loading"),
+        "the first page waits for three reads"
+    );
+    context(smoke);
+    bookings_reply(smoke, page, Err(server_error()));
+    assert!(smoke.shown("bookings-failed"));
+    smoke.click("bookings-retry");
+    context(smoke);
+    let first = bookings_reply(smoke, page, Ok(bookings_page(0, 25, 30)));
+    let Request::Bookings(query) = first else {
+        unreachable!()
+    };
+    assert!(
+        query.all_hosts,
+        "the status says this member manages the pages"
+    );
+    assert!(smoke.shows_text("Times in America/Toronto"));
+    assert_eq!(smoke.count("booking-row"), 25);
+    assert_eq!(smoke.count("booking-cancel"), 25);
+    assert_eq!(smoke.count("booking-reschedule"), 25);
+    assert_eq!(
+        smoke.count("booking-reassign"),
+        25,
+        "the scheduler's administrator"
+    );
+    smoke.shot("65a-bookings");
+
+    // Another view reads from its first page; an empty one says so.
+    let view = |smoke: &Smoke, index: usize| {
+        smoke
+            .nth::<gtk::ToggleButton>("bookings-view", index)
+            .emit_clicked();
+        smoke.pump();
+    };
+    view(smoke, 2);
+    let mut empty: serde_json::Value = fixture("district-scheduling-bookings.json");
+    empty["data"]["items"] = serde_json::json!([]);
+    bookings_reply(smoke, page, Ok(empty));
+    assert!(smoke.shown("bookings-empty"));
+    assert_eq!(
+        smoke.status_title("bookings-empty"),
+        BookingsSection::empty_title()
+    );
+    assert!(!smoke.shown("booking-row"));
+    view(smoke, 0);
+    bookings_reply(smoke, page, Ok(bookings_page(0, 25, 30)));
+    assert_eq!(smoke.count("booking-row"), 25);
+
+    // Load more: one page a press, a failed one kept with its rows.
+    smoke.click("bookings-load-more");
+    assert!(!smoke.sensitive("bookings-load-more"), "one page at a time");
+    bookings_reply(smoke, page, Err(server_error()));
+    assert!(smoke.shown("bookings-more-failure"));
+    assert_eq!(smoke.count("booking-row"), 25);
+    smoke.click("bookings-load-more");
+    let more = bookings_reply(smoke, page, Ok(bookings_page(25, 5, 30)));
+    assert!(matches!(more, Request::Bookings(query) if query.offset == Some(25)));
+    assert_eq!(smoke.count("booking-row"), 30);
+    assert!(!smoke.shown("bookings-load-more"), "the last page is in");
+    assert!(!smoke.shown("bookings-more-failure"));
+
+    // One booking: what the booker answered, and its cancel with a reason.
+    smoke.activate_nth("booking-row", 0);
+    assert!(smoke.shown("booking-answers-loading"));
+    bookings_reply(
+        smoke,
+        |r| matches!(r, Request::BookingAnswers { id } if id == "bk-smoke-0"),
+        Ok(fixture("district-scheduling-booking-answers.json")),
+    );
+    assert_eq!(smoke.count("booking-answer"), 2);
+    assert!(smoke.shows_text("No answer"), "a blank answer says so");
+    smoke.shot("65b-booking");
+    smoke.click("booking_cancel_button");
+    assert!(smoke.shown("booking-cancel-dialog"));
+    assert!(smoke.shows_text(CancelDialog::title()));
+    smoke
+        .text_view("booking-cancel-reason")
+        .set_text("  The customer asked to postpone.  ");
+    smoke.pump();
+    smoke.shot("65c-booking-cancel");
+    smoke.click("booking-cancel-confirm");
+    assert!(
+        !smoke.sensitive("booking-cancel-confirm"),
+        "one cancel at a time"
+    );
+    let cancel = bookings_reply(
+        smoke,
+        |r| matches!(r, Request::CancelBooking { .. }),
+        Ok(fixture("district-scheduling-booking.json")),
+    );
+    assert_eq!(
+        cancel,
+        Request::CancelBooking {
+            id: "bk-smoke-0".to_owned(),
+            reason: Some("The customer asked to postpone.".to_owned()),
+        }
+    );
+    assert!(smoke.shows_text("Booking cancelled"));
+    assert!(
+        !smoke.sensitive("booking-cancel-confirm"),
+        "nothing left to confirm"
+    );
+    assert!(
+        smoke.shown("booking-answers-loading"),
+        "the answers are read again"
+    );
+    smoke.click("booking-cancel-keep");
+    assert!(!smoke.shown("booking-cancel-dialog"));
+    smoke.forget();
+
+    // Back on the list, as it was.
+    smoke.click("back_button");
+    assert_eq!(smoke.count("booking-row"), 30);
+
+    // A cancel from the list whose reason is too long is not sent.
+    smoke.click("booking-cancel");
+    smoke
+        .text_view("booking-cancel-reason")
+        .set_text(&"a".repeat(1001));
+    smoke.pump();
+    smoke.click("booking-cancel-confirm");
+    assert!(smoke.shown("booking-cancel-rejected"));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.click("booking-cancel-keep");
+    assert!(!smoke.shown("booking-cancel-dialog"));
+
+    // A move: the day's free times, read again after a failure and for
+    // another day, one chosen, and the booking moved.
+    smoke.click("booking-reschedule");
+    assert!(smoke.shown("booking-reschedule-dialog"));
+    assert!(
+        !smoke.sensitive("booking-reschedule-confirm"),
+        "no time chosen"
+    );
+    let slots = |r: &Request| matches!(r, Request::Slots { .. });
+    bookings_reply(smoke, slots, Err(server_error()));
+    assert!(smoke.shown("booking-reschedule-slots-failed"));
+    smoke.click("booking-reschedule-slots-retry");
+    bookings_reply(smoke, slots, Ok(fixture("district-scheduling-slots.json")));
+    assert_eq!(smoke.count("booking-reschedule-slot"), 2);
+    let calendar = smoke.nth::<gtk::Calendar>("booking-reschedule-day", 0);
+    let tomorrow = calendar.date().add_days(1).expect("a day later");
+    calendar.select_day(&tomorrow);
+    smoke.pump();
+    let again = bookings_reply(smoke, slots, Ok(fixture("district-scheduling-slots.json")));
+    let Request::Slots { from, tz, .. } = again else {
+        unreachable!()
+    };
+    assert_eq!(
+        from,
+        Some(format!(
+            "{:04}-{:02}-{:02}",
+            tomorrow.year(),
+            tomorrow.month(),
+            tomorrow.day_of_month()
+        ))
+    );
+    assert_eq!(tz.as_deref(), Some("America/Toronto"));
+    smoke.click("booking-reschedule-slot");
+    assert!(
+        smoke
+            .nth::<gtk::ToggleButton>("booking-reschedule-slot", 0)
+            .is_active()
+    );
+    assert!(smoke.sensitive("booking-reschedule-confirm"));
+    smoke.shot("65d-booking-reschedule");
+    smoke.click("booking-reschedule-confirm");
+    let mut moved: serde_json::Value = fixture("district-scheduling-booking.json");
+    moved["data"]["status"] = "confirmed".into();
+    let request = bookings_reply(
+        smoke,
+        |r| matches!(r, Request::RescheduleBooking { .. }),
+        Ok(moved),
+    );
+    assert_eq!(
+        request,
+        Request::RescheduleBooking {
+            id: "bk-smoke-0".to_owned(),
+            start_at: "2026-09-14T13:00:00Z".to_owned(),
+        }
+    );
+    assert!(smoke.shows_part("Booking moved to"));
+    bookings_reply(smoke, page, Ok(bookings_page(0, 25, 25)));
+    smoke.click("booking-reschedule-keep");
+    assert!(!smoke.shown("booking-reschedule-dialog"));
+
+    // A hand-over: the hosts read, one chosen, and a failure kept on screen.
+    smoke.click("booking-reassign");
+    let mut users: serde_json::Value = fixture("district-scheduling-users.json");
+    users["data"][1]["archived"] = false.into();
+    bookings_reply(smoke, |r| matches!(r, Request::Users { .. }), Ok(users));
+    assert_eq!(
+        smoke.count("booking-reassign-host"),
+        1,
+        "not the host it has now"
+    );
+    smoke.click("booking-reassign-host");
+    smoke.click("booking-reassign-confirm");
+    let request = bookings_reply(
+        smoke,
+        |r| matches!(r, Request::ReassignBooking { .. }),
+        Err(server_error()),
+    );
+    assert_eq!(
+        request,
+        Request::ReassignBooking {
+            id: "bk-smoke-0".to_owned(),
+            host_id: "sched-user-archived".to_owned(),
+        }
+    );
+    assert!(smoke.shown("booking-reassign-outcome"));
+    assert!(
+        smoke.sensitive("booking-reassign-confirm"),
+        "it can be tried again"
+    );
+    smoke.click("booking-reassign-keep");
+    assert!(!smoke.shown("booking-reassign-dialog"));
+    smoke.click("back_button");
+    assert!(!smoke.shown("bookings-list"));
+    smoke.forget();
+}
+
 /// The hand-off's first leg, after a press: the service's start page opened
 /// in the browser with a fresh `state`, which is never printed, and a wait for
 /// the browser's answer. Returns the `state`.
@@ -6872,6 +7190,7 @@ fn main() {
     billing_screen(&smoke);
     workflows_screen(&smoke);
     scheduling_screen(&smoke);
+    scheduling_bookings(&smoke);
     desk_screens(&smoke);
     support_screens(&smoke);
     rooms_screen(&smoke);

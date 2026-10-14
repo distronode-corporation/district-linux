@@ -3,6 +3,13 @@ catalog = "linux_scheduling"
 platform = "gtk"
 apple = false
 
+[scheduling_admin.bookings_views_a11y]
+en = "Which bookings to show"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+note = "Screen-reader name of the row of buttons above the bookings list that picks which bookings it shows: upcoming, past, cancelled or all."
+
 [scheduling_admin.coming_up_row_a11y]
 en = "{when}, {subtitle}, {status}"
 ctx = "a11y"
