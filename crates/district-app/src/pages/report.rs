@@ -117,16 +117,10 @@ pub(crate) fn draw_button(button: &gtk::Button, offer: Offer) {
     button.update_property(&[gtk::accessible::Property::Label(name)]);
 }
 
-/// A Report button for `target`, offered as `offer`, sending from `page`; or
-/// `None` when there is nothing to report.
-pub(crate) fn button<P: Sends>(
-    page: &P,
-    offer: Offer,
-    target: ReportTarget,
-) -> Option<gtk::Button> {
-    if offer == Offer::Hidden {
-        return None;
-    }
+/// A Report button for `target`, offered as `offer`, sending from `page`.
+/// Built only beside content known to be AI-written, so `offer` is one that
+/// shows ([`Offer::for_content`] with `true`); a hidden one draws no button.
+pub(crate) fn button<P: Sends>(page: &P, offer: Offer, target: ReportTarget) -> gtk::Button {
     let button = gtk::Button::builder()
         .halign(gtk::Align::Start)
         .css_classes(["flat", "caption"])
@@ -139,7 +133,7 @@ pub(crate) fn button<P: Sends>(
             open(&page, button.upcast_ref(), offer, target.clone());
         }
     });
-    Some(button)
+    button
 }
 
 /// What a Report button does for `offer`: asks for a note and sends the
@@ -147,18 +141,16 @@ pub(crate) fn button<P: Sends>(
 /// browser. One press sends at most one report: nothing opens while a report
 /// is on its way or the dialog is already showing.
 pub(crate) fn open<P: Sends>(page: &P, anchor: &gtk::Widget, offer: Offer, target: ReportTarget) {
-    match offer {
-        Offer::Hidden => return,
-        Offer::OnWeb => {
-            let window = anchor.root().and_downcast::<gtk::Window>();
-            gtk::UriLauncher::new(SUPPORT_WEB_URL).launch(
-                window.as_ref(),
-                gio::Cancellable::NONE,
-                |_| {},
-            );
-            return;
-        }
-        Offer::InApp => {}
+    // A hidden offer's button is not on screen, so it is never pressed: only
+    // the web and the dialog are reached.
+    if offer == Offer::OnWeb {
+        let window = anchor.root().and_downcast::<gtk::Window>();
+        gtk::UriLauncher::new(SUPPORT_WEB_URL).launch(
+            window.as_ref(),
+            gio::Cancellable::NONE,
+            |_| {},
+        );
+        return;
     }
     let Some((refusal, note)) = SHELL.with_borrow_mut(|shell| {
         if shell.sending || shell.open {

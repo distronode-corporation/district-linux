@@ -114,6 +114,42 @@ pub(crate) fn images_attached(count: usize) -> String {
     text::thread_images_attached(lang(), i64::try_from(count).unwrap_or(i64::MAX))
 }
 
+/// Whether the composer holds a reply the model wrote, as District AI for
+/// Windows tells: the core does not say, it writes the reply into the box as
+/// if it had been typed.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DraftPhase {
+    /// No reply from the model in the box.
+    #[default]
+    None,
+    /// The model was asked and has not answered.
+    Asked,
+    /// The box holds the model's reply, edited or not.
+    Written,
+}
+
+impl DraftPhase {
+    /// The phase once the composer is drawn: the text the core wrote into the
+    /// box (`written`), unasked by the box, after the button was pressed and
+    /// once the model is done, is the model's reply. It stays one while it is
+    /// edited, and stops being one once the box is empty (sent or cleared). A
+    /// failure ends the asking.
+    pub(crate) fn next(self, composer: &Composer, written: bool) -> Self {
+        let mut phase = self;
+        if phase == Self::Asked && !composer.generating {
+            if written && !composer.text.is_empty() {
+                phase = Self::Written;
+            } else if composer.failure.is_some() {
+                phase = Self::None;
+            }
+        }
+        if phase == Self::Written && composer.text.is_empty() {
+            phase = Self::None;
+        }
+        phase
+    }
+}
+
 /// What the composer is waiting for, if anything.
 pub(crate) fn busy(composer: &Composer) -> Option<&'static str> {
     if composer.sending {
@@ -196,6 +232,12 @@ mod imp {
         #[template_child]
         pub draft_button: TemplateChild<gtk::Button>,
         #[template_child]
+        pub draft_report_button: TemplateChild<gtk::Button>,
+        /// Whether the box holds the model's reply.
+        pub draft_phase: Cell<DraftPhase>,
+        /// How Report is offered for the model's reply.
+        pub draft_offer: Cell<Offer>,
+        #[template_child]
         pub busy_spinner: TemplateChild<gtk::Spinner>,
         #[template_child]
         pub busy_label: TemplateChild<gtk::Label>,
@@ -249,8 +291,26 @@ mod imp {
             on_click(&self.send_button, &*view, || {
                 Event::Thread(ThreadEvent::Send)
             });
-            on_click(&self.draft_button, &*view, || {
-                Event::Thread(ThreadEvent::DraftReply)
+            let weak = view.downgrade();
+            self.draft_button.connect_clicked(move |_| {
+                if let Some(view) = weak.upgrade() {
+                    view.imp().draft_phase.set(DraftPhase::Asked);
+                    view.send(Event::Thread(ThreadEvent::DraftReply));
+                }
+            });
+            let weak = view.downgrade();
+            self.draft_report_button.connect_clicked(move |button| {
+                let Some(view) = weak.upgrade() else {
+                    return;
+                };
+                let thread_key = view.imp().thread_key.borrow().clone().unwrap_or_default();
+                let offer = view.imp().draft_offer.get();
+                report::open(
+                    &view,
+                    button.upcast_ref(),
+                    offer,
+                    ReportTarget::AiDraft { thread_key },
+                );
             });
             let weak = view.downgrade();
             self.attach_button.connect_clicked(move |_| {
@@ -362,6 +422,7 @@ impl ThreadView {
             imp.thread_key.replace(Some(screen.thread_key.clone()));
             imp.drawn.replace(None);
             imp.echo.borrow_mut().reset();
+            imp.draft_phase.set(DraftPhase::None);
             imp.from_end.set(0.0);
         }
         let title = format_phone_number(&screen.title);
@@ -489,11 +550,17 @@ impl ThreadView {
         draw_line(&imp.busy_label, waiting);
         let buffer = imp.text.buffer();
         let shown = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false);
-        if imp.echo.borrow_mut().write(&composer.text, &shown) {
+        let written = imp.echo.borrow_mut().write(&composer.text, &shown);
+        if written {
             imp.writing.set(true);
             buffer.set_text(&composer.text);
             imp.writing.set(false);
         }
+        let phase = imp.draft_phase.get().next(composer, written);
+        imp.draft_phase.set(phase);
+        let offer = Offer::for_content(phase == DraftPhase::Written, capabilities);
+        imp.draft_offer.set(offer);
+        report::draw_button(&imp.draft_report_button, offer);
         if *imp.chips.borrow() != composer.attachments {
             self.draw_chips(&composer.attachments);
         }
@@ -680,10 +747,9 @@ fn call_entry(
             thread_key: thread_key.to_owned(),
             event_id: event.id.clone(),
         };
-        if let Some(button) = report::button(view, Offer::for_content(true, capabilities), target) {
-            button.set_halign(gtk::Align::Center);
-            entry.append(&button);
-        }
+        let button = report::button(view, Offer::for_content(true, capabilities), target);
+        button.set_halign(gtk::Align::Center);
+        entry.append(&button);
     }
     entry.upcast()
 }
@@ -793,5 +859,54 @@ mod tests {
         };
         assert_eq!(reply_line(Some(&email)), "Email to ada@example.com");
         assert_eq!(reply_line(None), "");
+    }
+
+    #[test]
+    fn the_models_reply_is_the_text_written_after_asking_until_the_box_is_empty() {
+        let mut composer = Composer::default();
+        composer.generating = true;
+        let asked = DraftPhase::Asked;
+        assert_eq!(
+            asked.next(&composer, false),
+            DraftPhase::Asked,
+            "still writing"
+        );
+        composer.generating = false;
+        composer.text = "Thanks, see you Thursday.".to_owned();
+        let written = asked.next(&composer, true);
+        assert_eq!(written, DraftPhase::Written);
+        assert_eq!(
+            written.next(&composer, false),
+            DraftPhase::Written,
+            "edited, still the model's"
+        );
+        assert_eq!(
+            DraftPhase::None.next(&composer, true),
+            DraftPhase::None,
+            "unasked"
+        );
+        composer.text.clear();
+        assert_eq!(
+            written.next(&composer, true),
+            DraftPhase::None,
+            "sent or cleared"
+        );
+        composer.failure = Some(district_core::FailureText {
+            message: "No reply.".to_owned(),
+            degraded_regions: Vec::new(),
+            session_ended: None,
+            retryable: true,
+        });
+        assert_eq!(
+            asked.next(&composer, false),
+            DraftPhase::None,
+            "the asking failed"
+        );
+        composer.failure = None;
+        assert_eq!(
+            asked.next(&composer, false),
+            DraftPhase::Asked,
+            "not answered yet"
+        );
     }
 }

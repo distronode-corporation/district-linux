@@ -1361,6 +1361,26 @@ fn inbox_and_thread(smoke: &Smoke) {
     );
     smoke.shot("22-thread-written-reply");
     smoke.script.pending.borrow_mut().clear();
+    // The model's reply is reported as Windows does, while it is in the box.
+    assert!(smoke.shown("draft_report_button"));
+    smoke.click("draft_report_button");
+    smoke.respond("send");
+    let report = smoke.take("CreateSupportRequest");
+    assert!(
+        format!("{report:?}").contains("Conversation reply drafted with AI"),
+        "{report:?}"
+    );
+    smoke.answer(Event::SupportRequestCreated {
+        ticket: ticket(&report),
+        result: Ok(fixture("district-support-request-create.json")),
+    });
+    smoke
+        .find("report_banner")
+        .downcast::<adw::Banner>()
+        .unwrap()
+        .emit_by_name::<()>("button-clicked", &[]);
+    smoke.pump();
+    smoke.script.pending.borrow_mut().clear();
 
     attaching(smoke);
     smoke.shot("23-thread-attachment");

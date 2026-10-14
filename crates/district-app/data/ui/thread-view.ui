@@ -332,6 +332,14 @@
                               </object>
                             </child>
                             <child>
+                              <object class="GtkButton" id="draft_report_button">
+                                <property name="visible">False</property>
+                                <style>
+                                  <class name="flat"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
                               <object class="GtkSpinner" id="busy_spinner">
                                 <property name="visible">False</property>
                               </object>

@@ -324,9 +324,7 @@ impl HqPage {
                     .build();
                 answer.append(&label);
                 let offer = self.imp().report.get();
-                if let Some(button) = report::button(self, offer, ReportTarget::HqAnswer) {
-                    answer.append(&button);
-                }
+                answer.append(&report::button(self, offer, ReportTarget::HqAnswer));
                 answer.upcast()
             }
         }
