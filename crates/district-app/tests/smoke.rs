@@ -3003,11 +3003,7 @@ fn scheduling_screen(smoke: &Smoke) {
     }
     assert!(smoke.shows_text("Manage"));
     assert!(smoke.shows_text("Event types"));
-    smoke.activate("scheduling-section-overview");
-    assert!(smoke.shown("scheduling_areas"));
-    assert!(smoke.pending("SchedulingAdmin"));
-    status(smoke, Ok(fixture("district-scheduling-status-ready.json")));
-    smoke.forget();
+    scheduling_overview(smoke);
     // Back leads to the booking pages screen, as the core's parent says.
     smoke.click("back_button");
     assert!(smoke.shown("scheduling-section-overview"));
@@ -3055,6 +3051,150 @@ fn transcript_frame(smoke: &Smoke, name: &str, edit: impl FnOnce(&mut serde_json
         workspace_id: AGENCY.to_owned(),
         update: LiveUpdate::Event(envelope),
     }));
+}
+
+/// Answers every read of the booking pages' sections the app is waiting on
+/// with what `answer` makes of its request, until none is left (an answer
+/// can ask for another).
+fn scheduling_reads(
+    smoke: &Smoke,
+    answer: impl Fn(
+        &district_model::SchedulingAdminRequest,
+    ) -> Result<district_model::SchedulingAdminData, ApiError>,
+) {
+    while smoke.pending("SchedulingAdmin") {
+        let Effect::SchedulingAdmin {
+            ticket, request, ..
+        } = smoke.take("SchedulingAdmin")
+        else {
+            unreachable!()
+        };
+        smoke.answer(Event::SchedulingAdminAnswered {
+            ticket,
+            result: answer(&request).map(district_model::SchedulingAdminReply::Done),
+        });
+    }
+}
+
+/// The booking pages' overview: every row loading, then each standing or
+/// failing alone, in the profile's zone, with a booking coming up; read
+/// again with nothing set up and the bookings failing, and again with none.
+fn scheduling_overview(smoke: &Smoke) {
+    use district_model::{
+        SchedulingAdminData as Data, SchedulingAdminRequest as Request, SchedulingAvailabilityRule,
+        SchedulingBooking, SchedulingBookingAttendee, SchedulingBookingPage,
+        SchedulingCalendarStatus, SchedulingEventType, SchedulingMe,
+    };
+    let status = |smoke: &Smoke| {
+        smoke.reply("LoadSchedulingStatus", |ticket| {
+            Event::SchedulingStatusLoaded {
+                ticket,
+                result: Ok(fixture("district-scheduling-status-ready.json")),
+            }
+        });
+    };
+    let bookings = |items: Vec<SchedulingBooking>| {
+        Ok(Data::BookingPage(SchedulingBookingPage {
+            items,
+            ..SchedulingBookingPage::default()
+        }))
+    };
+    smoke.activate("scheduling-section-overview");
+    assert!(smoke.shown("scheduling_areas"));
+    assert_eq!(smoke.count("desk-row"), 5);
+    assert_eq!(smoke.count("desk-loading"), 5, "every row reading");
+    assert!(smoke.shown("coming_up_spinner"));
+    assert!(smoke.shows_text("Your booking desk") && smoke.shows_text("Coming up"));
+    status(smoke);
+    scheduling_reads(smoke, |request| match request {
+        Request::Me => Ok(Data::Me(SchedulingMe {
+            timezone: "America/Toronto".to_owned(),
+            ..SchedulingMe::default()
+        })),
+        Request::EventTypes => Ok(Data::EventTypes(vec![
+            SchedulingEventType {
+                slug: "intro-call".to_owned(),
+                name: "Intro call".to_owned(),
+                duration_minutes: 30,
+                ..SchedulingEventType::default()
+            },
+            SchedulingEventType {
+                slug: "retired".to_owned(),
+                name: "Retired call".to_owned(),
+                is_active: Some(false),
+                ..SchedulingEventType::default()
+            },
+        ])),
+        Request::CalendarStatus => Err(server_error()),
+        Request::Rules { .. } => Ok(Data::Rules(
+            (1..=5)
+                .map(|day| SchedulingAvailabilityRule {
+                    day_of_week: day,
+                    start_time: "09:00".to_owned(),
+                    end_time: "17:00".to_owned(),
+                    ..SchedulingAvailabilityRule::default()
+                })
+                .collect(),
+        )),
+        Request::Bookings(query) => {
+            assert!(query.all_hosts, "a member who may manage sees every host's");
+            bookings(vec![SchedulingBooking {
+                id: "booking-1".to_owned(),
+                event_type_slug: Some("intro-call".to_owned()),
+                start_at: "2030-01-15T15:00:00.000Z".to_owned(),
+                end_at: "2030-01-15T15:30:00.000Z".to_owned(),
+                status: "confirmed".to_owned(),
+                attendees: Some(vec![SchedulingBookingAttendee {
+                    name: Some("Ann Lee".to_owned()),
+                    email: None,
+                }]),
+                ..SchedulingBooking::default()
+            }])
+        }
+        other => unreachable!("{other:?}"),
+    });
+    assert!(smoke.shows_part("America/Toronto"));
+    assert_eq!(smoke.count("desk-loading"), 0);
+    assert!(smoke.shows_text("https://book.example.com/book/intro-call"));
+    assert_eq!(smoke.count("desk-failure"), 1, "the calendars alone");
+    assert!(
+        smoke.shows_text("Intro call"),
+        "the active event types named"
+    );
+    assert!(smoke.shows_part("Mon to Fri"));
+    assert_eq!(smoke.count("coming-up-row"), 1);
+    assert!(smoke.shows_part("Ann Lee"));
+    assert!(smoke.shows_text("Confirmed"));
+    assert!(!smoke.shown("coming_up_spinner") && !smoke.shown("coming_up_empty"));
+    smoke.shot("66-booking-overview");
+
+    // Read again: nothing set up is a hint on each row, a profile that
+    // failed leaves the zone UTC, and failed bookings fail their two places.
+    smoke.click("refresh_button");
+    assert_eq!(smoke.count("desk-loading"), 5);
+    status(smoke);
+    scheduling_reads(smoke, |request| match request {
+        Request::Me | Request::Bookings(_) => Err(server_error()),
+        Request::EventTypes => Ok(Data::EventTypes(Vec::new())),
+        Request::CalendarStatus => Ok(Data::CalendarStatus(SchedulingCalendarStatus::default())),
+        Request::Rules { .. } => Ok(Data::Rules(Vec::new())),
+        other => unreachable!("{other:?}"),
+    });
+    assert!(smoke.shows_part("UTC"));
+    assert_eq!(smoke.count("desk-hint"), 4);
+    assert_eq!(smoke.count("desk-failure"), 1, "the next booking");
+    assert!(smoke.shown("coming_up_failure"));
+    assert_eq!(smoke.count("coming-up-row"), 0);
+    smoke.shot("66-booking-overview-empty");
+    smoke.click("refresh_button");
+    status(smoke);
+    scheduling_reads(smoke, |request| match request {
+        Request::Bookings(_) => bookings(Vec::new()),
+        _ => Err(server_error()),
+    });
+    assert!(smoke.shown("coming_up_empty"));
+    assert!(!smoke.shown("coming_up_failure"));
+    smoke.forget();
 }
 
 /// The desktop hands the app `link`, as it does the browser's answer.

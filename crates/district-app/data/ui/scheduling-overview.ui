@@ -1,13 +1,111 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The booking pages' overview section: the register: the booking desk at a glance, and what is coming up.
-     src/pages/scheduling_admin/overview.rs fills it. -->
+<!-- The booking pages' overview: the booking desk at a glance (the booking
+     page's links, the calendars, the hours, the event types, the next
+     booking), each row standing or failing alone, and what is coming up.
+     src/pages/scheduling_admin/overview.rs fills it, every word the core's. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
   <template class="DistrictSchedulingOverviewPane" parent="AdwBin">
     <property name="child">
-      <object class="AdwStatusPage" id="overview_placeholder">
-        <property name="icon-name">x-office-calendar-symbolic</property>
+      <object class="GtkScrolledWindow" id="overview_scroll">
+        <property name="hscrollbar-policy">never</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">640</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+                <property name="margin-start">18</property>
+                <property name="margin-end">18</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkLabel" id="desk_heading">
+                        <property name="xalign">0</property>
+                        <style>
+                          <class name="heading"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="times_in_label">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                        <style>
+                          <class name="dim-label"/>
+                          <class name="caption"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkListBox" id="desk_list">
+                        <property name="selection-mode">none</property>
+                        <style>
+                          <class name="boxed-list"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkLabel" id="coming_up_heading">
+                        <property name="xalign">0</property>
+                        <style>
+                          <class name="heading"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinner" id="coming_up_spinner">
+                        <property name="halign">start</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="coming_up_failure">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="coming_up_empty">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                        <property name="visible">False</property>
+                        <style>
+                          <class name="dim-label"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkListBox" id="coming_up_list">
+                        <property name="selection-mode">none</property>
+                        <property name="visible">False</property>
+                        <style>
+                          <class name="boxed-list"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
       </object>
     </property>
   </template>

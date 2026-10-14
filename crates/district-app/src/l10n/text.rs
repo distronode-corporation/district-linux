@@ -4097,12 +4097,39 @@ pub fn routing_view_rules(l: Locale) -> &'static str {
     }
 }
 
+/// `scheduling_admin.coming_up_row_a11y`
+#[must_use]
+pub fn scheduling_admin_coming_up_row_a11y(l: Locale, when: &str, subtitle: &str, status: &str) -> String {
+    match l {
+        Locale::En => format!("{when}, {subtitle}, {status}"),
+        Locale::FrCa => format!("{when}, {subtitle}, {status}"),
+    }
+}
+
+/// `scheduling_admin.desk_row_a11y`
+#[must_use]
+pub fn scheduling_admin_desk_row_a11y(l: Locale, label: &str, value: &str) -> String {
+    match l {
+        Locale::En => format!("{label}: {value}"),
+        Locale::FrCa => format!("{label}: {value}"),
+    }
+}
+
 /// `scheduling_admin.failed_title`
 #[must_use]
 pub fn scheduling_admin_failed_title(l: Locale) -> &'static str {
     match l {
         Locale::En => "Could not load this section",
         Locale::FrCa => "Could not load this section",
+    }
+}
+
+/// `scheduling_admin.loading_a11y`
+#[must_use]
+pub fn scheduling_admin_loading_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Loading",
+        Locale::FrCa => "Loading",
     }
 }
 
