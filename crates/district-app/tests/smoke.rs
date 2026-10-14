@@ -3010,9 +3010,7 @@ fn scheduling_screen(smoke: &Smoke) {
     assert!(!smoke.shown("scheduling_areas"));
     scheduling_event_types(smoke);
     scheduling_hours(smoke);
-    smoke.activate("scheduling-section-team");
-    assert!(smoke.shown("team_placeholder"));
-    smoke.click("back_button");
+    scheduling_team(smoke);
     smoke.forget();
     // Nothing here hands the browser off any more: a hand-off link the
     // desktop passes on answers nothing, and is dropped.
@@ -3950,6 +3948,268 @@ fn scheduling_event_types(smoke: &Smoke) {
     scheduling_reads(smoke, |_| Ok(listed()));
     assert!(smoke.shown("event-type-row"));
     assert!(!smoke.shown("actions-toggle"));
+    smoke.forget();
+    smoke.click("back_button");
+}
+
+/// Answers the team's reads: the workspace's members with `members`, and the
+/// scheduler's with what `answer` makes of each request, until none is left.
+fn team_reads(
+    smoke: &Smoke,
+    members: Result<district_model::MemberListResponse, ApiError>,
+    answer: impl Fn(
+        &district_model::SchedulingAdminRequest,
+    ) -> Result<district_model::SchedulingAdminData, ApiError>,
+) {
+    smoke.reply("LoadMembers", |ticket| Event::MembersLoaded {
+        ticket,
+        result: members,
+    });
+    scheduling_reads(smoke, answer);
+}
+
+/// The booking pages' team: the members and the teams failing, then read
+/// without the workspace's roles, then with them and someone stranded; a
+/// team created, renamed and its delete declined; a host added, a priority
+/// refused and saved, and a host removed after the question; and an account
+/// archived only once no booking stands in the way.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn scheduling_team(smoke: &Smoke) {
+    use district_model::{
+        SchedulingAdminData as Data, SchedulingAdminRequest as Request, SchedulingOk,
+        SchedulingTeam, SchedulingTeamMember, SchedulingUpcomingBooking, SchedulingUser,
+        SchedulingUserArchived,
+    };
+    let user = |id: &str, name: &str, email: &str, archived: bool| SchedulingUser {
+        id: id.to_owned(),
+        name: name.to_owned(),
+        email: email.to_owned(),
+        archived,
+        ..SchedulingUser::default()
+    };
+    let users = move || {
+        vec![
+            user("s-1", "Fay Founder", "founder@example.com", false),
+            user("s-2", "", "gone@example.com", true),
+            user("s-3", "Lee Left", "left@example.com", false),
+            user("s-4", "Bo Chen", "auditor@example.com", false),
+        ]
+    };
+    let host = |id: &str, name: &str, priority: i64| SchedulingTeamMember {
+        id: id.to_owned(),
+        name: name.to_owned(),
+        email: format!("{id}@example.com"),
+        routing_priority: priority,
+        ..SchedulingTeamMember::default()
+    };
+    let team = move |hosts: Vec<SchedulingTeamMember>| SchedulingTeam {
+        id: "t-1".to_owned(),
+        name: "Sales".to_owned(),
+        slug: "sales".to_owned(),
+        members: Some(Some(hosts)),
+        ..SchedulingTeam::default()
+    };
+    let read = move |request: &Request| match request {
+        Request::Users { .. } => Ok(Data::Users(users())),
+        Request::Teams => Ok(Data::Teams(vec![team(vec![host("s-1", "Fay Founder", 0)])])),
+        other => unreachable!("{other:?}"),
+    };
+    let members = || Ok(fixture("district-members.json"));
+
+    // Reading, then both reads failing: Try again, and no create.
+    smoke.activate("scheduling-section-team");
+    assert!(smoke.shown("team-members-loading") && smoke.shown("teams_spinner"));
+    team_reads(smoke, members(), |_| Err(server_error()));
+    assert!(smoke.shown("team-members-failed") && smoke.shown("team-members-retry"));
+    assert!(smoke.shown("teams_failure"));
+    assert!(!smoke.shown("team_create"), "no create over a failed read");
+    // The workspace's members failing drops the roles, and accuses nobody.
+    smoke.click("team-members-retry");
+    team_reads(smoke, Err(server_error()), |request| match request {
+        Request::Teams => Ok(Data::Teams(Vec::new())),
+        other => read(other),
+    });
+    assert!(smoke.shown("members_degraded"));
+    assert!(!smoke.shown("team_stranded"));
+    assert_eq!(smoke.count("team-member-row"), 4);
+    assert!(smoke.shows_text("left@example.com"));
+    assert!(smoke.shown("teams_empty"));
+    // Read whole: the roles, someone stranded, and a team.
+    smoke.click("refresh_button");
+    team_reads(smoke, members(), read);
+    assert!(!smoke.shown("members_degraded"));
+    assert!(smoke.shown("team_stranded"));
+    assert!(smoke.shows_part("Lee Left is no longer in this workspace"));
+    assert_eq!(smoke.count("team-member-row"), 5);
+    assert!(smoke.shows_text("founder@example.com · Agency"));
+    assert!(smoke.shows_text("left@example.com · Removed from the workspace"));
+    assert!(smoke.shows_text("auditor@example.com · Viewer"));
+    assert!(smoke.shows_text("Not set up yet") && smoke.shows_text("Archived"));
+    assert_eq!(
+        smoke.count("team-archive"),
+        3,
+        "each live scheduler account"
+    );
+    assert_eq!(smoke.count("team-row"), 1);
+    assert!(smoke.shows_text("1 member"));
+    smoke.shot("66-booking-team");
+
+    // Create: refused by the form, then sent, and the team read again.
+    smoke.click("team_create");
+    assert!(smoke.shown("team-name") && !smoke.shown("team-delete"));
+    smoke.click("team-dialog-action");
+    assert!(smoke.shows_text("Give the team a name."));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.type_into("team-name", "Front desk");
+    assert!(!smoke.shown("team-name-rejected"));
+    smoke.shot("66-booking-team-create");
+    smoke.click("team-dialog-action");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::CreateTeam { ref name, .. } if name == "Front desk"));
+    assert!(!smoke.sensitive("team-dialog-action"), "one save at a time");
+    admin_answer(smoke, ticket, Ok(Data::Team(team(Vec::new()))));
+    assert!(smoke.shows_text("Team created"));
+    team_reads(smoke, members(), read);
+    smoke.click("team-dialog-close");
+    assert!(!smoke.shown("team-name"));
+
+    // Rename: a failure kept on the form, Enter sends; delete declined.
+    smoke.click("team-edit");
+    assert!(smoke.shown("team-delete"));
+    smoke.type_into("team-name", "Sales East");
+    smoke
+        .nth::<gtk::Entry>("team-name", 0)
+        .emit_by_name::<()>("activate", &[]);
+    smoke.pump();
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::PatchTeam { ref id, .. } if id == "t-1"));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("team-editor-outcome"));
+    smoke.click("team-delete");
+    assert_eq!(questions(smoke), 1);
+    assert!(smoke.shows_text("Delete Sales?"));
+    smoke.respond("cancel");
+    assert_eq!(questions(smoke), 0);
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.click("team-dialog-close");
+    assert!(!smoke.shown("team-delete"));
+
+    // The hosts: who could be added, picked and added.
+    smoke.click("team-hosts");
+    assert!(smoke.shown("team-users-loading"));
+    assert!(!smoke.sensitive("team-dialog-action"), "nobody picked yet");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Users { .. }));
+    admin_answer(smoke, ticket, Ok(Data::Users(users())));
+    assert_eq!(smoke.count("team-host-row"), 1);
+    assert_eq!(
+        smoke.count("team-add-candidate"),
+        2,
+        "not archived, not a host"
+    );
+    smoke.activate_nth("team-add-candidate", 1);
+    assert!(smoke.sensitive("team-dialog-action"), "Bo Chen picked");
+    smoke.click("team-dialog-action");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::AddTeamMember { ref user_id, .. } if user_id == "s-4"));
+    let two = || {
+        team(vec![
+            host("s-1", "Fay Founder", 0),
+            host("s-4", "Bo Chen", 0),
+        ])
+    };
+    admin_answer(smoke, ticket, Ok(Data::Team(two())));
+    assert!(smoke.shows_text("Host added to the team"));
+    team_reads(smoke, members(), read);
+    assert_eq!(smoke.count("team-host-row"), 2);
+    // A priority refused by the form, then saved.
+    smoke.type_into("team-host-priority", "x");
+    smoke.click("team-host-save");
+    assert!(smoke.shows_text("A routing priority is a whole number, zero or more."));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.type_into("team-host-priority", "2");
+    assert!(!smoke.shown("team-priority-rejected"));
+    smoke.shot("66-booking-team-hosts");
+    smoke.click("team-host-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchTeamMember {
+        user_id,
+        routing_priority,
+        ..
+    } = request
+    else {
+        panic!("{request:?}")
+    };
+    assert_eq!((user_id.as_str(), routing_priority), ("s-1", 2));
+    admin_answer(smoke, ticket, Ok(Data::Team(two())));
+    assert!(smoke.shows_text("Routing priority saved"));
+    team_reads(smoke, members(), read);
+    // A host removed, after the question; the team is read again.
+    smoke.click("team-host-remove");
+    assert_eq!(questions(smoke), 1);
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::RemoveTeamMember { ref user_id, .. } if user_id == "s-1"));
+    admin_answer(smoke, ticket, Ok(Data::Done(SchedulingOk { ok: true })));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Team { .. }));
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::Team(team(vec![host("s-4", "Bo Chen", 0)]))),
+    );
+    assert!(smoke.shows_text("Host removed from the team"));
+    team_reads(smoke, members(), read);
+    assert_eq!(smoke.count("team-host-row"), 1);
+    smoke.click("team-dialog-close");
+    assert!(!smoke.shown("team-host-row"));
+
+    // Archive: a booking in the way blocks it; with none, it is asked once.
+    smoke.click("team-archive");
+    assert!(smoke.shown("team-upcoming-loading"));
+    assert!(smoke.shows_text("Checking their upcoming bookings…"));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::UpcomingBookings { ref id } if id == "s-1"));
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::UpcomingBookings(vec![SchedulingUpcomingBooking {
+            id: "b-1".to_owned(),
+            start_at: "2030-01-15T15:00:00.000Z".to_owned(),
+            event_type_name: "Intro call".to_owned(),
+            attendee_name: "Ann Lee".to_owned(),
+            ..SchedulingUpcomingBooking::default()
+        }])),
+    );
+    assert_eq!(smoke.count("team-upcoming-row"), 1);
+    assert!(smoke.shows_part("Ann Lee · "));
+    assert!(smoke.shows_text("Reassign or cancel their upcoming bookings first."));
+    assert!(!smoke.sensitive("team-dialog-action"));
+    smoke.shot("66-booking-team-archive");
+    smoke.click("team-dialog-close");
+    assert!(!smoke.shown("team-upcoming-row"));
+    smoke.click("team-archive");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, Ok(Data::UpcomingBookings(Vec::new())));
+    assert!(!smoke.shown("team-archive-blocked"));
+    smoke.click("team-dialog-action");
+    assert_eq!(questions(smoke), 1);
+    assert!(smoke.shows_text("Archive Fay Founder's account?"));
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::ArchiveUser { ref id } if id == "s-1"));
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::UserArchived(SchedulingUserArchived {
+            ok: true,
+            archived_at: None,
+        })),
+    );
+    assert!(smoke.shows_text("Fay Founder's scheduler account is closed"));
+    team_reads(smoke, members(), read);
+    smoke.click("team-dialog-close");
+    assert!(!smoke.shown("team-archive-outcome"));
     smoke.forget();
     smoke.click("back_button");
 }

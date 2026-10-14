@@ -960,6 +960,10 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::scheduling_admin_hours_window_a11y(Locale::FrCa, "{day}", 1204), "{day}, range 1204");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::En), "Loading");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::FrCa), "Loading");
+    assert_eq!(text::scheduling_admin_team_member_row_a11y(Locale::En, "{name}", "{subtitle}", "{state}"), "{name}, {subtitle}, {state}");
+    assert_eq!(text::scheduling_admin_team_member_row_a11y(Locale::FrCa, "{name}", "{subtitle}", "{state}"), "{name}, {subtitle}, {state}");
+    assert_eq!(text::scheduling_admin_upcoming_booking_line(Locale::En, "{who}", "{when}"), "{who} · {when}");
+    assert_eq!(text::scheduling_admin_upcoming_booking_line(Locale::FrCa, "{who}", "{when}"), "{who} · {when}");
     assert_eq!(text::scheduling_page_booking_page(Locale::En), "Booking page");
     assert_eq!(text::scheduling_page_booking_page(Locale::FrCa), "Booking page");
     assert_eq!(text::scheduling_page_check_again(Locale::En), "Check again");

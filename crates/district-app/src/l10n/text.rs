@@ -4205,6 +4205,24 @@ pub fn scheduling_admin_loading_a11y(l: Locale) -> &'static str {
     }
 }
 
+/// `scheduling_admin.team_member_row_a11y`
+#[must_use]
+pub fn scheduling_admin_team_member_row_a11y(l: Locale, name: &str, subtitle: &str, state: &str) -> String {
+    match l {
+        Locale::En => format!("{name}, {subtitle}, {state}"),
+        Locale::FrCa => format!("{name}, {subtitle}, {state}"),
+    }
+}
+
+/// `scheduling_admin.upcoming_booking_line`
+#[must_use]
+pub fn scheduling_admin_upcoming_booking_line(l: Locale, who: &str, when: &str) -> String {
+    match l {
+        Locale::En => format!("{who} · {when}"),
+        Locale::FrCa => format!("{who} · {when}"),
+    }
+}
+
 /// `scheduling_page.booking_page`
 #[must_use]
 pub fn scheduling_page_booking_page(l: Locale) -> &'static str {

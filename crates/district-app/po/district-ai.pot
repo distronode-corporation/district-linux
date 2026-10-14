@@ -2595,6 +2595,18 @@ msgctxt "scheduling_admin.loading_a11y"
 msgid "Loading"
 msgstr ""
 
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for a person on the booking pages' team section: their name, their address and workspace role (Agency, Client, Removed from the workspace), and where they stand with the scheduler (Host, Not set up yet, Archived).
+msgctxt "scheduling_admin.team_member_row_a11y"
+msgid "{name}, {subtitle}, {state}"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: format; tier: T3
+#. The second line of a booking that stops a scheduler account being archived, under the event type's name: who booked it, then when it starts (15 August 2026, 14:30).
+msgctxt "scheduling_admin.upcoming_booking_line"
+msgid "{who} · {when}"
+msgstr ""
+
 #. screen: scheduling_page; ctx: label; tier: T3
 #. In scheduling-page.ui.
 msgctxt "scheduling_page.booking_page"

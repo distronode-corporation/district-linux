@@ -1,13 +1,163 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The booking pages' team section: the scheduler's users and teams.
-     src/pages/scheduling_admin/team.rs fills it. -->
+<!-- The booking pages' team section: who left the workspace still holding
+     bookings, the members (each where they stand with the scheduler, and
+     Archive account), and the teams (each with Edit and Hosts, and Create
+     team). src/pages/scheduling_admin/team.rs fills it, and places the
+     members' frame (loading, failed, ready) in its column; every word is the
+     core's. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
   <template class="DistrictSchedulingTeamPane" parent="AdwBin">
     <property name="child">
-      <object class="AdwStatusPage" id="team_placeholder">
-        <property name="icon-name">x-office-calendar-symbolic</property>
+      <object class="GtkScrolledWindow">
+        <property name="hscrollbar-policy">never</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">640</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+                <property name="margin-start">18</property>
+                <property name="margin-end">18</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <child>
+                  <object class="GtkLabel" id="team_heading">
+                    <property name="xalign">0</property>
+                    <style>
+                      <class name="title-2"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox" id="team_stranded">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">4</property>
+                    <property name="visible">False</property>
+                    <child>
+                      <object class="GtkLabel" id="stranded_heading">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <style>
+                          <class name="heading"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="stranded_notice">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                        <style>
+                          <class name="error"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox" id="members_column">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkLabel" id="members_heading">
+                        <property name="xalign">0</property>
+                        <style>
+                          <class name="heading"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="members_degraded">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="visible">False</property>
+                        <style>
+                          <class name="error"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">12</property>
+                        <child>
+                          <object class="GtkLabel" id="teams_heading">
+                            <property name="xalign">0</property>
+                            <property name="hexpand">True</property>
+                            <style>
+                              <class name="heading"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="team_create">
+                            <property name="visible">False</property>
+                            <property name="valign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="teams_subtitle">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <style>
+                          <class name="dim-label"/>
+                          <class name="caption"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinner" id="teams_spinner">
+                        <property name="halign">start</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="teams_failure">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="use-markup">False</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="teams_empty">
+                        <property name="xalign">0</property>
+                        <property name="wrap">True</property>
+                        <property name="visible">False</property>
+                        <style>
+                          <class name="dim-label"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkListBox" id="teams_list">
+                        <property name="selection-mode">none</property>
+                        <property name="visible">False</property>
+                        <style>
+                          <class name="boxed-list"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
       </object>
     </property>
   </template>
