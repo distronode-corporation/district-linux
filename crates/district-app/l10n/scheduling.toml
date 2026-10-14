@@ -5,126 +5,164 @@ apple = false
 
 [scheduling_admin.bookings_views_a11y]
 en = "Which bookings to show"
+fr = "Quels rendez-vous afficher"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "Screen-reader name of the row of buttons above the bookings list that picks which bookings it shows: upcoming, past, cancelled or all."
 
 [scheduling_admin.coming_up_row_a11y]
 en = "{when}, {subtitle}, {status}"
+fr = "{when}, {subtitle}, {status}"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
 args = { when = "str", subtitle = "str", status = "str" }
+state = "reviewed"
+same_ok = true
 note = "What a screen reader says for a booking coming up on the booking pages' overview: when it is, who booked and what, and its status (Confirmed, Cancelled...)."
 
 [scheduling_admin.control_of_a11y]
 en = "{control}: {name}"
+fr = "{control}\u00A0: {name}"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
 args = { control = "str", name = "str" }
+state = "reviewed"
 note = "What a screen reader says for a control that acts on one item of a list in the booking pages' sections: what it does or sets (Remove, Edit, Priority, Role...), then the item's name (a host, a booking question, an option)."
 
 [scheduling_admin.desk_row_a11y]
 en = "{label}: {value}"
+fr = "{label}\u00A0: {value}"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
 args = { label = "str", value = "str" }
+state = "reviewed"
 note = "What a screen reader says for a row of the booking desk on the booking pages' overview: the row's label (Calendar, Working hours...), then what it shows."
 
 [scheduling_admin.developer_tabs_a11y]
 en = "Which developer settings to show"
+fr = "Quels paramètres de développeur afficher"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "Screen-reader name of the row of buttons at the top of the booking pages' developer section that picks what it shows: the API keys, the connected apps, or the webhooks."
 
 [scheduling_admin.event_type_row_a11y]
 en = "{name}, {subtitle}, {state}, {booking_page}"
+fr = "{name}, {subtitle}, {state}, {booking_page}"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
 args = { name = "str", subtitle = "str", state = "str", booking_page = "str" }
+state = "reviewed"
+same_ok = true
 note = "What a screen reader says for an event type in the booking pages' list: its name, how long it runs and where (30 min, Phone), its state (Active, Inactive, Archived), and its public booking page's address or Not public."
 
 [scheduling_admin.failed_title]
 en = "Could not load this section"
+fr = "Impossible de charger cette section"
 ctx = "title"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "Heading over why a section of the booking pages (the event types, the bookings, the team...) could not be read. The reason is under it."
 
 [scheduling_admin.host_role]
 en = "Role"
+fr = "Rôle"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "What a screen reader says for the choice of a host's role on an event type (Required, Rotation, Optional); the host's name follows."
 
 [scheduling_admin.hosts_add_heading]
 en = "Add a host"
+fr = "Ajouter un hôte"
 ctx = "title"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "Heading over the people who could take an event type's bookings and are not hosts yet, each with an Add button, in the booking pages' hosts dialog."
 
 [scheduling_admin.hours_closes_a11y]
 en = "Closes"
+fr = "Fin"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "What a screen reader says for the box where the member types when a window of their working hours ends (17:00); which window follows, as in Closes: Monday, range 1."
 
 [scheduling_admin.hours_opens_a11y]
 en = "Opens"
+fr = "Début"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "What a screen reader says for the box where the member types when a window of their working hours starts (09:00); which window follows, as in Opens: Monday, range 1."
 
 [scheduling_admin.hours_window_a11y]
 en = "{day}, range {number}"
+fr = "{day}, plage {number}"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
 args = { day = "str", number = "int" }
+state = "reviewed"
 note = "A screen reader's name for one window of a day in the working hours editor: the weekday (Monday), then which of that day's ranges it is, counting from 1. Follows a control's name, as in Remove: Monday, range 2. Range is the editor's own word (Add range)."
 
 [scheduling_admin.loading_a11y]
 en = "Loading"
+fr = "Chargement"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "What a screen reader says for a part of a booking pages section still being read."
 
 [scheduling_admin.settings_remove_image_question]
 en = "Remove this image?"
+fr = "Retirer cette image?"
 ctx = "title"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "Question asked before an image of the booking pages is removed (the logo, the banner, or the member's own profile picture). The booking pages' own sentence saying images save at once is under it."
 
 [scheduling_admin.settings_tabs_a11y]
 en = "Which settings to show"
+fr = "Quels paramètres afficher"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
+state = "reviewed"
 note = "Screen-reader name of the row of buttons at the top of the booking pages' settings that picks what they show: the booking page, the booking assistant, your profile or your notifications."
 
 [scheduling_admin.team_member_row_a11y]
 en = "{name}, {subtitle}, {state}"
+fr = "{name}, {subtitle}, {state}"
 ctx = "a11y"
 screen = "scheduling_admin"
 tier = "T3"
 args = { name = "str", subtitle = "str", state = "str" }
+state = "reviewed"
+same_ok = true
 note = "What a screen reader says for a person on the booking pages' team section: their name, their address and workspace role (Agency, Client, Removed from the workspace), and where they stand with the scheduler (Host, Not set up yet, Archived)."
 
 [scheduling_admin.upcoming_booking_line]
 en = "{who} · {when}"
+fr = "{who} · {when}"
 ctx = "format"
 screen = "scheduling_admin"
 tier = "T3"
 args = { who = "str", when = "str" }
+state = "reviewed"
+same_ok = true
 note = "The second line of a booking that stops a scheduler account being archived, under the event type's name: who booked it, then when it starts (15 August 2026, 14:30)."
