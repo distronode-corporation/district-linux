@@ -51,6 +51,40 @@ pub(crate) fn key_words(key: &str) -> String {
     words
 }
 
+/// A contact field a rule tests, as the picker and the rule's line show it:
+/// the catalog's label for a field the builder offers, the stored key as
+/// words for any other.
+pub(crate) fn field_words(field: &str) -> String {
+    let label = match field {
+        "industry" => text::routing_field_industry(lang()),
+        "estimatedValue" => text::routing_field_estimated_value(lang()),
+        "callerType" => text::routing_field_caller_type(lang()),
+        "lineType" => text::routing_field_line_type(lang()),
+        "isDecisionMaker" => text::routing_field_is_decision_maker(lang()),
+        "seniority" => text::routing_field_seniority(lang()),
+        other => return key_words(other),
+    };
+    label.to_owned()
+}
+
+/// A comparison, as the picker shows it: the catalog's label for one the
+/// builder offers, the stored word as words for any other.
+pub(crate) fn operator_words(operator: &str) -> String {
+    match known_operator(operator) {
+        Some(label) => label.to_owned(),
+        None => key_words(operator),
+    }
+}
+
+/// The catalog's label for a comparison the builder offers.
+fn known_operator(operator: &str) -> Option<&'static str> {
+    match operator {
+        "contains" => Some(text::routing_operator_contains(lang())),
+        "equals" => Some(text::routing_operator_equals(lang())),
+        _ => None,
+    }
+}
+
 /// The line under a rule: what it matches, and the voice it gives.
 pub(crate) fn rule_line(rule: &RoutingRule) -> String {
     let field = rule.get(RoutingRuleField::Field);
@@ -58,11 +92,16 @@ pub(crate) fn rule_line(rule: &RoutingRule) -> String {
     let condition = if field.is_empty() {
         text::routing_no_condition(lang()).to_owned()
     } else {
-        format!(
-            "{} {} \"{}\"",
-            key_words(field),
-            rule.get(RoutingRuleField::Operator),
-            rule.get(RoutingRuleField::Value)
+        // Mid-sentence, a comparison the builder offers is its label in
+        // lower case (`contains`, `contient`); any other is shown as stored.
+        let operator = rule.get(RoutingRuleField::Operator);
+        let operator = known_operator(operator)
+            .map_or_else(|| operator.to_owned(), |label| label.to_lowercase());
+        text::routing_rule_condition(
+            lang(),
+            &field_words(field),
+            &operator,
+            rule.get(RoutingRuleField::Value),
         )
     };
     if voice.is_empty() {
@@ -300,13 +339,13 @@ impl RoutingView {
                     &card.field,
                     RoutingRuleField::Field,
                     ROUTING_FIELDS,
-                    key_words as fn(&str) -> String,
+                    field_words as fn(&str) -> String,
                 ),
                 (
                     &card.operator,
                     RoutingRuleField::Operator,
                     ROUTING_OPERATORS,
-                    key_words,
+                    operator_words,
                 ),
                 (
                     &card.voice,
@@ -459,6 +498,36 @@ mod tests {
             "Industry contains \"tech\" \u{b7} Fenrir"
         );
         assert_eq!(kept_keys(&rules[2]), None);
+        // The builder's fields and comparisons by their labels, any other as
+        // stored; French in its own order, with its own quotes.
+        assert_eq!(field_words("industry"), "Industry");
+        assert_eq!(field_words("leadScore"), "Lead score");
+        assert_eq!(operator_words("equals"), "Equals");
+        assert_eq!(operator_words("startsWith"), "Starts with");
+        let odd = rules[2]
+            .clone()
+            .with(RoutingRuleField::Operator, "startsWith");
+        assert_eq!(
+            rule_line(&odd),
+            "Industry startsWith \"tech\" \u{b7} Fenrir"
+        );
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert_eq!(
+                rule_line(&rules[2]),
+                "Secteur d'activit\u{e9} contient \u{ab}\u{a0}tech\u{a0}\u{bb} \u{b7} Fenrir"
+            );
+            for (field, label) in [
+                ("estimatedValue", "Valeur estim\u{e9}e"),
+                ("callerType", "Type d'appelant (business/consumer)"),
+                ("lineType", "Type de ligne (mobile/landline/voip)"),
+                ("isDecisionMaker", "D\u{e9}cideur (true/false)"),
+                ("seniority", "Niveau hi\u{e9}rarchique (p. ex. vp, c-suite)"),
+            ] {
+                assert_eq!(field_words(field), label);
+            }
+            assert_eq!(operator_words("contains"), "Contient");
+            assert_eq!(operator_words("equals"), "\u{c9}gal \u{e0}");
+        });
         assert_eq!(engine_words(&rules[2]), "The persona's own");
         let tuned = rules[2]
             .clone()

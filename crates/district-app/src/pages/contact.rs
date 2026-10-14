@@ -25,8 +25,8 @@ use crate::pages::call::location;
 use crate::pages::contact_form::{ContactFormDialog, FormKind};
 use crate::pages::inbox::has_initials;
 use crate::pages::shared::{
-    Ask, Asking, Landing, add_value_row, clear_group, failure_text, humanize, long_time, now,
-    wire_text,
+    Ask, Asking, Landing, add_value_row, clear_group, failure_text, humanize, known_wire_label,
+    long_time, now, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -107,7 +107,11 @@ pub(crate) fn findings(intelligence: &Map<String, Value>) -> Vec<(String, String
                 }
                 other => text(other),
             }?;
-            Some((humanize(key), shown)).filter(|(_, shown)| !shown.trim().is_empty())
+            // A heading the vocabulary lists reads as the core's label; any
+            // other key was written by the model and stays as it wrote it.
+            let heading = known_wire_label(WireCategory::ContactResearchKey, key)
+                .unwrap_or_else(|| humanize(key));
+            Some((heading, shown)).filter(|(_, shown)| !shown.trim().is_empty())
         })
         .collect()
 }
@@ -196,7 +200,7 @@ mod imp {
         #[template_child]
         pub blocked_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub actions: TemplateChild<gtk::Box>,
+        pub actions: TemplateChild<gtk::FlowBox>,
         #[template_child]
         pub edit_button: TemplateChild<gtk::Button>,
         #[template_child]
@@ -591,5 +595,25 @@ mod tests {
                 ("Signals".to_owned(), "hiring, 3".to_owned()),
             ]
         );
+        // A heading the vocabulary lists is the core's label; the model's
+        // own keys stay as it wrote them, in French too.
+        let dossier = json!({"executiveSummary": "A builder.", "mood": "keen"});
+        assert_eq!(
+            findings(dossier.as_object().unwrap()),
+            [
+                (
+                    "Executive Dossier Summary".to_owned(),
+                    "A builder.".to_owned()
+                ),
+                ("Mood".to_owned(), "keen".to_owned()),
+            ]
+        );
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert_eq!(
+                findings(dossier.as_object().unwrap())[0].0,
+                "R\u{e9}sum\u{e9} du dossier"
+            );
+            assert_eq!(findings(dossier.as_object().unwrap())[1].0, "Mood");
+        });
     }
 }

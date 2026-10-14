@@ -407,16 +407,16 @@ pub fn billing_minutes(l: Locale, count: i64) -> String {
     match l {
         Locale::En => {
             if count == 1 {
-                format!("{count} minute")
+                format!("{} minute", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} minutes")
+                format!("{} minutes", district_core::l10n::format::integer(l, count))
             }
         }
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{count} minute")
+                format!("{} minute", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} minutes")
+                format!("{} minutes", district_core::l10n::format::integer(l, count))
             }
         }
     }
@@ -437,16 +437,16 @@ pub fn billing_not_recorded_included(l: Locale, not_recorded: &str, count: i64) 
     match l {
         Locale::En => {
             if count == 1 {
-                format!("{not_recorded}. {count} minute is included.")
+                format!("{not_recorded}. {} minute is included.", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{not_recorded}. {count} minutes are included.")
+                format!("{not_recorded}. {} minutes are included.", district_core::l10n::format::integer(l, count))
             }
         }
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{not_recorded}. {count} minute est incluse.")
+                format!("{not_recorded}. {} minute est incluse.", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{not_recorded}. {count} minutes sont incluses.")
+                format!("{not_recorded}. {} minutes sont incluses.", district_core::l10n::format::integer(l, count))
             }
         }
     }
@@ -816,8 +816,8 @@ pub fn call_handling_presence_failed(l: Locale) -> &'static str {
 #[must_use]
 pub fn call_handling_ring_seconds(l: Locale, seconds: i64) -> String {
     match l {
-        Locale::En => format!("{seconds} seconds"),
-        Locale::FrCa => format!("{seconds} secondes"),
+        Locale::En => format!("{} seconds", district_core::l10n::format::integer(l, seconds)),
+        Locale::FrCa => format!("{} secondes", district_core::l10n::format::integer(l, seconds)),
     }
 }
 
@@ -1637,16 +1637,16 @@ pub fn contacts_count(l: Locale, count: i64) -> String {
     match l {
         Locale::En => {
             if count == 1 {
-                format!("{count} contact")
+                format!("{} contact", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} contacts")
+                format!("{} contacts", district_core::l10n::format::integer(l, count))
             }
         }
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{count} contact")
+                format!("{} contact", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} contacts")
+                format!("{} contacts", district_core::l10n::format::integer(l, count))
             }
         }
     }
@@ -2174,6 +2174,27 @@ pub fn dialer_page_type_paste_number(l: Locale) -> &'static str {
     }
 }
 
+/// `directory.incomplete_note`
+#[must_use]
+pub fn directory_incomplete_note(l: Locale, count: i64) -> String {
+    match l {
+        Locale::En => {
+            if count == 1 {
+                "One entry lacks a name or a number. It is kept, but the receptionist cannot put anyone through to it.".to_owned()
+            } else {
+                format!("{} entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them.", district_core::l10n::format::integer(l, count))
+            }
+        }
+        Locale::FrCa => {
+            if count == 0 || count == 1 {
+                format!("{} entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel.", district_core::l10n::format::integer(l, count))
+            } else {
+                format!("{} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel.", district_core::l10n::format::integer(l, count))
+            }
+        }
+    }
+}
+
 /// `directory.no_name`
 #[must_use]
 pub fn directory_no_name(l: Locale) -> &'static str {
@@ -2385,12 +2406,12 @@ pub fn inbox_search_failed(l: Locale) -> &'static str {
 #[must_use]
 pub fn inbox_unread(l: Locale, count: i64) -> String {
     match l {
-        Locale::En => format!("{count} unread"),
+        Locale::En => format!("{} unread", district_core::l10n::format::integer(l, count)),
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{count} non lu")
+                format!("{} non lu", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} non lus")
+                format!("{} non lus", district_core::l10n::format::integer(l, count))
             }
         }
     }
@@ -2564,16 +2585,16 @@ pub fn knowledge_pieces(l: Locale, count: i64) -> String {
     match l {
         Locale::En => {
             if count == 1 {
-                format!("{count} piece")
+                format!("{} piece", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} pieces")
+                format!("{} pieces", district_core::l10n::format::integer(l, count))
             }
         }
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{count} segment")
+                format!("{} segment", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} segments")
+                format!("{} segments", district_core::l10n::format::integer(l, count))
             }
         }
     }
@@ -3548,16 +3569,16 @@ pub fn rooms_people(l: Locale, count: i64) -> String {
     match l {
         Locale::En => {
             if count == 1 {
-                format!("{count} person")
+                format!("{} person", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} people")
+                format!("{} people", district_core::l10n::format::integer(l, count))
             }
         }
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{count} personne")
+                format!("{} personne", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} personnes")
+                format!("{} personnes", district_core::l10n::format::integer(l, count))
             }
         }
     }
@@ -3995,6 +4016,60 @@ pub fn routing_engine(l: Locale) -> &'static str {
     }
 }
 
+/// `routing.field_caller_type`
+#[must_use]
+pub fn routing_field_caller_type(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Caller type",
+        Locale::FrCa => "Type d'appelant (business/consumer)",
+    }
+}
+
+/// `routing.field_estimated_value`
+#[must_use]
+pub fn routing_field_estimated_value(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Estimated value",
+        Locale::FrCa => "Valeur estimée",
+    }
+}
+
+/// `routing.field_industry`
+#[must_use]
+pub fn routing_field_industry(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Industry",
+        Locale::FrCa => "Secteur d'activité",
+    }
+}
+
+/// `routing.field_is_decision_maker`
+#[must_use]
+pub fn routing_field_is_decision_maker(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Is decision maker",
+        Locale::FrCa => "Décideur (true/false)",
+    }
+}
+
+/// `routing.field_line_type`
+#[must_use]
+pub fn routing_field_line_type(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Line type",
+        Locale::FrCa => "Type de ligne (mobile/landline/voip)",
+    }
+}
+
+/// `routing.field_seniority`
+#[must_use]
+pub fn routing_field_seniority(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Seniority",
+        Locale::FrCa => "Niveau hiérarchique (p. ex. vp, c-suite)",
+    }
+}
+
 /// `routing.instruction`
 #[must_use]
 pub fn routing_instruction(l: Locale) -> &'static str {
@@ -4022,6 +4097,24 @@ pub fn routing_no_condition(l: Locale) -> &'static str {
     }
 }
 
+/// `routing.operator_contains`
+#[must_use]
+pub fn routing_operator_contains(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Contains",
+        Locale::FrCa => "Contient",
+    }
+}
+
+/// `routing.operator_equals`
+#[must_use]
+pub fn routing_operator_equals(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Equals",
+        Locale::FrCa => "Égal à",
+    }
+}
+
 /// `routing.persona_engine`
 #[must_use]
 pub fn routing_persona_engine(l: Locale) -> &'static str {
@@ -4040,12 +4133,21 @@ pub fn routing_remove_rule(l: Locale) -> &'static str {
     }
 }
 
+/// `routing.rule_condition`
+#[must_use]
+pub fn routing_rule_condition(l: Locale, field: &str, operator: &str, value: &str) -> String {
+    match l {
+        Locale::En => format!("{field} {operator} \"{value}\""),
+        Locale::FrCa => format!("{field} {operator} «\u{00A0}{value}\u{00A0}»"),
+    }
+}
+
 /// `routing.rule_title`
 #[must_use]
 pub fn routing_rule_title(l: Locale, number: i64) -> String {
     match l {
-        Locale::En => format!("Rule {number}"),
-        Locale::FrCa => format!("Règle {number}"),
+        Locale::En => format!("Rule {}", district_core::l10n::format::integer(l, number)),
+        Locale::FrCa => format!("Règle {}", district_core::l10n::format::integer(l, number)),
     }
 }
 
@@ -4206,8 +4308,8 @@ pub fn scheduling_admin_hours_opens_a11y(l: Locale) -> &'static str {
 #[must_use]
 pub fn scheduling_admin_hours_window_a11y(l: Locale, day: &str, number: i64) -> String {
     match l {
-        Locale::En => format!("{day}, range {number}"),
-        Locale::FrCa => format!("{day}, plage {number}"),
+        Locale::En => format!("{day}, range {}", district_core::l10n::format::integer(l, number)),
+        Locale::FrCa => format!("{day}, plage {}", district_core::l10n::format::integer(l, number)),
     }
 }
 
@@ -4638,8 +4740,8 @@ pub fn thread_failed_title(l: Locale) -> &'static str {
 #[must_use]
 pub fn thread_image_number(l: Locale, number: i64) -> String {
     match l {
-        Locale::En => format!("Image {number}"),
-        Locale::FrCa => format!("Image {number}"),
+        Locale::En => format!("Image {}", district_core::l10n::format::integer(l, number)),
+        Locale::FrCa => format!("Image {}", district_core::l10n::format::integer(l, number)),
     }
 }
 
@@ -4649,16 +4751,16 @@ pub fn thread_images_attached(l: Locale, count: i64) -> String {
     match l {
         Locale::En => {
             if count == 1 {
-                format!("{count} image attached")
+                format!("{} image attached", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} images attached")
+                format!("{} images attached", district_core::l10n::format::integer(l, count))
             }
         }
         Locale::FrCa => {
             if count == 0 || count == 1 {
-                format!("{count} image jointe")
+                format!("{} image jointe", district_core::l10n::format::integer(l, count))
             } else {
-                format!("{count} images jointes")
+                format!("{} images jointes", district_core::l10n::format::integer(l, count))
             }
         }
     }
@@ -4902,8 +5004,8 @@ pub fn ticket_form_message_a11y(l: Locale) -> &'static str {
 #[must_use]
 pub fn ticket_form_needs(l: Locale, min: i64, max: i64) -> String {
     match l {
-        Locale::En => format!("A subject of {min} to {max} characters, and a message."),
-        Locale::FrCa => format!("Requis\u{00A0}: un objet de {min} à {max} caractères et un message."),
+        Locale::En => format!("A subject of {} to {} characters, and a message.", district_core::l10n::format::integer(l, min), district_core::l10n::format::integer(l, max)),
+        Locale::FrCa => format!("Requis\u{00A0}: un objet de {} à {} caractères et un message.", district_core::l10n::format::integer(l, min), district_core::l10n::format::integer(l, max)),
     }
 }
 

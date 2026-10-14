@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 
 use district_core::l10n::format::{self, CivilDateTime, DateStyle};
-use district_core::l10n::{WireCategory, wire_label};
+use district_core::l10n::{WireCategory, placeholder_label, wire_label};
 use district_core::{Event, FailureText, Locale, MAX_ATTACHMENT_BYTES, Paging, PickedAttachment};
 
 use crate::adw;
@@ -373,6 +373,22 @@ pub(crate) fn wire_text(category: WireCategory, raw: &str) -> String {
         return humanize(raw);
     }
     wire_label(category, raw, locale)
+}
+
+/// The core's label for `raw` when the wire vocabulary lists it in
+/// `category`, in English too; `None` for a value it does not list, which
+/// would read as the category's generic label.
+pub(crate) fn known_wire_label(category: WireCategory, raw: &str) -> Option<String> {
+    let label = wire_label(category, raw, lang());
+    (label != wire_label(category, "", lang())).then_some(label)
+}
+
+/// The service's text for a stored value it writes in English in place of a
+/// real one ("No summary available.", "Unknown Caller") as the core's label
+/// for it, in the app's language; any other text is real data, shown as it
+/// is.
+pub(crate) fn placeholder_text(raw: &str) -> Cow<'_, str> {
+    placeholder_label(raw, lang()).map_or(Cow::Borrowed(raw), Cow::Borrowed)
 }
 
 /// The values whose English label is the portal's rather than [`humanize`]'s.
@@ -1231,6 +1247,38 @@ mod tests {
         assert_eq!(humanize("caller_requested_human"), "Caller requested human");
         assert_eq!(humanize("booked"), "Booked");
         assert_eq!(humanize(" "), "");
+    }
+
+    #[test]
+    fn a_listed_value_has_a_label_and_a_placeholder_reads_as_the_cores() {
+        assert_eq!(
+            known_wire_label(WireCategory::ContactResearchKey, "executiveSummary").as_deref(),
+            Some("Executive Dossier Summary")
+        );
+        assert_eq!(
+            known_wire_label(WireCategory::ContactResearchKey, "mood"),
+            None
+        );
+        assert_eq!(
+            placeholder_text("No summary available."),
+            "No summary available."
+        );
+        assert_eq!(
+            placeholder_text("No answer \u{2014} no conversation took place."),
+            "No answer, no conversation took place."
+        );
+        assert_eq!(placeholder_text("Ada Lovelace"), "Ada Lovelace");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(
+                placeholder_text("No summary available."),
+                "Aucun r\u{e9}sum\u{e9} disponible."
+            );
+            assert_eq!(placeholder_text("Unknown Caller"), "Appelant inconnu");
+            assert_eq!(
+                known_wire_label(WireCategory::ContactResearchKey, "executiveSummary").as_deref(),
+                Some("R\u{e9}sum\u{e9} du dossier")
+            );
+        });
     }
 
     /// A stored value reads as the core's label in French, the generic one

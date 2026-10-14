@@ -1875,6 +1875,17 @@ screen = "dialer_page"
 state = "reviewed"
 note = "In dialer-page.ui."
 
+[directory.incomplete_note]
+en.one = "One entry lacks a name or a number. It is kept, but the receptionist cannot put anyone through to it."
+en.other = "{count} entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them."
+fr.one = "{count} entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel."
+fr.other = "{count} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel."
+ctx = "body"
+screen = "directory"
+args = { count = "int" }
+state = "draft"
+note = "Under the transfer directory when entries lack a name or a phone number; never shown for none."
+
 [directory.no_name]
 en = "No name"
 fr = "Aucun nom"
@@ -3434,6 +3445,62 @@ ctx = "label"
 screen = "routing"
 state = "reviewed"
 
+[routing.field_caller_type]
+en = "Caller type"
+fr = "Type d'appelant (business/consumer)"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+note = "The contact field `callerType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android l10n/android.toml has it, whose bracketed values are the CRM's and stay English."
+
+[routing.field_estimated_value]
+en = "Estimated value"
+fr = "Valeur estimée"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+note = "The contact field `estimatedValue` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it."
+
+[routing.field_industry]
+en = "Industry"
+fr = "Secteur d'activité"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+fr_variant = "The routing builder's field as the portal labels it, not the contact detail's label."
+note = "The contact field `industry` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it."
+
+[routing.field_is_decision_maker]
+en = "Is decision maker"
+fr = "Décideur (true/false)"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+note = "The contact field `isDecisionMaker` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English."
+
+[routing.field_line_type]
+en = "Line type"
+fr = "Type de ligne (mobile/landline/voip)"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+fr_variant = "The routing builder's field as the portal labels it, not the contact detail's label."
+note = "The contact field `lineType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English."
+
+[routing.field_seniority]
+en = "Seniority"
+fr = "Niveau hiérarchique (p. ex. vp, c-suite)"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+note = "The contact field `seniority` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English."
+
 [routing.instruction]
 en = "Instruction"
 fr = "Consigne"
@@ -3456,6 +3523,24 @@ ctx = "label"
 screen = "routing"
 state = "reviewed"
 
+[routing.operator_contains]
+en = "Contains"
+fr = "Contient"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+note = "The comparison `contains`, in the picker; a rule's line writes it in lower case. English is the comparison as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingOperatorLabels), as district-android has it."
+
+[routing.operator_equals]
+en = "Equals"
+fr = "Égal à"
+ctx = "label"
+screen = "routing"
+tier = "T3"
+state = "reviewed"
+note = "The comparison `equals`, in the picker; a rule's line writes it in lower case. English is the comparison as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingOperatorLabels), as district-android has it."
+
 [routing.persona_engine]
 en = "The persona's own"
 fr = "Celui de la persona"
@@ -3471,6 +3556,15 @@ ctx = "tooltip"
 screen = "routing"
 tier = "T2"
 state = "reviewed"
+
+[routing.rule_condition]
+en = "{field} {operator} \"{value}\""
+fr = "{field} {operator} «\u00A0{value}\u00A0»"
+ctx = "label"
+screen = "routing"
+args = { field = "str", operator = "str", value = "str" }
+state = "reviewed"
+note = "What a routing rule tests, under its title: the contact field, the comparison in lower case and the value, quoted (`Industry contains \"tech\"`)."
 
 [routing.rule_title]
 en = "Rule {number}"

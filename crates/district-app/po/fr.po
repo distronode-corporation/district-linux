@@ -1349,6 +1349,15 @@ msgctxt "dialer_page.type_paste_number"
 msgid "Type or paste a number"
 msgstr "Tapez ou collez un numéro"
 
+#. screen: directory; ctx: body; tier: T3
+#. Under the transfer directory when entries lack a name or a phone number; never shown for none.
+msgctxt "directory.incomplete_note"
+msgid "One entry lacks a name or a number. It is kept, but the receptionist cannot put anyone through to it."
+msgid_plural "{count} entries lack a name or a number. They are kept, but the receptionist cannot put anyone through to them."
+msgstr[0] "{count} entrée n'a pas de nom ou de numéro. Elle est conservée, mais la réceptionniste ne peut y transférer aucun appel."
+msgstr[1] "{count} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel."
+msgstr[2] "{count} entrées n'ont pas de nom ou de numéro. Elles sont conservées, mais la réceptionniste ne peut y transférer aucun appel."
+
 #. screen: directory; ctx: label; tier: T3
 msgctxt "directory.no_name"
 msgid "No name"
@@ -2465,6 +2474,42 @@ msgid "Engine"
 msgstr "Moteur"
 
 #. screen: routing; ctx: label; tier: T3
+#. The contact field `callerType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android l10n/android.toml has it, whose bracketed values are the CRM's and stay English.
+msgctxt "routing.field_caller_type"
+msgid "Caller type"
+msgstr "Type d'appelant (business/consumer)"
+
+#. screen: routing; ctx: label; tier: T3
+#. The contact field `estimatedValue` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it.
+msgctxt "routing.field_estimated_value"
+msgid "Estimated value"
+msgstr "Valeur estimée"
+
+#. screen: routing; ctx: label; tier: T3
+#. The contact field `industry` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it.
+msgctxt "routing.field_industry"
+msgid "Industry"
+msgstr "Secteur d'activité"
+
+#. screen: routing; ctx: label; tier: T3
+#. The contact field `isDecisionMaker` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English.
+msgctxt "routing.field_is_decision_maker"
+msgid "Is decision maker"
+msgstr "Décideur (true/false)"
+
+#. screen: routing; ctx: label; tier: T3
+#. The contact field `lineType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English.
+msgctxt "routing.field_line_type"
+msgid "Line type"
+msgstr "Type de ligne (mobile/landline/voip)"
+
+#. screen: routing; ctx: label; tier: T3
+#. The contact field `seniority` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English.
+msgctxt "routing.field_seniority"
+msgid "Seniority"
+msgstr "Niveau hiérarchique (p. ex. vp, c-suite)"
+
+#. screen: routing; ctx: label; tier: T3
 msgctxt "routing.instruction"
 msgid "Instruction"
 msgstr "Consigne"
@@ -2480,6 +2525,18 @@ msgid "No condition set here"
 msgstr "Aucune condition définie"
 
 #. screen: routing; ctx: label; tier: T3
+#. The comparison `contains`, in the picker; a rule's line writes it in lower case. English is the comparison as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingOperatorLabels), as district-android has it.
+msgctxt "routing.operator_contains"
+msgid "Contains"
+msgstr "Contient"
+
+#. screen: routing; ctx: label; tier: T3
+#. The comparison `equals`, in the picker; a rule's line writes it in lower case. English is the comparison as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingOperatorLabels), as district-android has it.
+msgctxt "routing.operator_equals"
+msgid "Equals"
+msgstr "Égal à"
+
+#. screen: routing; ctx: label; tier: T3
 #. A rule with no engine of its own uses the persona's.
 msgctxt "routing.persona_engine"
 msgid "The persona's own"
@@ -2489,6 +2546,12 @@ msgstr "Celui de la persona"
 msgctxt "routing.remove_rule"
 msgid "Remove this rule"
 msgstr "Supprimer cette règle"
+
+#. screen: routing; ctx: label; tier: T3
+#. What a routing rule tests, under its title: the contact field, the comparison in lower case and the value, quoted (`Industry contains "tech"`).
+msgctxt "routing.rule_condition"
+msgid "{field} {operator} \"{value}\""
+msgstr "{field} {operator} « {value} »"
 
 #. screen: routing; ctx: title; tier: T3
 msgctxt "routing.rule_title"

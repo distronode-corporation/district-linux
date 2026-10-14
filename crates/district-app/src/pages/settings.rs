@@ -220,7 +220,8 @@ impl SettingsPage {
                         .use_markup(false)
                         .title(row.title)
                         .subtitle(row.subtitle)
-                        .subtitle_lines(2)
+                        // Every line of it: French runs longer than two.
+                        .subtitle_lines(0)
                         .activatable(true)
                         .name(format!("settings-{}", section_key(row.section)))
                         .build();
