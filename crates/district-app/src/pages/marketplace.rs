@@ -165,7 +165,12 @@ fn owned_row(
         ns::numbers_configure_caption(l),
         &["caption", "dim-label"],
     ));
-    let buttons = gtk::Box::builder().spacing(6).build();
+    // One above the other, so a narrow window still fits them.
+    let buttons = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .halign(gtk::Align::Start)
+        .spacing(6)
+        .build();
     let configure = gtk::Button::builder()
         .label(ns::numbers_configure_action(l))
         .name("number-configure")

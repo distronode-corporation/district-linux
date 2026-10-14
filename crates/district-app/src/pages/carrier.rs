@@ -224,12 +224,10 @@ impl CarrierPanel {
             .subtitle_lines(4)
             .name("verify-row")
             .build();
-        let verify_button = gtk::Button::builder()
-            .valign(gtk::Align::Center)
-            .name("verify-button")
-            .build();
-        verify_row.add_suffix(&verify_button);
+        let verify_button = action_button("", "verify-button");
         verify.add(&verify_row);
+        // Under the row rather than beside it, so a narrow window fits it.
+        verify.add(&verify_button);
         let lookup = adw::PreferencesGroup::builder()
             .title(ns::numbers_lookup_eyebrow(l))
             .build();
