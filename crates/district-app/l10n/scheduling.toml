@@ -18,6 +18,14 @@ tier = "T3"
 args = { when = "str", subtitle = "str", status = "str" }
 note = "What a screen reader says for a booking coming up on the booking pages' overview: when it is, who booked and what, and its status (Confirmed, Cancelled...)."
 
+[scheduling_admin.control_of_a11y]
+en = "{control}: {name}"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+args = { control = "str", name = "str" }
+note = "What a screen reader says for a control that acts on one item of a list in the booking pages' sections: what it does or sets (Remove, Edit, Priority, Role...), then the item's name (a host, a booking question, an option)."
+
 [scheduling_admin.desk_row_a11y]
 en = "{label}: {value}"
 ctx = "a11y"
@@ -26,12 +34,34 @@ tier = "T3"
 args = { label = "str", value = "str" }
 note = "What a screen reader says for a row of the booking desk on the booking pages' overview: the row's label (Calendar, Working hours...), then what it shows."
 
+[scheduling_admin.event_type_row_a11y]
+en = "{name}, {subtitle}, {state}, {booking_page}"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+args = { name = "str", subtitle = "str", state = "str", booking_page = "str" }
+note = "What a screen reader says for an event type in the booking pages' list: its name, how long it runs and where (30 min, Phone), its state (Active, Inactive, Archived), and its public booking page's address or Not public."
+
 [scheduling_admin.failed_title]
 en = "Could not load this section"
 ctx = "title"
 screen = "scheduling_admin"
 tier = "T3"
 note = "Heading over why a section of the booking pages (the event types, the bookings, the team...) could not be read. The reason is under it."
+
+[scheduling_admin.host_role]
+en = "Role"
+ctx = "a11y"
+screen = "scheduling_admin"
+tier = "T3"
+note = "What a screen reader says for the choice of a host's role on an event type (Required, Rotation, Optional); the host's name follows."
+
+[scheduling_admin.hosts_add_heading]
+en = "Add a host"
+ctx = "title"
+screen = "scheduling_admin"
+tier = "T3"
+note = "Heading over the people who could take an event type's bookings and are not hosts yet, each with an Add button, in the booking pages' hosts dialog."
 
 [scheduling_admin.loading_a11y]
 en = "Loading"

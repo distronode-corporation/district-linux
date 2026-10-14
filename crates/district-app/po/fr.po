@@ -2542,15 +2542,39 @@ msgid "{when}, {subtitle}, {status}"
 msgstr ""
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for a control that acts on one item of a list in the booking pages' sections: what it does or sets (Remove, Edit, Priority, Role...), then the item's name (a host, a booking question, an option).
+msgctxt "scheduling_admin.control_of_a11y"
+msgid "{control}: {name}"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a row of the booking desk on the booking pages' overview: the row's label (Calendar, Working hours...), then what it shows.
 msgctxt "scheduling_admin.desk_row_a11y"
 msgid "{label}: {value}"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for an event type in the booking pages' list: its name, how long it runs and where (30 min, Phone), its state (Active, Inactive, Archived), and its public booking page's address or Not public.
+msgctxt "scheduling_admin.event_type_row_a11y"
+msgid "{name}, {subtitle}, {state}, {booking_page}"
 msgstr ""
 
 #. screen: scheduling_admin; ctx: title; tier: T3
 #. Heading over why a section of the booking pages (the event types, the bookings, the team...) could not be read. The reason is under it.
 msgctxt "scheduling_admin.failed_title"
 msgid "Could not load this section"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
+#. What a screen reader says for the choice of a host's role on an event type (Required, Rotation, Optional); the host's name follows.
+msgctxt "scheduling_admin.host_role"
+msgid "Role"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: title; tier: T3
+#. Heading over the people who could take an event type's bookings and are not hosts yet, each with an Add button, in the booking pages' hosts dialog.
+msgctxt "scheduling_admin.hosts_add_heading"
+msgid "Add a host"
 msgstr ""
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3

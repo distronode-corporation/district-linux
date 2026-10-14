@@ -940,10 +940,18 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::scheduling_admin_bookings_views_a11y(Locale::FrCa), "Which bookings to show");
     assert_eq!(text::scheduling_admin_coming_up_row_a11y(Locale::En, "{when}", "{subtitle}", "{status}"), "{when}, {subtitle}, {status}");
     assert_eq!(text::scheduling_admin_coming_up_row_a11y(Locale::FrCa, "{when}", "{subtitle}", "{status}"), "{when}, {subtitle}, {status}");
+    assert_eq!(text::scheduling_admin_control_of_a11y(Locale::En, "{control}", "{name}"), "{control}: {name}");
+    assert_eq!(text::scheduling_admin_control_of_a11y(Locale::FrCa, "{control}", "{name}"), "{control}: {name}");
     assert_eq!(text::scheduling_admin_desk_row_a11y(Locale::En, "{label}", "{value}"), "{label}: {value}");
     assert_eq!(text::scheduling_admin_desk_row_a11y(Locale::FrCa, "{label}", "{value}"), "{label}: {value}");
+    assert_eq!(text::scheduling_admin_event_type_row_a11y(Locale::En, "{name}", "{subtitle}", "{state}", "{booking_page}"), "{name}, {subtitle}, {state}, {booking_page}");
+    assert_eq!(text::scheduling_admin_event_type_row_a11y(Locale::FrCa, "{name}", "{subtitle}", "{state}", "{booking_page}"), "{name}, {subtitle}, {state}, {booking_page}");
     assert_eq!(text::scheduling_admin_failed_title(Locale::En), "Could not load this section");
     assert_eq!(text::scheduling_admin_failed_title(Locale::FrCa), "Could not load this section");
+    assert_eq!(text::scheduling_admin_host_role(Locale::En), "Role");
+    assert_eq!(text::scheduling_admin_host_role(Locale::FrCa), "Role");
+    assert_eq!(text::scheduling_admin_hosts_add_heading(Locale::En), "Add a host");
+    assert_eq!(text::scheduling_admin_hosts_add_heading(Locale::FrCa), "Add a host");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::En), "Loading");
     assert_eq!(text::scheduling_admin_loading_a11y(Locale::FrCa), "Loading");
     assert_eq!(text::scheduling_page_booking_page(Locale::En), "Booking page");

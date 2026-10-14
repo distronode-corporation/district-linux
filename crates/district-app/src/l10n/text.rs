@@ -4115,6 +4115,15 @@ pub fn scheduling_admin_coming_up_row_a11y(l: Locale, when: &str, subtitle: &str
     }
 }
 
+/// `scheduling_admin.control_of_a11y`
+#[must_use]
+pub fn scheduling_admin_control_of_a11y(l: Locale, control: &str, name: &str) -> String {
+    match l {
+        Locale::En => format!("{control}: {name}"),
+        Locale::FrCa => format!("{control}: {name}"),
+    }
+}
+
 /// `scheduling_admin.desk_row_a11y`
 #[must_use]
 pub fn scheduling_admin_desk_row_a11y(l: Locale, label: &str, value: &str) -> String {
@@ -4124,12 +4133,39 @@ pub fn scheduling_admin_desk_row_a11y(l: Locale, label: &str, value: &str) -> St
     }
 }
 
+/// `scheduling_admin.event_type_row_a11y`
+#[must_use]
+pub fn scheduling_admin_event_type_row_a11y(l: Locale, name: &str, subtitle: &str, state: &str, booking_page: &str) -> String {
+    match l {
+        Locale::En => format!("{name}, {subtitle}, {state}, {booking_page}"),
+        Locale::FrCa => format!("{name}, {subtitle}, {state}, {booking_page}"),
+    }
+}
+
 /// `scheduling_admin.failed_title`
 #[must_use]
 pub fn scheduling_admin_failed_title(l: Locale) -> &'static str {
     match l {
         Locale::En => "Could not load this section",
         Locale::FrCa => "Could not load this section",
+    }
+}
+
+/// `scheduling_admin.host_role`
+#[must_use]
+pub fn scheduling_admin_host_role(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Role",
+        Locale::FrCa => "Role",
+    }
+}
+
+/// `scheduling_admin.hosts_add_heading`
+#[must_use]
+pub fn scheduling_admin_hosts_add_heading(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Add a host",
+        Locale::FrCa => "Add a host",
     }
 }
 
