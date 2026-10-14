@@ -4195,6 +4195,14 @@ fn scheduling_team(smoke: &Smoke) {
     smoke.click("team-dialog-action");
     assert_eq!(questions(smoke), 1);
     assert!(smoke.shows_text("Archive Fay Founder's account?"));
+    assert_eq!(
+        question(smoke)
+            .expect("asked")
+            .response_label("cancel")
+            .as_str(),
+        "Keep account",
+        "the core's way out"
+    );
     smoke.respond("confirm");
     let (ticket, request) = admin_request(smoke);
     assert!(matches!(request, Request::ArchiveUser { ref id } if id == "s-1"));

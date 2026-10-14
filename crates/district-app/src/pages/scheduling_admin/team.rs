@@ -35,7 +35,7 @@ use self::archive::ArchiveView;
 use self::editor::EditorView;
 use self::kit::{control_of, team_event};
 use self::members::MembersView;
-use super::common::{LoadFrame, badge, confirm_once, failure_line};
+use super::common::{LoadFrame, badge, confirm_once_keeping, failure_line};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
@@ -90,6 +90,8 @@ pub(crate) struct Asked {
     pub(crate) body: &'static str,
     /// The yes.
     pub(crate) action: &'static str,
+    /// The way out, in the core's words.
+    pub(crate) keep: &'static str,
     /// What yes sends.
     pub(crate) yes: TeamEvent,
     /// What no sends.
@@ -101,35 +103,38 @@ pub(crate) struct Asked {
 pub(crate) fn asked(section: &TeamSection) -> Option<Asked> {
     match section.dialog.as_ref()? {
         TeamDialog::Editor(editor) if editor.confirming_delete => {
-            let [.., body, action, _] = TeamEditor::labels();
+            let [.., body, action, keep] = TeamEditor::labels();
             Some(Asked {
                 key: format!("delete-team:{}", editor.team_id.as_deref().unwrap_or("")),
                 heading: editor.delete_title(),
                 body,
                 action,
+                keep,
                 yes: TeamEvent::ConfirmDelete,
                 no: TeamEvent::CancelDelete,
             })
         }
         TeamDialog::Members(dialog) => {
             let user_id = dialog.removing.as_ref()?;
-            let [.., action, heading, body, _] = TeamMembersDialog::labels();
+            let [.., action, heading, body, keep] = TeamMembersDialog::labels();
             Some(Asked {
                 key: format!("remove-host:{}:{user_id}", dialog.team.id),
                 heading: heading.to_owned(),
                 body,
                 action,
+                keep,
                 yes: TeamEvent::ConfirmRemove,
                 no: TeamEvent::CancelRemove,
             })
         }
         TeamDialog::Archive(dialog) if dialog.confirming => {
-            let [body, action, _] = ArchiveDialog::labels();
+            let [body, action, keep] = ArchiveDialog::labels();
             Some(Asked {
                 key: format!("archive-user:{}", dialog.user_id),
                 heading: dialog.title(),
                 body,
                 action,
+                keep,
                 yes: TeamEvent::ConfirmArchive,
                 no: TeamEvent::CancelArchive,
             })
@@ -503,7 +508,7 @@ impl TeamPane {
         };
         imp.open.replace(next);
         match asked(section) {
-            Some(asked) => confirm_once(
+            Some(asked) => confirm_once_keeping(
                 &imp.asking,
                 self,
                 Some(Ask {
@@ -513,6 +518,7 @@ impl TeamPane {
                     action: asked.action,
                     destructive: true,
                 }),
+                Some(asked.keep),
                 team_event(asked.yes),
                 team_event(asked.no),
             ),
@@ -632,6 +638,7 @@ mod tests {
         assert_eq!(delete.key, "delete-team:t-1");
         assert_eq!(delete.heading, "Delete Sales?");
         assert_eq!(delete.action, "Delete team");
+        assert_eq!(delete.keep, "Keep team");
         assert_eq!(
             (delete.yes, delete.no),
             (TeamEvent::ConfirmDelete, TeamEvent::CancelDelete)
@@ -640,6 +647,7 @@ mod tests {
         assert_eq!(remove.key, "remove-host:t-1:u-2");
         assert_eq!(remove.heading, "Remove this host?");
         assert_eq!(remove.action, "Remove");
+        assert_eq!(remove.keep, "Keep them");
         assert_eq!(
             (remove.yes, remove.no),
             (TeamEvent::ConfirmRemove, TeamEvent::CancelRemove)
@@ -648,6 +656,7 @@ mod tests {
         assert_eq!(archived.key, "archive-user:s-1");
         assert_eq!(archived.heading, "Archive Ann's account?");
         assert_eq!(archived.action, "Archive account");
+        assert_eq!(archived.keep, "Keep account");
         assert_eq!(
             (archived.yes, archived.no),
             (TeamEvent::ConfirmArchive, TeamEvent::CancelArchive)
