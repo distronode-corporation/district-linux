@@ -1,13 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The booking pages' settings section: the member's profile and notifications, the booking pages' branding and the booking assistant.
-     src/pages/scheduling_admin/settings.rs fills it. -->
+<!-- The booking pages' settings section: the booking page's branding, the
+     booking assistant, the member's profile and their notifications, a tab
+     each. What depends on what was read (the tabs' frames, their rows, the
+     dialogs) src/pages/scheduling_admin/settings.rs builds. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
   <template class="DistrictSchedulingSettingsPane" parent="AdwBin">
     <property name="child">
-      <object class="AdwStatusPage" id="settings_placeholder">
-        <property name="icon-name">x-office-calendar-symbolic</property>
+      <object class="GtkScrolledWindow" id="settings_scroller">
+        <property name="hscrollbar-policy">never</property>
+        <property name="vexpand">true</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">760</property>
+            <property name="child">
+              <object class="GtkBox" id="settings_column">
+                <property name="orientation">vertical</property>
+                <property name="spacing">18</property>
+                <property name="margin-top">18</property>
+                <property name="margin-bottom">18</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <!-- The tabs scroll sideways in a narrow window, as on iOS. -->
+                <child>
+                  <object class="GtkScrolledWindow">
+                    <property name="vscrollbar-policy">never</property>
+                    <property name="propagate-natural-height">true</property>
+                    <property name="propagate-natural-width">true</property>
+                    <property name="halign">start</property>
+                    <property name="child">
+                      <object class="GtkBox" id="settings_tabs">
+                        <style>
+                          <class name="linked"/>
+                        </style>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStack" id="settings_stack">
+                    <property name="vhomogeneous">false</property>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
       </object>
     </property>
   </template>

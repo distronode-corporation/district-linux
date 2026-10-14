@@ -4214,6 +4214,24 @@ pub fn scheduling_admin_loading_a11y(l: Locale) -> &'static str {
     }
 }
 
+/// `scheduling_admin.settings_remove_image_question`
+#[must_use]
+pub fn scheduling_admin_settings_remove_image_question(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Remove this image?",
+        Locale::FrCa => "Remove this image?",
+    }
+}
+
+/// `scheduling_admin.settings_tabs_a11y`
+#[must_use]
+pub fn scheduling_admin_settings_tabs_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Which settings to show",
+        Locale::FrCa => "Which settings to show",
+    }
+}
+
 /// `scheduling_admin.team_member_row_a11y`
 #[must_use]
 pub fn scheduling_admin_team_member_row_a11y(l: Locale, name: &str, subtitle: &str, state: &str) -> String {
