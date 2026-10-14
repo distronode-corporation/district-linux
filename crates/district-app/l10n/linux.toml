@@ -57,6 +57,20 @@ ctx = "label"
 screen = "account_page"
 note = "In account-page.ui."
 
+[account_page.start_at_login]
+en = "Start at login"
+ctx = "label"
+screen = "account_page"
+tier = "T2"
+note = "In account-page.ui. A switch: the app starts in the background when the user logs in to the computer. Off until turned on."
+
+[account_page.start_at_login_body]
+en = "Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it."
+ctx = "body"
+screen = "account_page"
+tier = "T2"
+note = "In account-page.ui. Under the Start at login switch."
+
 [analytics.calls_per_day]
 en = "Calls per day"
 ctx = "title"
@@ -199,6 +213,41 @@ en = "Stop"
 ctx = "button"
 screen = "audition_dialog"
 note = "In audition-dialog.ui."
+
+[background.portal_reason]
+en = "So that calls handed to this computer ring while the District AI window is closed."
+ctx = "body"
+screen = "background"
+tier = "T2"
+note = "Why the app asks the desktop to run in the background; the desktop may show it in its permission question."
+
+[background.status]
+en = "Ringing for calls handed to this computer"
+ctx = "label"
+screen = "background"
+tier = "T2"
+note = "The app's status in GNOME's Background Apps list while it runs with no window. At most 96 characters."
+
+[background.tray_open]
+en = "Open District AI"
+ctx = "menu"
+screen = "background"
+tier = "T2"
+note = "The tray icon's menu: brings the window back."
+
+[background.tray_quit]
+en = "Quit"
+ctx = "menu"
+screen = "background"
+tier = "T2"
+note = "The tray icon's menu: quits the app, so calls stop ringing on this computer."
+
+[background.tray_title]
+en = "District AI"
+ctx = "label"
+screen = "background"
+tier = "T0"
+note = "The tray icon's name. The product name, not translated."
 
 [billing.amount_off]
 en = "{amount} off"

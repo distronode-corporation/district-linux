@@ -38,7 +38,10 @@ use std::time::{Duration, Instant};
 use adw::prelude::*;
 use common::{descendants, ticket};
 use district_api::{ApiError, ErrorDetail, ReauthReason, RetryReason, TokenError};
-use district_app::{Effects, Parts, UiBridge, application};
+use district_app::{
+    APP_ID, AUTOSTART_COMMAND, DesktopBackground, Effects, Parts, START_AT_LOGIN_MARKER, UiBridge,
+    application,
+};
 use district_auth::{
     AccessClaims, Persistence, RevokeStatus, SignOutReport, StoreError, StoreErrorKind,
 };
@@ -114,6 +117,11 @@ struct Smoke {
     events: async_channel::Sender<Event>,
     bridge: UiBridge,
     shots: Option<PathBuf>,
+    /// Where background mode keeps "Start at login": the app's own folder,
+    /// and the autostart folder, both private to this run.
+    background_dirs: (PathBuf, PathBuf),
+    /// The runtime the tray runs on, on this run's private session bus.
+    _runtime: tokio::runtime::Runtime,
 }
 
 fn fixture<T: DeserializeOwned>(name: &str) -> T {
@@ -588,6 +596,23 @@ fn start() -> Smoke {
     let script = Rc::new(Script::default());
     let (events, receiver) = async_channel::unbounded();
     let (commands, command_receiver) = async_channel::unbounded();
+    // Background mode as the .deb has it, with its files in this run's own
+    // folders, and the tray on this run's private session bus.
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .expect("a runtime for the tray");
+    let root =
+        std::env::temp_dir().join(format!("district-smoke-background-{}", std::process::id()));
+    fs::remove_dir_all(&root).ok();
+    let background_dirs = (root.join("config"), root.join("autostart"));
+    let background = DesktopBackground::new(
+        runtime.handle().clone(),
+        false,
+        background_dirs.0.clone(),
+        background_dirs.1.clone(),
+    );
     let app = application(Parts {
         config: CoreConfig {
             web_base_url: "https://www.distronode.com".to_owned(),
@@ -605,6 +630,8 @@ fn start() -> Smoke {
         events: (events.clone(), receiver),
         commands: command_receiver,
         startup_notice: None,
+        background: Rc::new(background),
+        tray_bridge: UiBridge::new(commands.clone()),
     });
     // Never the running app's own instance, whatever is on this session bus.
     app.set_flags(app.flags() | gio::ApplicationFlags::NON_UNIQUE);
@@ -617,6 +644,8 @@ fn start() -> Smoke {
         events,
         bridge: UiBridge::new(commands),
         shots,
+        background_dirs,
+        _runtime: runtime,
     };
     let deadline = Instant::now() + Duration::from_secs(10);
     while !smoke.window().is_mapped() {
@@ -857,6 +886,33 @@ fn account_and_devices(smoke: &Smoke) {
         "a build with calls can ring here"
     );
     smoke.shot("06-account");
+
+    // Start at login: off until turned on; on, an autostart entry that starts
+    // the app with no window, and off again, none.
+    let (config_dir, autostart_dir) = &smoke.background_dirs;
+    let entry = autostart_dir.join(format!("{APP_ID}.desktop"));
+    let marker = config_dir.join(START_AT_LOGIN_MARKER);
+    let row = smoke
+        .mapped("start_at_login_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap();
+    assert!(!row.is_active() && !entry.exists() && !marker.exists());
+    row.set_active(true);
+    smoke.pump();
+    assert!(marker.exists());
+    let written = fs::read_to_string(&entry).expect("the autostart entry");
+    assert!(written.contains(&format!("\nExec={}\n", AUTOSTART_COMMAND.join(" "))));
+    assert_eq!(
+        smoke
+            .app
+            .action_state("start-at-login")
+            .and_then(|state| state.get::<bool>()),
+        Some(true)
+    );
+    row.set_active(false);
+    smoke.pump();
+    assert!(!entry.exists() && !marker.exists());
+    assert!(!row.is_active());
 
     smoke.activate("devices_row");
     let Effect::LoadDevices { ticket } = smoke.take("LoadDevices") else {
@@ -4379,17 +4435,186 @@ fn narrow(smoke: &Smoke) {
 
 /// Closing the window lets it go, and activating the app builds another.
 fn reopening(smoke: &Smoke) {
+    smoke.forget();
     let first = smoke.window().downgrade();
     first.upgrade().expect("the window").close();
     smoke.pump();
     assert!(smoke.app.active_window().is_none(), "the window is gone");
     assert!(first.upgrade().is_none(), "and nothing holds it");
+    // Background mode: the app runs on, its live socket and its presence as
+    // they were, so a call handed here still rings.
+    assert!(!smoke.pending("WatchLive"), "the live socket stays up");
+    assert!(!smoke.pending("SetPresence"), "this computer stays rung");
+    assert!(smoke.script.finished.borrow().is_empty(), "not quitting");
     smoke.app.activate();
     smoke.pump();
     assert!(
         smoke.shown("sidebar-overview"),
         "a new one, drawn from the same state"
     );
+
+    // The tray: a click on the icon brings the window back, and so does its
+    // menu's first item.
+    let tray = Tray::find(smoke);
+    let opens: [fn(&Tray); 2] = [
+        |tray: &Tray| tray.activate(),
+        |tray: &Tray| tray.click("Open District AI"),
+    ];
+    for open in opens {
+        smoke.window().close();
+        smoke.pump();
+        assert!(smoke.app.active_window().is_none());
+        open(&tray);
+        pump_until(smoke, "the tray never opened the window", |smoke| {
+            smoke.app.active_window().is_some()
+        });
+        smoke.pump();
+        assert!(smoke.shown("sidebar-overview"));
+    }
+    assert_eq!(tray.labels(), ["Open District AI", "Quit"]);
+}
+
+/// The tray icon this run registered on its private session bus, driven as
+/// a desktop's tray would: the item's `Activate`, and its menu's layout and
+/// clicks (`com.canonical.dbusmenu`).
+struct Tray {
+    bus: gio::DBusConnection,
+    name: String,
+}
+
+impl Tray {
+    /// The tray, once it has registered.
+    fn find(smoke: &Smoke) -> Self {
+        let bus = gio::bus_get_sync(gio::BusType::Session, gio::Cancellable::NONE)
+            .expect("the session bus");
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            let names = bus
+                .call_sync(
+                    Some("org.freedesktop.DBus"),
+                    "/org/freedesktop/DBus",
+                    "org.freedesktop.DBus",
+                    "ListNames",
+                    None,
+                    Some(glib::VariantTy::new("(as)").unwrap()),
+                    gio::DBusCallFlags::NONE,
+                    -1,
+                    gio::Cancellable::NONE,
+                )
+                .expect("the names on the bus");
+            let (names,): (Vec<String>,) = names.get().expect("a list of names");
+            if let Some(name) = names
+                .into_iter()
+                .find(|name| name.starts_with("org.kde.StatusNotifierItem-"))
+            {
+                return Self { bus, name };
+            }
+            assert!(Instant::now() < deadline, "the tray never registered");
+            smoke.pump();
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    }
+
+    fn call(
+        &self,
+        path: &str,
+        interface: &str,
+        method: &str,
+        args: glib::Variant,
+    ) -> glib::Variant {
+        self.bus
+            .call_sync(
+                Some(&self.name),
+                path,
+                interface,
+                method,
+                Some(&args),
+                None,
+                gio::DBusCallFlags::NONE,
+                5000,
+                gio::Cancellable::NONE,
+            )
+            .unwrap_or_else(|error| panic!("{interface}.{method}: {error}"))
+    }
+
+    /// A click on the icon.
+    fn activate(&self) {
+        self.call(
+            "/StatusNotifierItem",
+            "org.kde.StatusNotifierItem",
+            "Activate",
+            (0i32, 0i32).to_variant(),
+        );
+    }
+
+    /// The menu's items: each one's id and label.
+    fn items(&self) -> Vec<(i32, String)> {
+        let reply = self.call(
+            "/MenuBar",
+            "com.canonical.dbusmenu",
+            "GetLayout",
+            (0i32, -1i32, Vec::<String>::new()).to_variant(),
+        );
+        let children = reply.child_value(1).child_value(2);
+        (0..children.n_children())
+            .filter_map(|index| children.child_value(index).as_variant())
+            .map(|item| {
+                let id = item.child_value(0).get::<i32>().expect("an id");
+                let label = glib::VariantDict::new(Some(&item.child_value(1)))
+                    .lookup::<String>("label")
+                    .ok()
+                    .flatten()
+                    .unwrap_or_default();
+                (id, label)
+            })
+            .collect()
+    }
+
+    fn labels(&self) -> Vec<String> {
+        self.items().into_iter().map(|(_, label)| label).collect()
+    }
+
+    /// A click on the menu item labelled `label`.
+    fn click(&self, label: &str) {
+        let (id, _) = self
+            .items()
+            .into_iter()
+            .find(|(_, offered)| offered == label)
+            .unwrap_or_else(|| panic!("no {label} in the tray's menu"));
+        self.call(
+            "/MenuBar",
+            "com.canonical.dbusmenu",
+            "Event",
+            (id, "clicked", 0i32.to_variant(), 0u32).to_variant(),
+        );
+    }
+}
+
+/// Pumps the main loop until `done`, which another thread brings about
+/// (the tray, on the runtime), failing with `never` after ten seconds.
+fn pump_until(smoke: &Smoke, never: &str, done: impl Fn(&Smoke) -> bool) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !done(smoke) {
+        assert!(Instant::now() < deadline, "{never}");
+        smoke.pump();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+/// The tray's Quit: the app's own Quit, as the window's menu has it.
+fn tray_quit(smoke: &Smoke) {
+    let quit = smoke
+        .app
+        .lookup_action("quit")
+        .and_downcast::<gio::SimpleAction>()
+        .expect("the app's Quit");
+    let quitting = Rc::new(std::cell::Cell::new(false));
+    let seen = Rc::clone(&quitting);
+    quit.connect_activate(move |_, _| seen.set(true));
+    Tray::find(smoke).click("Quit");
+    pump_until(smoke, "the tray's Quit never reached the app", |_| {
+        quitting.get()
+    });
 }
 
 /// What the runner asks of the desktop, through the bridge, and the
@@ -6167,6 +6392,7 @@ fn main() {
     reopening(&smoke);
     desktop_calls(&smoke);
     signing_out(&smoke);
+    tray_quit(&smoke);
     quitting(&smoke);
     println!("smoke test passed");
 }

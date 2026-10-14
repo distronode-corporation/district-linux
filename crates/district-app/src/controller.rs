@@ -10,7 +10,8 @@ use district_core::{Effect, Event, Model, SessionState, SignedOut, SignedOutWhy}
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::app::{APP_ID, Parts};
-use crate::bridge::UiCommand;
+use crate::background::{Background, START_AT_LOGIN_ACTION, keeps_running};
+use crate::bridge::{UiBridge, UiCommand};
 use crate::effects::Effects;
 use crate::gtk::{self, gdk, gio, glib};
 use crate::guard;
@@ -47,9 +48,15 @@ pub(crate) struct Controller {
     /// closed for good is gone, so the next activation (a notification, the
     /// browser's answer) builds another.
     window: glib::WeakRef<DistrictWindow>,
-    /// Held while a sign-in waits for the browser, so the app is still
-    /// running, with the attempt in memory, when the browser answers.
+    /// Held while a session is open or being opened ([`keeps_running`]):
+    /// closing the window then leaves the app running, so calls still ring
+    /// here and a sign-in still finds the attempt in memory when the browser
+    /// answers. Quit quits whatever is held.
     hold: RefCell<Option<gio::ApplicationHoldGuard>>,
+    /// The tray, the Background portal and starting at login.
+    background: Rc<dyn Background>,
+    /// The bridge the tray is started with, until start-up takes it.
+    tray_bridge: RefCell<Option<UiBridge>>,
     brand: RefCell<Option<Brand>>,
     ringtone: RefCell<Option<gtk::MediaFile>>,
     device_name: String,
@@ -82,6 +89,8 @@ impl Controller {
             startup_notice: parts.startup_notice,
             signing_out: Cell::new(false),
             discard: RefCell::new(None),
+            background: parts.background,
+            tray_bridge: RefCell::new(Some(parts.tray_bridge)),
         })
     }
 
@@ -123,6 +132,10 @@ impl Controller {
         for effect in self.first.take() {
             self.effects.run(effect);
         }
+        if let Some(bridge) = self.tray_bridge.take() {
+            self.background.start(bridge);
+        }
+        self.render();
     }
 
     /// The desktop asked for the app: show the window.
@@ -216,11 +229,11 @@ impl Controller {
         let model = self.model.borrow();
         let session = model.session();
         let signing_in = matches!(session, SessionState::SigningIn(_));
-        if signing_in && self.hold.borrow().is_none() {
+        if !keeps_running(session) {
+            self.hold.replace(None);
+        } else if self.hold.borrow().is_none() {
             let hold = self.app.upgrade().map(|app| app.hold());
             self.hold.replace(hold);
-        } else if !signing_in {
-            self.hold.replace(None);
         }
         let was_signing_out = self
             .signing_out
@@ -264,8 +277,18 @@ impl Controller {
         window.present();
     }
 
-    fn create_window(&self, app: &adw::Application) -> DistrictWindow {
+    fn create_window(self: &Rc<Self>, app: &adw::Application) -> DistrictWindow {
         let window = DistrictWindow::new(app, self.sink.clone());
+        // Closed with a session open, the window goes and the app runs on.
+        let controller = Rc::downgrade(self);
+        window.connect_close_request(move |_| {
+            if let Some(controller) = controller.upgrade()
+                && controller.hold.borrow().is_some()
+            {
+                controller.background.backgrounded();
+            }
+            glib::Propagation::Proceed
+        });
         // Whether the user can be looking at the window, told to the model
         // each time it changes: a message arriving in the open thread is
         // marked read only then, and notified otherwise.
@@ -352,6 +375,11 @@ impl Controller {
                 self.effects.settle(effects, done);
             }
             UiCommand::Resumed => self.update(Event::Resumed),
+            UiCommand::Quit => {
+                if let Some(app) = app {
+                    app.activate_action("quit", None);
+                }
+            }
         }
     }
 
@@ -384,7 +412,18 @@ impl Controller {
                 }
             })
             .build();
-        app.add_action_entries([about, quit, open, button]);
+        let background = Rc::clone(&self.background);
+        let start_at_login = gio::ActionEntry::builder(START_AT_LOGIN_ACTION)
+            .parameter_type(Some(glib::VariantTy::BOOLEAN))
+            .state(self.background.starts_at_login().to_variant())
+            .activate(move |_: &adw::Application, action, parameter| {
+                if let Some(on) = parameter.and_then(glib::Variant::get::<bool>) {
+                    background.set_starts_at_login(on);
+                    action.set_state(&background.starts_at_login().to_variant());
+                }
+            })
+            .build();
+        app.add_action_entries([about, quit, open, button, start_at_login]);
         app.set_accels_for_action("app.quit", &["<Control>q"]);
         app.set_accels_for_action(&format!("win.{MICROPHONE_ACTION}"), &[MICROPHONE_SHORTCUT]);
         app.set_accels_for_action(&format!("win.{HANG_UP_ACTION}"), &[HANG_UP_SHORTCUT]);

@@ -23,6 +23,11 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   gettext domain (`po/`), and the Rust code calls an accessor generated for each key.
   `scripts/gen-l10n.py --check` holds the generated files to the catalog, and a test
   holds each template string to the catalog's English for its key.
+- Closing the window no longer quits while you are signed in: the app keeps running, so
+  a call handed to this computer still rings and messages are still notified, and the
+  ring or a notification brings the window back, as the launcher does. Quit (the
+  window's menu, Ctrl+Q, or the tray icon's menu) quits, and unregisters this computer
+  as before.
 - A call's sentiment `negative` reads "Friction", and a transfer status `success`
   "Transferred", as the portal labels them. Every other word is unchanged.
 
@@ -46,6 +51,14 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   that is not plain text (its first bytes decide, not its name), is empty or is larger
   is refused with the reason, which a screen reader announces. Nothing is sent until
   Add document.
+- A tray icon (a StatusNotifierItem, with Open District AI and Quit) while the app runs,
+  where the desktop has a tray: KDE Plasma, and GNOME with the AppIndicator extension.
+  On stock GNOME, which has none, the Flatpak shows in the shell's Background Apps list
+  with its status instead, and the launcher opens the window again. The Flatpak gains
+  `--talk-name=org.kde.StatusNotifierWatcher` for it.
+- "Start at login" on the account screen, off by default: the Flatpak asks the
+  Background portal, the .deb writes an XDG autostart entry, and either starts the app
+  with no window.
 
 ## [2.2.0] - 2026-10-13
 

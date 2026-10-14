@@ -1,5 +1,7 @@
 //! The application: its id, what it is built from, and the desktop's four
 //! entry points (start-up, activation, a link handed over, quitting).
+//! Closing the window does not quit while a session is open (see
+//! [`background`](crate::background)).
 
 use std::rc::Rc;
 use std::sync::Once;
@@ -8,7 +10,8 @@ use district_core::{CoreConfig, Event};
 
 use crate::adw;
 use crate::adw::prelude::*;
-use crate::bridge::UiCommand;
+use crate::background::Background;
+use crate::bridge::{UiBridge, UiCommand};
 use crate::controller::Controller;
 use crate::effects::Effects;
 use crate::gtk::gio;
@@ -36,6 +39,12 @@ pub struct Parts {
     /// A line shown over every screen from start-up, such as there being no
     /// keyring to keep the sign-in in.
     pub startup_notice: Option<String>,
+    /// What lets the app run on with its window closed: the tray, the
+    /// Background portal and starting at login.
+    pub background: Rc<dyn Background>,
+    /// Where the tray asks the main thread for the window, or to quit: a
+    /// bridge onto `commands`.
+    pub tray_bridge: UiBridge,
 }
 
 /// The application, built from `parts`. Run it with `run`, or, in a test,

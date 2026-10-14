@@ -51,10 +51,18 @@ finish-args:
   # at once instead of leaving its registration to lapse. It needs nothing else
   # from the system bus.
   - --system-talk-name=org.freedesktop.login1
+  # The tray icon (src/background.rs): the app keeps running, and calls keep
+  # ringing, with its window closed, and the icon registers with the desktop's
+  # StatusNotifierWatcher. Inside the sandbox it registers its unique bus name,
+  # not an org.kde.StatusNotifierItem-* name it could not own. Without a
+  # watcher (stock GNOME) there is no icon, and the app still runs: the
+  # launcher opens the window again, the window's menu quits, and the shell's
+  # Background Apps list shows it.
+  - --talk-name=org.kde.StatusNotifierWatcher
   # Nothing else. The keyring is the Secret portal (oo7 keeps an encrypted
   # file whose key the portal gives it), notifications, links, the file
-  # chooser and autostart are portals too, and the app owns its own D-Bus name
-  # without asking.
+  # chooser, running in the background and starting at login are portals too,
+  # and the app owns its own D-Bus name without asking.
 modules:
   - name: district-ai
     buildsystem: simple

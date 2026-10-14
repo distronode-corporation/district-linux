@@ -29,7 +29,9 @@ brings a District AI workspace to the Linux desktop:
   the desktop, with a reply written by AI when you ask for one.
 - **Contacts:** the workspace's contacts, and the callers it has blocked.
 - **Calls on the desktop,** in a build with calls, as the packages are: a call
-  handed to you rings on this computer, a dialler places your own without
+  handed to you rings on this computer, even with the window closed (the app
+  keeps running, with a tray icon where the desktop has a tray, until you
+  quit, and can start at login), a dialler places your own without
   picking up a phone, the call's live transcript shows under it, and meeting
   rooms are joined the same way, audio only.
 - **The rest of the workspace:** District HQ, analytics, the help desk, support
@@ -93,8 +95,9 @@ and FFmpeg (see [NOTICE](NOTICE)).
   flatpak install --user ./district-ai_2.2.0_x86_64.flatpak
   ```
 
-  It runs sandboxed, with the network, your display, the GPU, PulseAudio and
-  logind (to know when the computer goes to sleep) and nothing else. Your
+  It runs sandboxed, with the network, your display, the GPU, PulseAudio,
+  logind (to know when the computer goes to sleep) and the desktop's tray (for
+  its icon while the window is closed), and nothing else. Your
   keyring, notifications, links and files go through the desktop portals, so
   your desktop needs xdg-desktop-portal and a backend for it, as most do.
 
