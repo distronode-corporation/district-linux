@@ -20,7 +20,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, gdk, glib};
 use crate::l10n::{lang, text};
 use crate::pages::shared::{
-    Echo, ImagePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
+    Echo, FilePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
     icon_button, instant_in, now, plain_label,
 };
 use crate::pages::{Sends, escape, on_click};
@@ -216,7 +216,7 @@ mod imp {
         /// What the next change in the history's height does.
         pub scroll: Cell<Scroll>,
         /// The file chooser, so leaving the thread can close it.
-        pub picking: ImagePicker,
+        pub picking: FilePicker,
     }
 
     #[glib::object_subclass]

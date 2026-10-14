@@ -16,7 +16,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
-use crate::pages::shared::{Echo, ImagePicker, Pick, draw_line, draw_spinner, failure_text};
+use crate::pages::shared::{Echo, FilePicker, Pick, draw_line, draw_spinner, failure_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -90,7 +90,7 @@ mod imp {
         pub saving: Cell<bool>,
         pub logo_busy: Cell<bool>,
         /// The file chooser, so leaving the settings can close it.
-        pub picking: ImagePicker,
+        pub picking: FilePicker,
         /// The workspace whose settings show, as last drawn.
         pub workspace_id: RefCell<Option<String>>,
     }

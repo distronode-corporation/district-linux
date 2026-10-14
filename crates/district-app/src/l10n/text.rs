@@ -2426,6 +2426,51 @@ pub fn knowledge_documents_failed(l: Locale) -> &'static str {
     }
 }
 
+/// `knowledge.file_empty`
+#[must_use]
+pub fn knowledge_file_empty(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "This file is empty.",
+        Locale::FrCa => "This file is empty.",
+    }
+}
+
+/// `knowledge.file_no_text`
+#[must_use]
+pub fn knowledge_file_no_text(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "This file has no text to add.",
+        Locale::FrCa => "This file has no text to add.",
+    }
+}
+
+/// `knowledge.file_not_text`
+#[must_use]
+pub fn knowledge_file_not_text(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead.",
+        Locale::FrCa => "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead.",
+    }
+}
+
+/// `knowledge.file_too_large`
+#[must_use]
+pub fn knowledge_file_too_large(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The file must be 1 MB or smaller.",
+        Locale::FrCa => "The file must be 1 MB or smaller.",
+    }
+}
+
+/// `knowledge.file_unreadable`
+#[must_use]
+pub fn knowledge_file_unreadable(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "This file could not be read.",
+        Locale::FrCa => "This file could not be read.",
+    }
+}
+
 /// `knowledge.pieces`
 #[must_use]
 pub fn knowledge_pieces(l: Locale, count: i64) -> String {
@@ -2444,6 +2489,15 @@ pub fn knowledge_pieces(l: Locale, count: i64) -> String {
                 format!("{count} pieces")
             }
         }
+    }
+}
+
+/// `knowledge.text_files_filter`
+#[must_use]
+pub fn knowledge_text_files_filter(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Text files",
+        Locale::FrCa => "Text files",
     }
 }
 
@@ -2480,6 +2534,24 @@ pub fn knowledge_view_documents_text(l: Locale) -> &'static str {
     match l {
         Locale::En => "The document's text",
         Locale::FrCa => "The document's text",
+    }
+}
+
+/// `knowledge_view.file_hint`
+#[must_use]
+pub fn knowledge_view_file_hint(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.",
+        Locale::FrCa => "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.",
+    }
+}
+
+/// `knowledge_view.read_text_file`
+#[must_use]
+pub fn knowledge_view_read_text_file(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Read a text file",
+        Locale::FrCa => "Read a text file",
     }
 }
 

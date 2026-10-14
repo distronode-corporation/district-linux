@@ -40,6 +40,12 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   transcript the service keeps. It folds away, keeps the newest line in view unless you
   have scrolled up to read, and a screen reader hears each line once, when it is final.
   2.2.0 asked for the transcript during a call and did not show it; this version does.
+- Knowledge: "Read a text file" fills a new document's title and text from a plain text
+  file (.txt or .md, up to 1 MB) picked in the desktop's file chooser, as District AI
+  for Windows does. The file's name becomes the title when the title is empty. A file
+  that is not plain text (its first bytes decide, not its name), is empty or is larger
+  is refused with the reason, which a screen reader announces. Nothing is sent until
+  Add document.
 
 ## [2.2.0] - 2026-10-13
 

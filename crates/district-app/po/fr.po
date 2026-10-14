@@ -1507,6 +1507,36 @@ msgctxt "knowledge.documents_failed"
 msgid "Could not load the documents"
 msgstr ""
 
+#. screen: knowledge; ctx: error; tier: T2
+#. Why a picked file is refused when it holds nothing.
+msgctxt "knowledge.file_empty"
+msgid "This file is empty."
+msgstr ""
+
+#. screen: knowledge; ctx: error; tier: T2
+#. Why a picked file is refused when it holds no words.
+msgctxt "knowledge.file_no_text"
+msgid "This file has no text to add."
+msgstr ""
+
+#. screen: knowledge; ctx: error; tier: T2
+#. Why a picked file is refused when it is not plain text.
+msgctxt "knowledge.file_not_text"
+msgid "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead."
+msgstr ""
+
+#. screen: knowledge; ctx: error; tier: T2
+#. Why a picked file is refused for its size.
+msgctxt "knowledge.file_too_large"
+msgid "The file must be 1 MB or smaller."
+msgstr ""
+
+#. screen: knowledge; ctx: error; tier: T2
+#. Why a picked file is refused when the desktop could not read it.
+msgctxt "knowledge.file_unreadable"
+msgid "This file could not be read."
+msgstr ""
+
 #. screen: knowledge; ctx: label; tier: T3
 #. How many pieces a document was cut into for answers.
 msgctxt "knowledge.pieces"
@@ -1515,6 +1545,12 @@ msgid_plural "{count} pieces"
 msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
+
+#. screen: file_chooser; ctx: label; tier: T3
+#. The file chooser's filter for plain text files (.txt and .md).
+msgctxt "knowledge.text_files_filter"
+msgid "Text files"
+msgstr ""
 
 #. screen: knowledge_view; ctx: title; tier: T3
 #. In knowledge-view.ui.
@@ -1538,6 +1574,18 @@ msgstr ""
 #. In knowledge-view.ui.
 msgctxt "knowledge_view.documents_text"
 msgid "The document's text"
+msgstr ""
+
+#. screen: knowledge_view; ctx: body; tier: T3
+#. In knowledge-view.ui. What a file fills, what it may be, and that nothing is sent yet.
+msgctxt "knowledge_view.file_hint"
+msgid "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document."
+msgstr ""
+
+#. screen: knowledge_view; ctx: button; tier: T3
+#. In knowledge-view.ui. The button that fills the form from a text file; also the file chooser's title.
+msgctxt "knowledge_view.read_text_file"
+msgid "Read a text file"
 msgstr ""
 
 #. screen: knowledge_view; ctx: label; tier: T3

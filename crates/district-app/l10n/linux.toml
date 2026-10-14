@@ -1544,6 +1544,41 @@ ctx = "error"
 screen = "knowledge"
 tier = "T2"
 
+[knowledge.file_empty]
+en = "This file is empty."
+ctx = "error"
+screen = "knowledge"
+tier = "T2"
+note = "Why a picked file is refused when it holds nothing."
+
+[knowledge.file_no_text]
+en = "This file has no text to add."
+ctx = "error"
+screen = "knowledge"
+tier = "T2"
+note = "Why a picked file is refused when it holds no words."
+
+[knowledge.file_not_text]
+en = "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead."
+ctx = "error"
+screen = "knowledge"
+tier = "T2"
+note = "Why a picked file is refused when it is not plain text."
+
+[knowledge.file_too_large]
+en = "The file must be 1 MB or smaller."
+ctx = "error"
+screen = "knowledge"
+tier = "T2"
+note = "Why a picked file is refused for its size."
+
+[knowledge.file_unreadable]
+en = "This file could not be read."
+ctx = "error"
+screen = "knowledge"
+tier = "T2"
+note = "Why a picked file is refused when the desktop could not read it."
+
 [knowledge.pieces]
 en.one = "{count} piece"
 en.other = "{count} pieces"
@@ -1551,6 +1586,13 @@ ctx = "label"
 screen = "knowledge"
 args = { count = "int" }
 note = "How many pieces a document was cut into for answers."
+
+[knowledge.text_files_filter]
+en = "Text files"
+ctx = "label"
+screen = "file_chooser"
+tier = "T3"
+note = "The file chooser's filter for plain text files (.txt and .md)."
 
 [knowledge_view.add_document]
 en = "Add a document"
@@ -1575,6 +1617,20 @@ en = "The document's text"
 ctx = "a11y"
 screen = "knowledge_view"
 note = "In knowledge-view.ui."
+
+[knowledge_view.file_hint]
+en = "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document."
+ctx = "body"
+screen = "knowledge_view"
+tier = "T3"
+note = "In knowledge-view.ui. What a file fills, what it may be, and that nothing is sent yet."
+
+[knowledge_view.read_text_file]
+en = "Read a text file"
+ctx = "button"
+screen = "knowledge_view"
+tier = "T3"
+note = "In knowledge-view.ui. The button that fills the form from a text file; also the file chooser's title."
 
 [knowledge_view.title]
 en = "Title"

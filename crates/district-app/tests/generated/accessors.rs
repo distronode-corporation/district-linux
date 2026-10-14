@@ -558,6 +558,16 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::knowledge_delete_document(Locale::FrCa), "Delete this document");
     assert_eq!(text::knowledge_documents_failed(Locale::En), "Could not load the documents");
     assert_eq!(text::knowledge_documents_failed(Locale::FrCa), "Could not load the documents");
+    assert_eq!(text::knowledge_file_empty(Locale::En), "This file is empty.");
+    assert_eq!(text::knowledge_file_empty(Locale::FrCa), "This file is empty.");
+    assert_eq!(text::knowledge_file_no_text(Locale::En), "This file has no text to add.");
+    assert_eq!(text::knowledge_file_no_text(Locale::FrCa), "This file has no text to add.");
+    assert_eq!(text::knowledge_file_not_text(Locale::En), "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead.");
+    assert_eq!(text::knowledge_file_not_text(Locale::FrCa), "Only a plain text file (.txt or .md) can be read in. Copy the text of another kind of document into the box instead.");
+    assert_eq!(text::knowledge_file_too_large(Locale::En), "The file must be 1 MB or smaller.");
+    assert_eq!(text::knowledge_file_too_large(Locale::FrCa), "The file must be 1 MB or smaller.");
+    assert_eq!(text::knowledge_file_unreadable(Locale::En), "This file could not be read.");
+    assert_eq!(text::knowledge_file_unreadable(Locale::FrCa), "This file could not be read.");
     assert_eq!(text::knowledge_pieces(Locale::En, 1), "1 piece");
     assert_eq!(text::knowledge_pieces(Locale::FrCa, 1), "1 piece");
     assert_eq!(text::knowledge_pieces(Locale::En, 7), "7 pieces");
@@ -566,6 +576,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::knowledge_pieces(Locale::FrCa, 0), "0 pieces");
     assert_eq!(text::knowledge_pieces(Locale::En, 1000000), "1000000 pieces");
     assert_eq!(text::knowledge_pieces(Locale::FrCa, 1000000), "1000000 pieces");
+    assert_eq!(text::knowledge_text_files_filter(Locale::En), "Text files");
+    assert_eq!(text::knowledge_text_files_filter(Locale::FrCa), "Text files");
     assert_eq!(text::knowledge_view_add_document(Locale::En), "Add a document");
     assert_eq!(text::knowledge_view_add_document(Locale::FrCa), "Add a document");
     assert_eq!(text::knowledge_view_add_document_button(Locale::En), "Add document");
@@ -574,6 +586,10 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::knowledge_view_documents(Locale::FrCa), "Documents");
     assert_eq!(text::knowledge_view_documents_text(Locale::En), "The document's text");
     assert_eq!(text::knowledge_view_documents_text(Locale::FrCa), "The document's text");
+    assert_eq!(text::knowledge_view_file_hint(Locale::En), "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.");
+    assert_eq!(text::knowledge_view_file_hint(Locale::FrCa), "A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.");
+    assert_eq!(text::knowledge_view_read_text_file(Locale::En), "Read a text file");
+    assert_eq!(text::knowledge_view_read_text_file(Locale::FrCa), "Read a text file");
     assert_eq!(text::knowledge_view_title(Locale::En), "Title");
     assert_eq!(text::knowledge_view_title(Locale::FrCa), "Title");
     assert_eq!(text::knowledge_view_where_answers_come_from(Locale::En), "Where answers come from");
