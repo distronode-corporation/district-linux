@@ -85,7 +85,11 @@
                   </object>
                 </child>
                 <child>
+                  <!-- Sized by the tab shown only: a tab out of sight (the
+                       carrier tab once shown wide) never holds the window
+                       wider than the narrow layout. -->
                   <object class="GtkStack" id="tab_stack">
+                    <property name="hhomogeneous">False</property>
                     <property name="vhomogeneous">False</property>
                     <child>
                       <object class="GtkStackPage">
