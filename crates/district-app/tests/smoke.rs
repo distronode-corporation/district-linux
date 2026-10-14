@@ -4214,6 +4214,298 @@ fn scheduling_hours(smoke: &Smoke) {
     smoke.forget();
 }
 
+/// The booking pages' calendars: reading, failing with Try again, and read
+/// with two accounts (one whose calendars fail alone) and Zoom; Google
+/// connected through the hand-off (the sign-in refused, then the consent
+/// page opened and Refresh offered); one account's calendars read through a
+/// failure, chosen and saved; a CalDAV account refused by its form, failing
+/// and connected; a disconnect declined, failing and confirmed; and a
+/// scheduler that can connect nothing.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn scheduling_calendar(smoke: &Smoke) {
+    use district_model::{
+        SchedulingAdminData as Data, SchedulingAdminRequest as Request, SchedulingCaldavConnection,
+        SchedulingCalendarConnection, SchedulingCalendarSelection, SchedulingCalendarStatus,
+        SchedulingOk, SchedulingSecret, SchedulingZoomStatus,
+    };
+    let connection =
+        |id: &str, provider: &str, is_destination: bool| SchedulingCalendarConnection {
+            id: id.to_owned(),
+            provider: provider.to_owned(),
+            account_email: format!("{id}@example.com"),
+            is_destination,
+            check_conflicts: true,
+        };
+    let status = |connections: Vec<SchedulingCalendarConnection>| {
+        Data::CalendarStatus(SchedulingCalendarStatus {
+            connected: !connections.is_empty(),
+            configured: true,
+            connections,
+            unconfigured_providers: Some(Some(vec!["microsoft".to_owned()])),
+            ..SchedulingCalendarStatus::default()
+        })
+    };
+    let calendar =
+        |id: &str, name: &str, writable: Option<bool>, checked: bool| SchedulingCalendarSelection {
+            id: id.to_owned(),
+            name: name.to_owned(),
+            writable,
+            check_conflicts: Some(checked),
+            is_destination: Some(id == "work"),
+            ..SchedulingCalendarSelection::default()
+        };
+    let calendars = move || {
+        Data::Calendars(vec![
+            calendar("work", "Work", None, true),
+            calendar("holidays", "Holidays", Some(false), false),
+            calendar("family", "Family", Some(true), false),
+        ])
+    };
+    let read = move |request: &Request| match request {
+        Request::CalendarStatus => Ok(status(vec![
+            connection("ada", "google", true),
+            connection("bo", "caldav", false),
+        ])),
+        Request::ZoomStatus => Ok(Data::ZoomStatus(SchedulingZoomStatus {
+            configured: true,
+            connected: false,
+        })),
+        Request::Calendars { id, .. } if id == "bo" => Err(server_error()),
+        Request::Calendars { .. } => Ok(calendars()),
+        other => unreachable!("{other:?}"),
+    };
+
+    // Reading, failing with Try again, then read.
+    smoke.activate("scheduling-section-calendar");
+    assert!(smoke.shown("calendar-loading"));
+    scheduling_reads(smoke, |_| Err(server_error()));
+    assert!(smoke.shown("calendar-failed") && smoke.shown("calendar-retry"));
+    smoke.click("calendar-retry");
+    scheduling_reads(smoke, read);
+    assert_eq!(smoke.count("calendar-card"), 2);
+    assert!(smoke.shows_text("Google Calendar") && smoke.shows_text("CalDAV"));
+    assert!(smoke.shows_text("ada@example.com"));
+    assert!(smoke.shows_text("Work"), "the calendars read, by name");
+    assert!(
+        smoke.shows_text("Checked") && smoke.shows_text("No calendar in this account"),
+        "the account whose calendars could not be read"
+    );
+    assert!(smoke.shows_text("Not connected"), "Zoom");
+    assert!(
+        smoke.shows_text("Another account can be connected to check it for conflicts as well.")
+    );
+    assert_eq!(
+        smoke.count("calendar-connect"),
+        1,
+        "Microsoft is not set up"
+    );
+    assert!(smoke.shows_text("Connect Google Calendar"));
+    assert!(smoke.shown("calendar-connect-note") && !smoke.shown("calendar-refresh"));
+    smoke.shot("67-booking-calendars");
+
+    // Google: the sign-in refused, then the consent page opened in the
+    // browser, which never comes back to the app: Refresh reads again.
+    smoke.click("calendar-connect");
+    assert!(
+        !smoke.sensitive("calendar-connect"),
+        "one sign-in at a time"
+    );
+    let Effect::SchedulingSignIn { ticket, next, .. } = smoke.take("SchedulingSignIn") else {
+        unreachable!()
+    };
+    assert!(next.starts_with("/v1/calendar/connect?provider=google&return_to="));
+    smoke.answer(Event::SchedulingSignInReady {
+        ticket,
+        result: Err(ApiError::Conflict(ErrorDetail::default())),
+    });
+    assert!(
+        smoke.shows_text("Scheduling is still being set up for this workspace. Try again shortly.")
+    );
+    assert!(!smoke.pending("OpenOneTimeUrl"));
+    smoke.click("calendar-connect-dismiss");
+    assert!(!smoke.shown("calendar-connect-failure"));
+    smoke.click("calendar-connect");
+    smoke.reply("SchedulingSignIn", |ticket| Event::SchedulingSignInReady {
+        ticket,
+        result: Ok(SchedulingSecret::new(
+            "https://scheduler.example.com/sso/one-time",
+        )),
+    });
+    let Effect::OpenOneTimeUrl { url } = smoke.take("OpenOneTimeUrl") else {
+        unreachable!()
+    };
+    assert_eq!(url.expose(), "https://scheduler.example.com/sso/one-time");
+    assert!(smoke.sensitive("calendar-connect"));
+    assert!(smoke.shown("calendar-refresh"));
+    smoke.shot("67-booking-calendars-hand-off");
+    smoke.click("calendar-refresh");
+    assert!(smoke.shown("calendar-loading"));
+    scheduling_reads(smoke, read);
+    assert!(!smoke.shown("calendar-refresh"));
+
+    // One account's calendars: a failed read tried again, a switch and a
+    // destination chosen, saved whole, then the account receiving bookings.
+    smoke.click("calendar-choose");
+    assert!(smoke.shown("calendars-dialog") && smoke.shown("calendars-loading"));
+    assert!(
+        !smoke.sensitive("calendars-confirm"),
+        "nothing read to save"
+    );
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Calendars { ref id, .. } if id == "ada"));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("calendars-failed"));
+    smoke.click("calendars-retry");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, Ok(calendars()));
+    assert_eq!(smoke.count("calendars-conflict"), 3);
+    assert_eq!(
+        smoke.count("calendars-destination"),
+        2,
+        "not a read-only one"
+    );
+    smoke
+        .nth::<adw::SwitchRow>("calendars-conflict", 2)
+        .set_active(true);
+    smoke.pump();
+    smoke
+        .nth::<gtk::CheckButton>("calendars-destination", 1)
+        .set_active(true);
+    smoke.pump();
+    smoke.shot("67-booking-calendars-picker");
+    smoke.click("calendars-confirm");
+    assert!(!smoke.sensitive("calendars-confirm"), "one save at a time");
+    let (ticket, request) = admin_request(smoke);
+    let Request::SetCalendars { id, calendars, .. } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(id, "ada");
+    let family = calendars.iter().find(|c| c.id == "family").expect("whole");
+    assert_eq!(
+        (family.check_conflicts, family.is_destination),
+        (Some(true), Some(true))
+    );
+    assert_eq!(calendars.len(), 3, "saved whole");
+    admin_answer(smoke, ticket, Ok(Data::Done(SchedulingOk { ok: true })));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::SetDestination { ref id, .. } if id == "ada"));
+    admin_answer(smoke, ticket, Ok(Data::Done(SchedulingOk { ok: true })));
+    assert!(smoke.shows_text("Calendars saved"));
+    scheduling_reads(smoke, read);
+    smoke.click("calendars-cancel");
+    assert!(!smoke.shown("calendars-dialog"));
+
+    // CalDAV: refused by the form, then sent, failing, and connected.
+    smoke.click("calendar-caldav");
+    assert!(smoke.shown("caldav-dialog"));
+    assert!(!smoke.shown("caldav-server"), "iCloud needs no address");
+    smoke.click("caldav-confirm");
+    assert!(smoke.shows_text("Enter the username."));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    choose(smoke, &combo(smoke, "caldav-preset", 0), "Other server URL");
+    assert!(smoke.shown("caldav-server"));
+    smoke.type_into("caldav-server", "http://dav.example.com");
+    smoke.type_into("caldav-username", "ada");
+    smoke.type_into("caldav-password", "app-pass-1");
+    smoke.click("caldav-confirm");
+    assert!(smoke.shows_part("must start with https://"));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.type_into("caldav-server", "https://dav.example.com/dav");
+    smoke
+        .nth::<adw::PasswordEntryRow>("caldav-password", 0)
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    assert!(!smoke.sensitive("caldav-confirm"), "one connect at a time");
+    let (ticket, request) = admin_request(smoke);
+    let Request::ConnectCaldav {
+        preset,
+        server_url,
+        username,
+        app_password,
+    } = request
+    else {
+        panic!("{request:?}")
+    };
+    assert_eq!(preset, None);
+    assert_eq!(server_url.as_deref(), Some("https://dav.example.com/dav"));
+    assert_eq!(username, "ada");
+    assert_eq!(app_password.expose(), "app-pass-1");
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("caldav-outcome"));
+    smoke.shot("67-booking-calendars-caldav");
+    smoke.click("caldav-confirm");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::CaldavConnected(SchedulingCaldavConnection {
+            connected: true,
+            account_email: "dana@example.com".to_owned(),
+        })),
+    );
+    assert!(smoke.shows_text("Calendar connected: dana@example.com"));
+    assert_eq!(
+        smoke
+            .nth::<adw::PasswordEntryRow>("caldav-password", 0)
+            .text(),
+        "",
+        "the password goes once it is used"
+    );
+    assert_eq!(
+        chosen(&combo(smoke, "caldav-preset", 0)),
+        "Other server URL"
+    );
+    scheduling_reads(smoke, read);
+    smoke.click("caldav-cancel");
+    assert!(!smoke.shown("caldav-dialog"));
+
+    // Disconnect: asked once, declined; then failing; then done, which
+    // leaves nothing receiving bookings.
+    smoke.click("calendar-disconnect");
+    assert_eq!(questions(smoke), 1);
+    assert!(smoke.shows_text("Disconnect ada@example.com?"));
+    smoke.respond("cancel");
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.click("calendar-disconnect");
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::DeleteConnection { ref id, .. } if id == "ada"));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("calendar-disconnect-outcome"));
+    smoke.click("calendar-disconnect-dismiss");
+    assert!(!smoke.shown("calendar-disconnect-outcome"));
+    smoke.click("calendar-disconnect");
+    smoke.respond("confirm");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, Ok(Data::Done(SchedulingOk { ok: true })));
+    scheduling_reads(smoke, |request| match request {
+        Request::CalendarStatus => Ok(status(vec![connection("bo", "caldav", false)])),
+        other => read(other),
+    });
+    assert_eq!(smoke.count("calendar-card"), 1);
+    assert!(smoke.shows_text(
+        "No calendar receives new bookings now. Connect one, or choose a calendar in another account."
+    ));
+    smoke.click("calendar-disconnect-dismiss");
+    assert!(!smoke.shown("calendar-disconnect-outcome"));
+
+    // A scheduler that can connect nothing says so once; CalDAV stays.
+    smoke.click("refresh_button");
+    scheduling_reads(smoke, |request| match request {
+        Request::CalendarStatus => Ok(Data::CalendarStatus(SchedulingCalendarStatus::default())),
+        _ => Err(server_error()),
+    });
+    assert_eq!(smoke.count("calendar-card"), 0);
+    assert!(smoke.shows_text("Calendar connections are not set up on this scheduler yet."));
+    assert!(!smoke.shown("calendar-connect") && !smoke.shown("calendar-connect-note"));
+    assert!(!smoke.shown("calendar-zoom"), "Zoom could not be read");
+    assert!(smoke.shown("calendar-caldav"));
+    smoke.forget();
+    smoke.click("back_button");
+    assert!(smoke.shown("scheduling-section-calendar"));
+    smoke.forget();
+}
+
 /// The desktop hands the app `link`, as it does the browser's answer.
 fn hand_over(smoke: &Smoke, link: &str) {
     smoke.app.open(&[gio::File::for_uri(link)], "");
@@ -7890,6 +8182,7 @@ fn main() {
     workflows_screen(&smoke);
     scheduling_screen(&smoke);
     scheduling_bookings(&smoke);
+    scheduling_calendar(&smoke);
     desk_screens(&smoke);
     support_screens(&smoke);
     rooms_screen(&smoke);
