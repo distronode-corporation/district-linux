@@ -8,6 +8,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
+use district_core::l10n::WireCategory;
 use district_core::{
     Event, MESSAGING_CHANNELS, MessagingAccounts, MessagingAction, MessagingEvent,
     MessagingSection, SignedIn, channel_label, credential_source_label, format_phone_number,
@@ -25,7 +26,9 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::messaging_form::{MessagingFormDialog, PROVIDERS};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed};
-use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text, humanize, icon_button};
+use crate::pages::shared::{
+    Ask, Asking, draw_spinner, failure_text, humanize, icon_button, wire_text,
+};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -68,7 +71,7 @@ pub(crate) fn source_words(stored: &str) -> String {
         _ => None,
     };
     source.map_or_else(
-        || humanize(stored),
+        || wire_text(WireCategory::MessagingCredentialSource, stored),
         |source| credential_source_label(source).to_owned(),
     )
 }

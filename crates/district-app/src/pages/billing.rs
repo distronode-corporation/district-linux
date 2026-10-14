@@ -6,6 +6,8 @@
 
 use std::cell::{OnceCell, RefCell};
 
+use district_core::l10n::WireCategory;
+use district_core::l10n::format::{PluralCategory, plural_category};
 use district_core::{
     AccountSection, BillingEvent, BillingScreen, Capabilities, Event, PlanCard, PlanStatus,
     Renewal, format_amount, format_cents, invoice_amount, meter_fraction, minutes_used,
@@ -17,8 +19,8 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::l10n::{core_text, lang, text};
-use crate::pages::shared::{clear_list, draw_line, failure_text, humanize, unix_date};
+use crate::l10n::{Locale, core_text, lang, text};
+use crate::pages::shared::{clear_list, draw_line, failure_text, unix_date, wire_text};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -41,11 +43,11 @@ pub(crate) fn minutes_text(used: Option<f64>, included: Option<i64>) -> String {
             text::billing_used_of_included(lang(), &format_amount(used), &minutes(included))
         }
         (Some(used), None) => {
-            let used = format_amount(used);
-            if used == "1" {
-                text::billing_used_minute(lang(), &used)
+            let shown = format_amount(used);
+            if takes_singular(used, &shown) {
+                text::billing_used_minute(lang(), &shown)
             } else {
-                text::billing_used_minutes(lang(), &used)
+                text::billing_used_minutes(lang(), &shown)
             }
         }
         (None, Some(included)) => text::billing_not_recorded_included(
@@ -54,6 +56,20 @@ pub(crate) fn minutes_text(used: Option<f64>, included: Option<i64>) -> String {
             included,
         ),
         (None, None) => core_text::analytics_not_recorded(lang()).to_owned(),
+    }
+}
+
+/// Whether `used` minutes, written `shown`, take the singular "minute": in
+/// English only when they read exactly `1`; in French, by the plural rule the
+/// catalogs follow, whenever the amount shown is below 2 (`0`, `1`, `1,5`).
+fn takes_singular(used: f64, shown: &str) -> bool {
+    match lang() {
+        Locale::En => shown == "1",
+        // The amount as shown, two decimals at most, by its whole part.
+        Locale::FrCa => {
+            let whole = ((used * 100.0).round() / 100.0).trunc() as i64;
+            plural_category(Locale::FrCa, whole) == PluralCategory::One
+        }
     }
 }
 
@@ -83,7 +99,10 @@ pub(crate) fn subscription_line(subscription: &BillingSubscription) -> String {
         format!("{} {off}", discount.coupon_name).trim().to_owned()
     });
     let parts = [
-        Some(humanize(&subscription.status)),
+        Some(wire_text(
+            WireCategory::BillingSubscriptionStatus,
+            &subscription.status,
+        )),
         subscription.amount.map(format_cents),
         Renewal::of(subscription).and_then(renewal_text),
         subscription
@@ -369,7 +388,10 @@ impl BillingPage {
             let row = adw::ActionRow::builder()
                 .use_markup(false)
                 .title(unix_date(invoice.created).unwrap_or_default())
-                .subtitle(humanize(invoice.status.as_deref().unwrap_or_default()))
+                .subtitle(wire_text(
+                    WireCategory::BillingInvoiceStatus,
+                    invoice.status.as_deref().unwrap_or_default(),
+                ))
                 .name("invoice-row")
                 .build();
             row.add_suffix(
@@ -450,7 +472,13 @@ mod tests {
         let account: AccountBillingResponse = fixture("district-billing.json");
         let mut subscription = account.subscriptions[0].clone();
         let line = subscription_line(&subscription);
-        assert!(line.starts_with(&humanize(&subscription.status)), "{line}");
+        assert!(
+            line.starts_with(&wire_text(
+                WireCategory::BillingSubscriptionStatus,
+                &subscription.status
+            )),
+            "{line}"
+        );
         subscription.current_period_end = Some(1_790_000_000);
         subscription.cancel_at_period_end = true;
         subscription.discount = Some(BillingDiscount {

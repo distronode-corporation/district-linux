@@ -16,7 +16,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::calls::{call_icon, call_title};
 use crate::pages::report::{self, Offer};
 use crate::pages::shared::{
-    add_value_row, clear_group, draw_line, failure_text, humanize, long_time, now, wire_text,
+    add_value_row, clear_group, draw_line, failure_text, long_time, now, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -92,7 +92,7 @@ pub(crate) fn facts(call: &CallSummary) -> Vec<(&'static str, String)> {
         text::common_line_type(lang()),
         intel
             .and_then(|intel| intel.line_type.as_deref())
-            .map(humanize),
+            .map(|line| wire_text(WireCategory::LineType, line)),
     );
     add(
         text::common_carrier(lang()),

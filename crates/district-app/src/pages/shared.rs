@@ -10,6 +10,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use district_core::l10n::format::{self, CivilDateTime, DateStyle};
 use district_core::l10n::{WireCategory, wire_label};
 use district_core::{Event, FailureText, Locale, MAX_ATTACHMENT_BYTES, Paging, PickedAttachment};
 
@@ -192,9 +193,34 @@ fn locale_clock_24h() -> bool {
         .is_none_or(|written| written.contains("15"))
 }
 
+/// `when` on its wall clock, as the core's French formats take it.
+fn civil(when: &glib::DateTime) -> CivilDateTime {
+    let part = |value: i32| u8::try_from(value).unwrap_or_default();
+    CivilDateTime {
+        year: when.year(),
+        month: part(when.month()),
+        day: part(when.day_of_month()),
+        hour: part(when.hour()),
+        minute: part(when.minute()),
+    }
+}
+
+/// `text`, a French date the core wrote with the year last, without the year
+/// when it is `year`: `1er août 2026` reads `1er août`.
+fn without_year(text: String, year: i32) -> String {
+    match text.strip_suffix(&format!(" {year}")) {
+        Some(short) => short.to_owned(),
+        None => text,
+    }
+}
+
 /// The time of day of `when` on a 24-hour clock (`14:30`) or a 12-hour one
-/// (`2:30 PM`, in the locale's words for the half of the day).
+/// (`2:30 PM`, in the locale's words for the half of the day). French reads
+/// the service's 24-hour clock whatever the desktop's: `15 h 04`, `9 h`.
 pub(crate) fn clock_time(when: &glib::DateTime, h24: bool) -> String {
+    if lang() == Locale::FrCa {
+        return format::time(Locale::FrCa, civil(when), false);
+    }
     let half = if h24 {
         String::new()
     } else {
@@ -222,15 +248,23 @@ pub(crate) fn time_of_day(when: &glib::DateTime) -> String {
 }
 
 /// The date of `when` in full, with the locale's name for the month:
-/// `15 August 2026`.
+/// `15 August 2026`. French is the core's, not the C library's: `1er août
+/// 2026`.
 pub(crate) fn long_date(when: &glib::DateTime) -> String {
+    if lang() == Locale::FrCa {
+        return format::date(Locale::FrCa, civil(when), DateStyle::Long);
+    }
     when.format("%-d %B %Y")
         .map(String::from)
         .unwrap_or_default()
 }
 
-/// `when` in full: `15 August 2026, 14:30`.
+/// `when` in full: `15 August 2026, 14:30`, and in French `15 août 2026
+/// à 14 h 30`.
 pub(crate) fn long_local(when: &glib::DateTime) -> String {
+    if lang() == Locale::FrCa {
+        return format::date_time(Locale::FrCa, civil(when), DateStyle::Long, false);
+    }
     format!("{}, {}", long_date(when), time_of_day(when))
 }
 
@@ -249,6 +283,14 @@ pub(crate) fn short_time(iso: &str, now: &glib::DateTime) -> Option<String> {
     let when = instant_in(iso, now)?;
     if same_day(&when, now) {
         return Some(time_of_day(&when));
+    }
+    if lang() == Locale::FrCa {
+        let date = format::date(Locale::FrCa, civil(&when), DateStyle::Medium);
+        return Some(if when.year() == now.year() {
+            without_year(date, when.year())
+        } else {
+            date
+        });
     }
     let format = if when.year() == now.year() {
         "%-d %b"
@@ -290,6 +332,14 @@ pub(crate) fn day_heading(when: &glib::DateTime, now: &glib::DateTime) -> String
     {
         return text::shared_yesterday(lang()).to_owned();
     }
+    if lang() == Locale::FrCa {
+        let date = format::date(Locale::FrCa, civil(when), DateStyle::Full);
+        return if when.year() == now.year() {
+            without_year(date, when.year())
+        } else {
+            date
+        };
+    }
     let format = if when.year() == now.year() {
         "%A %-d %B"
     } else {
@@ -312,6 +362,10 @@ pub(crate) fn day_heading(when: &glib::DateTime, now: &glib::DateTime) -> String
 /// knows reads the same either way.)
 pub(crate) fn wire_text(category: WireCategory, raw: &str) -> String {
     let locale = lang();
+    // Nothing stored reads as nothing, in French too, not as "Other".
+    if raw.trim().is_empty() {
+        return String::new();
+    }
     let portal = PORTAL_LABELS
         .iter()
         .any(|(known, value)| *known == category && raw.trim().eq_ignore_ascii_case(value));
@@ -1044,6 +1098,50 @@ mod tests {
         assert!(now_is_readable());
     }
 
+    /// French dates and times are the core's (`district_l10n::format`), not
+    /// the C library's under a French locale, which writes `1 août` and
+    /// `15:04`.
+    #[test]
+    fn french_reads_the_cores_dates_and_clock() {
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            let now = utc("2026-08-15T18:00:00Z");
+            let afternoon = utc("2026-08-15T15:04:00Z");
+            assert_eq!(clock_time(&afternoon, false), "15 h 04");
+            assert_eq!(time_of_day(&utc("2026-08-15T09:00:00Z")), "9 h");
+            assert_eq!(
+                long_date(&utc("2026-08-01T12:00:00Z")),
+                "1er ao\u{fb}t 2026"
+            );
+            assert_eq!(long_local(&afternoon), "15 ao\u{fb}t 2026 \u{e0} 15 h 04");
+            assert_eq!(
+                short_time("2026-08-15T14:20:00.000Z", &now).as_deref(),
+                Some("14 h 20")
+            );
+            assert_eq!(
+                short_time("2026-08-01T09:00:00.000Z", &now).as_deref(),
+                Some("1er ao\u{fb}t")
+            );
+            assert_eq!(
+                short_time("2025-09-12T09:00:00.000Z", &now).as_deref(),
+                Some("12 sept. 2025")
+            );
+            assert_eq!(
+                day_heading(&utc("2026-08-03T12:00:00Z"), &now),
+                "lundi 3 ao\u{fb}t"
+            );
+            assert_eq!(
+                day_heading(&utc("2025-08-01T12:00:00Z"), &now),
+                "vendredi 1er ao\u{fb}t 2025"
+            );
+            assert_eq!(
+                day_heading(&utc("2026-08-15T01:00:00Z"), &now),
+                "Aujourd'hui"
+            );
+        });
+        // A date with no year at its end is kept whole.
+        assert_eq!(without_year("ao\u{fb}t".to_owned(), 2026), "ao\u{fb}t");
+    }
+
     fn now_is_readable() -> bool {
         now().is_some()
     }
@@ -1133,5 +1231,24 @@ mod tests {
         assert_eq!(humanize("caller_requested_human"), "Caller requested human");
         assert_eq!(humanize("booked"), "Booked");
         assert_eq!(humanize(" "), "");
+    }
+
+    /// A stored value reads as the core's label in French, the generic one
+    /// when the vocabulary does not have it, and nothing stays nothing.
+    #[test]
+    fn a_stored_value_reads_as_its_label_in_french() {
+        assert_eq!(
+            wire_text(WireCategory::BillingInvoiceStatus, "paid"),
+            "Paid"
+        );
+        assert_eq!(wire_text(WireCategory::BillingInvoiceStatus, " "), "");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(wire_text(WireCategory::BillingInvoiceStatus, ""), "");
+            assert_eq!(
+                wire_text(WireCategory::BillingInvoiceStatus, "paid"),
+                wire_label(WireCategory::BillingInvoiceStatus, "paid", Locale::FrCa)
+            );
+            assert_eq!(wire_text(WireCategory::MeetingStatus, "archived"), "Autre");
+        });
     }
 }

@@ -8,6 +8,7 @@
 
 use std::cell::{Cell, OnceCell, RefCell};
 
+use district_core::l10n::WireCategory;
 use district_core::{
     Capabilities, Composer, Event, ReportTarget, ThreadEvent, ThreadEvents, ThreadHistory,
     ThreadScreen, format_call_duration, format_phone_number,
@@ -62,7 +63,12 @@ pub(crate) fn delivery(event: &TimelineEvent) -> Option<String> {
             "delivered" => text::thread_delivered(lang()),
             "read" => text::thread_read(lang()),
             "failed" | "undelivered" | "canceled" => text::thread_not_delivered(lang()),
-            other => return Some(crate::pages::shared::humanize(other)),
+            other => {
+                return Some(crate::pages::shared::wire_text(
+                    WireCategory::MessageDeliveryStatus,
+                    other,
+                ));
+            }
         }
         .to_owned(),
     )

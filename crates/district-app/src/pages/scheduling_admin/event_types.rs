@@ -24,6 +24,7 @@ mod questions;
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
+use district_core::l10n::{WireCategory, wire_label};
 use district_core::scheduling_admin::{
     ActionsDialog, EventTypeDialog, EventTypeEditor, EventTypeEvent, EventTypeRow,
     EventTypeSection, EventTypesEvent, EventTypesSection, HostsDialog, QuestionsDialog,
@@ -47,22 +48,28 @@ use crate::pages::shared::{Ask, Asking, clear_list, draw_spinner, plain_label};
 use crate::pages::{Sends, on_activate, on_click};
 use crate::sink::EventSink;
 
-/// A host's role in the core's words; a role this build does not know is
-/// shown as it came.
+/// A host's role in the core's words; a role this build does not know reads
+/// as the wire vocabulary's generic label ("Other"), never as the stored word.
 pub(crate) fn role_label(role: &str) -> String {
     HostsDialog::roles()
         .iter()
         .find(|(value, _)| *value == role)
-        .map_or_else(|| role.to_owned(), |(_, label)| (*label).to_owned())
+        .map_or_else(
+            || wire_label(WireCategory::SchedulingHostRole, role, lang()),
+            |(_, label)| (*label).to_owned(),
+        )
 }
 
 /// A question's type in the core's words; a type this build does not know
-/// is shown as it came.
+/// reads as the generic label, never as the stored word.
 pub(crate) fn kind_label(kind: &str) -> String {
     QuestionsDialog::kinds()
         .iter()
         .find(|(value, _)| *value == kind)
-        .map_or_else(|| kind.to_owned(), |(_, label)| (*label).to_owned())
+        .map_or_else(
+            || wire_label(WireCategory::SchedulingQuestionType, kind, lang()),
+            |(_, label)| (*label).to_owned(),
+        )
 }
 
 /// A host as their row says it: their name (their address for a blank
@@ -732,9 +739,17 @@ mod tests {
     #[test]
     fn roles_and_types_read_in_the_cores_words() {
         assert_eq!(role_label("rotation"), "Rotation");
-        assert_eq!(role_label("lead"), "lead", "an unknown role as it came");
+        assert_eq!(
+            role_label("lead"),
+            "Other",
+            "an unknown role, never the word"
+        );
         assert_eq!(kind_label("select"), "Select");
-        assert_eq!(kind_label("date"), "date");
+        assert_eq!(kind_label("date"), "Other");
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert_eq!(role_label("lead"), "Autre");
+            assert_eq!(kind_label("date"), "Autre");
+        });
         let host = SchedulingHost {
             user_id: "u-1".to_owned(),
             name: String::new(),
