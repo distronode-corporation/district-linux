@@ -780,6 +780,18 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::persona_view_what_says(Locale::FrCa), "What it says");
     assert_eq!(text::reply_box_send(Locale::En), "Send");
     assert_eq!(text::reply_box_send(Locale::FrCa), "Send");
+    assert_eq!(text::report_button(Locale::En), "Report");
+    assert_eq!(text::report_button(Locale::FrCa), "Report");
+    assert_eq!(text::report_button_a11y(Locale::En), "Report this AI-generated content");
+    assert_eq!(text::report_button_a11y(Locale::FrCa), "Report this AI-generated content");
+    assert_eq!(text::report_not_sent_a11y(Locale::En), "Report not sent");
+    assert_eq!(text::report_not_sent_a11y(Locale::FrCa), "Report not sent");
+    assert_eq!(text::report_on_web(Locale::En), "Report on the web");
+    assert_eq!(text::report_on_web(Locale::FrCa), "Report on the web");
+    assert_eq!(text::report_on_web_a11y(Locale::En), "Report this AI-generated content on the support website");
+    assert_eq!(text::report_on_web_a11y(Locale::FrCa), "Report this AI-generated content on the support website");
+    assert_eq!(text::report_sending(Locale::En), "Sending your report.");
+    assert_eq!(text::report_sending(Locale::FrCa), "Sending your report.");
     assert_eq!(text::rooms_a_guest(Locale::En), "A guest");
     assert_eq!(text::rooms_a_guest(Locale::FrCa), "A guest");
     assert_eq!(text::rooms_guest_link_copied(Locale::En), "Guest link copied.");

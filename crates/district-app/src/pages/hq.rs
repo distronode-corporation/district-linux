@@ -11,7 +11,8 @@ use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    Event, HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqText, SignedIn,
+    Event, HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqText, ReportTarget,
+    SignedIn,
 };
 
 use crate::adw;
@@ -20,6 +21,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::markdown::to_markup;
+use crate::pages::report::{self, Offer};
 use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
@@ -114,6 +116,8 @@ mod imp {
         pub drawn: RefCell<Vec<HqMessage>>,
         /// Whether a question could be asked when last drawn.
         pub can_ask: Cell<bool>,
+        /// How Report is offered under an answer, for the member's role.
+        pub report: Cell<Offer>,
     }
 
     #[glib::object_subclass]
@@ -216,6 +220,8 @@ impl HqPage {
             } else {
                 "transcript"
             });
+        imp.report
+            .set(Offer::for_content(true, &signed_in.capabilities()));
         self.draw_messages(&hq.transcript);
         let status = status_line(&hq.phase, &controls);
         imp.status_box.set_visible(status.is_some());
@@ -312,7 +318,14 @@ impl HqPage {
                     }
                     glib::Propagation::Stop
                 });
-                label.upcast()
+                let answer = gtk::Box::builder()
+                    .orientation(gtk::Orientation::Vertical)
+                    .spacing(2)
+                    .build();
+                answer.append(&label);
+                let offer = self.imp().report.get();
+                answer.append(&report::button(self, offer, ReportTarget::HqAnswer));
+                answer.upcast()
             }
         }
     }

@@ -199,6 +199,9 @@
                                     <child type="top">
                                       <object class="AdwBanner" id="live_banner"/>
                                     </child>
+                                    <child type="top">
+                                      <object class="AdwBanner" id="report_banner"/>
+                                    </child>
                                     <property name="content">
                                       <object class="GtkStack" id="page_stack">
                                         <child>

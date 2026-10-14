@@ -2123,6 +2123,42 @@ msgctxt "reply_box.send"
 msgid "Send"
 msgstr ""
 
+#. screen: report; ctx: button; tier: T3
+#. Under AI-written content (a call's summary, an HQ answer): opens the dialog that reports it to Distronode.
+msgctxt "report.button"
+msgid "Report"
+msgstr ""
+
+#. screen: report; ctx: a11y; tier: T3
+#. The name a screen reader says for the Report button.
+msgctxt "report.button_a11y"
+msgid "Report this AI-generated content"
+msgstr ""
+
+#. screen: report; ctx: a11y; tier: T3
+#. The name a screen reader says for the line in the report dialog that says why it cannot be sent now.
+msgctxt "report.not_sent_a11y"
+msgid "Report not sent"
+msgstr ""
+
+#. screen: report; ctx: button; tier: T3
+#. In place of Report for a member whose role cannot send support requests: opens the support page in the browser.
+msgctxt "report.on_web"
+msgid "Report on the web"
+msgstr ""
+
+#. screen: report; ctx: a11y; tier: T3
+#. The name a screen reader says for the Report on the web button.
+msgctxt "report.on_web_a11y"
+msgid "Report this AI-generated content on the support website"
+msgstr ""
+
+#. screen: report; ctx: body; tier: T3
+#. The banner at the top of the window while a report is on its way.
+msgctxt "report.sending"
+msgid "Sending your report."
+msgstr ""
+
 #. screen: rooms; ctx: label; tier: T3
 msgctxt "rooms.a_guest"
 msgid "A guest"

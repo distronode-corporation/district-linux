@@ -4,7 +4,9 @@
 use std::cell::{OnceCell, RefCell};
 
 use district_core::l10n::WireCategory;
-use district_core::{CallDetailScreen, CallView as CallRead, Event, TranscriptView};
+use district_core::{
+    CallDetailScreen, CallView as CallRead, Capabilities, Event, ReportTarget, TranscriptView,
+};
 use district_model::{CallAnalysis, CallSummary, PhoneIntel};
 
 use crate::adw;
@@ -12,6 +14,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::calls::{call_icon, call_title};
+use crate::pages::report::{self, Offer};
 use crate::pages::shared::{
     add_value_row, clear_group, draw_line, failure_text, humanize, long_time, now, wire_text,
 };
@@ -169,6 +172,8 @@ mod imp {
         #[template_child]
         pub summary: TemplateChild<gtk::Label>,
         #[template_child]
+        pub report_button: TemplateChild<gtk::Button>,
+        #[template_child]
         pub facts_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
         pub analysis_group: TemplateChild<adw::PreferencesGroup>,
@@ -185,6 +190,8 @@ mod imp {
         pub sink: OnceCell<EventSink>,
         /// The call the rows were last built from.
         pub drawn: RefCell<Option<CallSummary>>,
+        /// What the Report button reports, and how it is offered.
+        pub report: RefCell<Option<(Offer, ReportTarget)>>,
         pub facts: RefCell<Vec<gtk::Widget>>,
         pub analysis: RefCell<Vec<gtk::Widget>>,
         pub follow_up: RefCell<Vec<gtk::Widget>>,
@@ -209,6 +216,16 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             on_click(&self.retry_button, &*self.obj(), || Event::Refresh);
+            let view = self.obj().downgrade();
+            self.report_button.connect_clicked(move |button| {
+                let Some(view) = view.upgrade() else {
+                    return;
+                };
+                let report = view.imp().report.borrow().clone();
+                if let Some((offer, target)) = report {
+                    report::open(&view, button.upcast_ref(), offer, target);
+                }
+            });
         }
     }
 
@@ -235,8 +252,8 @@ impl CallView {
         self.imp().sink.set(sink).ok();
     }
 
-    /// Draws `screen`.
-    pub(crate) fn update(&self, screen: &CallDetailScreen) {
+    /// Draws `screen` for a member with `capabilities`.
+    pub(crate) fn update(&self, screen: &CallDetailScreen, capabilities: &Capabilities) {
         let imp = self.imp();
         imp.loading_spinner
             .set_spinning(screen.call == CallRead::Loading);
@@ -252,6 +269,12 @@ impl CallView {
             CallRead::Ready(call) => {
                 imp.stack.set_visible_child_name("call");
                 self.draw(call);
+                let offer = Offer::for_content(summary(call).is_some(), capabilities);
+                report::draw_button(&imp.report_button, offer);
+                let target = ReportTarget::Call {
+                    call_id: call.id.clone(),
+                };
+                imp.report.replace(Some((offer, target)));
             }
         }
         let failure = screen.refresh_failure.as_ref().map(failure_text);
