@@ -1,6 +1,7 @@
 //! One call: who, when, its summary and analysis, the follow-up the service
 //! sent, and its transcript.
 
+use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 
 use district_core::l10n::WireCategory;
@@ -16,7 +17,8 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::calls::{call_icon, call_title};
 use crate::pages::report::{self, Offer};
 use crate::pages::shared::{
-    add_value_row, clear_group, draw_line, failure_text, long_time, now, wire_text,
+    add_value_row, clear_group, draw_line, failure_text, long_time, now, placeholder_text,
+    wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -38,8 +40,10 @@ pub(crate) fn subtitle(call: &CallSummary, now: Option<&glib::DateTime>) -> Stri
 
 /// The call's summary, or `None` when it has none. Its own field, which is
 /// empty then, rather than the list's, which holds a placeholder sentence.
-pub(crate) fn summary(call: &CallSummary) -> Option<&str> {
-    Some(call.summary.trim()).filter(|summary| !summary.is_empty())
+pub(crate) fn summary(call: &CallSummary) -> Option<Cow<'_, str>> {
+    Some(call.summary.trim())
+        .filter(|summary| !summary.is_empty())
+        .map(placeholder_text)
 }
 
 /// Where a number is, from what is known about it: `Toronto, Ontario,
@@ -297,7 +301,8 @@ impl CallView {
         imp.subtitle.set_label(&subtitle(call, now().as_ref()));
         let summary = summary(call);
         imp.summary_group.set_visible(summary.is_some());
-        imp.summary.set_label(summary.unwrap_or_default());
+        imp.summary
+            .set_label(summary.as_deref().unwrap_or_default());
         clear_group(&imp.facts_group, &imp.facts);
         for (title, value) in facts(call) {
             add_value_row(&imp.facts_group, &imp.facts, title, Some(&value));
@@ -379,10 +384,18 @@ mod tests {
             "no clock: the service's words, and no length for a call nobody took"
         );
         assert_eq!(
-            summary(&calls[0]),
+            summary(&calls[0]).as_deref(),
             Some("Caller booked an appointment for Thursday.")
         );
         assert_eq!(summary(&calls[1]), None, "not the placeholder");
+        let mut stored = calls[0].clone();
+        stored.summary = "Voice session completed.".to_owned();
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert_eq!(
+                summary(&stored).as_deref(),
+                Some("Session vocale termin\u{e9}e.")
+            );
+        });
     }
 
     #[test]

@@ -1735,6 +1735,55 @@ fn contact_detail() -> ContactDetailResponse {
 
 /// Contacts: the list read page by page, adding one, a contact with its
 /// changes and their questions, and the blocked callers.
+/// Tab through each of the contact pane's flow boxes (its actions, and its
+/// research actions) as a keyboard does on entering one: each button shown
+/// and sensitive is reached exactly once, in order, and focus never stops on
+/// the flow box child that holds a button, a stop a keyboard or a screen
+/// reader would meet with nothing to press. The fixture's contact cannot be
+/// researched again, so the research box opens on a button that takes no
+/// focus, which a flow box must pass over rather than stop at.
+fn contact_focus_chain(smoke: &Smoke) {
+    let window = smoke.window();
+    for (flow, names) in [
+        (
+            "actions",
+            &["edit_button", "block_button", "delete_button"][..],
+        ),
+        ("research_flow", &["research_button", "clear_button"][..]),
+    ] {
+        let flow = smoke.find(flow);
+        let expected: Vec<gtk::Widget> = names
+            .iter()
+            .map(|name| smoke.find(name))
+            .filter(|button| button.is_mapped() && button.is_sensitive())
+            .collect();
+        assert!(
+            !expected.is_empty(),
+            "a button to reach in {:?}",
+            flow.buildable_id()
+        );
+        gtk::prelude::GtkWindowExt::set_focus(&window, None::<&gtk::Widget>);
+        let mut reached = Vec::new();
+        while flow.child_focus(gtk::DirectionType::TabForward) {
+            smoke.pump();
+            let focus = gtk::prelude::GtkWindowExt::focus(&window)
+                .expect("Tab entered the box, but nothing in it took focus");
+            assert!(
+                !focus.is::<gtk::FlowBoxChild>(),
+                "a Tab stop on a bare flow box child in {:?}",
+                flow.buildable_id()
+            );
+            assert!(
+                reached.len() < 10,
+                "Tab never leaves {:?}",
+                flow.buildable_id()
+            );
+            reached.push(focus);
+        }
+        assert_eq!(reached, expected, "Tab through {:?}", flow.buildable_id());
+    }
+}
+
 fn contacts_screens(smoke: &Smoke) {
     smoke.activate("sidebar-contacts");
     let tk = smoke.ticket("LoadContacts");
@@ -1855,6 +1904,7 @@ fn contacts_screens(smoke: &Smoke) {
     assert!(smoke.shown("contact_view"));
     assert!(smoke.shows_text("+1 416 555 0142 \u{b7} ada@example.com"));
     smoke.shot("30-contact");
+    contact_focus_chain(smoke);
 
     // Editing, from the whole record.
     smoke.click("edit_button");

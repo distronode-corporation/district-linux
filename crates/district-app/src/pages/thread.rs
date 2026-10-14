@@ -11,7 +11,7 @@ use std::cell::{Cell, OnceCell, RefCell};
 use district_core::l10n::WireCategory;
 use district_core::{
     Capabilities, Composer, Event, ReportTarget, ThreadEvent, ThreadEvents, ThreadHistory,
-    ThreadScreen, format_call_duration, format_phone_number,
+    ThreadScreen, format_call_duration, format_duration, format_phone_number,
 };
 use district_model::{CHANNEL_SMS, ReplyTarget, TimelineEvent};
 
@@ -19,11 +19,11 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, gdk, glib};
-use crate::l10n::{lang, text};
+use crate::l10n::{Locale, lang, text};
 use crate::pages::report::{self, Offer};
 use crate::pages::shared::{
     Echo, FilePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
-    icon_button, instant_in, now, plain_label,
+    icon_button, instant_in, now, placeholder_text, plain_label,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -98,7 +98,13 @@ pub(crate) fn call_line(event: &TimelineEvent) -> String {
         .and_then(|seconds| u64::try_from(seconds).ok())
     {
         Some(seconds) if seconds > 0 => {
-            format!("{direction}, {}", format_call_duration(seconds))
+            // English keeps the clock form (`01:05`); French is the core's
+            // length, `1 min 5 s`.
+            let length = match lang() {
+                Locale::En => format_call_duration(seconds),
+                Locale::FrCa => format_duration(i64::try_from(seconds).unwrap_or(i64::MAX)),
+            };
+            format!("{direction}, {length}")
         }
         _ => direction.to_owned(),
     }
@@ -744,7 +750,7 @@ fn call_entry(
         .unwrap_or(event.body.as_str())
         .trim();
     if !summary.is_empty() && !missed {
-        let summary = plain_label(summary, &["caption", "dim-label"]);
+        let summary = plain_label(&placeholder_text(summary), &["caption", "dim-label"]);
         summary.set_justify(gtk::Justification::Center);
         summary.set_xalign(0.5);
         summary.set_max_width_chars(60);
@@ -834,6 +840,9 @@ mod tests {
         let mut call = event("call", "inbound", "completed");
         call.duration = Some(65);
         assert_eq!(call_line(&call), "Incoming call, 01:05");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(call_line(&call), "Appel entrant, 1\u{a0}min 5\u{a0}s");
+        });
         call.direction = "outbound".to_owned();
         call.duration = Some(0);
         assert_eq!(call_line(&call), "Outgoing call");

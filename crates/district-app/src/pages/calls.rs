@@ -5,6 +5,7 @@
 use std::borrow::Cow;
 use std::cell::{Cell, OnceCell};
 
+use district_core::l10n::placeholder_label;
 use district_core::{CallLog, CallRows, CallsEvent, Event, Route, SignedIn, format_phone_number};
 use district_model::CallSummary;
 
@@ -15,7 +16,8 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang};
 use crate::pages::call::CallView;
 use crate::pages::shared::{
-    EndWatch, PagedRows, PagingFooter, back_on_fold, failure_text, now, short_time, watch_end,
+    EndWatch, PagedRows, PagingFooter, back_on_fold, failure_text, now, placeholder_text,
+    short_time, watch_end,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -30,9 +32,13 @@ pub(crate) fn call_icon(call_type: &str) -> &'static str {
     }
 }
 
-/// Who a call was with, as it reads: a name, or the number grouped.
+/// Who a call was with, as it reads: a name, or the number grouped. The
+/// service's stand-in for no name ("Unknown") reads as the core's label.
 pub(crate) fn call_title(call: &CallSummary) -> String {
-    format_phone_number(&call.number)
+    match placeholder_label(&call.number, lang()) {
+        Some(label) => label.to_owned(),
+        None => format_phone_number(&call.number),
+    }
 }
 
 /// What the list pane shows.
@@ -78,7 +84,7 @@ pub(crate) fn call_row(call: &CallSummary, now: Option<&glib::DateTime>) -> adw:
     let row = adw::ActionRow::builder()
         .use_markup(false)
         .title(call_title(call))
-        .subtitle(&call.ai_summary)
+        .subtitle(placeholder_text(&call.ai_summary).as_ref())
         .title_lines(1)
         .subtitle_lines(2)
         .activatable(true)
@@ -305,6 +311,14 @@ mod tests {
         let calls: Vec<CallSummary> = fixture("district-calls.json");
         assert_eq!(call_title(&calls[0]), "Contract Test Caller");
         assert_eq!(call_title(&calls[1]), "+1 416 555 0191");
+        // The service's stand-in for no name is the core's label for it.
+        let mut unknown = calls[0].clone();
+        unknown.number = "Unknown".to_owned();
+        assert_eq!(call_title(&unknown), "Unknown");
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert_eq!(call_title(&unknown), "Inconnu");
+            assert_eq!(call_title(&calls[0]), "Contract Test Caller");
+        });
     }
 
     #[test]

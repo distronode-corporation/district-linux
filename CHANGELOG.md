@@ -52,6 +52,23 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   the singular below 2 (`1,5 minute`). English is unchanged, except that an event
   type's host role or question type this build does not know reads "Other" instead of
   the stored word.
+- More of French reads as French: a routing rule's field and comparison take the
+  portal's labels, and its line its own order and quotes (`Secteur d'activité contient
+  « tech »`); the transfer directory's note on incomplete entries and a contact's
+  research headings come from the catalogs and the core; the service's stand-ins for
+  no summary or no name ("No summary available.", "Unknown") read as the core's
+  labels in the call list, a call, the overview and a thread; a count inside a
+  sentence is grouped (`1 500 minutes`), a discount keeps its decimal comma, and a
+  call in a thread lasts `1 min 5 s`. In English, a held number's monthly price is
+  money (`$1.15 a month`, before `1.15 a month`), the carriers a short number list
+  could not reach are named by their labels (`Telnyx`, before `telnyx`), a contact's
+  research headings the vocabulary lists read as the core's labels ("Executive
+  Dossier Summary", before "ExecutiveSummary"), and the service's dashed
+  spelling of "No answer, no conversation took place." reads with the comma. Every other English word is unchanged.
+- A contact's Edit, Block and Delete wrap onto a second line when the pane is too
+  narrow for them (Tab still stops on each button once, and only on the buttons), and
+  the workspace settings list shows each section's whole description instead of two
+  lines.
 
 ### Added
 

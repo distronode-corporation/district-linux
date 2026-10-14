@@ -8,11 +8,12 @@ use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
 use district_core::l10n::WireCategory;
+use district_core::l10n::format;
 use district_core::l10n::numbers_strings as ns;
 use district_core::{
     Capabilities, Event, MarketplaceEvent, MarketplaceScreen, MarketplaceTab, NumberAdmin,
-    NumberAdminEvent, NumberSearchForm, NumberSearchState, OwnedNumbersList, format_phone_number,
-    number_actions_note, price_label,
+    NumberAdminEvent, NumberSearchForm, NumberSearchState, OwnedNumbers, OwnedNumbersList,
+    format_phone_number, number_actions_note, price_label,
 };
 use district_model::{AvailableNumber, OwnedNumber};
 
@@ -23,7 +24,8 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::carrier::{CarrierPanel, write_notice};
 use crate::pages::shared::{
-    Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, plain_label, wire_text,
+    Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, known_wire_label,
+    plain_label, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -38,6 +40,26 @@ pub(crate) fn type_label(raw: &str) -> String {
             || wire_text(WireCategory::NumberType, raw),
             |(_, label)| (*label).to_owned(),
         )
+}
+
+/// The note for a short list of held numbers, naming the carriers that did
+/// not answer by their labels (`Telnyx`, not the stored `telnyx`), or `None`
+/// for a complete list. The core's sentence, which names them as stored.
+pub(crate) fn partial_note(held: &OwnedNumbers) -> Option<String> {
+    held.partial.then(|| {
+        if held.failed_providers.is_empty() {
+            return core_text::marketplace_partial_note_unnamed(lang()).to_owned();
+        }
+        let carriers: Vec<String> = held
+            .failed_providers
+            .iter()
+            .map(|provider| {
+                known_wire_label(WireCategory::NumberProvider, provider)
+                    .unwrap_or_else(|| provider.clone())
+            })
+            .collect();
+        core_text::marketplace_partial_note(lang(), &carriers.join(", "))
+    })
 }
 
 /// What a number can do, as it reads: `Voice, SMS`.
@@ -58,6 +80,17 @@ pub(crate) fn capabilities(raw: &[String]) -> String {
 /// none.
 pub(crate) fn monthly(price: Option<f64>, currency: Option<&str>) -> Option<String> {
     price_label(price, currency).map(|price| text::marketplace_monthly(lang(), &price))
+}
+
+/// A held number's monthly price, which the service records with no
+/// currency, as money: `$1.15 a month`, `1,15 $ par mois`. `None` when none
+/// is recorded.
+pub(crate) fn held_monthly(price: Option<f64>) -> Option<String> {
+    let cents = (price? * 100.0).round() as i64;
+    Some(text::marketplace_monthly(
+        lang(),
+        &format::price(lang(), cents, None),
+    ))
 }
 
 /// `parts` that say something, on one line.
@@ -142,7 +175,7 @@ fn owned_row(
         .subtitle_lines(2)
         .name("number-row")
         .build();
-    if let Some(price) = monthly(number.monthly_price, None) {
+    if let Some(price) = held_monthly(number.monthly_price) {
         row.add_suffix(
             &gtk::Label::builder()
                 .label(price)
@@ -542,14 +575,13 @@ impl MarketplacePage {
             ),
             OwnedNumbersList::Ready(held) if held.numbers.is_empty() => status(
                 core_text::marketplace_owned_empty_title(lang()),
-                &held
-                    .partial_note()
+                &partial_note(held)
                     .unwrap_or_else(|| core_text::marketplace_owned_empty_body(lang()).to_owned()),
                 false,
             ),
             OwnedNumbersList::Ready(held) => {
                 imp.owned_stack.set_visible_child_name("list");
-                let note = held.partial_note();
+                let note = partial_note(held);
                 draw_line(&imp.partial_note, note.as_deref());
                 let drawn = (held.numbers.clone(), can_change);
                 if imp.owned.borrow().as_ref() != Some(&drawn) {
@@ -643,6 +675,42 @@ mod tests {
             Some("1.15 USD a month")
         );
         assert_eq!(monthly(None, Some("USD")), None);
+        assert_eq!(held_monthly(Some(1.15)).as_deref(), Some("$1.15 a month"));
+        assert_eq!(held_monthly(Some(2.5)).as_deref(), Some("$2.50 a month"));
+        assert_eq!(held_monthly(None), None);
+        // The carriers that did not answer, by their labels.
+        let mut held = OwnedNumbers {
+            numbers: Vec::new(),
+            partial: false,
+            failed_providers: vec!["telnyx".to_owned(), "acme".to_owned()],
+            refreshing: false,
+        };
+        assert_eq!(partial_note(&held), None);
+        held.partial = true;
+        assert_eq!(
+            partial_note(&held).as_deref(),
+            Some("Could not reach Telnyx, acme, so this list may be missing numbers.")
+        );
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert!(
+                partial_note(&held)
+                    .unwrap()
+                    .starts_with("Impossible de joindre Telnyx, acme")
+            );
+        });
+        held.failed_providers.clear();
+        assert_eq!(
+            partial_note(&held).as_deref(),
+            Some(core_text::marketplace_partial_note_unnamed(
+                crate::l10n::Locale::En
+            ))
+        );
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert_eq!(
+                held_monthly(Some(1.15)).as_deref(),
+                Some("1,15\u{a0}$ par mois")
+            );
+        });
         assert_eq!(
             line(&[None, Some(" ".to_owned()), Some("a".to_owned())]),
             "a"

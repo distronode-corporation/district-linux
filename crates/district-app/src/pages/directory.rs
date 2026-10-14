@@ -44,18 +44,8 @@ pub(crate) fn entry_line(entry: &DirectoryEntry) -> String {
 
 /// What the directory says about entries that lack a name or a number.
 pub(crate) fn incomplete_note(count: usize) -> Option<String> {
-    match count {
-        0 => None,
-        1 => Some(
-            "One entry lacks a name or a number. It is kept, but the receptionist cannot \
-             put anyone through to it."
-                .to_owned(),
-        ),
-        n => Some(format!(
-            "{n} entries lack a name or a number. They are kept, but the receptionist cannot \
-             put anyone through to them."
-        )),
-    }
+    (count > 0)
+        .then(|| text::directory_incomplete_note(lang(), i64::try_from(count).unwrap_or(i64::MAX)))
 }
 
 /// One entry's row, and its two boxes against the core's values.
@@ -373,5 +363,24 @@ mod tests {
         assert_eq!(incomplete_note(0), None);
         assert!(incomplete_note(1).unwrap().starts_with("One entry"));
         assert!(incomplete_note(2).unwrap().starts_with("2 entries"));
+        assert_eq!(
+            incomplete_note(1).as_deref(),
+            Some(
+                "One entry lacks a name or a number. It is kept, but the receptionist cannot \
+                 put anyone through to it."
+            )
+        );
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert!(
+                incomplete_note(1)
+                    .unwrap()
+                    .starts_with("1 entr\u{e9}e est sans nom")
+            );
+            assert!(
+                incomplete_note(1204)
+                    .unwrap()
+                    .starts_with("1\u{a0}204 entr\u{e9}es")
+            );
+        });
     }
 }

@@ -7,7 +7,7 @@
 use std::cell::{OnceCell, RefCell};
 
 use district_core::l10n::WireCategory;
-use district_core::l10n::format::{PluralCategory, plural_category};
+use district_core::l10n::format::{self, PluralCategory, plural_category};
 use district_core::{
     AccountSection, BillingEvent, BillingScreen, Capabilities, Event, PlanCard, PlanStatus,
     Renewal, format_amount, format_cents, invoice_amount, meter_fraction, minutes_used,
@@ -87,12 +87,21 @@ pub(crate) fn renewal_text(renewal: Renewal) -> Option<String> {
     }
 }
 
+/// A discount's percentage as its sentence writes it: as stored in English
+/// (`20`, `12.5`), and in French with its decimal comma (`12,5`).
+fn percent_text(percent: f64) -> String {
+    match lang() {
+        Locale::En => percent.to_string(),
+        Locale::FrCa => format::number(Locale::FrCa, percent),
+    }
+}
+
 /// The line under a subscription: where it stands, what it costs, when it
 /// renews, its minutes and its discount.
 pub(crate) fn subscription_line(subscription: &BillingSubscription) -> String {
     let discount = subscription.discount.as_ref().map(|discount| {
         let off = match (discount.percent_off, discount.amount_off) {
-            (Some(percent), _) => text::billing_percent_off(lang(), &percent.to_string()),
+            (Some(percent), _) => text::billing_percent_off(lang(), &percent_text(percent)),
             (None, Some(amount)) => text::billing_amount_off(lang(), &format_cents(amount)),
             (None, None) => String::new(),
         };
@@ -465,6 +474,36 @@ mod tests {
             minutes_text(None, Some(1)),
             "Not recorded. 1 minute is included."
         );
+    }
+
+    /// French takes the singular for any amount below 2, a fraction
+    /// included, as the catalogs' plural rule does: `0 minute`, `1,5 minute`.
+    #[test]
+    fn french_takes_the_singular_below_two_minutes() {
+        assert_eq!(minutes_text(Some(0.0), None), "0 minutes");
+        assert_eq!(minutes_text(Some(1.996), None), "2 minutes");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(minutes_text(Some(0.0), None), "0 minute");
+            assert_eq!(minutes_text(Some(1.0), None), "1 minute");
+            assert_eq!(minutes_text(Some(1.5), None), "1,5 minute");
+            assert_eq!(minutes_text(Some(1.994), None), "1,99 minute");
+            assert_eq!(minutes_text(Some(1.996), None), "2 minutes");
+            assert_eq!(minutes_text(Some(12.0), None), "12 minutes");
+            // A count inside a sentence is grouped: `1 500 minutes`.
+            assert_eq!(
+                minutes_text(Some(1522.75), Some(1500)),
+                "1\u{a0}522,75 sur 1\u{a0}500 minutes"
+            );
+        });
+    }
+
+    #[test]
+    fn a_discount_writes_its_percentage_in_the_language() {
+        assert_eq!(percent_text(20.0), "20");
+        assert_eq!(percent_text(12.5), "12.5");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(percent_text(12.5), "12,5");
+        });
     }
 
     #[test]
