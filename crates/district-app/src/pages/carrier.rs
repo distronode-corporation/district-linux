@@ -31,7 +31,7 @@ use crate::gtk::{self, glib};
 use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::marketplace::MarketplacePage;
-use crate::pages::shared::{draw_line, failure_text, humanize, plain_label, wire_text};
+use crate::pages::shared::{draw_line, failure_text, plain_label, wire_text};
 
 /// The notice under a write's control, with the sentence saying why it is
 /// not offered again when that is so; `None` when there is nothing to say.
@@ -263,7 +263,7 @@ impl CarrierPanel {
         let a2p_vertical = entry(ns::numbers_a2p_vertical_label(l), "a2p-vertical");
         let types: Vec<String> = A2pForm::CAMPAIGN_TYPES
             .iter()
-            .map(|t| humanize(t))
+            .map(|t| wire_text(WireCategory::A2pCampaignType, t))
             .collect();
         let types: Vec<&str> = types.iter().map(String::as_str).collect();
         let a2p_type = combo(text::marketplace_campaign_type(l), &types, "a2p-type");

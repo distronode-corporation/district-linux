@@ -4,6 +4,7 @@
 
 use std::cell::OnceCell;
 
+use district_core::l10n::WireCategory;
 use district_core::{Event, MeetingRecord, RoomsEvent, format_duration};
 use district_model::{MeetRoomName, MeetingDetail};
 use serde_json::Value;
@@ -13,7 +14,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
-use crate::pages::shared::{add_value_row, clear_group, failure_text, humanize, when_text};
+use crate::pages::shared::{add_value_row, clear_group, failure_text, when_text, wire_text};
 use crate::pages::{Sends, escape};
 use crate::sink::EventSink;
 
@@ -82,7 +83,7 @@ pub(crate) fn facts(meeting: &MeetingDetail) -> Vec<(&'static str, Option<String
     vec![
         (
             text::meeting_status(lang()),
-            Some(humanize(&meeting.status)),
+            Some(wire_text(WireCategory::MeetingStatus, &meeting.status)),
         ),
         (
             text::meeting_started(lang()),

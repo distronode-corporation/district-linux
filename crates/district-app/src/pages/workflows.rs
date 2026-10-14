@@ -7,6 +7,7 @@ use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 use std::collections::BTreeMap;
 
+use district_core::l10n::WireCategory;
 use district_core::{
     CampaignCard, Capabilities, Event, RunHistory, SignedIn, Tone, WorkflowList, WorkflowsEvent,
     WorkflowsScreen, trigger_label,
@@ -19,7 +20,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{
-    Ask, Asking, clear_list, draw_line, draw_spinner, failure_text, humanize, when_text,
+    Ask, Asking, clear_list, draw_line, draw_spinner, failure_text, when_text, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -37,7 +38,10 @@ pub(crate) fn tone_class(tone: Tone) -> &'static str {
 /// A trigger as it reads: the core's words, or the service's own for one this
 /// build does not know.
 pub(crate) fn trigger_words(trigger: &str) -> String {
-    trigger_label(trigger).map_or_else(|| humanize(trigger), str::to_owned)
+    trigger_label(trigger).map_or_else(
+        || wire_text(WireCategory::WorkflowTrigger, trigger),
+        str::to_owned,
+    )
 }
 
 /// The line under a workflow: what starts it, and how its last run went.
@@ -47,7 +51,7 @@ pub(crate) fn workflow_line(workflow: &WorkflowSummary) -> String {
         Some(run) => text::workflows_last_run(
             lang(),
             &trigger,
-            &humanize(&run.status).to_lowercase(),
+            &wire_text(WireCategory::WorkflowRunStatus, &run.status).to_lowercase(),
             &when_text(&run.started_at),
         ),
         None => text::workflows_not_run(lang(), &trigger),
@@ -60,16 +64,21 @@ pub(crate) fn run_line(run: &WorkflowRun) -> String {
         .action_results
         .iter()
         .map(|action| {
-            let outcome = humanize(&action.outcome).to_lowercase();
+            let outcome =
+                wire_text(WireCategory::WorkflowActionOutcome, &action.outcome).to_lowercase();
             let outcome = match action.reason.as_deref() {
                 Some(reason) => text::workflows_outcome_reason(
                     lang(),
                     &outcome,
-                    &humanize(reason).to_lowercase(),
+                    &wire_text(WireCategory::WorkflowActionReason, reason).to_lowercase(),
                 ),
                 None => outcome,
             };
-            text::workflows_action_result(lang(), &humanize(&action.action_type), &outcome)
+            text::workflows_action_result(
+                lang(),
+                &wire_text(WireCategory::WorkflowAction, &action.action_type),
+                &outcome,
+            )
         })
         .collect();
     parts.extend(run.error.clone());
@@ -425,7 +434,7 @@ impl WorkflowsPage {
                 .build();
             line.add_suffix(
                 &gtk::Label::builder()
-                    .label(humanize(&run.status))
+                    .label(wire_text(WireCategory::WorkflowRunStatus, &run.status))
                     .valign(gtk::Align::Center)
                     .css_classes([
                         "status-badge",

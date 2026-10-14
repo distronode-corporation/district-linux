@@ -5,6 +5,7 @@
 
 use std::cell::{Cell, OnceCell, RefCell};
 
+use district_core::l10n::WireCategory;
 use district_core::{
     DeskEvent, DeskQueue, DeskScreen, DeskTickets, Event, Route, SignedIn, desk_status,
     desk_status_label,
@@ -20,7 +21,7 @@ use crate::notifications::open_workspace_id;
 use crate::pages::desk_settings::DeskSettingsView;
 use crate::pages::desk_ticket::DeskTicketView;
 use crate::pages::shared::{
-    RowIds, back_on_fold, clear_list, draw_line, failure_text, humanize, now, short_time,
+    RowIds, back_on_fold, clear_list, draw_line, failure_text, now, short_time, wire_text,
 };
 use crate::pages::ticket_form::{FormState, TicketFormDialog};
 use crate::pages::{Sends, escape, on_click};
@@ -76,7 +77,10 @@ pub(crate) fn status_badge(status: &str) -> (String, &'static str) {
                 DeskTicketStatus::Resolved => "success",
             },
         ),
-        None => (humanize(status), "dim-label"),
+        None => (
+            wire_text(WireCategory::DeskTicketStatus, status),
+            "dim-label",
+        ),
     }
 }
 

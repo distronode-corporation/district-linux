@@ -5,6 +5,7 @@
 
 use std::cell::{OnceCell, RefCell};
 
+use district_core::l10n::WireCategory;
 use district_core::{
     Capabilities, ContactAction, ContactConfirmation, ContactControls, ContactDetailScreen,
     ContactDetails, ContactView as ContactRead, ContactsEvent, Event, contact_label,
@@ -25,6 +26,7 @@ use crate::pages::contact_form::{ContactFormDialog, FormKind};
 use crate::pages::inbox::has_initials;
 use crate::pages::shared::{
     Ask, Asking, Landing, add_value_row, clear_group, failure_text, humanize, long_time, now,
+    wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -78,7 +80,7 @@ pub(crate) fn research_status(contact: &Contact) -> Option<String> {
             DGI_SYNTHESIZING => text::contact_research_writing(lang()),
             DGI_COMPLETE => text::contact_research_complete(lang()),
             DGI_FAILED => text::contact_research_did_not_finish(lang()),
-            other => return Some(humanize(other)),
+            other => return Some(wire_text(WireCategory::ResearchStatus, other)),
         }
         .to_owned(),
     )

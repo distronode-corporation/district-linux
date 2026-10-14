@@ -12,6 +12,7 @@
 use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
 
+use district_core::l10n::WireCategory;
 use district_core::{
     Event, KnowledgeConfirm, KnowledgeDocuments, KnowledgeEvent, KnowledgeModeView as ModeRead,
     KnowledgeSection, KnowledgeWrite, SignedIn, knowledge_mode_body, knowledge_mode_label,
@@ -26,8 +27,8 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::Echoed;
 use crate::pages::shared::{
-    Ask, Asking, FilePicker, draw_line, draw_spinner, failure_text, humanize, icon_button,
-    short_text,
+    Ask, Asking, FilePicker, draw_line, draw_spinner, failure_text, icon_button, short_text,
+    wire_text,
 };
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
@@ -136,7 +137,10 @@ fn title_of(file_name: &str) -> String {
 /// The line under a document: where it stands, how many pieces it was cut
 /// into, when it was added, and where it was read from.
 pub(crate) fn document_line(document: &KnowledgeDocument) -> String {
-    let mut parts = vec![humanize(&document.status)];
+    let mut parts = vec![wire_text(
+        WireCategory::KnowledgeDocumentStatus,
+        &document.status,
+    )];
     if document.chunk_count != 0 {
         parts.push(text::knowledge_pieces(lang(), document.chunk_count));
     }

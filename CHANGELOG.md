@@ -42,6 +42,16 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   `src/l10n/text.rs` and `po/fr.po`, so `FR_COMPLETE` is true. French stays switched off:
   the `fr-ca` feature is still not among district-app's default features, and the package
   check that holds a French-off build to no catalog is unchanged.
+- In French, dates and times are the core's (`district_l10n::format`) rather than the C
+  library's: `1er août 2026`, `15 h 04`, `15 août 2026 à 15 h 04`, `samedi 15 août`. The
+  stored words the app showed as written (an invoice's or a subscription's status, a
+  workflow run's status, outcome and action, a meeting's status, a ticket's source, a
+  document's status, a number's type and capabilities, a line type, a message's
+  delivery, a campaign type) read as the core's labels, and the overview's average call
+  is the core's `3 min 12 s` instead of the service's English label. Minutes used take
+  the singular below 2 (`1,5 minute`). English is unchanged, except that an event
+  type's host role or question type this build does not know reads "Other" instead of
+  the stored word.
 
 ### Added
 

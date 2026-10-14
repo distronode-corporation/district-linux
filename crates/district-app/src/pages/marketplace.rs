@@ -7,6 +7,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
+use district_core::l10n::WireCategory;
 use district_core::l10n::numbers_strings as ns;
 use district_core::{
     Capabilities, Event, MarketplaceEvent, MarketplaceScreen, MarketplaceTab, NumberAdmin,
@@ -22,7 +23,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::carrier::{CarrierPanel, write_notice};
 use crate::pages::shared::{
-    Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, plain_label,
+    Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, plain_label, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -33,7 +34,10 @@ pub(crate) fn type_label(raw: &str) -> String {
     NumberSearchForm::number_types()
         .iter()
         .find(|(wire, _)| *wire == raw)
-        .map_or_else(|| humanize(raw), |(_, label)| (*label).to_owned())
+        .map_or_else(
+            || wire_text(WireCategory::NumberType, raw),
+            |(_, label)| (*label).to_owned(),
+        )
 }
 
 /// What a number can do, as it reads: `Voice, SMS`.
@@ -43,7 +47,7 @@ pub(crate) fn capabilities(raw: &[String]) -> String {
         .map(
             |capability| match capability.to_ascii_lowercase().as_str() {
                 "sms" | "mms" => capability.to_ascii_uppercase(),
-                _ => humanize(capability),
+                _ => wire_text(WireCategory::NumberCapability, capability),
             },
         )
         .collect();

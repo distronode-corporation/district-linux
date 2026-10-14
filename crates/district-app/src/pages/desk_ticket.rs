@@ -5,6 +5,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
+use district_core::l10n::WireCategory;
 use district_core::{
     DeskEvent, DeskTicketControls, DeskTicketScreen, DeskTicketView as DeskTicketRead, Event,
     desk_author_label, format_phone_number,
@@ -20,7 +21,7 @@ use crate::pages::desk::status_badge;
 use crate::pages::reply_box::{ReplyBox, ReplyEvents, ReplyState};
 use crate::pages::shared::{
     Landing, add_value_row, clear_box, clear_group, conversation_message, draw_line, draw_spinner,
-    failure_text, humanize, short_text, when_text,
+    failure_text, short_text, when_text, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -57,7 +58,7 @@ pub(crate) fn details(ticket: &DeskTicketDetail) -> Vec<(&'static str, Option<St
         ),
         (
             text::desk_ticket_came_in_by(lang()),
-            Some(humanize(&ticket.source)),
+            Some(wire_text(WireCategory::DeskTicketSource, &ticket.source)),
         ),
         (
             text::desk_ticket_raised(lang()),

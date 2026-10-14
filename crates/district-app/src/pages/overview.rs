@@ -2,14 +2,16 @@
 
 use std::cell::{OnceCell, RefCell};
 
-use district_core::{Event, OverviewContent, OverviewScreen, Route, SignedIn, WorkspacesState};
+use district_core::{
+    Event, OverviewContent, OverviewScreen, Route, SignedIn, WorkspacesState, format_duration,
+};
 use district_model::CallSummary;
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::l10n::{core_text, lang, text};
+use crate::l10n::{Locale, core_text, lang, text};
 use crate::pages::calls::call_row;
 use crate::pages::shared::{RowIds, draw_line, failure_text, metric_tile, now};
 use crate::pages::{Sends, escape, on_click};
@@ -63,6 +65,16 @@ pub(crate) fn shown(signed_in: &SignedIn) -> Shown<'_> {
     }
 }
 
+/// The average call's length: the service's own label (`3m 12s`), which it
+/// writes in English, or in French the core's form of its seconds
+/// (`3 min 12 s`).
+fn average_call(content: &OverviewContent) -> String {
+    match lang() {
+        Locale::En => content.overview.avg_duration_label.clone(),
+        Locale::FrCa => format_duration(content.overview.metrics.avg_duration),
+    }
+}
+
 /// The four figures, in the order the tiles show them: each with its caption.
 pub(crate) fn metrics(content: &OverviewContent) -> [(String, &'static str); 4] {
     let figures = &content.overview.metrics;
@@ -80,7 +92,7 @@ pub(crate) fn metrics(content: &OverviewContent) -> [(String, &'static str); 4] 
             text::overview_contacts(lang()),
         ),
         (
-            content.overview.avg_duration_label.clone(),
+            average_call(content),
             text::analytics_tile_average_call(lang()),
         ),
     ]
@@ -312,6 +324,10 @@ mod tests {
         let figures = metrics(content);
         assert_eq!(figures[0], ("412".to_owned(), "Calls"));
         assert_eq!(figures[3], ("3m 12s".to_owned(), "Average call"));
+        // The service writes its label in English; French is the core's form.
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(metrics(content)[3].0, "3\u{a0}min 12\u{a0}s");
+        });
 
         let (mut model, effects) = listed(Ok(workspaces()));
         let Effect::LoadOverview { ticket, .. } =
