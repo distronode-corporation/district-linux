@@ -1418,6 +1418,84 @@ fn inbox_and_thread(smoke: &Smoke) {
 }
 
 /// A full first page of the call log, every call its own.
+/// Starting a conversation from the inbox: the contacts offered, failing and
+/// filtered; a contact's email, which needs a subject; a typed number, which
+/// goes as a text message; a send refused and sent again; and the thread the
+/// message started, opened.
+fn composing(smoke: &Smoke) {
+    smoke.activate("sidebar-calls");
+    smoke.forget();
+    smoke.activate("sidebar-inbox");
+    smoke.forget();
+    smoke.click("new_button");
+    assert!(smoke.shows_text("New message"));
+    smoke.reply("LoadContacts", |ticket| Event::ContactsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shows_part("You can still enter a number or an email address above."));
+    smoke.click("cancel_button");
+    assert!(!smoke.shown("to_row"), "the form closes");
+    smoke.click("new_button");
+    smoke.reply("LoadContacts", |ticket| Event::ContactsLoaded {
+        ticket,
+        result: Ok(fixture("district-contacts.json")),
+    });
+    assert_eq!(smoke.count("compose-contact"), 2);
+    smoke.type_into("to_row", "sparse");
+    assert_eq!(
+        smoke.count("compose-contact"),
+        1,
+        "filtered by what is typed"
+    );
+    assert!(smoke.shows_text("Message sparse"));
+    smoke.activate_nth("compose-contact", 0);
+    assert!(smoke.shows_text("Sparse Contact"));
+    assert!(smoke.shown("subject_row"), "an email needs a subject");
+    smoke
+        .mapped_buffer("body")
+        .set_text("Your appointment is confirmed.");
+    smoke.pump();
+    assert!(!smoke.sensitive("send_button"));
+    smoke.type_into("subject_row", "Thursday");
+    assert!(smoke.sensitive("send_button"));
+    smoke.click("change_button");
+    smoke.type_into("to_row", "+14165550199");
+    smoke.activate_nth("compose-typed", 0);
+    assert!(
+        !smoke.shown("subject_row"),
+        "a number goes as a text message"
+    );
+    smoke.click("send_button");
+    let send = smoke.take("SendMessage");
+    assert!(format!("{send:?}").contains("+14165550199"), "{send:?}");
+    assert!(
+        !smoke.sensitive("cancel_button"),
+        "no closing while it is on its way"
+    );
+    smoke.answer(Event::MessageSent {
+        ticket: ticket(&send),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("failure_label"));
+    smoke.click("send_button");
+    let send = smoke.take("SendMessage");
+    smoke.answer(Event::MessageSent {
+        ticket: ticket(&send),
+        result: Ok(fixture("district-message-send.json")),
+    });
+    assert!(
+        !smoke.shown("to_row"),
+        "the form closes once the message is out"
+    );
+    smoke.reply("FindMessageThread", |ticket| Event::MessageThreadFound {
+        ticket,
+        result: Ok(fixture("district-message-thread.json")),
+    });
+    assert!(smoke.shown("thread_view"), "the thread it started opens");
+    smoke.forget();
+}
+
 fn call_page() -> Vec<CallSummary> {
     let recorded: Vec<CallSummary> = fixture("district-calls.json");
     (0..25)
@@ -6370,6 +6448,7 @@ fn main() {
     overview_page(&smoke);
     account_and_devices(&smoke);
     inbox_and_thread(&smoke);
+    composing(&smoke);
     calls_screens(&smoke);
     contacts_screens(&smoke);
     hq_screen(&smoke);

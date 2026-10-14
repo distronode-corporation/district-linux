@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Starting a conversation from the inbox, as a dialog: a contact or a
+     typed number or address, the channel, a subject for an email, and the
+     message. Every word is the core's; src/pages/compose_form.rs sets them
+     and fills the form. Closing it asks the core, which keeps it open while
+     the message is on its way. -->
+<interface>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="Adw" version="1.5"/>
+  <template class="DistrictComposeForm" parent="AdwDialog">
+    <property name="content-width">480</property>
+    <property name="content-height">560</property>
+    <property name="can-close">False</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="show-start-title-buttons">False</property>
+            <property name="show-end-title-buttons">False</property>
+            <child type="start">
+              <object class="GtkButton" id="cancel_button"/>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="send_button">
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkSpinner" id="spinner">
+                <property name="visible">False</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+            <child>
+              <object class="AdwPreferencesGroup" id="to_group">
+                <child>
+                  <object class="AdwEntryRow" id="to_row">
+                    <property name="use-markup">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwActionRow" id="recipient_row">
+                    <property name="visible">False</property>
+                    <property name="use-markup">False</property>
+                    <child type="suffix">
+                      <object class="GtkButton" id="change_button">
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup" id="choose_group">
+                <child>
+                  <object class="GtkSpinner" id="contacts_spinner">
+                    <property name="visible">False</property>
+                    <property name="halign">center</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkListBox" id="contacts_list">
+                    <property name="selection-mode">none</property>
+                    <style>
+                      <class name="boxed-list"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="contacts_failure">
+                    <property name="visible">False</property>
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <property name="margin-top">6</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup" id="channel_group">
+                <property name="visible">False</property>
+                <child>
+                  <object class="AdwComboRow" id="channel_row"/>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="no_address_label">
+                    <property name="visible">False</property>
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup" id="message_group">
+                <child>
+                  <object class="AdwEntryRow" id="subject_row">
+                    <property name="visible">False</property>
+                    <property name="use-markup">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="min-content-height">120</property>
+                    <property name="margin-top">6</property>
+                    <style>
+                      <class name="card"/>
+                      <class name="composer-box"/>
+                    </style>
+                    <property name="child">
+                      <object class="GtkTextView" id="body">
+                        <property name="wrap-mode">word-char</property>
+                        <property name="accepts-tab">False</property>
+                        <property name="top-margin">10</property>
+                        <property name="bottom-margin">10</property>
+                        <property name="left-margin">12</property>
+                        <property name="right-margin">12</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup">
+                <child>
+                  <object class="GtkLabel" id="failure_label">
+                    <property name="visible">False</property>
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="use-markup">False</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

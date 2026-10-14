@@ -1557,6 +1557,18 @@ ctx = "a11y"
 screen = "inbox_page"
 note = "In inbox-page.ui."
 
+[inbox_page.new_message]
+en = "New message"
+ctx = "tooltip"
+screen = "inbox_page"
+note = "In inbox-page.ui. The button beside the inbox search that starts a new conversation."
+
+[inbox_page.new_message_a11y]
+en = "New message"
+ctx = "a11y"
+screen = "inbox_page"
+note = "In inbox-page.ui. The name a screen reader says for the button that starts a new conversation."
+
 [inbox_page.no_conversation_open]
 en = "No conversation open"
 ctx = "title"

@@ -6,7 +6,7 @@ use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::BTreeSet;
 
 use district_core::{
-    ConversationList, Conversations, Event, InboxEvent, Route, SearchState, SignedIn,
+    ComposeEvent, ConversationList, Conversations, Event, InboxEvent, Route, SearchState, SignedIn,
     format_phone_number,
 };
 use district_model::{ConversationSummary, MessageSearchHit};
@@ -16,11 +16,12 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
+use crate::pages::compose_form::ComposeFormDialog;
 use crate::pages::shared::{
     Echo, RowIds, back_on_fold, clear_list, draw_line, draw_spinner, failure_text, now, short_time,
 };
 use crate::pages::thread::ThreadView;
-use crate::pages::{Sends, escape};
+use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
 /// What the list pane shows, when no search is running.
@@ -138,6 +139,10 @@ mod imp {
         #[template_child]
         pub search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
+        pub new_button: TemplateChild<gtk::Button>,
+        /// The new message form, while the core has it open.
+        pub compose: RefCell<Option<ComposeFormDialog>>,
+        #[template_child]
         pub list_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub list_spinner: TemplateChild<gtk::Spinner>,
@@ -202,6 +207,9 @@ mod imp {
             let page = self.obj();
             page.connect_list();
             page.connect_search();
+            on_click(&self.new_button, &*page, || {
+                Event::Inbox(InboxEvent::Compose(ComposeEvent::Open))
+            });
             let weak = page.downgrade();
             self.list_retry.connect_clicked(move |_| {
                 let Some(page) = weak.upgrade() else {
@@ -318,6 +326,9 @@ impl InboxPage {
             }
         }
         imp.split_view.set_show_content(open.is_some());
+        imp.new_button
+            .set_visible(signed_in.capabilities().can_change);
+        ComposeFormDialog::sync(&imp.compose, self, signed_in.inbox.compose.as_ref());
     }
 
     /// The inbox is no longer showing.

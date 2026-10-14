@@ -28,15 +28,31 @@
                   <object class="GtkBox">
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkSearchEntry" id="search_entry">
-                        <property name="placeholder-text" translatable="yes" context="inbox_page.search_every_message">Search every message</property>
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
                         <property name="margin-start">12</property>
                         <property name="margin-end">12</property>
                         <property name="margin-top">12</property>
                         <property name="margin-bottom">6</property>
-                        <accessibility>
-                          <property name="label" translatable="yes" context="inbox_page.search_every_message_a11y">Search every message</property>
-                        </accessibility>
+                        <child>
+                          <object class="GtkSearchEntry" id="search_entry">
+                            <property name="placeholder-text" translatable="yes" context="inbox_page.search_every_message">Search every message</property>
+                            <property name="hexpand">True</property>
+                            <accessibility>
+                              <property name="label" translatable="yes" context="inbox_page.search_every_message_a11y">Search every message</property>
+                            </accessibility>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="new_button">
+                            <property name="icon-name">document-edit-symbolic</property>
+                            <property name="visible">False</property>
+                            <property name="tooltip-text" translatable="yes" context="inbox_page.new_message">New message</property>
+                            <accessibility>
+                              <property name="label" translatable="yes" context="inbox_page.new_message_a11y">New message</property>
+                            </accessibility>
+                          </object>
+                        </child>
                       </object>
                     </child>
                     <child>
