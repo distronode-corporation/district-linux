@@ -3008,6 +3008,7 @@ fn scheduling_screen(smoke: &Smoke) {
     smoke.click("back_button");
     assert!(smoke.shown("scheduling-section-overview"));
     assert!(!smoke.shown("scheduling_areas"));
+    scheduling_event_types(smoke);
     smoke.activate("scheduling-section-team");
     assert!(smoke.shown("team_placeholder"));
     smoke.click("back_button");
@@ -3513,6 +3514,443 @@ fn scheduling_overview(smoke: &Smoke) {
     assert!(smoke.shown("coming_up_empty"));
     assert!(!smoke.shown("coming_up_failure"));
     smoke.forget();
+}
+
+/// The pending scheduling administration request, taken off the list, with
+/// its ticket.
+fn admin_request(smoke: &Smoke) -> (Ticket, district_model::SchedulingAdminRequest) {
+    let Effect::SchedulingAdmin {
+        ticket, request, ..
+    } = smoke.take("SchedulingAdmin")
+    else {
+        unreachable!()
+    };
+    (ticket, *request)
+}
+
+/// Answers the scheduling administration request `ticket` with `result`.
+fn admin_answer(
+    smoke: &Smoke,
+    ticket: Ticket,
+    result: Result<district_model::SchedulingAdminData, ApiError>,
+) {
+    smoke.answer(Event::SchedulingAdminAnswered {
+        ticket,
+        result: result.map(district_model::SchedulingAdminReply::Done),
+    });
+}
+
+/// The booking pages' event types: the list failing, empty and read; a
+/// create refused by its form, failing and landing; one event type with its
+/// hosts failing alone; the editor; the state actions; the hosts; the
+/// questions; and a delete asked once, then confirmed.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn scheduling_event_types(smoke: &Smoke) {
+    use district_model::{
+        SchedulingAdminData as Data, SchedulingAdminRequest as Request, SchedulingEventType,
+        SchedulingHost, SchedulingOk, SchedulingQuestion, SchedulingTestEmail, SchedulingUser,
+    };
+    let status = |smoke: &Smoke| {
+        if smoke.pending("LoadSchedulingStatus") {
+            smoke.reply("LoadSchedulingStatus", |ticket| {
+                Event::SchedulingStatusLoaded {
+                    ticket,
+                    result: Ok(fixture("district-scheduling-status-ready.json")),
+                }
+            });
+        }
+    };
+    let event_type = |slug: &str, name: &str| SchedulingEventType {
+        id: format!("id-{slug}"),
+        slug: slug.to_owned(),
+        name: name.to_owned(),
+        duration_minutes: 30,
+        ..SchedulingEventType::default()
+    };
+    let intro = || SchedulingEventType {
+        description: Some(Some("A first talk.".to_owned())),
+        slot_interval_minutes: Some(30),
+        location_type: Some("phone".to_owned()),
+        location_value: Some(Some("+1 613 555 0100".to_owned())),
+        min_notice_minutes: Some(60),
+        max_future_days: Some(30),
+        buffer_before_minutes: Some(10),
+        ..event_type("intro-call", "Intro call")
+    };
+    let listed = move || {
+        Data::EventTypes(vec![
+            intro(),
+            SchedulingEventType {
+                is_active: Some(false),
+                ..event_type("retired", "Retired call")
+            },
+        ])
+    };
+    let host = |id: &str, name: &str| SchedulingHost {
+        user_id: id.to_owned(),
+        name: name.to_owned(),
+        email: format!("{id}@example.com"),
+        role: "required".to_owned(),
+        ..SchedulingHost::default()
+    };
+    let question = |id: &str, label: &str, position: i64| SchedulingQuestion {
+        id: id.to_owned(),
+        label: label.to_owned(),
+        kind: "text".to_owned(),
+        required: position == 0,
+        position,
+        ..SchedulingQuestion::default()
+    };
+    let detail = move |request: &Request| match request {
+        Request::EventType { .. } => Ok(Data::EventType(Box::new(intro()))),
+        Request::Hosts { .. } => Ok(Data::Hosts(vec![host("u-1", "Ann Lee")])),
+        Request::Questions { .. } => Ok(Data::Questions(vec![question("q-1", "Topic", 0)])),
+        other => unreachable!("{other:?}"),
+    };
+
+    // The list: reading, failing with Try again, empty, then read.
+    smoke.activate("scheduling-section-event-types");
+    assert!(smoke.shown("event-types-loading"));
+    status(smoke);
+    scheduling_reads(smoke, |_| Err(server_error()));
+    assert!(smoke.shown("event-types-failed") && smoke.shown("event-types-retry"));
+    assert!(
+        !smoke.shown("event_type_create"),
+        "no create over a failed read"
+    );
+    smoke.click("event-types-retry");
+    status(smoke);
+    scheduling_reads(smoke, |_| Ok(Data::EventTypes(Vec::new())));
+    assert!(smoke.shown("event-types-empty"));
+    smoke.click("refresh_button");
+    status(smoke);
+    scheduling_reads(smoke, |_| Ok(listed()));
+    smoke.forget();
+    assert_eq!(smoke.count("event-type-row"), 2);
+    assert!(smoke.shows_text("Intro call") && smoke.shows_text("Inactive"));
+    assert!(smoke.shows_part("https://book.example.com/book/intro-call"));
+    smoke.shot("66-booking-event-types");
+
+    // Create: refused by the form, then sent with a slug no row uses.
+    smoke.click("event_type_create");
+    assert!(smoke.shown("editor-name") && !smoke.shown("editor-interval"));
+    smoke.click("dialog-save");
+    assert!(smoke.shows_text("Give the event type a name."));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.type_into("editor-name", "Intro call");
+    assert_eq!(smoke.subtitle("editor-booking-page"), "intro-call-2");
+    smoke.type_into("editor-duration", "45");
+    assert!(smoke.shows_text("45 min"));
+    smoke.click("dialog-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::CreateEventType { slug, fields } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(slug, "intro-call-2");
+    assert_eq!(fields.duration_minutes, Some(45));
+    assert!(!smoke.sensitive("dialog-save"), "one save at a time");
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("editor-outcome"));
+    smoke.shot("66-booking-event-type-create");
+    // Enter in the name saves too.
+    smoke
+        .nth::<adw::EntryRow>("editor-name", 0)
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::EventType(Box::new(event_type(
+            "intro-call-2",
+            "Intro call",
+        )))),
+    );
+    assert!(!smoke.shown("editor-name"), "a create closes its form");
+    scheduling_reads(smoke, |_| Ok(listed()));
+    smoke.click("event_type_create");
+    smoke.click("dialog-cancel");
+    assert!(!smoke.shown("editor-name"));
+
+    // One event type: its hosts fail alone, then everything is read.
+    smoke.activate_nth("event-type-row", 0);
+    assert!(smoke.shown("event-type-loading"));
+    assert!(smoke.shown("hosts_spinner") && smoke.shown("questions_spinner"));
+    scheduling_reads(smoke, |request| match request {
+        Request::Hosts { .. } => Err(server_error()),
+        Request::Questions { .. } => Ok(Data::Questions(Vec::new())),
+        other => detail(other),
+    });
+    assert!(smoke.shown("hosts_failure") && smoke.shown("questions_empty"));
+    assert!(smoke.shown("write_bar"));
+    assert!(smoke.shows_text("A first talk."));
+    assert!(smoke.shows_text("+1 613 555 0100"));
+    assert!(smoke.count("event-type-fact") >= 7);
+    smoke.click("refresh_button");
+    scheduling_reads(smoke, detail);
+    assert_eq!(smoke.count("event-type-host"), 1);
+    assert_eq!(smoke.count("event-type-question"), 1);
+    assert!(smoke.shows_text("Text · required"));
+    smoke.shot("66-booking-event-type");
+
+    // The editor: every field, refused, then saved.
+    smoke.click("event_type_edit");
+    assert!(smoke.shown("editor-interval") && smoke.shown("editor-location-value"));
+    smoke.type_into("editor-interval", "0");
+    smoke.click("dialog-save");
+    assert!(smoke.shows_text("Has to be a whole number of minutes, at least 1."));
+    smoke.type_into("editor-interval", "15");
+    choose(smoke, &combo(smoke, "editor-location", 0), "In person");
+    assert_eq!(
+        smoke
+            .nth::<adw::EntryRow>("editor-location-value", 0)
+            .title(),
+        "Address"
+    );
+    smoke.type_into("editor-description", "Ten minutes, then questions.");
+    smoke
+        .nth::<adw::SwitchRow>("editor-listed", 0)
+        .set_active(false);
+    smoke.type_into("editor-count", "5");
+    smoke.click("dialog-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchEventType { slug, fields } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(slug, "intro-call");
+    assert_eq!(fields.slot_interval_minutes, Some(15));
+    assert_eq!(fields.location_type.as_deref(), Some("in_person"));
+    assert_eq!(fields.is_public, Some(false));
+    assert_eq!(fields.buffer_before_minutes, Some(5));
+    admin_answer(smoke, ticket, Ok(Data::EventType(Box::new(intro()))));
+    assert!(!smoke.shown("editor-interval"), "a save closes the editor");
+    scheduling_reads(smoke, detail);
+
+    // The state actions: one at a time, each saying what it came to.
+    smoke.click("event_type_manage");
+    assert_eq!(
+        smoke
+            .nth::<gtk::Button>("actions-toggle", 0)
+            .label()
+            .as_deref(),
+        Some("Turn off")
+    );
+    smoke.click("actions-toggle");
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchEventType { fields, .. } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(fields.is_active, Some(false));
+    assert!(!smoke.sensitive("actions-archive"), "one action at a time");
+    let off = SchedulingEventType {
+        is_active: Some(false),
+        ..intro()
+    };
+    admin_answer(smoke, ticket, Ok(Data::EventType(Box::new(off))));
+    assert!(smoke.shows_text("Event type turned off"));
+    assert_eq!(
+        smoke
+            .nth::<gtk::Button>("actions-toggle", 0)
+            .label()
+            .as_deref(),
+        Some("Turn on")
+    );
+    scheduling_reads(smoke, detail);
+    smoke.click("actions-dismiss");
+    assert!(!smoke.shown("actions-outcome"));
+    smoke.click("test-email-confirmation");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::SendTestEmail { ref kind, .. } if kind == "confirmation"));
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::TestEmail(SchedulingTestEmail {
+            sent: true,
+            to: "ann@example.com".to_owned(),
+        })),
+    );
+    assert!(smoke.shows_part("ann@example.com"));
+    smoke.click("actions-archive");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("actions-outcome"));
+    smoke.shot("66-booking-event-type-actions");
+    // Delete is asked once; no leaves it.
+    smoke.click("actions-delete");
+    assert_eq!(questions(smoke), 1);
+    smoke.respond("cancel");
+    assert_eq!(questions(smoke), 0);
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.click("dialog-cancel");
+    assert!(!smoke.shown("actions-toggle"));
+
+    // The hosts: read, then the people who could be added.
+    smoke.click("event_type_hosts");
+    assert!(smoke.shown("hosts-loading"));
+    assert!(
+        !smoke.sensitive("dialog-save"),
+        "no save before the hosts are read"
+    );
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, Ok(Data::Hosts(vec![host("u-1", "Ann Lee")])));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Users { .. }));
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::Users(vec![
+            SchedulingUser {
+                id: "u-1".to_owned(),
+                name: "Ann Lee".to_owned(),
+                ..SchedulingUser::default()
+            },
+            SchedulingUser {
+                id: "u-2".to_owned(),
+                name: "Bo Chen".to_owned(),
+                email: "bo@example.com".to_owned(),
+                ..SchedulingUser::default()
+            },
+        ])),
+    );
+    assert_eq!(smoke.count("host-row"), 1);
+    assert_eq!(smoke.count("host-candidate"), 1);
+    assert!(!smoke.shown("hosts-rotation"));
+    choose(smoke, &combo(smoke, "hosts-routing", 0), "Round robin");
+    assert!(smoke.shown("hosts-rotation"));
+    choose(smoke, &combo(smoke, "hosts-rotation", 0), "Priority");
+    smoke.click("host-add");
+    assert_eq!(smoke.count("host-row"), 2);
+    assert!(!smoke.shown("host-candidate"));
+    smoke.click("host-remove");
+    assert_eq!(smoke.count("host-row"), 1);
+    smoke.type_into("host-priority", "x");
+    smoke.click("dialog-save");
+    assert!(smoke.shows_text("A host's priority has to be a whole number, 0 or more."));
+    smoke.type_into("host-priority", "2");
+    smoke.nth::<gtk::DropDown>("host-role", 0).set_selected(2);
+    smoke.pump();
+    smoke.shot("66-booking-event-type-hosts");
+    smoke.click("dialog-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::SetHosts { hosts, .. } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(hosts.len(), 1);
+    assert_eq!(
+        (
+            hosts[0].user_id.as_str(),
+            hosts[0].role.as_str(),
+            hosts[0].priority
+        ),
+        ("u-2", "optional", 2)
+    );
+    admin_answer(smoke, ticket, Ok(Data::Hosts(Vec::new())));
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchEventType { fields, .. } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(fields.routing_mode.as_deref(), Some("round_robin"));
+    assert_eq!(fields.rr_strategy.as_deref(), Some("priority"));
+    admin_answer(smoke, ticket, Ok(Data::EventType(Box::new(intro()))));
+    assert!(!smoke.shown("host-row"), "a save closes the hosts");
+    scheduling_reads(smoke, detail);
+
+    // The questions: added with a choice, edited, and deleted when asked.
+    smoke.click("event_type_questions");
+    assert!(smoke.shown("questions-loading"));
+    scheduling_reads(smoke, detail);
+    assert_eq!(smoke.count("question-row"), 1);
+    smoke.click("questions-add");
+    assert!(smoke.shown("question-label"));
+    choose(smoke, &combo(smoke, "question-kind", 0), "Select");
+    smoke.click("question-save");
+    assert!(smoke.shows_text("Give the question a label."));
+    smoke.type_into("question-label", "Favourite colour");
+    smoke.click("question-save");
+    assert!(smoke.shows_text("A Select question needs at least one option."));
+    smoke.type_into("question-option", "Blue");
+    smoke.click("question-add-option");
+    assert_eq!(smoke.count("question-option-row"), 1);
+    smoke.click("question-remove-option");
+    assert_eq!(smoke.count("question-option-row"), 0);
+    smoke.click("question-add-option");
+    assert_eq!(
+        smoke.count("question-option-row"),
+        0,
+        "nothing typed, nothing added"
+    );
+    smoke.type_into("question-option", "Green");
+    smoke
+        .nth::<adw::EntryRow>("question-option", 0)
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    assert_eq!(smoke.count("question-option-row"), 1);
+    smoke
+        .nth::<adw::SwitchRow>("question-required", 0)
+        .set_active(true);
+    smoke.pump();
+    smoke.shot("66-booking-event-type-question");
+    smoke.click("question-save");
+    let (ticket, request) = admin_request(smoke);
+    let Request::CreateQuestion { fields, .. } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(fields.label.as_deref(), Some("Favourite colour"));
+    assert_eq!(fields.options, Some(vec!["Green".to_owned()]));
+    assert_eq!(fields.position, Some(1), "placed last");
+    assert_eq!(fields.required, Some(true));
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::Question(question("q-2", "Favourite colour", 1))),
+    );
+    assert!(smoke.shows_text("Question added"));
+    scheduling_reads(smoke, |_| {
+        Ok(Data::Questions(vec![
+            question("q-2", "Favourite colour", 1),
+            question("q-1", "Topic", 0),
+        ]))
+    });
+    assert_eq!(smoke.count("question-row"), 2);
+    smoke.click("question-edit");
+    assert_eq!(
+        smoke.nth::<adw::EntryRow>("question-label", 0).text(),
+        "Topic"
+    );
+    smoke.type_into("question-position", "3");
+    smoke.click("question-cancel");
+    assert!(!smoke.shown("question-label"));
+    smoke.click("question-delete");
+    assert_eq!(questions(smoke), 1);
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::DeleteQuestion { ref id, .. } if id == "q-1"));
+    admin_answer(smoke, ticket, Ok(Data::Done(SchedulingOk { ok: true })));
+    assert!(smoke.shows_text("Question deleted"));
+    scheduling_reads(smoke, |_| {
+        Ok(Data::Questions(vec![question(
+            "q-2",
+            "Favourite colour",
+            1,
+        )]))
+    });
+    assert_eq!(smoke.count("question-row"), 1);
+    smoke.click("dialog-cancel");
+    assert!(!smoke.shown("question-row"));
+
+    // Delete, confirmed: back to the list.
+    smoke.click("event_type_manage");
+    smoke.click("actions-delete");
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::DeleteEventType { ref slug } if slug == "intro-call"));
+    admin_answer(smoke, ticket, Ok(Data::Done(SchedulingOk { ok: true })));
+    status(smoke);
+    scheduling_reads(smoke, |_| Ok(listed()));
+    assert!(smoke.shown("event-type-row"));
+    assert!(!smoke.shown("actions-toggle"));
+    smoke.forget();
+    smoke.click("back_button");
 }
 
 /// The desktop hands the app `link`, as it does the browser's answer.
