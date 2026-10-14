@@ -936,6 +936,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::routing_view_replace_rules(Locale::FrCa), "Replace the rules");
     assert_eq!(text::routing_view_rules(Locale::En), "Rules");
     assert_eq!(text::routing_view_rules(Locale::FrCa), "Rules");
+    assert_eq!(text::scheduling_admin_bookings_views_a11y(Locale::En), "Which bookings to show");
+    assert_eq!(text::scheduling_admin_bookings_views_a11y(Locale::FrCa), "Which bookings to show");
     assert_eq!(text::scheduling_admin_coming_up_row_a11y(Locale::En, "{when}", "{subtitle}", "{status}"), "{when}, {subtitle}, {status}");
     assert_eq!(text::scheduling_admin_coming_up_row_a11y(Locale::FrCa, "{when}", "{subtitle}", "{status}"), "{when}, {subtitle}, {status}");
     assert_eq!(text::scheduling_admin_desk_row_a11y(Locale::En, "{label}", "{value}"), "{label}: {value}");

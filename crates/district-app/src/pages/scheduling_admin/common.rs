@@ -113,8 +113,9 @@ impl LoadFrame {
     /// that into its content.
     pub(crate) fn draw<'a, T>(&self, load: &'a SectionLoad<T>) -> Option<&'a T> {
         let frame = Frame::of(load);
-        self.stack.set_visible_child_name(frame.name());
+        // The spinner first: a stack does not show a child that is hidden.
         draw_spinner(&self.spinner, frame == Frame::Loading);
+        self.stack.set_visible_child_name(frame.name());
         if let Some(failure) = load.failure() {
             self.status
                 .set_description(Some(&escape(&failure_text(failure))));

@@ -2524,6 +2524,12 @@ msgid "Rules"
 msgstr ""
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
+#. Screen-reader name of the row of buttons above the bookings list that picks which bookings it shows: upcoming, past, cancelled or all.
+msgctxt "scheduling_admin.bookings_views_a11y"
+msgid "Which bookings to show"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for a booking coming up on the booking pages' overview: when it is, who booked and what, and its status (Confirmed, Cancelled...).
 msgctxt "scheduling_admin.coming_up_row_a11y"
 msgid "{when}, {subtitle}, {status}"

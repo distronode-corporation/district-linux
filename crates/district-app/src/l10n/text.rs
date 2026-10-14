@@ -4097,6 +4097,15 @@ pub fn routing_view_rules(l: Locale) -> &'static str {
     }
 }
 
+/// `scheduling_admin.bookings_views_a11y`
+#[must_use]
+pub fn scheduling_admin_bookings_views_a11y(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Which bookings to show",
+        Locale::FrCa => "Which bookings to show",
+    }
+}
+
 /// `scheduling_admin.coming_up_row_a11y`
 #[must_use]
 pub fn scheduling_admin_coming_up_row_a11y(l: Locale, when: &str, subtitle: &str, status: &str) -> String {
