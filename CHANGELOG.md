@@ -15,11 +15,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Changed
 
-- Built on District AI core for Rust 4.0.0-beta.3. Since 4.0.0-beta.2 the core writes
+- Built on District AI core for Rust 4.0.0-beta.5. Since 4.0.0-beta.2 the core writes
   its words from a catalog in the language the app chooses (`CoreConfig::locale`), and
   the numbers page's note is the core's `MarketplaceScreen::scope_note`, which replaces
   its read-only note. 4.0.0-beta.3 adds the booking pages' administration
-  (`Route::SchedulingAdmin`).
+  (`Route::SchedulingAdmin`), 4.0.0-beta.4 the core's reviewed Canadian French, and
+  4.0.0-beta.5 French labels for eight more kinds of stored value (a number's status,
+  its registrations, a SIP trunk, a webhook delivery, a host's role, a question's type).
 - Every word the app writes itself comes from its catalogs,
   `crates/district-app/l10n/linux.toml` and, for the booking pages,
   `crates/district-app/l10n/scheduling.toml`, keyed: the `.ui` templates mark each
