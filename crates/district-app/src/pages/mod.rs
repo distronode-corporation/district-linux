@@ -31,6 +31,7 @@ mod messaging_form;
 mod overview;
 mod persona;
 mod reply_box;
+pub(crate) mod report;
 mod rooms;
 mod routing;
 mod save_notice;

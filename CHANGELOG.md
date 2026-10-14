@@ -13,6 +13,16 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Added
+
+- Report AI-generated content, as District AI for Windows does: a Report button under
+  a call's summary, under an answered call's summary in a conversation, and under each
+  District HQ answer opens a dialog with an optional note, and Send raises a support
+  request without leaving the screen (the core's `SupportEvent::Report`). A banner at
+  the top of the window says it is being sent, then sent or why it failed. While a
+  support request is being written in Support, the dialog says so and keeps the note.
+  A viewer, whose role cannot send support requests, gets Report on the web.
+
 ### Changed
 
 - Built on District AI core for Rust 4.0.0-beta.2, which writes its words from a catalog

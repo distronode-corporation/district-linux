@@ -9,8 +9,8 @@
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    Capabilities, Composer, Event, ThreadEvent, ThreadEvents, ThreadHistory, ThreadScreen,
-    format_call_duration, format_phone_number,
+    Capabilities, Composer, Event, ReportTarget, ThreadEvent, ThreadEvents, ThreadHistory,
+    ThreadScreen, format_call_duration, format_phone_number,
 };
 use district_model::{CHANNEL_SMS, ReplyTarget, TimelineEvent};
 
@@ -19,6 +19,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, gdk, glib};
 use crate::l10n::{lang, text};
+use crate::pages::report::{self, Offer};
 use crate::pages::shared::{
     Echo, FilePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
     icon_button, instant_in, now, plain_label,
@@ -381,7 +382,7 @@ impl ThreadView {
             }
             ThreadHistory::Ready(events) => {
                 imp.stack.set_visible_child_name("thread");
-                self.draw_history(events);
+                self.draw_history(events, &screen.thread_key, capabilities);
             }
         }
         let note = screen.read_only_note(capabilities);
@@ -400,7 +401,7 @@ impl ThreadView {
         }
     }
 
-    fn draw_history(&self, events: &ThreadEvents) {
+    fn draw_history(&self, events: &ThreadEvents, thread_key: &str, capabilities: &Capabilities) {
         let imp = self.imp();
         imp.older_button.set_visible(events.can_load_older());
         draw_spinner(&imp.older_spinner, events.loading_older);
@@ -460,7 +461,7 @@ impl ThreadView {
             let widget = if event.is_message() {
                 message_bubble(event, &time)
             } else {
-                call_entry(event, &time)
+                call_entry(self, event, &time, thread_key, capabilities)
             };
             imp.events_box.append(&widget);
         }
@@ -622,8 +623,15 @@ fn message_bubble(event: &TimelineEvent, time: &str) -> gtk::Widget {
     column.upcast()
 }
 
-/// A call in the thread: centred, with its summary under it.
-fn call_entry(event: &TimelineEvent, time: &str) -> gtk::Widget {
+/// A call in the thread: centred, with its summary under it, and Report
+/// under an answered call's summary.
+fn call_entry(
+    view: &ThreadView,
+    event: &TimelineEvent,
+    time: &str,
+    thread_key: &str,
+    capabilities: &Capabilities,
+) -> gtk::Widget {
     let entry = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(2)
@@ -668,6 +676,14 @@ fn call_entry(event: &TimelineEvent, time: &str) -> gtk::Widget {
         summary.set_xalign(0.5);
         summary.set_max_width_chars(60);
         entry.append(&summary);
+        let target = ReportTarget::ThreadEvent {
+            thread_key: thread_key.to_owned(),
+            event_id: event.id.clone(),
+        };
+        if let Some(button) = report::button(view, Offer::for_content(true, capabilities), target) {
+            button.set_halign(gtk::Align::Center);
+            entry.append(&button);
+        }
     }
     entry.upcast()
 }

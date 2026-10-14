@@ -1483,6 +1483,7 @@ fn calls_screens(smoke: &Smoke) {
         smoke.shows_text("Agent: Good afternoon. Caller: I would like to book an appointment.")
     );
     smoke.shot("25-call");
+    reporting_a_call(smoke);
 
     smoke.activate_nth("call-row", 26);
     let call = smoke.ticket("LoadCall {");
@@ -1519,6 +1520,84 @@ fn calls_screens(smoke: &Smoke) {
     smoke.click("retry_button");
     assert!(smoke.pending("LoadCall {"));
     smoke.script.pending.borrow_mut().clear();
+}
+
+/// Reporting the call's AI summary, as District AI for Windows does: a note,
+/// then Send, raised as a support request without leaving the call. One press
+/// sends one report; a failure is sent again as the same report; the banner
+/// says where it stands until it is put away.
+fn reporting_a_call(smoke: &Smoke) {
+    assert!(smoke.shows_text("Report"));
+    smoke.click("report_button");
+    assert!(smoke.shows_text("Report AI-generated content"));
+    smoke
+        .mapped_buffer("report-note")
+        .set_text("The summary names the wrong day.");
+    smoke.pump();
+    smoke.respond("send");
+    let report = smoke.take("CreateSupportRequest");
+    let shown = format!("{report:?}");
+    assert!(
+        shown.contains("District AI Linux app") && shown.contains("the wrong day"),
+        "{shown}"
+    );
+    assert!(smoke.shows_text("Sending your report."));
+    smoke.click("report_button");
+    assert!(
+        smoke.first::<adw::AlertDialog>().is_none(),
+        "nothing opens while a report is on its way"
+    );
+    smoke.answer(Event::SupportRequestCreated {
+        ticket: ticket(&report),
+        result: Err(server_error()),
+    });
+    assert!(!smoke.shows_text("Sending your report."));
+    smoke.click("report_button");
+    smoke.respond("send");
+    smoke.reply("CreateSupportRequest", |ticket| {
+        Event::SupportRequestCreated {
+            ticket,
+            result: Ok(fixture("district-support-request-create.json")),
+        }
+    });
+    assert!(smoke.shows_text("Reported. We'll review it."));
+    smoke
+        .find("report_banner")
+        .downcast::<adw::Banner>()
+        .unwrap()
+        .emit_by_name::<()>("button-clicked", &[]);
+    smoke.pump();
+    assert!(!smoke.shows_text("Reported. We'll review it."));
+    smoke.forget();
+}
+
+/// A report while a support request is typed in Support: the dialog says why
+/// it cannot be sent and keeps the note for the next time, and the request
+/// stays as typed.
+fn report_refused(smoke: &Smoke) {
+    smoke.activate("sidebar-hq");
+    smoke.click("report-button");
+    assert!(smoke.shown("report-refusal"));
+    smoke
+        .mapped_buffer("report-note")
+        .set_text("The figures are last week's.");
+    smoke.pump();
+    smoke.respond("send");
+    assert!(!smoke.pending("CreateSupportRequest"), "refused, not sent");
+    smoke.click("report-button");
+    assert_eq!(
+        smoke.buffer_text("report-note"),
+        "The figures are last week's."
+    );
+    smoke.respond("cancel");
+    smoke.activate("sidebar-support");
+    smoke.forget();
+    let subject = smoke
+        .mapped("subject_row")
+        .dynamic_cast::<gtk::Editable>()
+        .expect("an editable")
+        .text();
+    assert_eq!(subject, "Voicemail", "the request stays as typed");
 }
 
 /// The recorded contacts as the first of two pages.
@@ -3204,6 +3283,8 @@ fn support_screens(smoke: &Smoke) {
     smoke.click("submitted_dismiss");
     assert!(!smoke.shown("submitted_box"));
     smoke.click("new_button");
+    smoke.type_into("subject_row", "Voicemail");
+    report_refused(smoke);
     smoke.click("cancel_button");
     assert!(!smoke.shown("subject_row"));
 
@@ -4274,6 +4355,10 @@ fn viewer_screens(smoke: &Smoke) {
         "a viewer never confirms"
     );
     assert!(smoke.shows_part("Only an agency or client member"));
+    // A viewer reports on the support website, where support takes them.
+    assert!(smoke.shows_text("Report on the web"));
+    smoke.click("report-button");
+    assert!(smoke.first::<adw::AlertDialog>().is_none());
     smoke.shot("86-hq-viewer");
     smoke.click("dismiss_button");
     smoke.forget();
