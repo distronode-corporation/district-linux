@@ -8,6 +8,8 @@
   <template class="DistrictSchedulingAdminPage" parent="AdwBin">
     <property name="child">
       <object class="GtkStack" id="scheduling_areas">
+        <!-- Sized by the section shown only, as the window's page stack is. -->
+        <property name="hhomogeneous">False</property>
         <child>
           <object class="GtkStackPage">
             <property name="name">overview</property>

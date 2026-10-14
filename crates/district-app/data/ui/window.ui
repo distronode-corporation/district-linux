@@ -204,6 +204,10 @@
                                     </child>
                                     <property name="content">
                                       <object class="GtkStack" id="page_stack">
+                                        <!-- Sized by the page shown only: a page out of sight (a booking
+                                             pages section once shown wide) never holds the
+                                             window wider than the narrow layout. -->
+                                        <property name="hhomogeneous">False</property>
                                         <child>
                                           <object class="GtkStackPage">
                                             <property name="name">overview</property>
