@@ -2,5 +2,5 @@
 commit = "6f07c4e4692e3e89bf0d881400f7edbfb05edea5"
 dirty = true
 source = "i18n/tools"
-date = "2026-10-14T14:44:17Z"
+date = "2026-10-14T15:26:41Z"
 files = ["l10n.py", "frcheck.py", "pseudo.py"]

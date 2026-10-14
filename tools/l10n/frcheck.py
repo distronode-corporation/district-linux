@@ -1268,7 +1268,7 @@ OS_QUOTES_CLOSE = "[\"'\u201d\u2019\u00bb]"
 
 def os_term_applies(term: str, en_text: str) -> bool:
     term = re.sub(r"\s*\([^)]*\)$", "", term).strip()  # "Edit (menu)"
-    core = re.sub(r"(?:\.\.\.|\u2026|[.!?:;,])+$", "", en_text.strip()).strip()
+    core = re.sub(r"[.!?:;,\u2026]+$", "", en_text.strip()).strip()
     if core.lower() == term.lower():
         return True
     t = re.escape(term)

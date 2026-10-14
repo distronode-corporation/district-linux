@@ -51,7 +51,7 @@ FR_FORMS_ALLOWED = ("one", "many", "other")
 ID_PATTERNS = {
     "rust": re.compile(r"[a-z_][a-z0-9_]*\Z"),
     # Enum.member, or a full selector: Enum.member() / Enum.member(_:label:)
-    "swift": re.compile(r"[A-Z][A-Za-z0-9_]*\.[a-z_][A-Za-z0-9_]*(\((?:(?:_|[A-Za-z_][A-Za-z0-9_]*):)*\))?\Z"),
+    "swift": re.compile(r"[A-Z][A-Za-z0-9_]*\.[a-z_][A-Za-z0-9_]*(\((?:[A-Za-z_][A-Za-z0-9_]*:)*\))?\Z"),
     "csharp": re.compile(r"[A-Z][A-Za-z0-9_]*\Z"),
     "android": re.compile(r"[a-z][a-z0-9_]*\Z"),
     "apple": re.compile(r"[^\x00-\x1f\"\\]+\Z"),
