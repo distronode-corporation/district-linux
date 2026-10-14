@@ -60,6 +60,24 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 - "Start at login" on the account screen, off by default: the Flatpak asks the
   Background portal, the .deb writes an XDG autostart entry, and either starts the app
   with no window.
+- Report AI-generated content, as District AI for Windows does: under a call's summary
+  in the call view, under the summaries of answered calls in a thread, and under each
+  HQ answer. A banner says whether the report is being sent, was sent or failed. A
+  viewer is offered Report on the web instead, which opens the support page. The
+  composer's AI-drafted reply has no Report yet: the composer does not track whether
+  its text came from the model.
+- A new conversation from the inbox: New message opens a form to pick a recipient (a
+  search over recent contacts, or a typed number or address), the channel (a text
+  message first), a subject when it goes as email, and the message. After the send,
+  the new thread opens.
+- Phone numbers are no longer read only. Each number the workspace holds can have its
+  call routing reapplied or be released; releasing is irreversible and asks first. A
+  number Distronode holds, or a viewer, is told why nothing is offered. A new Carrier
+  tab shows the carrier accounts, lists and creates SIP trunks, turns the one-time
+  passcode sender on or off, runs a paid number lookup (confirmed first, as it is
+  billed), and files the A2P 10DLC and toll-free registrations (each confirmed first).
+  One change runs at a time, and one that may have happened even though its answer was
+  lost is not offered again. Buying a number stays on the web.
 
 ## [2.2.0] - 2026-10-13
 
