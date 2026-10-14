@@ -4804,6 +4804,346 @@ fn scheduling_calendar(smoke: &Smoke) {
     smoke.forget();
 }
 
+/// What the window's clipboard holds, as text.
+fn clipboard_text(smoke: &Smoke) -> Option<String> {
+    smoke
+        .window()
+        .clipboard()
+        .content()
+        .and_then(|content| content.value(glib::Type::STRING).ok())
+        .and_then(|value| value.get::<String>().ok())
+}
+
+/// The booking pages' developer section: the keys failing and read again
+/// alone, a key made and shown once, copied, and one revoked after a no and a
+/// failure; the apps with the MCP address, and one revoked; the webhooks with
+/// their deliveries opened, closed and opened again, one added (refused by
+/// its address, then its signing secret shown once), two changed, and one
+/// deleted.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn scheduling_developer(smoke: &Smoke) {
+    use district_model::{
+        SchedulingAdminData as Data, SchedulingAdminRequest as Request, SchedulingMe, SchedulingOk,
+        SchedulingWebhook,
+    };
+    let body = |name: &str| fixture::<serde_json::Value>(name)["data"].clone();
+    let webhooks = move || {
+        let mut webhooks: Vec<SchedulingWebhook> =
+            from_json(body("district-scheduling-webhooks.json")["items"].clone());
+        // An event this build does not know, which a save would stop.
+        webhooks[1].events.push("booking.no_show".to_owned());
+        webhooks
+    };
+    let read = move |request: &Request| match request {
+        Request::Me => Ok(Data::Me(SchedulingMe {
+            timezone: "America/Toronto".to_owned(),
+            ..SchedulingMe::default()
+        })),
+        Request::ApiKeys => Ok(Data::ApiKeys(from_json(
+            body("district-scheduling-api-keys.json")["items"].clone(),
+        ))),
+        Request::OauthConnections => Ok(Data::OauthConnections(from_json(
+            body("district-scheduling-oauth-connections.json")["items"].clone(),
+        ))),
+        Request::Webhooks => Ok(Data::Webhooks(webhooks())),
+        Request::WebhookDeliveries { id } if id == "wh-contract-1" => Ok(Data::Deliveries(
+            from_json(body("district-scheduling-webhook-deliveries.json")["items"].clone()),
+        )),
+        Request::WebhookDeliveries { .. } => Ok(Data::Deliveries(Vec::new())),
+        other => unreachable!("{other:?}"),
+    };
+    let deliveries = |smoke: &Smoke, index: usize| {
+        smoke
+            .nth::<gtk::Button>("developer-deliveries", index)
+            .emit_clicked();
+        smoke.pump();
+    };
+    let done = || Ok(Data::Done(SchedulingOk { ok: true }));
+
+    // The keys: reading, failing, and read again alone with Try again; the
+    // status read afresh gives the MCP address.
+    smoke.activate("scheduling-section-developer");
+    smoke.reply("LoadSchedulingStatus", |ticket| {
+        Event::SchedulingStatusLoaded {
+            ticket,
+            result: Ok(fixture("district-scheduling-status-ready.json")),
+        }
+    });
+    assert!(smoke.shown("developer-keys-loading"));
+    scheduling_reads(smoke, |request| match request {
+        Request::Me => read(request),
+        _ => Err(server_error()),
+    });
+    assert!(smoke.shown("developer-keys-failed") && smoke.shown("developer-keys-retry"));
+    smoke.click("developer-keys-retry");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::ApiKeys), "the keys alone");
+    admin_answer(smoke, ticket, read(&request));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    assert_eq!(smoke.count("developer-key"), 2);
+    assert!(smoke.shows_text("Zapier") && smoke.shows_text("Unused"));
+    assert!(smoke.shows_part("Last used Never"));
+    assert!(smoke.shows_part("America/Toronto"));
+    smoke.shot("67-booking-developer-keys");
+
+    // A key made: nothing to send unnamed, a failure, then the key shown
+    // once, copied on the press, and gone with the dialog.
+    smoke.click("developer-key-create");
+    assert!(smoke.shown("key-dialog"));
+    assert!(!smoke.sensitive("key-confirm"), "nothing named");
+    smoke.type_into("key-name", "Zapier");
+    smoke.click("key-confirm");
+    assert!(!smoke.sensitive("key-confirm"), "one create at a time");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::CreateApiKey { ref name } if name == "Zapier"));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("key-outcome"));
+    smoke
+        .nth::<adw::EntryRow>("key-name", 0)
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::ApiKeyCreated(from_json(body(
+            "district-scheduling-api-key-created.json",
+        )))),
+    );
+    assert!(smoke.shown("key-value"));
+    assert_eq!(smoke.label("key-value"), "cno_contract_new_api_key");
+    assert!(smoke.shows_text("Copy it now. It is not shown again."));
+    assert!(!smoke.shown("key-confirm") && !smoke.shown("key-cancel"));
+    assert_ne!(
+        clipboard_text(smoke).as_deref(),
+        Some("cno_contract_new_api_key"),
+        "only on the press"
+    );
+    scheduling_reads(smoke, read);
+    smoke.shot("67-booking-developer-key-shown");
+    smoke.click("key-copy");
+    assert_eq!(
+        clipboard_text(smoke).as_deref(),
+        Some("cno_contract_new_api_key")
+    );
+    assert!(smoke.shows_text("Copied"));
+    smoke.click("key-done");
+    assert!(!smoke.shown("key-dialog"));
+    assert!(!smoke.shows_text("cno_contract_new_api_key"));
+
+    // Revoking a key: asked once and declined; then failing; then done.
+    smoke.click("developer-key-revoke");
+    assert_eq!(questions(smoke), 1);
+    assert!(smoke.shows_text("Revoke Zapier?"));
+    smoke.respond("cancel");
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.click("developer-key-revoke");
+    smoke.respond("confirm");
+    assert!(
+        !smoke.sensitive("developer-key-revoke"),
+        "one removal at a time"
+    );
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::DeleteApiKey { ref id } if id == "key-contract-1"));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("developer-removal-failure"));
+    smoke.click("developer-key-revoke");
+    smoke.respond("confirm");
+    let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, done());
+    scheduling_reads(smoke, |request| match request {
+        Request::ApiKeys => Ok(Data::ApiKeys(Vec::new())),
+        other => read(other),
+    });
+    assert!(smoke.shown("developer-keys-empty") && !smoke.shown("developer-key"));
+    assert!(!smoke.shown("developer-removal-failure"));
+
+    // The apps, with the MCP address and its placeholder header; one
+    // revoked.
+    smoke.click("developer-tab-apps");
+    assert!(smoke.shown("developer-apps-loading") && smoke.shown("developer-mcp-card"));
+    scheduling_reads(smoke, read);
+    assert_eq!(smoke.count("developer-app"), 2);
+    assert!(smoke.shows_text("Raycast") && smoke.shows_text("Internal script"));
+    assert_eq!(
+        smoke.subtitle("developer-mcp-url"),
+        "https://book.example.com/mcp"
+    );
+    assert_eq!(
+        smoke.subtitle("developer-mcp-auth"),
+        "Bearer <your API key>"
+    );
+    assert!(!smoke.shown("developer-mcp-no-host"));
+    smoke.shot("67-booking-developer-apps");
+    smoke.click("developer-app-revoke");
+    assert!(smoke.shows_text("Revoke Raycast?"));
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert!(
+        matches!(request, Request::DeleteOauthConnection { ref id } if id == "oauth-contract-1")
+    );
+    admin_answer(smoke, ticket, done());
+    scheduling_reads(smoke, read);
+    assert!(smoke.shown("developer-tab-apps") && smoke.shown("developer-app"));
+
+    // The webhooks: failing, read again alone, then their deliveries opened
+    // (read once), closed and opened again; another's, failing.
+    smoke.click("developer-tab-webhooks");
+    scheduling_reads(smoke, |_| Err(server_error()));
+    assert!(smoke.shown("developer-webhooks-failed"));
+    smoke.click("developer-webhooks-retry");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Webhooks), "the webhooks alone");
+    admin_answer(smoke, ticket, read(&request));
+    assert_eq!(smoke.count("developer-webhook"), 2);
+    assert!(smoke.shows_text("https://hooks.contract.test/bookings"));
+    assert!(smoke.shows_text("On") && smoke.shows_text("Off"));
+    smoke.click("developer-deliveries");
+    assert!(smoke.shown("developer-deliveries-loading"));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::WebhookDeliveries { ref id } if id == "wh-contract-1"));
+    admin_answer(smoke, ticket, read(&request));
+    assert_eq!(smoke.count("developer-delivery"), 2);
+    assert!(smoke.shows_text("No answer") && smoke.shows_text("booking.created"));
+    smoke.shot("67-booking-developer-deliveries");
+    smoke.click("developer-deliveries");
+    assert!(!smoke.shown("developer-delivery"));
+    smoke.click("developer-deliveries");
+    assert!(!smoke.pending("SchedulingAdmin"), "read once");
+    assert_eq!(smoke.count("developer-delivery"), 2);
+    deliveries(smoke, 1);
+    scheduling_reads(smoke, |_| Err(server_error()));
+    assert!(smoke.shown("developer-deliveries-failure") && !smoke.shown("developer-delivery"));
+
+    // A webhook added: refused by its address, then sent with the event and
+    // the field chosen, and its signing secret shown once.
+    smoke.click("developer-webhook-add");
+    assert!(smoke.shown("webhook-dialog"));
+    assert!(!smoke.sensitive("webhook-confirm"), "no event chosen");
+    assert_eq!(smoke.count("webhook-event"), 7);
+    assert_eq!(smoke.count("webhook-field"), 22);
+    assert!(smoke.shows_text("Personal data"));
+    let field = |index: usize| smoke.nth::<adw::SwitchRow>("webhook-field", index);
+    assert!(
+        field(0).is_active() && !field(14).is_active(),
+        "attendee data off"
+    );
+    smoke
+        .nth::<adw::SwitchRow>("webhook-event", 0)
+        .set_active(true);
+    smoke.pump();
+    smoke.type_into("webhook-url", "http://hooks.example.com/in");
+    smoke.click("webhook-confirm");
+    assert!(smoke.shows_text("The URL has to start with https://."));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    smoke.type_into("webhook-url", "https://hooks.example.com/in");
+    assert!(!smoke.shown("webhook-url-line"));
+    field(15).set_active(true);
+    smoke.pump();
+    smoke.click("webhook-confirm");
+    assert!(!smoke.sensitive("webhook-confirm"), "one save at a time");
+    let (ticket, request) = admin_request(smoke);
+    let Request::CreateWebhook {
+        url,
+        events,
+        fields,
+    } = request
+    else {
+        panic!("{request:?}")
+    };
+    assert_eq!(url, "https://hooks.example.com/in");
+    assert_eq!(events, ["booking.created"]);
+    let fields = fields.expect("sent whole");
+    assert!(fields.iter().any(|f| f == "attendee_email"));
+    assert!(!fields.iter().any(|f| f == "attendee_name"));
+    admin_answer(
+        smoke,
+        ticket,
+        Ok(Data::WebhookCreated(from_json(body(
+            "district-scheduling-webhook-created.json",
+        )))),
+    );
+    assert_eq!(
+        smoke.label("webhook-secret-value"),
+        "whsec_contract_shown_once"
+    );
+    assert!(smoke.shows_part("X-Calnode-Signature"));
+    assert!(!smoke.shown("webhook-confirm"));
+    scheduling_reads(smoke, read);
+    smoke.shot("67-booking-developer-webhook-secret");
+    smoke.click("webhook-secret-copy");
+    assert_eq!(
+        clipboard_text(smoke).as_deref(),
+        Some("whsec_contract_shown_once")
+    );
+    smoke.click("webhook-secret-done");
+    assert!(!smoke.shown("webhook-dialog"));
+
+    // A webhook changed: its address fixed, an event and a field taken out.
+    smoke.click("developer-webhook-edit");
+    assert!(smoke.shown("webhook-url-fixed") && !smoke.shown("webhook-url"));
+    assert_eq!(
+        smoke.subtitle("webhook-url-fixed"),
+        "https://hooks.contract.test/bookings"
+    );
+    assert!(!smoke.shown("webhook-dropped"));
+    smoke
+        .nth::<adw::SwitchRow>("webhook-event", 1)
+        .set_active(false);
+    smoke.pump();
+    field(14).set_active(false);
+    smoke.pump();
+    smoke.click("webhook-confirm");
+    let (ticket, request) = admin_request(smoke);
+    let Request::PatchWebhook { id, events, fields } = request else {
+        panic!("{request:?}")
+    };
+    assert_eq!(id, "wh-contract-1");
+    assert_eq!(events.as_deref(), Some(&["booking.created".to_owned()][..]));
+    let fields = fields.expect("sent whole");
+    assert!(fields.iter().any(|f| f == "attendee_email"));
+    assert!(!fields.iter().any(|f| f == "attendee_name"));
+    admin_answer(smoke, ticket, done());
+    assert!(smoke.shows_text("Webhook updated"));
+    scheduling_reads(smoke, read);
+    smoke.click("webhook-cancel");
+    assert!(!smoke.shown("webhook-dialog"));
+    // One that sends an event this build does not know says a save stops it.
+    smoke
+        .nth::<gtk::Button>("developer-webhook-edit", 1)
+        .emit_clicked();
+    smoke.pump();
+    assert!(smoke.shown("webhook-dropped") && smoke.shows_part("booking.no_show"));
+    smoke.shot("67-booking-developer-webhook-edit");
+    smoke.click("webhook-cancel");
+    // The webhooks read again forgot the deliveries read: the ones open wait
+    // until opened again, which reads them.
+    assert!(smoke.shown("developer-deliveries-loading"));
+    assert!(!smoke.pending("SchedulingAdmin"));
+    deliveries(smoke, 1);
+    assert!(!smoke.shown("developer-deliveries-loading"));
+    deliveries(smoke, 1);
+    scheduling_reads(smoke, read);
+    assert!(smoke.shown("developer-deliveries-empty"));
+
+    // A webhook deleted, asked once.
+    smoke.click("developer-webhook-delete");
+    assert!(smoke.shows_text("Delete this webhook?"));
+    smoke.respond("confirm");
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::DeleteWebhook { ref id } if id == "wh-contract-1"));
+    admin_answer(smoke, ticket, done());
+    scheduling_reads(smoke, |request| match request {
+        Request::Webhooks => Ok(Data::Webhooks(Vec::new())),
+        other => read(other),
+    });
+    assert!(smoke.shown("developer-webhooks-empty") && !smoke.shown("developer-webhook"));
+    smoke.forget();
+    smoke.click("back_button");
+    assert!(smoke.shown("scheduling-section-developer"));
+    smoke.forget();
+}
+
 /// The member comes back to the window, as the desktop tells it: its
 /// `is-active` changes, and it is active.
 fn come_back(smoke: &Smoke) {
@@ -8490,6 +8830,7 @@ fn main() {
     scheduling_screen(&smoke);
     scheduling_bookings(&smoke);
     scheduling_calendar(&smoke);
+    scheduling_developer(&smoke);
     desk_screens(&smoke);
     support_screens(&smoke);
     rooms_screen(&smoke);

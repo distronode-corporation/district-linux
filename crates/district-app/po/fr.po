@@ -2554,6 +2554,12 @@ msgid "{label}: {value}"
 msgstr ""
 
 #. screen: scheduling_admin; ctx: a11y; tier: T3
+#. Screen-reader name of the row of buttons at the top of the booking pages' developer section that picks what it shows: the API keys, the connected apps, or the webhooks.
+msgctxt "scheduling_admin.developer_tabs_a11y"
+msgid "Which developer settings to show"
+msgstr ""
+
+#. screen: scheduling_admin; ctx: a11y; tier: T3
 #. What a screen reader says for an event type in the booking pages' list: its name, how long it runs and where (30 min, Phone), its state (Active, Inactive, Archived), and its public booking page's address or Not public.
 msgctxt "scheduling_admin.event_type_row_a11y"
 msgid "{name}, {subtitle}, {state}, {booking_page}"

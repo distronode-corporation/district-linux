@@ -1,13 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The booking pages' developer section: API keys, connected apps and webhooks.
-     src/pages/scheduling_admin/developer.rs fills it. -->
+<!-- The booking pages' developer section: the zone its times are in, the
+     three tabs (API keys, connected apps and the MCP address, webhooks) and a
+     pane per tab. What depends on what was read (the frames, the rows, the
+     dialogs) src/pages/scheduling_admin/developer.rs builds. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
   <template class="DistrictSchedulingDeveloperPane" parent="AdwBin">
     <property name="child">
-      <object class="AdwStatusPage" id="developer_placeholder">
-        <property name="icon-name">x-office-calendar-symbolic</property>
+      <object class="GtkScrolledWindow" id="developer_scroller">
+        <property name="hscrollbar-policy">never</property>
+        <property name="vexpand">true</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">760</property>
+            <property name="child">
+              <object class="GtkBox" id="developer_column">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <property name="margin-top">18</property>
+                <property name="margin-bottom">18</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <child>
+                  <object class="GtkLabel" id="developer_times_in">
+                    <property name="xalign">0</property>
+                    <property name="wrap">true</property>
+                    <style>
+                      <class name="caption"/>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox" id="developer_tabs">
+                    <property name="halign">start</property>
+                    <style>
+                      <class name="linked"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStack" id="developer_panes">
+                    <property name="vhomogeneous">false</property>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
       </object>
     </property>
   </template>
