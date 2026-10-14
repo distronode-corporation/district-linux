@@ -303,7 +303,7 @@ impl MarketplacePage {
     pub(crate) fn update(&self, screen: &MarketplaceScreen, capabilities: &Capabilities) {
         let imp = self.imp();
         imp.note_label
-            .set_label(MarketplaceScreen::read_only_note(capabilities));
+            .set_label(MarketplaceScreen::scope_note(capabilities));
         imp.web_box
             .set_visible(MarketplaceScreen::offers_web(capabilities));
         let owned = screen.tab == MarketplaceTab::Owned;

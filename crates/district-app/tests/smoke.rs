@@ -2136,7 +2136,7 @@ fn numbers_screen(smoke: &Smoke) {
     assert!(smoke.shown("partial_note"));
     assert!(smoke.count("number-row") >= 1);
     assert!(smoke.shows_part("+1 416 555 0100"), "numbers read grouped");
-    assert!(smoke.shows_part("read only"));
+    assert!(smoke.shows_part("cannot be bought in this app"));
     smoke.shot("51-numbers");
     smoke.click("web_button");
     let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
@@ -4283,7 +4283,7 @@ fn viewer_screens(smoke: &Smoke) {
         ticket,
         result: Ok(fixture("district-provider-numbers.json")),
     });
-    assert!(smoke.shows_part("Ask an agency or client member"));
+    assert!(smoke.shows_part("need an agency or client role"));
     assert!(
         !smoke.shown("web_button"),
         "nothing to buy with there either"

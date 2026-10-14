@@ -15,8 +15,9 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Changed
 
-- Built on District AI core for Rust 4.0.0-beta.1, which writes its words from a catalog
-  in the language the app chooses (`CoreConfig::locale`).
+- Built on District AI core for Rust 4.0.0-beta.2, which writes its words from a catalog
+  in the language the app chooses (`CoreConfig::locale`). The numbers page's note is
+  the core's `MarketplaceScreen::scope_note`, which replaces its read-only note.
 - Every word the app writes itself comes from one catalog,
   `crates/district-app/l10n/linux.toml`, keyed: the `.ui` templates mark each string
   `translatable="yes"` with its key as the `context`, looked up in the `district-ai`
