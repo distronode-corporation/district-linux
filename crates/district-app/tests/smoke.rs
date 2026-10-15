@@ -2571,7 +2571,7 @@ fn carrier_tab(smoke: &Smoke) {
         ))),
     );
     assert!(smoke.shows_part("Main line"));
-    assert!(smoke.shows_part("Balance 12.50 USD"));
+    assert!(smoke.shows_part("Balance $12.50"));
     assert!(smoke.shows_text("No SIP trunks"));
     assert!(smoke.shows_text("Not enabled"));
     smoke.shot("55-numbers-carrier");

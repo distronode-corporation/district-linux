@@ -7,6 +7,7 @@ use std::cell::{OnceCell, RefCell};
 use district_core::l10n::WireCategory;
 use district_core::{
     CallDetailScreen, CallView as CallRead, Capabilities, Event, ReportTarget, TranscriptView,
+    call_duration_label,
 };
 use district_model::{CallAnalysis, CallSummary, PhoneIntel};
 
@@ -32,7 +33,7 @@ pub(crate) fn subtitle(call: &CallSummary, now: Option<&glib::DateTime>) -> Stri
         .unwrap_or_else(|| call.time.clone());
     let mut parts = vec![when];
     if call.duration_raw.unwrap_or(0) > 0 {
-        parts.push(call.duration.clone());
+        parts.push(call_duration_label(call));
     }
     parts.retain(|part| !part.trim().is_empty());
     parts.join(" \u{b7} ")
