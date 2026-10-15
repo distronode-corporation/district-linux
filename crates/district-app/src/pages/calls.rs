@@ -6,7 +6,9 @@ use std::borrow::Cow;
 use std::cell::{Cell, OnceCell};
 
 use district_core::l10n::placeholder_label;
-use district_core::{CallLog, CallRows, CallsEvent, Event, Route, SignedIn, format_phone_number};
+use district_core::{
+    CallLog, CallRows, CallsEvent, Event, Route, SignedIn, call_duration_label, format_phone_number,
+};
 use district_model::CallSummary;
 
 use crate::adw;
@@ -102,14 +104,15 @@ pub(crate) fn call_row(call: &CallSummary, now: Option<&glib::DateTime>) -> adw:
     let time = now
         .and_then(|now| short_time(&call.created_at, now))
         .unwrap_or_else(|| call.time.clone());
+    // The service's `1m 5s` in English, the core's `1 min 5 s` in French.
     let duration = if call.duration_raw.unwrap_or(0) > 0 {
-        call.duration.as_str()
+        call_duration_label(call)
     } else {
-        ""
+        String::new()
     };
     for (text, classes) in [
         (time.as_str(), &["caption"][..]),
-        (duration, &["caption", "dim-label"][..]),
+        (duration.as_str(), &["caption", "dim-label"][..]),
     ] {
         when.append(
             &gtk::Label::builder()

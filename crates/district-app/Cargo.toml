@@ -50,13 +50,16 @@ gtk-tests = []
 # CONTRIBUTING.md); a build without it rings nothing, dials nothing and says
 # so.
 voice = ["district-call/livekit"]
+# Every build is French-capable since 3.0.0.
+default = ["fr-ca"]
 # Canadian French: the app follows a French desktop (src/l10n.rs), and the
-# packages carry the compiled catalog (po/fr.po as district-ai.mo). Off until
-# the 3.0 release, so that nobody sees French before it is reviewed: without it
-# the app writes English whatever the desktop's language and binds no catalog.
-# Turned on by adding it to `default`, the one switch the packages follow
-# (scripts/french-enabled.py); deb.yml and flatpak.yml, which release.yml
-# runs, fail a package that holds a catalog while it is off.
+# packages carry the compiled catalog (po/fr.po as district-ai.mo) and the
+# desktop entry and metadata with their French. On by default since 3.0.0: its
+# place in `default` is the one switch the packages follow
+# (scripts/french-enabled.py), and deb.yml and flatpak.yml, which release.yml
+# runs, fail a package that holds no French while it is on (or any while it is
+# off). Without it the app writes English whatever the desktop's language and
+# binds no catalog.
 fr-ca = []
 
 [dependencies]

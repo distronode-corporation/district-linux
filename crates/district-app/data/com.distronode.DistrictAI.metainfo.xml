@@ -100,23 +100,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/call-log.png</image>
       <caption>The call log, with each call's summary and transcript</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/inbox.png</image>
       <caption>Your customers' text messages and emails in one inbox</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/call.png</image>
       <caption>A call placed from the desktop, with mute and hang up always in reach</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/contacts.png</image>
       <caption>Your contacts, with each customer's details</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/overview.png</image>
       <caption>The workspace at a glance, with its latest calls</caption>
     </screenshot>
   </screenshots>
@@ -127,6 +127,30 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="3.0.0" date="2026-10-15">
+      <description>
+        <p>
+          District AI is now in Canadian French, and the booking pages are
+          managed in the app.
+        </p>
+        <ul>
+          <li>The call's live transcript, under the call strip</li>
+          <li>Booking pages: bookings, event types, working hours, calendars,
+            the team, developer settings and the page itself, right in the
+            app</li>
+          <li>Phone numbers: reapply call routing, release a number, and a new
+            Carrier tab for SIP trunks, one-time passcodes, a paid number lookup
+            and the A2P 10DLC and toll-free registrations</li>
+          <li>Start a new conversation from the inbox</li>
+          <li>Report AI-generated content on a call's summary, in a thread and
+            on District HQ answers</li>
+          <li>Knowledge: read a text file into a new document</li>
+          <li>Closing the window keeps the app running so calls still ring, with
+            a tray icon where the desktop has one, and Start at login on the
+            account screen</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.2.0" date="2026-10-13">
       <description>
         <p>

@@ -10,8 +10,8 @@ use district_core::l10n::WireCategory;
 use district_core::l10n::format::{self, PluralCategory, plural_category};
 use district_core::{
     AccountSection, BillingEvent, BillingScreen, Capabilities, Event, PlanCard, PlanStatus,
-    Renewal, format_amount, format_cents, invoice_amount, meter_fraction, minutes_used,
-    overage_note, plan_name, usage_lines,
+    Renewal, format_amount, format_cents, invoice_price, meter_fraction, minutes_used,
+    overage_note, plan_name, subscription_price, usage_lines,
 };
 use district_model::{AccountBillingResponse, BillingSubscription, WorkspaceBilling};
 
@@ -112,7 +112,7 @@ pub(crate) fn subscription_line(subscription: &BillingSubscription) -> String {
             WireCategory::BillingSubscriptionStatus,
             &subscription.status,
         )),
-        subscription.amount.map(format_cents),
+        subscription_price(subscription),
         Renewal::of(subscription).and_then(renewal_text),
         subscription
             .included_minutes
@@ -405,7 +405,7 @@ impl BillingPage {
                 .build();
             row.add_suffix(
                 &gtk::Label::builder()
-                    .label(format_cents(invoice_amount(invoice)))
+                    .label(invoice_price(invoice))
                     .css_classes(["numeric"])
                     .build(),
             );

@@ -3,7 +3,7 @@
 use district_core::Locale;
 
 /// True when every entry has French; until then the French arm carries the English.
-pub const FR_COMPLETE: bool = false;
+pub const FR_COMPLETE: bool = true;
 
 /// `about.copyright`
 #[must_use]
@@ -172,7 +172,7 @@ pub fn analytics_report_title(l: Locale, range: &str) -> String {
 pub fn analytics_tile_abandoned(l: Locale) -> &'static str {
     match l {
         Locale::En => "Abandoned",
-        Locale::FrCa => "Abandonné",
+        Locale::FrCa => "Abandonnés",
     }
 }
 
@@ -208,7 +208,7 @@ pub fn analytics_tile_converted(l: Locale) -> &'static str {
 pub fn analytics_tile_missed(l: Locale) -> &'static str {
     match l {
         Locale::En => "Missed",
-        Locale::FrCa => "Manqué",
+        Locale::FrCa => "Manqués",
     }
 }
 
@@ -1474,7 +1474,7 @@ pub fn contact_saved(l: Locale) -> &'static str {
 pub fn contact_timeline(l: Locale) -> &'static str {
     match l {
         Locale::En => "Timeline",
-        Locale::FrCa => "Chronologie",
+        Locale::FrCa => "Échéancier",
     }
 }
 
@@ -2008,7 +2008,7 @@ pub fn desk_ticket_raised(l: Locale) -> &'static str {
 pub fn desk_ticket_resolved_at(l: Locale) -> &'static str {
     match l {
         Locale::En => "Resolved",
-        Locale::FrCa => "Réglée",
+        Locale::FrCa => "Réglé",
     }
 }
 
@@ -2026,7 +2026,7 @@ pub fn desk_ticket_view_customer(l: Locale) -> &'static str {
 pub fn desk_ticket_view_open(l: Locale) -> &'static str {
     match l {
         Locale::En => "Open",
-        Locale::FrCa => "Ouverte",
+        Locale::FrCa => "Ouvert",
     }
 }
 
@@ -2035,7 +2035,7 @@ pub fn desk_ticket_view_open(l: Locale) -> &'static str {
 pub fn desk_ticket_view_resolved(l: Locale) -> &'static str {
     match l {
         Locale::En => "Resolved",
-        Locale::FrCa => "Réglée",
+        Locale::FrCa => "Réglé",
     }
 }
 
@@ -2344,7 +2344,7 @@ pub fn hq_unknown_note(l: Locale) -> &'static str {
 pub fn hq_viewer_note(l: Locale) -> &'static str {
     match l {
         Locale::En => "Nothing has been changed. Only an agency or client member of this workspace can confirm a change.",
-        Locale::FrCa => "Rien n'a été modifié. Seul un membre ayant le rôle Agence ou Client dans cet espace de travail peut confirmer un changement.",
+        Locale::FrCa => "Rien n'a été modifié. Seul un membre ayant le rôle Administrateur ou Membre dans cet espace de travail peut confirmer un changement.",
     }
 }
 
@@ -2530,7 +2530,7 @@ pub fn inbox_page_no_conversation_open(l: Locale) -> &'static str {
 pub fn inbox_page_search_every_message(l: Locale) -> &'static str {
     match l {
         Locale::En => "Search every message",
-        Locale::FrCa => "Rechercher dans tous les messages",
+        Locale::FrCa => "Rechercher les messages",
     }
 }
 
@@ -2920,7 +2920,7 @@ pub fn meeting_record_minutes(l: Locale) -> &'static str {
 pub fn members_agency_only(l: Locale) -> &'static str {
     match l {
         Locale::En => "Only an agency member can add members, change their roles or remove them.",
-        Locale::FrCa => "Seul un membre ayant le rôle Agence peut ajouter des membres, changer leurs rôles ou les retirer.",
+        Locale::FrCa => "Seul un membre ayant le rôle Administrateur peut ajouter des membres, changer leurs rôles ou les retirer.",
     }
 }
 
@@ -3361,7 +3361,7 @@ pub fn metainfo_description_li4(l: Locale) -> &'static str {
 pub fn metainfo_description_li5(l: Locale) -> &'static str {
     match l {
         Locale::En => "Meeting rooms, audio only, and each meeting's record",
-        Locale::FrCa => "Des salles de réunion, en audio seulement, et le dossier de chaque réunion",
+        Locale::FrCa => "Des salles de réunion, en audio seulement, et le procès-verbal de chaque réunion",
     }
 }
 
@@ -3433,7 +3433,7 @@ pub fn metainfo_name(l: Locale) -> &'static str {
 pub fn metainfo_release_2_1_0_li1(l: Locale) -> &'static str {
     match l {
         Locale::En => "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge",
-        Locale::FrCa => "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge",
+        Locale::FrCa => "District Studio\u{00A0}: Persona, Voix, Gestion des appels (avec les règles d'acheminement et le répertoire de transfert), Compétences et Connaissances",
     }
 }
 
@@ -3442,7 +3442,7 @@ pub fn metainfo_release_2_1_0_li1(l: Locale) -> &'static str {
 pub fn metainfo_release_2_1_0_li2(l: Locale) -> &'static str {
     match l {
         Locale::En => "Workspace: messaging accounts, members and phone numbers",
-        Locale::FrCa => "Workspace: messaging accounts, members and phone numbers",
+        Locale::FrCa => "Espace de travail\u{00A0}: comptes de messagerie, membres et numéros de téléphone",
     }
 }
 
@@ -3451,7 +3451,7 @@ pub fn metainfo_release_2_1_0_li2(l: Locale) -> &'static str {
 pub fn metainfo_release_2_1_0_li3(l: Locale) -> &'static str {
     match l {
         Locale::En => "Screen titles follow the service: Voice, Skills and Knowledge",
-        Locale::FrCa => "Screen titles follow the service: Voice, Skills and Knowledge",
+        Locale::FrCa => "Les titres d'écran suivent ceux du service\u{00A0}: Voix, Compétences et Connaissances",
     }
 }
 
@@ -3460,7 +3460,7 @@ pub fn metainfo_release_2_1_0_li3(l: Locale) -> &'static str {
 pub fn metainfo_release_2_1_0_p(l: Locale) -> &'static str {
     match l {
         Locale::En => "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names.",
-        Locale::FrCa => "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names.",
+        Locale::FrCa => "Les paramètres de votre réceptionniste sont maintenant regroupés sous District Studio, comme dans la console Web, dans le même ordre et sous les mêmes noms.",
     }
 }
 
@@ -3469,7 +3469,7 @@ pub fn metainfo_release_2_1_0_p(l: Locale) -> &'static str {
 pub fn metainfo_release_2_2_0_li1(l: Locale) -> &'static str {
     match l {
         Locale::En => "A link to the web dashboard no longer signs in someone else's browser",
-        Locale::FrCa => "A link to the web dashboard no longer signs in someone else's browser",
+        Locale::FrCa => "Un lien vers le tableau de bord Web ne connecte plus le navigateur d'une autre personne",
     }
 }
 
@@ -3478,7 +3478,7 @@ pub fn metainfo_release_2_2_0_li1(l: Locale) -> &'static str {
 pub fn metainfo_release_2_2_0_li2(l: Locale) -> &'static str {
     match l {
         Locale::En => "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio",
-        Locale::FrCa => "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio",
+        Locale::FrCa => "La section Facturation affiche Voice Solo, Voice Starter, Voice Pro ou Voice Studio",
     }
 }
 
@@ -3487,7 +3487,7 @@ pub fn metainfo_release_2_2_0_li2(l: Locale) -> &'static str {
 pub fn metainfo_release_2_2_0_li3(l: Locale) -> &'static str {
     match l {
         Locale::En => "A reply typed just before quitting is saved",
-        Locale::FrCa => "A reply typed just before quitting is saved",
+        Locale::FrCa => "Une réponse tapée juste avant de quitter est conservée",
     }
 }
 
@@ -3496,7 +3496,7 @@ pub fn metainfo_release_2_2_0_li3(l: Locale) -> &'static str {
 pub fn metainfo_release_2_2_0_li4(l: Locale) -> &'static str {
     match l {
         Locale::En => "Built on District AI core for Rust 3.1.1, shared with District AI for Windows",
-        Locale::FrCa => "Built on District AI core for Rust 3.1.1, shared with District AI for Windows",
+        Locale::FrCa => "Repose sur District Core pour Rust 3.1.1, partagé avec District AI pour Windows",
     }
 }
 
@@ -3505,7 +3505,79 @@ pub fn metainfo_release_2_2_0_li4(l: Locale) -> &'static str {
 pub fn metainfo_release_2_2_0_p(l: Locale) -> &'static str {
     match l {
         Locale::En => "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does.",
-        Locale::FrCa => "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does.",
+        Locale::FrCa => "«\u{00A0}Gérer sur le Web\u{00A0}» ne connecte plus que le navigateur ouvert par l'application, et la section Facturation nomme votre forfait comme la page Tarifs.",
+    }
+}
+
+/// `metainfo.release_3_0_0.li1`
+#[must_use]
+pub fn metainfo_release_3_0_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The call's live transcript, under the call strip",
+        Locale::FrCa => "La transcription en direct de l'appel, sous la barre d'appel",
+    }
+}
+
+/// `metainfo.release_3_0_0.li2`
+#[must_use]
+pub fn metainfo_release_3_0_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Booking pages: bookings, event types, working hours, calendars, the team, developer settings and the page itself, right in the app",
+        Locale::FrCa => "Pages de réservation\u{00A0}: rendez-vous, types de rendez-vous, heures de disponibilité, calendriers, équipe, paramètres de développeur et la page elle-même, directement dans l'application",
+    }
+}
+
+/// `metainfo.release_3_0_0.li3`
+#[must_use]
+pub fn metainfo_release_3_0_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Phone numbers: reapply call routing, release a number, and a new Carrier tab for SIP trunks, one-time passcodes, a paid number lookup and the A2P 10DLC and toll-free registrations",
+        Locale::FrCa => "Numéros de téléphone\u{00A0}: rétablissez l'acheminement, libérez un numéro, et utilisez le nouvel onglet Transporteur pour les raccordements SIP, les codes à usage unique, la recherche de numéro payante et les inscriptions A2P 10DLC et de numéros sans frais",
+    }
+}
+
+/// `metainfo.release_3_0_0.li4`
+#[must_use]
+pub fn metainfo_release_3_0_0_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Start a new conversation from the inbox",
+        Locale::FrCa => "Lancez une nouvelle conversation depuis la boîte de réception",
+    }
+}
+
+/// `metainfo.release_3_0_0.li5`
+#[must_use]
+pub fn metainfo_release_3_0_0_li5(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Report AI-generated content on a call's summary, in a thread and on District HQ answers",
+        Locale::FrCa => "Signalez un contenu généré par l'IA dans le résumé d'un appel, dans un fil et dans les réponses de District HQ",
+    }
+}
+
+/// `metainfo.release_3_0_0.li6`
+#[must_use]
+pub fn metainfo_release_3_0_0_li6(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Knowledge: read a text file into a new document",
+        Locale::FrCa => "Connaissances\u{00A0}: importez un fichier texte dans un nouveau document",
+    }
+}
+
+/// `metainfo.release_3_0_0.li7`
+#[must_use]
+pub fn metainfo_release_3_0_0_li7(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Closing the window keeps the app running so calls still ring, with a tray icon where the desktop has one, and Start at login on the account screen",
+        Locale::FrCa => "Fermer la fenêtre laisse l'application ouverte pour que les appels continuent de sonner, avec une icône dans la zone de notification si le bureau en a une, et l'option «\u{00A0}Lancer à l'ouverture de session\u{00A0}» à l'écran Compte",
+    }
+}
+
+/// `metainfo.release_3_0_0.p`
+#[must_use]
+pub fn metainfo_release_3_0_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District AI is now in Canadian French, and the booking pages are managed in the app.",
+        Locale::FrCa => "District AI est maintenant en français canadien, et les pages de réservation se gèrent dans l'application.",
     }
 }
 
@@ -4921,7 +4993,7 @@ pub fn support_page_no_request_open(l: Locale) -> &'static str {
 pub fn support_page_open(l: Locale) -> &'static str {
     match l {
         Locale::En => "Open",
-        Locale::FrCa => "Ouverte",
+        Locale::FrCa => "Ouvertes",
     }
 }
 
@@ -4939,7 +5011,7 @@ pub fn support_page_open_requests(l: Locale) -> &'static str {
 pub fn support_page_resolved(l: Locale) -> &'static str {
     match l {
         Locale::En => "Resolved",
-        Locale::FrCa => "Réglée",
+        Locale::FrCa => "Réglées",
     }
 }
 
@@ -5230,7 +5302,7 @@ pub fn thread_view_send_enter(l: Locale) -> &'static str {
 pub fn thread_view_shift_enter_new_line(l: Locale) -> &'static str {
     match l {
         Locale::En => "Shift+Enter for a new line",
-        Locale::FrCa => "Maj+Entrée pour une nouvelle ligne",
+        Locale::FrCa => "Maj+Entrée\u{00A0}: nouvelle ligne",
     }
 }
 
