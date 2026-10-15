@@ -824,6 +824,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_release_3_0_1_li1(Locale::FrCa), "Un appel qui sonne sur cet ordinateur s'arrête dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche");
     assert_eq!(text::metainfo_release_3_0_1_li2(Locale::En), "Booking pages: a Try again button when working hours, an event type's hosts or a webhook's deliveries fail to load");
     assert_eq!(text::metainfo_release_3_0_1_li2(Locale::FrCa), "Pages de réservation\u{00A0}: bouton Réessayer si les heures de disponibilité, les hôtes d'un type de rendez-vous ou les livraisons d'un webhook ne se chargent pas");
+    assert_eq!(text::metainfo_release_3_0_1_li3(Locale::En), "Screens fit large text and narrow windows better, and support requests show their status in your language.");
+    assert_eq!(text::metainfo_release_3_0_1_li3(Locale::FrCa), "Les écrans s'adaptent mieux au texte agrandi et aux fenêtres étroites, et les demandes de soutien affichent leur état dans votre langue.");
     assert_eq!(text::metainfo_release_3_0_1_p(Locale::En), "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can retry what failed to load.");
     assert_eq!(text::metainfo_release_3_0_1_p(Locale::FrCa), "Les appels cessent de sonner dès qu'ils sont pris ailleurs, et les pages de réservation peuvent recharger ce qui n'a pas pu être chargé.");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::En), "A call placed from the desktop, with mute and hang up always in reach");

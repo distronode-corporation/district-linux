@@ -3599,6 +3599,15 @@ pub fn metainfo_release_3_0_1_li2(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_0_1.li3`
+#[must_use]
+pub fn metainfo_release_3_0_1_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Screens fit large text and narrow windows better, and support requests show their status in your language.",
+        Locale::FrCa => "Les écrans s'adaptent mieux au texte agrandi et aux fenêtres étroites, et les demandes de soutien affichent leur état dans votre langue.",
+    }
+}
+
 /// `metainfo.release_3_0_1.p`
 #[must_use]
 pub fn metainfo_release_3_0_1_p(l: Locale) -> &'static str {

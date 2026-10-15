@@ -3121,6 +3121,14 @@ screen = "metainfo"
 state = "reviewed"
 note = "The 3.0.1 release's notes in the AppStream metadata, as software centres show them."
 
+[metainfo.release_3_0_1.li3]
+en = "Screens fit large text and narrow windows better, and support requests show their status in your language."
+fr = "Les écrans s'adaptent mieux au texte agrandi et aux fenêtres étroites, et les demandes de soutien affichent leur état dans votre langue."
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.1 release's notes in the AppStream metadata, as software centres show them."
+
 [metainfo.release_3_0_1.p]
 en = "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can retry what failed to load."
 fr = "Les appels cessent de sonner dès qu'ils sont pris ailleurs, et les pages de réservation peuvent recharger ce qui n'a pas pu être chargé."

@@ -116,6 +116,7 @@
         <ul>
           <li>@metainfo.release_3_0_1.li1@</li>
           <li>@metainfo.release_3_0_1.li2@</li>
+          <li>@metainfo.release_3_0_1.li3@</li>
         </ul>
       </description>
     </release>

@@ -138,6 +138,8 @@
             another device, the ring times out or the caller hangs up</li>
           <li>Booking pages: a Try again button when working hours, an event
             type's hosts or a webhook's deliveries fail to load</li>
+          <li>Screens fit large text and narrow windows better, and support
+            requests show their status in your language.</li>
         </ul>
       </description>
     </release>
