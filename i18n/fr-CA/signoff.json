@@ -1,11 +1,11 @@
 {
-  "signed_off_by": "xhigh manager review (monorepo docs/i18n_fr_ca_signoff_v3.md)",
-  "release": "v3.0.0",
-  "commit": "646f29a3ecb91a173df52068af85ca9c4b64ee6c",
+  "signed_off_by": "v3 manager (Opus 5.5 xhigh), final French review, 2026-10-15",
+  "release": "v3.0.1",
+  "commit": "f75f53c2cd04a92dc6e421d19bb251c18eafb853",
   "catalogs": [
     {
       "path": "crates/district-app/l10n/linux.toml",
-      "sha256": "580fb1dbc9bb8474ce0104053b3f4cfe1147982a57365fc1470e1cdcfae554eb"
+      "sha256": "2174960837b4e7f6122a2f683ccf76071976cea31b3f89edda0325536eadc318"
     },
     {
       "path": "crates/district-app/l10n/scheduling.toml",
