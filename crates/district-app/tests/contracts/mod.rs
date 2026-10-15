@@ -60,7 +60,11 @@ pub fn dir() -> &'static Path {
 /// A recorded response from `set` (`fixtures`, the Android app's set, or
 /// `desktop`, the shapes only the desktop reads), decoded.
 pub fn read<T: DeserializeOwned>(set: &str, name: &str) -> T {
-    let file = dir().join(set).join(name);
+    // Visual QA's sample data, file by file, over the core's.
+    let overlay = std::env::var_os("DISTRICT_VQA_FIXTURES")
+        .map(|overlay| PathBuf::from(overlay).join(name))
+        .filter(|file| set == "fixtures" && file.is_file());
+    let file = overlay.unwrap_or_else(|| dir().join(set).join(name));
     let text = std::fs::read_to_string(&file)
         .unwrap_or_else(|error| panic!("cannot read {}: {error}", file.display()));
     serde_json::from_str(&text).unwrap_or_else(|error| panic!("{name}: {error}"))

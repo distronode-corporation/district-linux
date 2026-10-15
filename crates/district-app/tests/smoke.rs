@@ -25,6 +25,85 @@
 //! With `DISTRICT_SMOKE_SHOTS` set to a directory, each screen is also saved
 //! there as a PNG.
 
+//! Visual QA (the release gate between the QA builds and the store
+//! submissions) reuses this walk to draw every screen in each language, style
+//! and text size. Set any of these with `DISTRICT_SMOKE_SHOTS`:
+//!
+//! - `DISTRICT_VQA_LOCALE=fr-CA`: the core writes French, and
+//!   `DISTRICT_VQA_CATALOG` names a directory holding
+//!   `fr/LC_MESSAGES/district-ai.mo` for the templates (run with
+//!   `LANG=fr_CA.UTF-8`, and `LOCPATH` if that locale is not installed).
+//! - `DISTRICT_VQA_TEXT_SCALE=1.25`: GNOME's Large Text (the
+//!   `text-scaling-factor`), as GTK's `gtk-xft-dpi`.
+//! - `DISTRICT_VQA_SOFT=1`: a failed `assert!`/`assert_eq!` is printed with
+//!   `VQA-SOFT` rather than ending the walk, because the walk's assertions
+//!   name English text and the default text size.
+//! - `DISTRICT_VQA_FONT="Adwaita Sans 11"`: the desktop's interface font.
+//! - `DISTRICT_VQA_FIXTURES`: a directory whose `district-*.json` files are
+//!   read in place of the core's, for sample data in another language.
+
+/// Whether a failed assertion only prints (`DISTRICT_VQA_SOFT`).
+fn vqa_soft() -> bool {
+    std::env::var_os("DISTRICT_VQA_SOFT").is_some()
+}
+
+/// A failed assertion: printed under `DISTRICT_VQA_SOFT`, else a panic.
+#[track_caller]
+fn vqa_failed(message: &str) {
+    if vqa_soft() {
+        let at = std::panic::Location::caller();
+        eprintln!("VQA-SOFT {}:{}: {message}", at.file(), at.line());
+        // An assertion that is a wait loop's way out fails on every turn:
+        // the hundredth failure at one place ends the walk after all.
+        thread_local! {
+            static FAILED: RefCell<std::collections::HashMap<u32, u32>> = RefCell::default();
+        }
+        let count = FAILED.with(|failed| {
+            let mut failed = failed.borrow_mut();
+            let count = failed.entry(at.line()).or_default();
+            *count += 1;
+            *count
+        });
+        std::assert!(count < 100, "VQA-SOFT gave up at line {}: {message}", at.line());
+    } else {
+        panic!("{message}");
+    }
+}
+
+macro_rules! assert {
+    ($cond:expr $(,)?) => {
+        if !$cond {
+            crate::vqa_failed(concat!("assertion failed: ", stringify!($cond)));
+        }
+    };
+    ($cond:expr, $($arg:tt)+) => {
+        if !$cond {
+            crate::vqa_failed(&format!($($arg)+));
+        }
+    };
+}
+
+macro_rules! assert_eq {
+    ($left:expr, $right:expr $(,)?) => {
+        match (&$left, &$right) {
+            (left, right) => {
+                if !(*left == *right) {
+                    crate::vqa_failed(&format!("assertion `left == right` failed\n  left: {left:?}\n right: {right:?}"));
+                }
+            }
+        }
+    };
+    ($left:expr, $right:expr, $($arg:tt)+) => {
+        match (&$left, &$right) {
+            (left, right) => {
+                if !(*left == *right) {
+                    crate::vqa_failed(&format!("{}\n  left: {left:?}\n right: {right:?}", format!($($arg)+)));
+                }
+            }
+        }
+    };
+}
+
 mod common;
 mod contracts;
 
@@ -509,6 +588,19 @@ impl Smoke {
             let texture = self.render();
             assert!(texture.width() > 0 && texture.height() > 0);
             if let Some(dir) = &self.shots {
+                // Under visual QA, numbered in walk order.
+                let name = if std::env::var_os("DISTRICT_VQA_SOFT").is_some() {
+                    static SHOTS: std::sync::atomic::AtomicUsize =
+                        std::sync::atomic::AtomicUsize::new(0);
+                    let index = if suffix == "light" {
+                        SHOTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1
+                    } else {
+                        SHOTS.load(std::sync::atomic::Ordering::Relaxed)
+                    };
+                    format!("{index:03}-{name}")
+                } else {
+                    name.to_owned()
+                };
                 texture
                     .save_to_png(dir.join(format!("{name}-{suffix}.png")))
                     .expect("the screenshot is written");
@@ -593,6 +685,18 @@ fn start() -> Smoke {
     let settings = gtk::Settings::default().expect("settings for the display");
     settings.set_gtk_enable_animations(false);
     settings.set_gtk_recent_files_enabled(false);
+    if let Some(scale) = std::env::var("DISTRICT_VQA_TEXT_SCALE")
+        .ok()
+        .and_then(|value| value.parse::<f64>().ok())
+    {
+        // GNOME's text-scaling-factor reaches GTK as the font DPI, in 1024ths.
+        #[allow(clippy::cast_possible_truncation)]
+        settings.set_gtk_xft_dpi((96.0 * 1024.0 * scale).round() as i32);
+    }
+    // The desktop's interface font (GNOME's is "Adwaita Sans 11").
+    if let Ok(font) = std::env::var("DISTRICT_VQA_FONT") {
+        settings.set_gtk_font_name(Some(&font));
+    }
     let script = Rc::new(Script::default());
     let (events, receiver) = async_channel::unbounded();
     let (commands, command_receiver) = async_channel::unbounded();
@@ -622,8 +726,13 @@ fn start() -> Smoke {
             calls_available: true,
             // As the app is built: no purchases in the app.
             in_app_purchases: false,
-            // English, as the app writes without the `fr-ca` feature.
-            locale: district_core::Locale::En,
+            // English, as the app writes without the `fr-ca` feature, unless
+            // visual QA asks for French.
+            locale: if std::env::var("DISTRICT_VQA_LOCALE").is_ok_and(|tag| tag.starts_with("fr")) {
+                district_core::Locale::FrCa
+            } else {
+                district_core::Locale::En
+            },
         },
         device_name: DEVICE_NAME.to_owned(),
         effects: Rc::clone(&script) as Rc<dyn Effects>,
@@ -637,6 +746,9 @@ fn start() -> Smoke {
     app.set_flags(app.flags() | gio::ApplicationFlags::NON_UNIQUE);
     app.register(gio::Cancellable::NONE)
         .expect("the application registers");
+    if let Some(catalog) = std::env::var_os("DISTRICT_VQA_CATALOG") {
+        district_app::l10n::init_at(std::path::Path::new(&catalog));
+    }
     app.activate();
     let smoke = Smoke {
         app,
@@ -7554,10 +7666,32 @@ fn chosen(row: &adw::ComboRow) -> String {
 
 /// Chooses the choice labelled `label` on `row`, as a person would.
 fn choose(smoke: &Smoke, row: &adw::ComboRow, label: &str) {
-    let index = choice_labels(row)
+    let offered = choice_labels(row);
+    // Under visual QA in French, the choice by its French label (from the catalogs), else
+    // the first one starting with the label's first word.
+    let french = match label {
+        "In person" => "En personne",
+        "Round robin" => "À tour de rôle",
+        "Priority" => "Priorité",
+        "Select" => "Liste déroulante",
+        "Custom hours" => "Heures personnalisées",
+        "Other server URL" => "URL d'un autre serveur",
+        "German" => "Allemand",
+        "Viewer" => "Lecteur",
+        "Client" => "Membre",
+        other => other,
+    };
+    let first_word = label.split_whitespace().next().unwrap_or(label);
+    let index = offered
         .iter()
-        .position(|offered| offered == label)
-        .unwrap_or_else(|| panic!("no {label} among {:?}", choice_labels(row)));
+        .position(|choice| choice == label)
+        .or_else(|| vqa_soft().then(|| offered.iter().position(|choice| choice == french)).flatten())
+        .or_else(|| {
+            vqa_soft()
+                .then(|| offered.iter().position(|choice| choice.starts_with(first_word)))
+                .flatten()
+        })
+        .unwrap_or_else(|| panic!("no {label} among {offered:?}"));
     row.set_selected(u32::try_from(index).expect("a small list"));
     smoke.pump();
 }
@@ -9168,41 +9302,57 @@ fn client_members(smoke: &Smoke) {
     smoke.forget();
 }
 
+/// Runs one part of the walk. Under visual QA a part that panics is reported
+/// (`VQA-SCENE-FAILED`) and the walk goes on with the next, its pending effects
+/// forgotten, so one English-only step does not cost every later screen.
+fn vqa_scene(smoke: &Smoke, name: &str, scene: fn(&Smoke)) {
+    if !vqa_soft() {
+        scene(smoke);
+        return;
+    }
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| scene(smoke)));
+    if outcome.is_err() {
+        eprintln!("VQA-SCENE-FAILED {name}");
+        smoke.script.pending.borrow_mut().clear();
+        smoke.pump();
+    }
+}
+
 fn main() {
     let smoke = start();
-    restoring(&smoke);
-    signing_in(&smoke);
-    overview_page(&smoke);
-    account_and_devices(&smoke);
-    inbox_and_thread(&smoke);
-    composing(&smoke);
-    calls_screens(&smoke);
-    contacts_screens(&smoke);
-    hq_screen(&smoke);
-    analytics_screen(&smoke);
-    numbers_screen(&smoke);
-    billing_screen(&smoke);
-    workflows_screen(&smoke);
-    scheduling_screen(&smoke);
-    scheduling_bookings(&smoke);
-    scheduling_calendar(&smoke);
-    scheduling_developer(&smoke);
-    scheduling_settings(&smoke);
-    desk_screens(&smoke);
-    support_screens(&smoke);
-    rooms_screen(&smoke);
-    settings_screens(&smoke);
-    live_updates(&smoke);
-    presence_setting(&smoke);
-    dialing(&smoke);
-    ringing(&smoke);
-    sleeping(&smoke);
-    viewer_workspace(&smoke);
-    narrow(&smoke);
-    reopening(&smoke);
-    desktop_calls(&smoke);
-    signing_out(&smoke);
-    tray_quit(&smoke);
-    quitting(&smoke);
+    vqa_scene(&smoke, "restoring", restoring);
+    vqa_scene(&smoke, "signing_in", signing_in);
+    vqa_scene(&smoke, "overview_page", overview_page);
+    vqa_scene(&smoke, "account_and_devices", account_and_devices);
+    vqa_scene(&smoke, "inbox_and_thread", inbox_and_thread);
+    vqa_scene(&smoke, "composing", composing);
+    vqa_scene(&smoke, "calls_screens", calls_screens);
+    vqa_scene(&smoke, "contacts_screens", contacts_screens);
+    vqa_scene(&smoke, "hq_screen", hq_screen);
+    vqa_scene(&smoke, "analytics_screen", analytics_screen);
+    vqa_scene(&smoke, "numbers_screen", numbers_screen);
+    vqa_scene(&smoke, "billing_screen", billing_screen);
+    vqa_scene(&smoke, "workflows_screen", workflows_screen);
+    vqa_scene(&smoke, "scheduling_screen", scheduling_screen);
+    vqa_scene(&smoke, "scheduling_bookings", scheduling_bookings);
+    vqa_scene(&smoke, "scheduling_calendar", scheduling_calendar);
+    vqa_scene(&smoke, "scheduling_developer", scheduling_developer);
+    vqa_scene(&smoke, "scheduling_settings", scheduling_settings);
+    vqa_scene(&smoke, "desk_screens", desk_screens);
+    vqa_scene(&smoke, "support_screens", support_screens);
+    vqa_scene(&smoke, "rooms_screen", rooms_screen);
+    vqa_scene(&smoke, "settings_screens", settings_screens);
+    vqa_scene(&smoke, "live_updates", live_updates);
+    vqa_scene(&smoke, "presence_setting", presence_setting);
+    vqa_scene(&smoke, "dialing", dialing);
+    vqa_scene(&smoke, "ringing", ringing);
+    vqa_scene(&smoke, "sleeping", sleeping);
+    vqa_scene(&smoke, "viewer_workspace", viewer_workspace);
+    vqa_scene(&smoke, "narrow", narrow);
+    vqa_scene(&smoke, "reopening", reopening);
+    vqa_scene(&smoke, "desktop_calls", desktop_calls);
+    vqa_scene(&smoke, "signing_out", signing_out);
+    vqa_scene(&smoke, "tray_quit", tray_quit);
+    vqa_scene(&smoke, "quitting", quitting);
     println!("smoke test passed");
 }
