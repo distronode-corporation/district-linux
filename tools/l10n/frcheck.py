@@ -73,7 +73,7 @@ RULES: dict[str, tuple[str, str]] = {
     "NEVER": ("error", "a never-translate name in en is missing or altered in fr"),
     "TERM-STRICT": ("error", "a strict glossary term in en is not rendered with its fr term"),
     "BAN": ("error", "banned phrase (données personnelles, enregistrement, e-mail, chat, AI, cookies, termbase bans); 'enregistrement' only after a negation (aucun enregistrement)"),
-    "OS-WORD": ("error", "apple catalogs say Réglages, others Paramètres; termbase os rows for the platform"),
+    "OS-WORD": ("error", "apple catalogs say Réglages, others Paramètres; termbase os rows for the platform (a command word as the whole string only on a button, menu, link, tooltip or a11y)"),
     "UNTRANSLATED": ("error", "fr equals en without same_ok"),
     "LEN": ("warn", "fr longer than max (default ceil(len(en)*1.3), at least len(en)+4)"),
     "TM-DRIFT": ("error", "fr differs from the memory for the same en and ctx without fr_variant; warn against ctx '*' or a draft row"),
@@ -1264,17 +1264,62 @@ def offer_in(value: str) -> str | None:
 OS_UI_LEAD = r"(?i:\b(?:tap|click|press|select|choose|open|in|under|from|to|then|hit|use)\s+(?:the\s+)?)"
 OS_QUOTES_OPEN = "[\"'\u201c\u2018\u00ab]"
 OS_QUOTES_CLOSE = "[\"'\u201d\u2019\u00bb]"
+# Most OS rows name a command (Open, Done, Clear, Back). As the whole string, the English is
+# that command only on a control: a status label "open" (an invoice) is \u00ab Ouverte \u00bb, a toast
+# "Done" is \u00ab C'est fait \u00bb. So a whole-string match applies in these ctx only, unless the row
+# names a place or thing of the OS, which reads the same on a title or a label. A termbase os row
+# may list its own `ctx` to replace both defaults. A quoted or led mention ('Tap "Done"',
+# "in Settings") names the control in any ctx.
+OS_COMMAND_CTX = frozenset({"button", "menu", "link", "tooltip", "a11y"})
+OS_NOUN_TERMS = frozenset({"about", "camera", "help", "microphone", "notifications", "preferences",
+                           "settings", "system settings"})
+RE_OS_QUALIFIER = re.compile(r"\s*\(([^)]*)\)$")
 
 
-def os_term_applies(term: str, en_text: str) -> bool:
-    term = re.sub(r"\s*\([^)]*\)$", "", term).strip()  # "Edit (menu)"
+def os_term_parts(term: str) -> tuple[str, str | None]:
+    """("Edit (menu)") -> ("Edit", "menu"); ("Open") -> ("Open", None)."""
+    m = RE_OS_QUALIFIER.search(term)
+    return (term[:m.start()].strip(), m.group(1).strip().lower()) if m else (term.strip(), None)
+
+
+def os_term_applies(term: str, en_text: str, ctx: str | None = None,
+                    siblings: frozenset[str] = frozenset(), ctxs: list[str] | None = None) -> bool:
+    """Whether the English names this OS element, so its French must hold the row's French.
+
+    `ctx` is the entry's ctx (None: any). A qualified row ("Edit (menu)") claims a whole string
+    in that ctx and a mention followed by the qualifier ("the Edit menu"); `siblings` are the
+    qualifiers of other rows for the same term on the platform, which the plain row leaves to
+    them. `ctxs` is the row's own ctx list, when the termbase gives one."""
+    base, qual = os_term_parts(term)
     core = re.sub(r"[.!?:;,\u2026]+$", "", en_text.strip()).strip()
-    if core.lower() == term.lower():
+    if core.lower() == base.lower():
+        if ctx is None:
+            return True
+        if qual:
+            return ctx == qual
+        if ctx in siblings:
+            return False
+        if ctxs is not None:
+            return ctx in ctxs
+        return ctx in OS_COMMAND_CTX or base.lower() in OS_NOUN_TERMS
+    if qual:
+        after = rf"(?=\s+{re.escape(qual)}\b)"
+    else:
+        after = "".join(rf"(?!\s+{re.escape(q)}\b)" for q in sorted(siblings))
+    t = re.escape(base)
+    if re.search(OS_QUOTES_OPEN + r"\s*" + t + r"\s*" + OS_QUOTES_CLOSE + after, en_text, re.I):
         return True
-    t = re.escape(term)
-    if re.search(OS_QUOTES_OPEN + r"\s*" + t + r"\s*" + OS_QUOTES_CLOSE, en_text, re.I):
-        return True
-    return bool(re.search(OS_UI_LEAD + t + r"(?!\w)", en_text))
+    return bool(re.search(OS_UI_LEAD + t + r"(?!\w)" + after, en_text))
+
+
+def os_siblings(rows: list[dict]) -> dict[str, frozenset[str]]:
+    """Lowercased base term -> the qualifiers of the qualified rows for it ("edit" -> {"menu"})."""
+    out: dict[str, set[str]] = {}
+    for r in rows:
+        base, qual = os_term_parts(str(r.get("en") or ""))
+        if qual:
+            out.setdefault(base.lower(), set()).add(qual)
+    return {k: frozenset(v) for k, v in out.items()}
 RE_OFFER_EN = re.compile(r"\b(?:free|discount\w*|off|promo\w*|save|offer\w*)\b|%", re.I)
 
 
@@ -1408,6 +1453,7 @@ def _lint_entry(ctx: Ctx, e: dict) -> None:
     is_apple = ctx.platform == "apple"
     names = ctx.tb.never
     os_rows = [r for r in ctx.tb.os if r.get("platform") in ("all", ctx.platform)]
+    siblings = os_siblings(os_rows)
     for form, value in forms(fr):
         k = key + form
         en_text = en_for_form(en, form) if en is not None else None
@@ -1443,7 +1489,12 @@ def _lint_entry(ctx: Ctx, e: dict) -> None:
                     and not _plural_rx(row["fr"]).search(value):
                 ctx.add(k, "TERM-STRICT", f"en {row['en']!r} must be fr {row['fr']!r}")
         for row in os_rows:
-            if row.get("en") and row.get("fr") and os_term_applies(row["en"], en_text) \
+            if not (row.get("en") and row.get("fr")):
+                continue
+            base, qual = os_term_parts(row["en"])
+            sibs = frozenset() if qual else siblings.get(base.lower(), frozenset())
+            row_ctx = row.get("ctx") if isinstance(row.get("ctx"), list) else None
+            if os_term_applies(row["en"], en_text, e.get("ctx"), sibs, row_ctx) \
                     and not re.search(rf"(?<!\w){re.escape(row['fr'])}(?!\w)", value, re.I):
                 ctx.add(k, "OS-WORD", f"OS word {row['en']!r} is {row['fr']!r} on {row.get('platform')}")
         if value.strip() == en_text.strip() and not e.get("same_ok") \

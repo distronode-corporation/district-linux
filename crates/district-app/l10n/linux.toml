@@ -149,10 +149,11 @@ note = "The range is \"the last 7 days\" and the like."
 
 [analytics.tile_abandoned]
 en = "Abandoned"
-fr = "Abandonné"
+fr = "Abandonnés"
 ctx = "label"
 screen = "analytics"
 state = "reviewed"
+fr_variant = "analytics count of calls (plural), not the call status"
 
 [analytics.tile_average_call]
 en = "Average call"
@@ -177,10 +178,11 @@ state = "reviewed"
 
 [analytics.tile_missed]
 en = "Missed"
-fr = "Manqué"
+fr = "Manqués"
 ctx = "label"
 screen = "analytics"
 state = "reviewed"
+fr_variant = "analytics count of calls (plural), not the call type"
 
 [analytics_page.call_funnel]
 en = "Call funnel"
@@ -1267,7 +1269,7 @@ state = "reviewed"
 
 [contact.timeline]
 en = "Timeline"
-fr = "Chronologie"
+fr = "Échéancier"
 ctx = "label"
 screen = "contacts"
 state = "reviewed"
@@ -1724,7 +1726,7 @@ note = "When the ticket was opened."
 
 [desk_ticket.resolved_at]
 en = "Resolved"
-fr = "Réglée"
+fr = "Réglé"
 ctx = "label"
 screen = "desk"
 state = "reviewed"
@@ -1740,16 +1742,16 @@ note = "In desk-ticket-view.ui."
 
 [desk_ticket_view.open]
 en = "Open"
-fr = "Ouverte"
+fr = "Ouvert"
 ctx = "button"
 screen = "desk_ticket_view"
 state = "reviewed"
-fr_variant = "desk ticket status (contract label), not the verb"
+fr_variant = "Desk ticket status: a « billet », masculine (contract deskTicketStatus since main 43eed5fd6)"
 note = "In desk-ticket-view.ui."
 
 [desk_ticket_view.resolved]
 en = "Resolved"
-fr = "Réglée"
+fr = "Réglé"
 ctx = "button"
 screen = "desk_ticket_view"
 state = "reviewed"
@@ -1784,7 +1786,7 @@ en = "Your AI receptionist on the desktop"
 fr = "Réceptionniste IA sur votre bureau"
 ctx = "label"
 screen = "desktop"
-state = "draft"
+state = "reviewed"
 note = "The desktop entry's Comment; the same words as the metainfo summary. 35 characters at most."
 
 [desktop.generic_name]
@@ -1792,7 +1794,7 @@ en = "AI Receptionist"
 fr = "Réceptionniste IA"
 ctx = "label"
 screen = "desktop"
-state = "draft"
+state = "reviewed"
 note = "The desktop entry's GenericName."
 
 [desktop.keywords]
@@ -1800,7 +1802,7 @@ en = "calls;phone;receptionist;voice;inbox;messages;contacts;"
 fr = "appels;téléphone;réceptionniste;voix;boîte de réception;messages;contacts;"
 ctx = "label"
 screen = "desktop"
-state = "draft"
+state = "reviewed"
 note = "The desktop entry's Keywords: search words, each ended by a semicolon, the last included."
 
 [desktop.name]
@@ -2011,7 +2013,7 @@ state = "reviewed"
 
 [hq.viewer_note]
 en = "Nothing has been changed. Only an agency or client member of this workspace can confirm a change."
-fr = "Rien n'a été modifié. Seul un membre ayant le rôle Agence ou Client dans cet espace de travail peut confirmer un changement."
+fr = "Rien n'a été modifié. Seul un membre ayant le rôle Administrateur ou Membre dans cet espace de travail peut confirmer un changement."
 ctx = "body"
 screen = "hq"
 state = "reviewed"
@@ -2178,10 +2180,11 @@ note = "In inbox-page.ui."
 
 [inbox_page.search_every_message]
 en = "Search every message"
-fr = "Rechercher dans tous les messages"
+fr = "Rechercher les messages"
 ctx = "placeholder"
 screen = "inbox_page"
 state = "reviewed"
+fr_variant = "search placeholder: the longer form is cut off in the GTK inbox column (W4 Linux visual review)"
 note = "In inbox-page.ui."
 
 [inbox_page.search_every_message_a11y]
@@ -2522,7 +2525,7 @@ note = "In meeting-record.ui."
 
 [members.agency_only]
 en = "Only an agency member can add members, change their roles or remove them."
-fr = "Seul un membre ayant le rôle Agence peut ajouter des membres, changer leurs rôles ou les retirer."
+fr = "Seul un membre ayant le rôle Administrateur peut ajouter des membres, changer leurs rôles ou les retirer."
 ctx = "body"
 screen = "members"
 state = "reviewed"
@@ -2876,7 +2879,7 @@ en = "The call log, with each call's summary and transcript"
 fr = "Le journal des appels, avec le résumé et la transcription de chaque appel"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li2]
@@ -2884,7 +2887,7 @@ en = "One inbox for your customers' text messages and emails, with a reply writt
 fr = "Une seule boîte de réception pour les textos et les courriels de vos clients, avec une réponse rédigée par l'IA quand vous en demandez une"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li3]
@@ -2892,7 +2895,7 @@ en = "Your contacts, and the callers you have blocked"
 fr = "Vos contacts et les appelants que vous avez bloqués"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li4]
@@ -2900,15 +2903,15 @@ en = "Calls handed to you ring on this computer, and a dialler places your own"
 fr = "Les appels qui vous sont transférés sonnent sur cet ordinateur, et vous passez les vôtres depuis le clavier de composition"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li5]
 en = "Meeting rooms, audio only, and each meeting's record"
-fr = "Des salles de réunion, en audio seulement, et le dossier de chaque réunion"
+fr = "Des salles de réunion, en audio seulement, et le procès-verbal de chaque réunion"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li6]
@@ -2916,7 +2919,7 @@ en = "District HQ, which answers questions about your workspace, and analytics o
 fr = "District HQ, qui répond à vos questions sur votre espace de travail, et l'analytique de vos appels"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li7]
@@ -2924,7 +2927,7 @@ en = "Your receptionist's settings in District Studio: its persona and language,
 fr = "Les paramètres de votre réceptionniste dans District Studio\u00A0: sa persona et sa langue, sa voix élément par élément, ses compétences, ce qu'elle sait et où elle achemine les appels"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li8]
@@ -2932,7 +2935,7 @@ en = "The help desk, support requests, workflows and booking pages"
 fr = "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.p1]
@@ -2940,7 +2943,7 @@ en = "District AI answers your business's phone calls with an AI receptionist. T
 fr = "District AI répond aux appels de votre entreprise grâce à une réceptionniste IA. Cette application amène votre espace de travail District AI sur le bureau Linux\u00A0: vous voyez ce que la réceptionniste a traité, vous répondez à vos clients et vous prenez des appels vous-même."
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.p2]
@@ -2948,7 +2951,7 @@ en = "You need a District AI account. What you can see and change follows your r
 fr = "Un compte District AI est nécessaire. Ce que vous pouvez voir et modifier dépend de votre rôle dans chaque espace de travail, et prendre ou passer des appels exige un rôle qui le permet. L'application se connecte par votre navigateur Web, elle ne voit donc jamais votre mot de passe, et elle suit le style clair ou sombre de votre système."
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.keywords]
@@ -2956,7 +2959,7 @@ en = "calls, phone, receptionist, voice, inbox, contacts"
 fr = "appels, téléphone, réceptionniste, voix, boîte de réception, contacts"
 ctx = "label"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "AppStream keywords, comma-separated here; each becomes its own <keyword>."
 
 [metainfo.name]
@@ -2968,56 +2971,74 @@ note = "The app's name in its AppStream metadata. A mark: never translated."
 
 [metainfo.release_2_1_0.li1]
 en = "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge"
+fr = "District Studio\u00A0: Persona, Voix, Gestion des appels (avec les règles d'acheminement et le répertoire de transfert), Compétences et Connaissances"
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_1_0.li2]
 en = "Workspace: messaging accounts, members and phone numbers"
+fr = "Espace de travail\u00A0: comptes de messagerie, membres et numéros de téléphone"
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_1_0.li3]
 en = "Screen titles follow the service: Voice, Skills and Knowledge"
+fr = "Les titres d'écran suivent ceux du service\u00A0: Voix, Compétences et Connaissances"
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_1_0.p]
 en = "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names."
+fr = "Les paramètres de votre réceptionniste sont maintenant regroupés sous District Studio, comme dans la console Web, dans le même ordre et sous les mêmes noms."
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_2_0.li1]
 en = "A link to the web dashboard no longer signs in someone else's browser"
+fr = "Un lien vers le tableau de bord Web ne connecte plus le navigateur d'une autre personne"
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_2_0.li2]
 en = "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio"
+fr = "La section Facturation affiche Voice Solo, Voice Starter, Voice Pro ou Voice Studio"
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_2_0.li3]
 en = "A reply typed just before quitting is saved"
+fr = "Une réponse tapée juste avant de quitter est conservée"
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_2_0.li4]
 en = "Built on District AI core for Rust 3.1.1, shared with District AI for Windows"
+fr = "Repose sur District Core pour Rust 3.1.1, partagé avec District AI pour Windows"
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_2_2_0.p]
 en = "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does."
+fr = "«\u00A0Gérer sur le Web\u00A0» ne connecte plus que le navigateur ouvert par l'application, et la section Facturation nomme votre forfait comme la page Tarifs."
 ctx = "body"
 screen = "metainfo"
+state = "reviewed"
 note = "The 2.2.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.screenshot_caption.call]
@@ -3025,7 +3046,7 @@ en = "A call placed from the desktop, with mute and hang up always in reach"
 fr = "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main"
 ctx = "label"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "A screenshot's caption in the AppStream metadata."
 
 [metainfo.screenshot_caption.call_log]
@@ -3033,7 +3054,7 @@ en = "The call log, with each call's summary and transcript"
 fr = "Le journal des appels, avec le résumé et la transcription de chaque appel"
 ctx = "label"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "A screenshot's caption in the AppStream metadata."
 
 [metainfo.screenshot_caption.contacts]
@@ -3041,7 +3062,7 @@ en = "Your contacts, with each customer's details"
 fr = "Vos contacts, avec les coordonnées de chaque client"
 ctx = "label"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "A screenshot's caption in the AppStream metadata."
 
 [metainfo.screenshot_caption.inbox]
@@ -3049,7 +3070,7 @@ en = "Your customers' text messages and emails in one inbox"
 fr = "Les textos et les courriels de vos clients dans une seule boîte de réception"
 ctx = "label"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "A screenshot's caption in the AppStream metadata."
 
 [metainfo.screenshot_caption.overview]
@@ -3057,7 +3078,7 @@ en = "The workspace at a glance, with its latest calls"
 fr = "L'espace de travail en un coup d'œil, avec ses derniers appels"
 ctx = "label"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "A screenshot's caption in the AppStream metadata."
 
 [metainfo.summary]
@@ -3065,7 +3086,7 @@ en = "Your AI receptionist on the desktop"
 fr = "Réceptionniste IA sur votre bureau"
 ctx = "label"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "AppStream summary: 35 characters at most, no full stop. The desktop entry's Comment says the same."
 
 [notification.in_workspace]
@@ -4090,10 +4111,11 @@ note = "In support-page.ui."
 
 [support_page.open]
 en = "Open"
-fr = "Ouverte"
+fr = "Ouvertes"
 ctx = "label"
 screen = "support_page"
 state = "reviewed"
+fr_variant = "support requests still open (section heading, plural)"
 note = "In support-page.ui."
 
 [support_page.open_requests]
@@ -4106,10 +4128,11 @@ note = "In support-page.ui."
 
 [support_page.resolved]
 en = "Resolved"
-fr = "Réglée"
+fr = "Réglées"
 ctx = "label"
 screen = "support_page"
 state = "reviewed"
+fr_variant = "support requests resolved (section heading, plural)"
 note = "In support-page.ui."
 
 [support_page.resolved_requests]
@@ -4346,10 +4369,11 @@ note = "In thread-view.ui."
 
 [thread_view.shift_enter_new_line]
 en = "Shift+Enter for a new line"
-fr = "Maj+Entrée pour une nouvelle ligne"
+fr = "Maj+Entrée\u00A0: nouvelle ligne"
 ctx = "label"
 screen = "thread_view"
 state = "reviewed"
+fr_variant = "composer hint, cut off at narrow widths (W4 Linux)"
 note = "In thread-view.ui."
 
 [thread_view.start_conversation]

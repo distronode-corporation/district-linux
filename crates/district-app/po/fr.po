@@ -114,7 +114,7 @@ msgstr "Appels sur {range}"
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_abandoned"
 msgid "Abandoned"
-msgstr "Abandonné"
+msgstr "Abandonnés"
 
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_average_call"
@@ -134,7 +134,7 @@ msgstr "Conversions"
 #. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_missed"
 msgid "Missed"
-msgstr "Manqué"
+msgstr "Manqués"
 
 #. screen: analytics_page; ctx: label; tier: T3
 #. In analytics-page.ui.
@@ -907,7 +907,7 @@ msgstr "Contact enregistré."
 #. screen: contacts; ctx: label; tier: T3
 msgctxt "contact.timeline"
 msgid "Timeline"
-msgstr "Chronologie"
+msgstr "Échéancier"
 
 #. screen: contacts; ctx: button; tier: T3
 msgctxt "contact.unblock"
@@ -1242,7 +1242,7 @@ msgstr "Créé le"
 #. When the ticket was resolved.
 msgctxt "desk_ticket.resolved_at"
 msgid "Resolved"
-msgstr "Réglée"
+msgstr "Réglé"
 
 #. screen: desk_ticket_view; ctx: title; tier: T3
 #. In desk-ticket-view.ui.
@@ -1254,13 +1254,13 @@ msgstr "Client"
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.open"
 msgid "Open"
-msgstr "Ouverte"
+msgstr "Ouvert"
 
 #. screen: desk_ticket_view; ctx: button; tier: T3
 #. In desk-ticket-view.ui.
 msgctxt "desk_ticket_view.resolved"
 msgid "Resolved"
-msgstr "Réglée"
+msgstr "Réglé"
 
 #. screen: desk_ticket_view; ctx: a11y; tier: T3
 #. In desk-ticket-view.ui.
@@ -1449,7 +1449,7 @@ msgstr "Le changement a peut-être été effectué avant la perte de la connexio
 #. screen: hq; ctx: body; tier: T3
 msgctxt "hq.viewer_note"
 msgid "Nothing has been changed. Only an agency or client member of this workspace can confirm a change."
-msgstr "Rien n'a été modifié. Seul un membre ayant le rôle Agence ou Client dans cet espace de travail peut confirmer un changement."
+msgstr "Rien n'a été modifié. Seul un membre ayant le rôle Administrateur ou Membre dans cet espace de travail peut confirmer un changement."
 
 #. screen: hq_page; ctx: button; tier: T3
 #. In hq-page.ui.
@@ -1571,7 +1571,7 @@ msgstr "Aucune conversation sélectionnée"
 #. In inbox-page.ui.
 msgctxt "inbox_page.search_every_message"
 msgid "Search every message"
-msgstr "Rechercher dans tous les messages"
+msgstr "Rechercher les messages"
 
 #. screen: inbox_page; ctx: a11y; tier: T3
 #. In inbox-page.ui.
@@ -1815,7 +1815,7 @@ msgstr "Procès-verbal"
 #. screen: members; ctx: body; tier: T3
 msgctxt "members.agency_only"
 msgid "Only an agency member can add members, change their roles or remove them."
-msgstr "Seul un membre ayant le rôle Agence peut ajouter des membres, changer leurs rôles ou les retirer."
+msgstr "Seul un membre ayant le rôle Administrateur peut ajouter des membres, changer leurs rôles ou les retirer."
 
 #. screen: members; ctx: error; tier: T2
 msgctxt "members.failed_title"
@@ -2091,7 +2091,7 @@ msgstr "Les appels qui vous sont transférés sonnent sur cet ordinateur, et vou
 #. The app's description in its AppStream metadata, as software centres show it.
 msgctxt "metainfo.description.li5"
 msgid "Meeting rooms, audio only, and each meeting's record"
-msgstr "Des salles de réunion, en audio seulement, et le dossier de chaque réunion"
+msgstr "Des salles de réunion, en audio seulement, et le procès-verbal de chaque réunion"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The app's description in its AppStream metadata, as software centres show it.
@@ -2139,55 +2139,55 @@ msgstr "District AI"
 #. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_1_0.li1"
 msgid "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge"
-msgstr ""
+msgstr "District Studio : Persona, Voix, Gestion des appels (avec les règles d'acheminement et le répertoire de transfert), Compétences et Connaissances"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_1_0.li2"
 msgid "Workspace: messaging accounts, members and phone numbers"
-msgstr ""
+msgstr "Espace de travail : comptes de messagerie, membres et numéros de téléphone"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_1_0.li3"
 msgid "Screen titles follow the service: Voice, Skills and Knowledge"
-msgstr ""
+msgstr "Les titres d'écran suivent ceux du service : Voix, Compétences et Connaissances"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.1.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_1_0.p"
 msgid "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names."
-msgstr ""
+msgstr "Les paramètres de votre réceptionniste sont maintenant regroupés sous District Studio, comme dans la console Web, dans le même ordre et sous les mêmes noms."
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_2_0.li1"
 msgid "A link to the web dashboard no longer signs in someone else's browser"
-msgstr ""
+msgstr "Un lien vers le tableau de bord Web ne connecte plus le navigateur d'une autre personne"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_2_0.li2"
 msgid "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio"
-msgstr ""
+msgstr "La section Facturation affiche Voice Solo, Voice Starter, Voice Pro ou Voice Studio"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_2_0.li3"
 msgid "A reply typed just before quitting is saved"
-msgstr ""
+msgstr "Une réponse tapée juste avant de quitter est conservée"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_2_0.li4"
 msgid "Built on District AI core for Rust 3.1.1, shared with District AI for Windows"
-msgstr ""
+msgstr "Repose sur District Core pour Rust 3.1.1, partagé avec District AI pour Windows"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 2.2.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_2_2_0.p"
 msgid "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does."
-msgstr ""
+msgstr "« Gérer sur le Web » ne connecte plus que le navigateur ouvert par l'application, et la section Facturation nomme votre forfait comme la page Tarifs."
 
 #. screen: metainfo; ctx: label; tier: T3
 #. A screenshot's caption in the AppStream metadata.
@@ -3058,7 +3058,7 @@ msgstr "Aucune demande ouverte"
 #. In support-page.ui.
 msgctxt "support_page.open"
 msgid "Open"
-msgstr "Ouverte"
+msgstr "Ouvertes"
 
 #. screen: support_page; ctx: a11y; tier: T3
 #. In support-page.ui.
@@ -3070,7 +3070,7 @@ msgstr "Demandes ouvertes"
 #. In support-page.ui.
 msgctxt "support_page.resolved"
 msgid "Resolved"
-msgstr "Réglée"
+msgstr "Réglées"
 
 #. screen: support_page; ctx: a11y; tier: T3
 #. In support-page.ui.
@@ -3242,7 +3242,7 @@ msgstr "Envoyer (Entrée)"
 #. In thread-view.ui.
 msgctxt "thread_view.shift_enter_new_line"
 msgid "Shift+Enter for a new line"
-msgstr "Maj+Entrée pour une nouvelle ligne"
+msgstr "Maj+Entrée : nouvelle ligne"
 
 #. screen: thread_view; ctx: label; tier: T3
 #. In thread-view.ui.

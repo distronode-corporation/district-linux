@@ -41,7 +41,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::analytics_report_title(Locale::En, "{range}"), "Calls over {range}");
     assert_eq!(text::analytics_report_title(Locale::FrCa, "{range}"), "Appels sur {range}");
     assert_eq!(text::analytics_tile_abandoned(Locale::En), "Abandoned");
-    assert_eq!(text::analytics_tile_abandoned(Locale::FrCa), "Abandonné");
+    assert_eq!(text::analytics_tile_abandoned(Locale::FrCa), "Abandonnés");
     assert_eq!(text::analytics_tile_average_call(Locale::En), "Average call");
     assert_eq!(text::analytics_tile_average_call(Locale::FrCa), "Durée moyenne");
     assert_eq!(text::analytics_tile_calls(Locale::En), "Calls");
@@ -49,7 +49,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::analytics_tile_converted(Locale::En), "Converted");
     assert_eq!(text::analytics_tile_converted(Locale::FrCa), "Conversions");
     assert_eq!(text::analytics_tile_missed(Locale::En), "Missed");
-    assert_eq!(text::analytics_tile_missed(Locale::FrCa), "Manqué");
+    assert_eq!(text::analytics_tile_missed(Locale::FrCa), "Manqués");
     assert_eq!(text::analytics_page_call_funnel(Locale::En), "Call funnel");
     assert_eq!(text::analytics_page_call_funnel(Locale::FrCa), "Entonnoir d'appels");
     assert_eq!(text::analytics_page_caller_sentiment(Locale::En), "Caller sentiment");
@@ -337,7 +337,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::contact_saved(Locale::En), "Contact saved.");
     assert_eq!(text::contact_saved(Locale::FrCa), "Contact enregistré.");
     assert_eq!(text::contact_timeline(Locale::En), "Timeline");
-    assert_eq!(text::contact_timeline(Locale::FrCa), "Chronologie");
+    assert_eq!(text::contact_timeline(Locale::FrCa), "Échéancier");
     assert_eq!(text::contact_unblock(Locale::En), "Unblock");
     assert_eq!(text::contact_unblock(Locale::FrCa), "Débloquer");
     assert_eq!(text::contact_website(Locale::En), "Website");
@@ -459,13 +459,13 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::desk_ticket_raised(Locale::En), "Raised");
     assert_eq!(text::desk_ticket_raised(Locale::FrCa), "Créé le");
     assert_eq!(text::desk_ticket_resolved_at(Locale::En), "Resolved");
-    assert_eq!(text::desk_ticket_resolved_at(Locale::FrCa), "Réglée");
+    assert_eq!(text::desk_ticket_resolved_at(Locale::FrCa), "Réglé");
     assert_eq!(text::desk_ticket_view_customer(Locale::En), "Customer");
     assert_eq!(text::desk_ticket_view_customer(Locale::FrCa), "Client");
     assert_eq!(text::desk_ticket_view_open(Locale::En), "Open");
-    assert_eq!(text::desk_ticket_view_open(Locale::FrCa), "Ouverte");
+    assert_eq!(text::desk_ticket_view_open(Locale::FrCa), "Ouvert");
     assert_eq!(text::desk_ticket_view_resolved(Locale::En), "Resolved");
-    assert_eq!(text::desk_ticket_view_resolved(Locale::FrCa), "Réglée");
+    assert_eq!(text::desk_ticket_view_resolved(Locale::FrCa), "Réglé");
     assert_eq!(text::desk_ticket_view_status(Locale::En), "Status");
     assert_eq!(text::desk_ticket_view_status(Locale::FrCa), "État");
     assert_eq!(text::desk_ticket_view_waiting(Locale::En), "Waiting");
@@ -537,7 +537,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::hq_unknown_note(Locale::En), "The change may have been made before the answer was lost. Check before confirming again.");
     assert_eq!(text::hq_unknown_note(Locale::FrCa), "Le changement a peut-être été effectué avant la perte de la connexion. Vérifiez avant de confirmer de nouveau.");
     assert_eq!(text::hq_viewer_note(Locale::En), "Nothing has been changed. Only an agency or client member of this workspace can confirm a change.");
-    assert_eq!(text::hq_viewer_note(Locale::FrCa), "Rien n'a été modifié. Seul un membre ayant le rôle Agence ou Client dans cet espace de travail peut confirmer un changement.");
+    assert_eq!(text::hq_viewer_note(Locale::FrCa), "Rien n'a été modifié. Seul un membre ayant le rôle Administrateur ou Membre dans cet espace de travail peut confirmer un changement.");
     assert_eq!(text::hq_page_ask(Locale::En), "Ask");
     assert_eq!(text::hq_page_ask(Locale::FrCa), "Demander");
     assert_eq!(text::hq_page_ask_district_hq(Locale::En), "Ask District HQ");
@@ -583,7 +583,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::inbox_page_no_conversation_open(Locale::En), "No conversation open");
     assert_eq!(text::inbox_page_no_conversation_open(Locale::FrCa), "Aucune conversation sélectionnée");
     assert_eq!(text::inbox_page_search_every_message(Locale::En), "Search every message");
-    assert_eq!(text::inbox_page_search_every_message(Locale::FrCa), "Rechercher dans tous les messages");
+    assert_eq!(text::inbox_page_search_every_message(Locale::FrCa), "Rechercher les messages");
     assert_eq!(text::inbox_page_search_every_message_a11y(Locale::En), "Search every message");
     assert_eq!(text::inbox_page_search_every_message_a11y(Locale::FrCa), "Rechercher dans tous les messages");
     assert_eq!(text::knowledge_added(Locale::En, "{when}"), "Added {when}");
@@ -673,7 +673,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::meeting_record_minutes(Locale::En), "Minutes");
     assert_eq!(text::meeting_record_minutes(Locale::FrCa), "Procès-verbal");
     assert_eq!(text::members_agency_only(Locale::En), "Only an agency member can add members, change their roles or remove them.");
-    assert_eq!(text::members_agency_only(Locale::FrCa), "Seul un membre ayant le rôle Agence peut ajouter des membres, changer leurs rôles ou les retirer.");
+    assert_eq!(text::members_agency_only(Locale::FrCa), "Seul un membre ayant le rôle Administrateur peut ajouter des membres, changer leurs rôles ou les retirer.");
     assert_eq!(text::members_failed_title(Locale::En), "Could not load the members");
     assert_eq!(text::members_failed_title(Locale::FrCa), "Impossible de charger les membres");
     assert_eq!(text::members_remove(Locale::En), "Remove from this workspace");
@@ -771,7 +771,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_description_li4(Locale::En), "Calls handed to you ring on this computer, and a dialler places your own");
     assert_eq!(text::metainfo_description_li4(Locale::FrCa), "Les appels qui vous sont transférés sonnent sur cet ordinateur, et vous passez les vôtres depuis le clavier de composition");
     assert_eq!(text::metainfo_description_li5(Locale::En), "Meeting rooms, audio only, and each meeting's record");
-    assert_eq!(text::metainfo_description_li5(Locale::FrCa), "Des salles de réunion, en audio seulement, et le dossier de chaque réunion");
+    assert_eq!(text::metainfo_description_li5(Locale::FrCa), "Des salles de réunion, en audio seulement, et le procès-verbal de chaque réunion");
     assert_eq!(text::metainfo_description_li6(Locale::En), "District HQ, which answers questions about your workspace, and analytics of your calls");
     assert_eq!(text::metainfo_description_li6(Locale::FrCa), "District HQ, qui répond à vos questions sur votre espace de travail, et l'analytique de vos appels");
     assert_eq!(text::metainfo_description_li7(Locale::En), "Your receptionist's settings in District Studio: its persona and language, its voice part by part, its skills, what it knows, and where it sends calls");
@@ -787,23 +787,23 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_name(Locale::En), "District AI");
     assert_eq!(text::metainfo_name(Locale::FrCa), "District AI");
     assert_eq!(text::metainfo_release_2_1_0_li1(Locale::En), "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge");
-    assert_eq!(text::metainfo_release_2_1_0_li1(Locale::FrCa), "District Studio: Persona, Voice, Call handling (with the routing rules and the transfer directory), Skills and Knowledge");
+    assert_eq!(text::metainfo_release_2_1_0_li1(Locale::FrCa), "District Studio\u{00A0}: Persona, Voix, Gestion des appels (avec les règles d'acheminement et le répertoire de transfert), Compétences et Connaissances");
     assert_eq!(text::metainfo_release_2_1_0_li2(Locale::En), "Workspace: messaging accounts, members and phone numbers");
-    assert_eq!(text::metainfo_release_2_1_0_li2(Locale::FrCa), "Workspace: messaging accounts, members and phone numbers");
+    assert_eq!(text::metainfo_release_2_1_0_li2(Locale::FrCa), "Espace de travail\u{00A0}: comptes de messagerie, membres et numéros de téléphone");
     assert_eq!(text::metainfo_release_2_1_0_li3(Locale::En), "Screen titles follow the service: Voice, Skills and Knowledge");
-    assert_eq!(text::metainfo_release_2_1_0_li3(Locale::FrCa), "Screen titles follow the service: Voice, Skills and Knowledge");
+    assert_eq!(text::metainfo_release_2_1_0_li3(Locale::FrCa), "Les titres d'écran suivent ceux du service\u{00A0}: Voix, Compétences et Connaissances");
     assert_eq!(text::metainfo_release_2_1_0_p(Locale::En), "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names.");
-    assert_eq!(text::metainfo_release_2_1_0_p(Locale::FrCa), "Your receptionist's settings are now grouped under District Studio, as on the web console, in the same order and under the same names.");
+    assert_eq!(text::metainfo_release_2_1_0_p(Locale::FrCa), "Les paramètres de votre réceptionniste sont maintenant regroupés sous District Studio, comme dans la console Web, dans le même ordre et sous les mêmes noms.");
     assert_eq!(text::metainfo_release_2_2_0_li1(Locale::En), "A link to the web dashboard no longer signs in someone else's browser");
-    assert_eq!(text::metainfo_release_2_2_0_li1(Locale::FrCa), "A link to the web dashboard no longer signs in someone else's browser");
+    assert_eq!(text::metainfo_release_2_2_0_li1(Locale::FrCa), "Un lien vers le tableau de bord Web ne connecte plus le navigateur d'une autre personne");
     assert_eq!(text::metainfo_release_2_2_0_li2(Locale::En), "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio");
-    assert_eq!(text::metainfo_release_2_2_0_li2(Locale::FrCa), "Billing shows Voice Solo, Voice Starter, Voice Pro or Voice Studio");
+    assert_eq!(text::metainfo_release_2_2_0_li2(Locale::FrCa), "La section Facturation affiche Voice Solo, Voice Starter, Voice Pro ou Voice Studio");
     assert_eq!(text::metainfo_release_2_2_0_li3(Locale::En), "A reply typed just before quitting is saved");
-    assert_eq!(text::metainfo_release_2_2_0_li3(Locale::FrCa), "A reply typed just before quitting is saved");
+    assert_eq!(text::metainfo_release_2_2_0_li3(Locale::FrCa), "Une réponse tapée juste avant de quitter est conservée");
     assert_eq!(text::metainfo_release_2_2_0_li4(Locale::En), "Built on District AI core for Rust 3.1.1, shared with District AI for Windows");
-    assert_eq!(text::metainfo_release_2_2_0_li4(Locale::FrCa), "Built on District AI core for Rust 3.1.1, shared with District AI for Windows");
+    assert_eq!(text::metainfo_release_2_2_0_li4(Locale::FrCa), "Repose sur District Core pour Rust 3.1.1, partagé avec District AI pour Windows");
     assert_eq!(text::metainfo_release_2_2_0_p(Locale::En), "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does.");
-    assert_eq!(text::metainfo_release_2_2_0_p(Locale::FrCa), "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does.");
+    assert_eq!(text::metainfo_release_2_2_0_p(Locale::FrCa), "«\u{00A0}Gérer sur le Web\u{00A0}» ne connecte plus que le navigateur ouvert par l'application, et la section Facturation nomme votre forfait comme la page Tarifs.");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::En), "A call placed from the desktop, with mute and hang up always in reach");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::FrCa), "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main");
     assert_eq!(text::metainfo_screenshot_caption_call_log(Locale::En), "The call log, with each call's summary and transcript");
@@ -1121,11 +1121,11 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::support_page_no_request_open(Locale::En), "No request open");
     assert_eq!(text::support_page_no_request_open(Locale::FrCa), "Aucune demande ouverte");
     assert_eq!(text::support_page_open(Locale::En), "Open");
-    assert_eq!(text::support_page_open(Locale::FrCa), "Ouverte");
+    assert_eq!(text::support_page_open(Locale::FrCa), "Ouvertes");
     assert_eq!(text::support_page_open_requests(Locale::En), "Open requests");
     assert_eq!(text::support_page_open_requests(Locale::FrCa), "Demandes ouvertes");
     assert_eq!(text::support_page_resolved(Locale::En), "Resolved");
-    assert_eq!(text::support_page_resolved(Locale::FrCa), "Réglée");
+    assert_eq!(text::support_page_resolved(Locale::FrCa), "Réglées");
     assert_eq!(text::support_page_resolved_requests(Locale::En), "Resolved requests");
     assert_eq!(text::support_page_resolved_requests(Locale::FrCa), "Demandes réglées");
     assert_eq!(text::support_page_support(Locale::En), "Support");
@@ -1193,7 +1193,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::thread_view_send_enter(Locale::En), "Send (Enter)");
     assert_eq!(text::thread_view_send_enter(Locale::FrCa), "Envoyer (Entrée)");
     assert_eq!(text::thread_view_shift_enter_new_line(Locale::En), "Shift+Enter for a new line");
-    assert_eq!(text::thread_view_shift_enter_new_line(Locale::FrCa), "Maj+Entrée pour une nouvelle ligne");
+    assert_eq!(text::thread_view_shift_enter_new_line(Locale::FrCa), "Maj+Entrée\u{00A0}: nouvelle ligne");
     assert_eq!(text::thread_view_start_conversation(Locale::En), "The start of this conversation");
     assert_eq!(text::thread_view_start_conversation(Locale::FrCa), "Début de cette conversation");
     assert_eq!(text::thread_view_writes_suggested_reply_into_box(Locale::En), "Writes a suggested reply into the box for you to read before sending. Each suggestion is billed.");
@@ -1288,5 +1288,5 @@ fn every_accessor_says_what_the_catalog_says() {
 
 #[test]
 fn french_is_complete_only_when_every_entry_has_it() {
-    assert!(!std::hint::black_box(text::FR_COMPLETE));
+    assert!(std::hint::black_box(text::FR_COMPLETE));
 }
