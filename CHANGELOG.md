@@ -19,7 +19,7 @@ A ring stops on this computer as soon as the call is taken somewhere else.
 
 ### Fixed
 
-- A call handed to this computer kept ringing until its thirty seconds ran out when
+- A call ringing on this computer kept ringing until its thirty seconds ran out when
   someone answered it on another device, when the service's ring window closed, or when
   the caller hung up. The service now says when a ring ends (`call_ring_cancelled` on
   the live socket), and the ring stops at once: the ringtone stops, the notification is

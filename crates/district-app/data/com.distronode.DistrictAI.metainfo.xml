@@ -131,14 +131,13 @@
       <description>
         <p>
           Calls stop ringing as soon as they are answered elsewhere, and the
-          booking pages can read again what failed to load.
+          booking pages can retry what failed to load.
         </p>
         <ul>
-          <li>A call handed to this computer stops ringing as soon as it is
-            answered on another device, the ring times out or the caller hangs
-            up</li>
-          <li>Booking pages: Try again when the working hours, an event type's
-            hosts or a webhook's deliveries could not be read</li>
+          <li>A call ringing on this computer stops as soon as it is answered on
+            another device, the ring times out or the caller hangs up</li>
+          <li>Booking pages: a Try again button when working hours, an event
+            type's hosts or a webhook's deliveries fail to load</li>
         </ul>
       </description>
     </release>

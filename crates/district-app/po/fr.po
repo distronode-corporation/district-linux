@@ -2240,19 +2240,19 @@ msgstr "District AI est maintenant en français canadien, et les pages de réser
 #. screen: metainfo; ctx: body; tier: T3
 #. The 3.0.1 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_0_1.li1"
-msgid "A call handed to this computer stops ringing as soon as it is answered on another device, the ring times out or the caller hangs up"
-msgstr "Un appel transféré à cet ordinateur cesse de sonner dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche"
+msgid "A call ringing on this computer stops as soon as it is answered on another device, the ring times out or the caller hangs up"
+msgstr "Un appel qui sonne sur cet ordinateur s'arrête dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 3.0.1 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_0_1.li2"
-msgid "Booking pages: Try again when the working hours, an event type's hosts or a webhook's deliveries could not be read"
-msgstr "Pages de réservation : bouton Réessayer quand les heures de disponibilité, les hôtes d'un type de rendez-vous ou les envois d'un webhook n'ont pas pu être chargés"
+msgid "Booking pages: a Try again button when working hours, an event type's hosts or a webhook's deliveries fail to load"
+msgstr "Pages de réservation : bouton Réessayer si les heures de disponibilité, les hôtes d'un type de rendez-vous ou les livraisons d'un webhook ne se chargent pas"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 3.0.1 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_0_1.p"
-msgid "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can read again what failed to load."
+msgid "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can retry what failed to load."
 msgstr "Les appels cessent de sonner dès qu'ils sont pris ailleurs, et les pages de réservation peuvent recharger ce qui n'a pas pu être chargé."
 
 #. screen: metainfo; ctx: label; tier: T3

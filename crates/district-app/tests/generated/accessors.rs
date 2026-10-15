@@ -820,11 +820,11 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_release_3_0_0_li7(Locale::FrCa), "Fermer la fenêtre laisse l'application ouverte pour que les appels continuent de sonner, avec une icône dans la zone de notification si le bureau en a une, et l'option «\u{00A0}Lancer à l'ouverture de session\u{00A0}» à l'écran Compte");
     assert_eq!(text::metainfo_release_3_0_0_p(Locale::En), "District AI is now in Canadian French, and the booking pages are managed in the app.");
     assert_eq!(text::metainfo_release_3_0_0_p(Locale::FrCa), "District AI est maintenant en français canadien, et les pages de réservation se gèrent dans l'application.");
-    assert_eq!(text::metainfo_release_3_0_1_li1(Locale::En), "A call handed to this computer stops ringing as soon as it is answered on another device, the ring times out or the caller hangs up");
-    assert_eq!(text::metainfo_release_3_0_1_li1(Locale::FrCa), "Un appel transféré à cet ordinateur cesse de sonner dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche");
-    assert_eq!(text::metainfo_release_3_0_1_li2(Locale::En), "Booking pages: Try again when the working hours, an event type's hosts or a webhook's deliveries could not be read");
-    assert_eq!(text::metainfo_release_3_0_1_li2(Locale::FrCa), "Pages de réservation\u{00A0}: bouton Réessayer quand les heures de disponibilité, les hôtes d'un type de rendez-vous ou les envois d'un webhook n'ont pas pu être chargés");
-    assert_eq!(text::metainfo_release_3_0_1_p(Locale::En), "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can read again what failed to load.");
+    assert_eq!(text::metainfo_release_3_0_1_li1(Locale::En), "A call ringing on this computer stops as soon as it is answered on another device, the ring times out or the caller hangs up");
+    assert_eq!(text::metainfo_release_3_0_1_li1(Locale::FrCa), "Un appel qui sonne sur cet ordinateur s'arrête dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche");
+    assert_eq!(text::metainfo_release_3_0_1_li2(Locale::En), "Booking pages: a Try again button when working hours, an event type's hosts or a webhook's deliveries fail to load");
+    assert_eq!(text::metainfo_release_3_0_1_li2(Locale::FrCa), "Pages de réservation\u{00A0}: bouton Réessayer si les heures de disponibilité, les hôtes d'un type de rendez-vous ou les livraisons d'un webhook ne se chargent pas");
+    assert_eq!(text::metainfo_release_3_0_1_p(Locale::En), "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can retry what failed to load.");
     assert_eq!(text::metainfo_release_3_0_1_p(Locale::FrCa), "Les appels cessent de sonner dès qu'ils sont pris ailleurs, et les pages de réservation peuvent recharger ce qui n'a pas pu être chargé.");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::En), "A call placed from the desktop, with mute and hang up always in reach");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::FrCa), "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main");
