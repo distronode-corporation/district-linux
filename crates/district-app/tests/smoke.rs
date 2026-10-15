@@ -5166,15 +5166,11 @@ fn scheduling_developer(smoke: &Smoke) {
     assert!(smoke.shown("webhook-dropped") && smoke.shows_part("booking.no_show"));
     smoke.shot("67-booking-developer-webhook-edit");
     smoke.click("webhook-cancel");
-    // The webhooks read again forgot the deliveries read: the ones open wait
-    // until opened again, which reads them.
-    assert!(smoke.shown("developer-deliveries-loading"));
-    assert!(!smoke.pending("SchedulingAdmin"));
-    deliveries(smoke, 1);
+    // The webhooks read again read the open deliveries beside them (core
+    // 4.0.0-beta.6), so those are shown again, never left loading.
     assert!(!smoke.shown("developer-deliveries-loading"));
-    deliveries(smoke, 1);
-    scheduling_reads(smoke, read);
     assert!(smoke.shown("developer-deliveries-empty"));
+    assert!(!smoke.pending("SchedulingAdmin"));
 
     // A webhook deleted, asked once.
     smoke.click("developer-webhook-delete");

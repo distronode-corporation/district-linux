@@ -19,18 +19,18 @@ District AI for Linux in Canadian French, and the booking pages managed in the a
 
 ### Changed
 
-- Built on District AI core for Rust 4.0.0-beta.6. Since 4.0.0-beta.2 the core writes
-  its words from a catalog in the language the app chooses (`CoreConfig::locale`), and
-  the numbers page's note is the core's `MarketplaceScreen::scope_note`, which replaces
-  its read-only note. 4.0.0-beta.3 adds the booking pages' administration
-  (`Route::SchedulingAdmin`), 4.0.0-beta.4 the core's reviewed Canadian French, and
-  4.0.0-beta.5 French labels for eight more kinds of stored value (a number's status,
-  its registrations, a SIP trunk, a webhook delivery, a host's role, a question's type),
-  and 4.0.0-beta.6 a call's length, a subscription's and an invoice's price, a chart's
-  days and a carrier balance written the French way (`1 min 5 s`, `249,00 $ US`,
-  `9 août`), which the call list, a call and billing now show. In English only a
-  carrier balance changes, written as money (`Balance $12.50`, before `Balance 12.50
-  USD`).
+- Built on District AI core for Rust 4.0.0. Since 4.0.0-beta.2 the core writes its words
+  from a catalog in the language the app chooses (`CoreConfig::locale`), and the numbers
+  page's note is the core's `MarketplaceScreen::scope_note`, which replaces its read-only
+  note. 4.0.0-beta.3 adds the booking pages' administration (`Route::SchedulingAdmin`),
+  4.0.0-beta.4 the core's reviewed Canadian French, 4.0.0-beta.5 French labels for eight
+  more kinds of stored value (a number's status, its registrations, a SIP trunk, a
+  webhook delivery, a host's role, a question's type), 4.0.0-beta.6 a call's length, a
+  subscription's and an invoice's price, a chart's days and a carrier balance written the
+  French way (`1 min 5 s`, `249,00 $ US`, `9 août`), which the call list, a call and
+  billing now show, and 4.0.0 a SIP trunk's status by its label (`Active`, « Actif »). In
+  English, a carrier balance is now written as money (`Balance $12.50`, before `Balance
+  12.50 USD`) and a SIP trunk's status by its label.
 - Every word the app writes itself comes from its catalogs,
   `crates/district-app/l10n/linux.toml` and, for the booking pages,
   `crates/district-app/l10n/scheduling.toml`, keyed: the `.ui` templates mark each
