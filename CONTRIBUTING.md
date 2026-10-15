@@ -26,7 +26,8 @@ packaging/flatpak/        The Flatpak manifest and cargo-sources.json, the crate
                           builds from (see Packaging below).
 scripts/                  check-version.py, check-pins.py,
                           check-public-hygiene.py, check-coverage.py and
-                          check-screenshots.py, run by CI; fetch-libwebrtc.sh,
+                          check-screenshots.py, run by CI; check-fr-signoff.py,
+                          run by the release; fetch-libwebrtc.sh,
                           run by voice.yml, the packages and by hand for a build
                           with calls; build-deb.sh, third-party-licenses.sh and
                           flatpak-cargo-sources.sh, run by the packaging
@@ -352,6 +353,15 @@ request:
 its argument checks them against the tag, as the release does. Once the pull
 request is merged, tag the merge commit and push the tag.
 
+The French is signed off per release. `i18n/fr-CA/signoff.json` names who
+signed it off, the release and commit the catalogs were read at, and the
+SHA-256 of every catalog (`linux.toml` and `scheduling.toml`);
+`python3 scripts/check-fr-signoff.py` fails, naming each catalog, when one
+differs, is missing or is not listed. The release's guard runs it, and pull
+requests do not, because catalogs change between releases. A release whose
+catalogs changed (French, or English the French follows) needs the manager's
+review of the French and a new `signoff.json` in the release pull request.
+
 The workflow then refuses a tag that is not on main or that the versions do not
 match, builds the .deb and the Flatpak with deb.yml and flatpak.yml (read-only,
 no caches, from the committed Cargo.lock) and tests them as pull requests do,
@@ -482,6 +492,8 @@ python3 scripts/check-coverage.py --self-test
 python3 scripts/check-screenshots.py --self-test
 python3 scripts/check-screenshots.py
 python3 scripts/gen-l10n.py --check
+python3 tools/l10n/frcheck.py all --termbase '' --tm '' .
+python3 scripts/check-fr-signoff.py --self-test
 desktop-file-validate crates/district-app/data/com.distronode.DistrictAI.desktop
 appstreamcli validate --no-net crates/district-app/data/com.distronode.DistrictAI.metainfo.xml
 python3 scripts/gen-l10n.py --french-metadata /tmp/district-french   # as French on installs them
