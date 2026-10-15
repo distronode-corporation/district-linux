@@ -13,13 +13,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
-## [3.0.0] - 2026-10-14
+## [3.0.0] - 2026-10-15
 
 District AI for Linux in Canadian French, and the booking pages managed in the app.
 
 ### Changed
 
-- Built on District AI core for Rust 4.0.0. Since 4.0.0-beta.2 the core writes its words
+- Built on District AI core for Rust 4.0.1. Since 4.0.0-beta.2 the core writes its words
   from a catalog in the language the app chooses (`CoreConfig::locale`), and the numbers
   page's note is the core's `MarketplaceScreen::scope_note`, which replaces its read-only
   note. 4.0.0-beta.3 adds the booking pages' administration (`Route::SchedulingAdmin`),
@@ -28,9 +28,10 @@ District AI for Linux in Canadian French, and the booking pages managed in the a
   webhook delivery, a host's role, a question's type), 4.0.0-beta.6 a call's length, a
   subscription's and an invoice's price, a chart's days and a carrier balance written the
   French way (`1 min 5 s`, `249,00 $ US`, `9 août`), which the call list, a call and
-  billing now show, and 4.0.0 a SIP trunk's status by its label (`Active`, « Actif »). In
-  English, a carrier balance is now written as money (`Balance $12.50`, before `Balance
-  12.50 USD`) and a SIP trunk's status by its label.
+  billing now show, 4.0.0 a SIP trunk's status by its label (`Active`, « Actif »), and
+  4.0.1 the language signals (see Added). In English, a carrier balance is now written
+  as money (`Balance $12.50`, before `Balance 12.50 USD`) and a SIP trunk's status by
+  its label.
 - Every word the app writes itself comes from its catalogs,
   `crates/district-app/l10n/linux.toml` and, for the booking pages,
   `crates/district-app/l10n/scheduling.toml`, keyed: the `.ui` templates mark each
@@ -86,6 +87,12 @@ District AI for Linux in Canadian French, and the booking pages managed in the a
   English words as before. With French on, the packages install them with the catalog's
   French beside the English (`Comment[fr]=`, `xml:lang="fr"`), and deb.yml and
   flatpak.yml check that they hold French exactly when the catalog ships.
+- The service hears the app's language: every request carries `Accept-Language`
+  (`fr-CA` when the app shows French, `en` otherwise), and after each sign-in and the
+  session restored at start-up the account's language is saved
+  (`POST /api/settings`, `{"profile": {"locale": "fr"}}` or `"en"`), so what the
+  service writes, in answers and in what it sends later, is in that language. The core
+  sends both (4.0.1); the app hands it every effect as before.
 - Canadian French, on by default (the `fr-ca` cargo feature, now among district-app's
   default features): the app follows a French desktop (`glib::language_names`), any
   French locale gets Canadian French, the core and gettext are checked to agree at

@@ -110,7 +110,7 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
-    <release version="3.0.0" date="2026-10-14">
+    <release version="3.0.0" date="2026-10-15">
       <description>
         <p>@metainfo.release_3_0_0.p@</p>
         <ul>
