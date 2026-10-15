@@ -714,7 +714,7 @@ dependencies = [
 [[package]]
 name = "district-api"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 dependencies = [
  "district-l10n",
  "district-model",
@@ -753,7 +753,7 @@ dependencies = [
 [[package]]
 name = "district-auth"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 dependencies = [
  "base64 0.22.1",
  "district-api",
@@ -772,7 +772,7 @@ dependencies = [
 [[package]]
 name = "district-call"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 dependencies = [
  "district-core",
  "futures-util",
@@ -786,7 +786,7 @@ dependencies = [
 [[package]]
 name = "district-core"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 dependencies = [
  "district-api",
  "district-auth",
@@ -821,7 +821,7 @@ dependencies = [
 [[package]]
 name = "district-host"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 dependencies = [
  "district-auth",
  "district-core",
@@ -835,12 +835,12 @@ dependencies = [
 [[package]]
 name = "district-l10n"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 
 [[package]]
 name = "district-live"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 dependencies = [
  "district-api",
  "district-model",
@@ -860,7 +860,7 @@ dependencies = [
 [[package]]
 name = "district-model"
 version = "4.0.2"
-source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#2c1629149197b85b81678e9dc6f83a2b5cb33dfb"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=v3%2Fring-cancel#dfb44e865b435ff3447d04c816dd5f5556890640"
 dependencies = [
  "serde",
  "serde_json",

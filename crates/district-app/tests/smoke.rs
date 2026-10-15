@@ -3833,7 +3833,8 @@ fn scheduling_event_types(smoke: &Smoke) {
     smoke.click("dialog-cancel");
     assert!(!smoke.shown("actions-toggle"));
 
-    // The hosts: read, then the people who could be added.
+    // The hosts: read, then the people who could be added. Each read that
+    // fails offers Try again in the dialog, which reads it again.
     smoke.click("event_type_hosts");
     assert!(smoke.shown("hosts-loading"));
     assert!(
@@ -3841,7 +3842,20 @@ fn scheduling_event_types(smoke: &Smoke) {
         "no save before the hosts are read"
     );
     let (ticket, _) = admin_request(smoke);
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("hosts-load-failure") && smoke.shown("hosts-retry"));
+    smoke.click("hosts-retry");
+    assert!(smoke.shown("hosts-loading") && !smoke.shown("hosts-retry"));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Hosts { .. }));
     admin_answer(smoke, ticket, Ok(Data::Hosts(vec![host("u-1", "Ann Lee")])));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Users { .. }));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("hosts-candidates-failure") && smoke.shown("hosts-candidates-retry"));
+    assert!(smoke.sensitive("dialog-save"), "the hosts stay editable");
+    smoke.click("hosts-candidates-retry");
+    assert!(!smoke.shown("hosts-candidates-retry"));
     let (ticket, request) = admin_request(smoke);
     assert!(matches!(request, Request::Users { .. }));
     admin_answer(
@@ -4366,10 +4380,13 @@ fn scheduling_hours(smoke: &Smoke) {
     assert!(matches!(request, Request::Rules { .. }));
     admin_answer(smoke, ticket, Err(server_error()));
     assert!(smoke.shown("week-load-failure") && !smoke.shown("week-day"));
-    smoke.click("dialog-cancel");
+    // Try again reads the week again, in the same editor.
+    assert!(smoke.shown("week-retry"));
+    smoke.click("week-retry");
+    assert!(smoke.shown("week-loading") && !smoke.shown("week-retry"));
     assert!(!smoke.shown("week-load-failure"));
-    smoke.click("hours_week_button");
-    let (ticket, _) = admin_request(smoke);
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Rules { .. }));
     admin_answer(smoke, ticket, Ok(rules()));
     assert_eq!(smoke.count("week-day"), 7);
     assert_eq!(smoke.count("week-range"), 2);
@@ -4442,9 +4459,16 @@ fn scheduling_hours(smoke: &Smoke) {
     smoke.click("dialog-cancel");
     assert!(!smoke.shown("week-day"));
 
-    // The overrides' editor: the days to come, a run as one row.
+    // The overrides' editor: the days to come, a run as one row; a failed
+    // read is read again with Try again.
     smoke.click("hours_overrides_button");
     assert!(smoke.shown("overrides-loading"));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::Overrides));
+    admin_answer(smoke, ticket, Err(server_error()));
+    assert!(smoke.shown("overrides-load-failure") && smoke.shown("overrides-retry"));
+    smoke.click("overrides-retry");
+    assert!(smoke.shown("overrides-loading") && !smoke.shown("overrides-retry"));
     scheduling_reads(smoke, reads);
     assert_eq!(smoke.count("override-row"), 2);
     assert!(smoke.shows_text("12:00 p.m. to 4:00 p.m."));
@@ -5064,6 +5088,14 @@ fn scheduling_developer(smoke: &Smoke) {
     deliveries(smoke, 1);
     scheduling_reads(smoke, |_| Err(server_error()));
     assert!(smoke.shown("developer-deliveries-failure") && !smoke.shown("developer-delivery"));
+    // Try again reads the open webhook's deliveries again.
+    smoke.click("developer-deliveries-retry");
+    assert!(smoke.shown("developer-deliveries-loading"));
+    let (ticket, request) = admin_request(smoke);
+    assert!(matches!(request, Request::WebhookDeliveries { .. }));
+    admin_answer(smoke, ticket, Ok(Data::Deliveries(Vec::new())));
+    assert!(smoke.shown("developer-deliveries-empty"));
+    assert!(!smoke.shown("developer-deliveries-retry"));
 
     // A webhook added: refused by its address, then sent with the event and
     // the field chosen, and its signing secret shown once.

@@ -819,6 +819,7 @@ mod tests {
             load: SectionLoad::Loading,
             rows: Vec::new(),
             candidates: Vec::new(),
+            candidates_load: SectionLoad::Loading,
             routing_mode: "fixed".to_owned(),
             rotation: "even".to_owned(),
             validation: None,

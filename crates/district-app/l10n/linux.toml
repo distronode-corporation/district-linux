@@ -3105,9 +3105,25 @@ screen = "metainfo"
 state = "reviewed"
 note = "The 3.0.0 release's notes in the AppStream metadata, as software centres show them."
 
+[metainfo.release_3_0_1.li1]
+en = "A call handed to this computer stops ringing as soon as it is answered on another device, the ring times out or the caller hangs up"
+fr = "Un appel transféré à cet ordinateur cesse de sonner dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.1 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_0_1.li2]
+en = "Booking pages: Try again when the working hours, an event type's hosts or a webhook's deliveries could not be read"
+fr = "Pages de réservation\u00A0: bouton Réessayer quand les heures de disponibilité, les hôtes d'un type de rendez-vous ou les envois d'un webhook n'ont pas pu être chargés"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.1 release's notes in the AppStream metadata, as software centres show them."
+
 [metainfo.release_3_0_1.p]
-en = "A call handed to this computer stops ringing as soon as it is answered on another device, the ring times out or the caller hangs up, and says when it was answered on another device."
-fr = "Un appel transféré à cet ordinateur cesse de sonner dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche, et indique quand il a été pris sur un autre appareil."
+en = "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can read again what failed to load."
+fr = "Les appels cessent de sonner dès qu'ils sont pris ailleurs, et les pages de réservation peuvent recharger ce qui n'a pas pu être chargé."
 ctx = "body"
 screen = "metainfo"
 state = "reviewed"

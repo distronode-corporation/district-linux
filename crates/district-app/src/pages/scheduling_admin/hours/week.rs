@@ -18,7 +18,9 @@ use district_core::scheduling_admin::{
 };
 
 use super::HoursPane;
-use super::kit::{Outcome, Shell, between, control_of, pressed, send, time_entry};
+use super::kit::{
+    Outcome, Shell, between, control_of, draw_retry, pressed, retry_button, send, time_entry,
+};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
@@ -67,6 +69,7 @@ pub struct WeekView {
     pane: glib::WeakRef<HoursPane>,
     spinner: gtk::Spinner,
     load_failure: gtk::Label,
+    retry: gtk::Button,
     days: Vec<DayParts>,
     outcome: Outcome,
 }
@@ -87,10 +90,12 @@ impl WeekView {
         )]);
         let load_failure = plain_label("", &[]);
         load_failure.set_widget_name("week-load-failure");
+        let retry = retry_button(&weak, "week-retry");
         let outcome = Outcome::new(&weak, "week-outcome");
         let notices = adw::PreferencesGroup::new();
         notices.add(&spinner);
         notices.add(&load_failure);
+        notices.add(&retry);
         notices.add(&outcome.row);
         shell.page.add(&notices);
         let mut days = Vec::new();
@@ -142,6 +147,7 @@ impl WeekView {
             pane: weak,
             spinner,
             load_failure,
+            retry,
             days,
             outcome,
         });
@@ -156,6 +162,7 @@ impl WeekView {
         let read = week.load.value().is_some();
         draw_spinner(&self.spinner, matches!(week.load, SectionLoad::Loading));
         failure_line(&self.load_failure, week.load.failure());
+        draw_retry(&self.retry, week.load.failure());
         self.outcome.draw(&week.write);
         self.shell.draw_save(week.can_save(), busy);
         for (day, parts) in self.days.iter().enumerate() {

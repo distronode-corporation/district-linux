@@ -1,7 +1,9 @@
 //! An event type's hosts and how its bookings are routed among them, as a
 //! dialog. The scheduler replaces the hosts whole, so the core reads them
 //! first and offers no save until they are read; the people who could be
-//! added are listed under them, each with Add.
+//! added are listed under them, each with Add. A read that failed offers Try
+//! again where it shows: the hosts' under the routing, the people's under
+//! their heading.
 //!
 //! The routing and each host's role and priority go to the core as they are
 //! chosen or typed; the rows are built again only when a host comes or goes,
@@ -10,6 +12,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use district_core::FailureText;
 use district_core::scheduling_admin::{EventTypeEvent, HostRow, HostsDialog, SectionLoad};
 use district_model::SchedulingUser;
 
@@ -29,6 +32,26 @@ pub(super) fn candidate_name(user: &SchedulingUser) -> &str {
     } else {
         &user.name
     }
+}
+
+/// Try again, for a read of the dialog that failed: the core reads again
+/// whichever failed ([`EventTypeEvent::RetryDialogRead`]). Hidden until
+/// [`draw_retry`] shows it.
+fn retry_button(pane: &glib::WeakRef<EventTypesPane>, name: &str) -> gtk::Button {
+    let retry = gtk::Button::builder()
+        .label(text::common_try_again(lang()))
+        .halign(gtk::Align::Start)
+        .visible(false)
+        .name(name)
+        .build();
+    let pane = pane.clone();
+    retry.connect_clicked(move |_| send(&pane, detail_event(EventTypeEvent::RetryDialogRead)));
+    retry
+}
+
+/// Shows `retry` while its read failed in a way trying again can fix.
+fn draw_retry(retry: &gtk::Button, failure: Option<&FailureText>) {
+    retry.set_visible(failure.is_some_and(|failure| failure.retryable));
 }
 
 /// What the rows were built from: the hosts' and the candidates' ids, and
@@ -61,10 +84,13 @@ pub struct HostsView {
     pane: glib::WeakRef<EventTypesPane>,
     spinner: gtk::Spinner,
     load_failure: gtk::Label,
+    retry: gtk::Button,
     rotation: adw::ComboRow,
     hosts_group: adw::PreferencesGroup,
     hosts_empty: gtk::Label,
     candidates_group: adw::PreferencesGroup,
+    candidates_failure: gtk::Label,
+    candidates_retry: gtk::Button,
     rows: RefCell<Vec<gtk::Widget>>,
     built: RefCell<Option<Built>>,
     validation: gtk::Label,
@@ -92,6 +118,7 @@ impl HostsView {
             text::scheduling_admin_loading_a11y(lang()),
         )]);
         let load_failure = form_line(&[], "hosts-load-failure");
+        let retry = retry_button(&weak, "hosts-retry");
         let modes = HostsDialog::routing_modes();
         let mode_labels: Vec<&str> = modes.iter().map(|(_, label)| *label).collect();
         let routing = combo(
@@ -116,6 +143,7 @@ impl HostsView {
         let routing_group = adw::PreferencesGroup::new();
         routing_group.add(&spinner);
         routing_group.add(&load_failure);
+        routing_group.add(&retry);
         routing_group.add(&routing);
         routing_group.add(&rotation);
         shell.page.add(&routing_group);
@@ -127,6 +155,10 @@ impl HostsView {
         let candidates_group = adw::PreferencesGroup::builder()
             .title(text::scheduling_admin_hosts_add_heading(lang()))
             .build();
+        let candidates_failure = form_line(&[], "hosts-candidates-failure");
+        let candidates_retry = retry_button(&weak, "hosts-candidates-retry");
+        candidates_group.add(&candidates_failure);
+        candidates_group.add(&candidates_retry);
         shell.page.add(&candidates_group);
         let validation = form_line(&["error"], "hosts-validation");
         let outcome = form_line(&[], "hosts-outcome");
@@ -162,10 +194,13 @@ impl HostsView {
             pane: weak,
             spinner,
             load_failure,
+            retry,
             rotation,
             hosts_group,
             hosts_empty,
             candidates_group,
+            candidates_failure,
+            candidates_retry,
             rows: RefCell::new(Vec::new()),
             built: RefCell::new(None),
             validation,
@@ -181,11 +216,15 @@ impl HostsView {
         self.shell.draw_save(hosts.can_save(), hosts.write.busy());
         draw_spinner(&self.spinner, matches!(hosts.load, SectionLoad::Loading));
         failure_line(&self.load_failure, hosts.load.failure());
+        draw_retry(&self.retry, hosts.load.failure());
         self.rotation.set_visible(hosts.shows_rotation());
         let read = hosts.load.value().is_some();
         self.hosts_empty.set_visible(read && hosts.rows.is_empty());
+        let candidates_failed = hosts.candidates_load.failure();
         self.candidates_group
-            .set_visible(read && !hosts.candidates.is_empty());
+            .set_visible(read && (!hosts.candidates.is_empty() || candidates_failed.is_some()));
+        failure_line(&self.candidates_failure, candidates_failed);
+        draw_retry(&self.candidates_retry, candidates_failed);
         draw_line(&self.validation, hosts.validation);
         write_line(&self.outcome, &hosts.write);
         let built = Built::of(hosts);
@@ -349,6 +388,7 @@ mod tests {
             load: SectionLoad::Loading,
             rows: Vec::new(),
             candidates: vec![user("u-2", "")],
+            candidates_load: SectionLoad::Ready(()),
             routing_mode: "fixed".to_owned(),
             rotation: "even".to_owned(),
             validation: None,

@@ -113,6 +113,10 @@
     <release version="3.0.1" date="2026-10-15">
       <description>
         <p>@metainfo.release_3_0_1.p@</p>
+        <ul>
+          <li>@metainfo.release_3_0_1.li1@</li>
+          <li>@metainfo.release_3_0_1.li2@</li>
+        </ul>
       </description>
     </release>
     <release version="3.0.0" date="2026-10-15">

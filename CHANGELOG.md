@@ -27,11 +27,20 @@ A ring stops on this computer as soon as the call is taken somewhere else.
   another device.") or, when nobody answered, shows the missed call as before. A call
   answered on this computer is never touched by it, and the thirty-second limit stays as
   the fallback.
+- In the booking pages, a read that failed in the working hours' week or overrides
+  editor, in an event type's hosts dialog (the hosts, or the people who could be added)
+  or in a webhook's deliveries now offers Try again where it failed, instead of leaving
+  the editor to be closed and opened again or the list of people silently empty.
 
 ### Changed
 
-- Built on District AI core for Rust 4.0.2, which reads the new event and adds
-  `RingEnd::AnsweredElsewhere`. The AppStream metadata's newest release is 3.0.1, with
+- Built on District AI core for Rust 4.0.2, which reads the new event, adds
+  `RingEnd::AnsweredElsewhere` and the three retry events, and never asks for a
+  hand-off link to the web that is not bound to the browser (security sweep S33). This
+  app starts no hand-off of its own (its booking pages are native, and Manage billing
+  opens the plain billing page), so nothing it sends changes; a `districtai://handoff`
+  link the desktop passes on is still routed to the core, which drops one nothing
+  awaits. The AppStream metadata's newest release is 3.0.1, with
   its notes in English and Canadian French, and the screenshot links name the v3.0.1
   tag.
 
