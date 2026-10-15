@@ -243,6 +243,15 @@ jobs:
       - name: The French rules hold
         run: python3 tools/l10n/frcheck.py all --termbase '' --tm '' .
 
+      # The release's own gate (release.yml), run on every change so that a
+      # release never finds it: with French on, every entry needs French at
+      # state reviewed or signed.
+      - name: French, when it is on, is complete and reviewed
+        run: |
+          if python3 scripts/french-enabled.py; then
+            python3 tools/l10n/l10n.py check --require fr-CA crates/district-app/l10n/linux.toml crates/district-app/l10n/scheduling.toml
+          fi
+
       - name: msgfmt compiles the French catalog
         run: |
           sudo apt-get update -qq
