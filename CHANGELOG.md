@@ -13,6 +13,28 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-15
+
+A ring stops on this computer as soon as the call is taken somewhere else.
+
+### Fixed
+
+- A call handed to this computer kept ringing until its thirty seconds ran out when
+  someone answered it on another device, when the service's ring window closed, or when
+  the caller hung up. The service now says when a ring ends (`call_ring_cancelled` on
+  the live socket), and the ring stops at once: the ringtone stops, the notification is
+  withdrawn, and the strip says "Answered on another device" ("That call was answered on
+  another device.") or, when nobody answered, shows the missed call as before. A call
+  answered on this computer is never touched by it, and the thirty-second limit stays as
+  the fallback.
+
+### Changed
+
+- Built on District AI core for Rust 4.0.2, which reads the new event and adds
+  `RingEnd::AnsweredElsewhere`. The AppStream metadata's newest release is 3.0.1, with
+  its notes in English and Canadian French, and the screenshot links name the v3.0.1
+  tag.
+
 ## [3.0.0] - 2026-10-15
 
 District AI for Linux in Canadian French, and the booking pages managed in the app.

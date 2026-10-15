@@ -3581,6 +3581,15 @@ pub fn metainfo_release_3_0_0_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_0_1.p`
+#[must_use]
+pub fn metainfo_release_3_0_1_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A call handed to this computer stops ringing as soon as it is answered on another device, the ring times out or the caller hangs up, and says when it was answered on another device.",
+        Locale::FrCa => "Un appel transféré à cet ordinateur cesse de sonner dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche, et indique quand il a été pris sur un autre appareil.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {

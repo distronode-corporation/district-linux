@@ -6703,6 +6703,20 @@ fn ring_in(smoke: &Smoke, workspace_id: &str, call_id: &str) {
     }));
 }
 
+/// The service's `call_ring_cancelled` for `call_id` in the open workspace,
+/// as recorded, with `reason`.
+fn ring_cancelled(smoke: &Smoke, call_id: &str, reason: &str) {
+    let mut envelope: TelemetryEnvelope =
+        desktop_fixture("telemetry-event-call-ring-cancelled.json");
+    envelope.workspace_id = AGENCY.to_owned();
+    envelope.call_id = call_id.to_owned();
+    envelope.data = serde_json::json!({ "callId": call_id, "reason": reason });
+    smoke.answer(Event::Live(WorkspaceUpdate {
+        workspace_id: AGENCY.to_owned(),
+        update: LiveUpdate::Event(envelope),
+    }));
+}
+
 /// The notification a ring for `call_id` puts up: urgent, with Answer and
 /// Decline, and nothing about the caller.
 fn assert_ring_notification(notification: &Notification, call_id: &str) {
@@ -6732,7 +6746,8 @@ fn assert_ring_notification(notification: &Notification, call_id: &str) {
 /// missed; one rung while the window is hidden, which rings through its
 /// notification and is answered from the notification's button; a second
 /// ringing behind that call without a sound, ringing once the caller hangs
-/// up, and answered elsewhere first.
+/// up, and answered elsewhere first; and two the service ends, one answered on
+/// another device and one whose window closed.
 fn ringing(smoke: &Smoke) {
     smoke.activate("sidebar-overview");
     smoke.forget();
@@ -6791,6 +6806,58 @@ fn ringing(smoke: &Smoke) {
     };
     assert_eq!(missed.title, Notification::MISSED_TITLE);
     smoke.shot("153-ring-missed");
+    smoke.click("ring_dismiss");
+    assert!(!smoke.shown("ring_strip"));
+    smoke.forget();
+
+    // Answered on another device: the service says the ring is over, and it
+    // stops here, the ringtone and the notification with it, saying why.
+    ring(smoke, "call_ring_taken");
+    assert!(smoke.pending("StartRingtone"));
+    let Effect::Notify(taken) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    smoke.bridge.notify(&taken);
+    smoke.bridge.start_ringtone();
+    smoke.pump();
+    smoke.forget();
+    ring_cancelled(smoke, "call_ring_taken", "answered");
+    assert!(smoke.pending("StopRingtone"));
+    assert!(smoke.pending("WithdrawNotification"));
+    assert!(!smoke.pending("Notify") && !smoke.pending("AnswerCall"));
+    assert_eq!(
+        smoke.label("ring_title"),
+        IncomingRing::ANSWERED_ELSEWHERE_TITLE
+    );
+    assert_eq!(
+        smoke.label("ring_message"),
+        IncomingRing::ANSWERED_ELSEWHERE
+    );
+    assert!(smoke.shown("ring_dismiss") && !smoke.shown("answer_button"));
+    smoke.bridge.stop_ringtone();
+    smoke.bridge.withdraw(&taken.id);
+    smoke.pump();
+    smoke.shot("158-ring-answered-on-another-device");
+    smoke.forget();
+    // The same word again, on the socket or from another workspace's: nothing more.
+    ring_cancelled(smoke, "call_ring_taken", "answered");
+    assert!(!smoke.pending("StopRingtone") && !smoke.pending("WithdrawNotification"));
+    smoke.click("ring_dismiss");
+    assert!(!smoke.shown("ring_strip"));
+    smoke.forget();
+
+    // The service's window closed first: a missed call, as at the deadline.
+    ring(smoke, "call_ring_timeout");
+    smoke.take("Notify");
+    smoke.forget();
+    ring_cancelled(smoke, "call_ring_timeout", "timeout");
+    assert!(smoke.pending("StopRingtone"));
+    let Effect::Notify(missed) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    assert_eq!(missed.title, Notification::MISSED_TITLE);
+    assert_eq!(smoke.label("ring_title"), Notification::MISSED_TITLE);
+    assert_eq!(smoke.label("ring_message"), IncomingRing::MISSED);
     smoke.click("ring_dismiss");
     assert!(!smoke.shown("ring_strip"));
     smoke.forget();

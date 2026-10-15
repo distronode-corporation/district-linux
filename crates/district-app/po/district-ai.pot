@@ -2231,6 +2231,12 @@ msgctxt "metainfo.release_3_0_0.p"
 msgid "District AI is now in Canadian French, and the booking pages are managed in the app."
 msgstr ""
 
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.1 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_1.p"
+msgid "A call handed to this computer stops ringing as soon as it is answered on another device, the ring times out or the caller hangs up, and says when it was answered on another device."
+msgstr ""
+
 #. screen: metainfo; ctx: label; tier: T3
 #. A screenshot's caption in the AppStream metadata.
 msgctxt "metainfo.screenshot_caption.call"
