@@ -31,11 +31,38 @@ A ring stops on this computer as soon as the call is taken somewhere else.
   editor, in an event type's hosts dialog (the hosts, or the people who could be added)
   or in a webhook's deliveries now offers Try again where it failed, instead of leaving
   the editor to be closed and opened again or the list of people silently empty.
+- From the 3.0.1 visual review, in French and with Large Text above all:
+  - The window fits 390 px in French and with Large Text: the overview's metric tiles
+    take one a line when two do not fit, so the header's close button and the ring
+    strip's buttons are no longer pushed off the right edge.
+  - The caller sentiment chart in French drew all three bands in red: its colours
+    are keyed on the service's own name for each band (core `SentimentShare::name`),
+    never on the translated label.
+  - The working hours week editor in French showed each day's name as "...": a day's
+    Copy and Add range buttons sit under its windows, not beside its name.
+  - Dialog titles and the page title wrap onto a second line instead of losing their
+    end to an ellipsis ("Archiver...", "Nouvelle demande de ...").
+  - A booking's reschedule, cancel and reassign dialogs, and the booking question
+    form, keep their buttons in a bar under the scrolling content, so they never fall
+    below the dialog's edge.
+  - Stock widgets (suggested buttons, switches, selected rows) take the app's teal on
+    libadwaita 1.6 and later, which reads CSS variables, instead of the desktop's
+    accent beside it.
+  - "No carrier connected" is no longer dimmed twice.
+  - Support requests show their status in the app's language (core
+    `support_status_label`, the labels District AI for iOS ships), and the
+    workspace's own messages are signed "Vous" in French, not "You".
+  - Email addresses in the booking team's and an event type's host lists stay on one
+    line, shortened in the middle with the full address in a tooltip, instead of
+    wrapping mid-address with a hyphen added.
+  - In French, a booking page set-up that failed with the service's own English reason
+    no longer says that no reason was given.
 
 ### Changed
 
 - Built on District AI core for Rust 4.0.2, which reads the new event, adds
-  `RingEnd::AnsweredElsewhere` and the three retry events, and never asks for a
+  `RingEnd::AnsweredElsewhere` and the three retry events, the support status labels
+  and the sentiment band's name, and never asks for a
   hand-off link to the web that is not bound to the browser (security sweep S33). This
   app starts no hand-off of its own (its booking pages are native, and Manage billing
   opens the plain billing page), so nothing it sends changes; a `districtai://handoff`

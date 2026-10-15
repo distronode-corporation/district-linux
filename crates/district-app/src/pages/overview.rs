@@ -13,7 +13,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{Locale, core_text, lang, text};
 use crate::pages::calls::call_row;
-use crate::pages::shared::{RowIds, draw_line, failure_text, metric_tile, now};
+use crate::pages::shared::{RowIds, draw_line, failure_text, metric_tile, now, wrap_button_label};
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -164,6 +164,7 @@ mod imp {
                 .set_label(core_text::overview_finish_setup_body(lang()));
             self.setup_button
                 .set_label(core_text::overview_finish_setup_action(lang()));
+            wrap_button_label(&self.setup_button);
             on_click(&self.setup_button, &*page, || Event::OpenFinishSetup);
             on_click(&self.retry_button, &*page, || Event::Refresh);
             let weak = page.downgrade();

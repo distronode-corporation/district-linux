@@ -73,9 +73,6 @@
             <child>
               <object class="AdwActionRow" id="empty_row">
                 <property name="use-markup">False</property>
-                <style>
-                  <class name="dim-label"/>
-                </style>
               </object>
             </child>
           </object>

@@ -12,7 +12,7 @@ use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
 use crate::l10n::{lang, sched_text, text};
 use crate::pages::Sends;
-use crate::pages::shared::{draw_spinner, plain_label};
+use crate::pages::shared::{draw_spinner, plain_label, wrap_bound_title};
 
 /// What the member does on the list, as the core takes it.
 pub(super) fn list_event(event: EventTypesEvent) -> Event {
@@ -46,6 +46,9 @@ pub(super) struct Shell {
     pub(super) save: gtk::Button,
     pub(super) spinner: gtk::Spinner,
     pub(super) page: adw::PreferencesPage,
+    /// What holds the header and the page, for a sheet that keeps its own
+    /// buttons in a bar under the page.
+    pub(super) view: adw::ToolbarView,
 }
 
 impl Shell {
@@ -84,12 +87,14 @@ impl Shell {
             .child(&view)
             .name(name)
             .build();
+        wrap_bound_title(&header, &dialog);
         Self {
             dialog,
             cancel,
             save,
             spinner,
             page,
+            view,
         }
     }
 

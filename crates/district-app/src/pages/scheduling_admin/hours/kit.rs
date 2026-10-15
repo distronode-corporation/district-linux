@@ -13,7 +13,7 @@ use crate::gtk::{self, glib};
 use crate::l10n::{lang, sched_text, text};
 use crate::pages::Sends;
 use crate::pages::scheduling_admin::common::write_line;
-use crate::pages::shared::{draw_spinner, icon_button, plain_label};
+use crate::pages::shared::{draw_spinner, icon_button, plain_label, wrap_bound_title};
 
 /// What the member does on the working hours, as the core takes it.
 pub(super) fn hours_event(event: HoursEvent) -> Event {
@@ -109,6 +109,7 @@ impl Shell {
             .child(&view)
             .name(name)
             .build();
+        wrap_bound_title(&header, &dialog);
         let weak = pane.clone();
         dialog.connect_close_attempt(move |_| send(&weak, HoursEvent::CloseDialog));
         Self {

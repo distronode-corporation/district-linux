@@ -23,7 +23,7 @@ use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
 use crate::l10n::{lang, sched_text, text};
 use crate::pages::scheduling_admin::common::{failure_line, write_line};
-use crate::pages::shared::{draw_line, draw_spinner, icon_button};
+use crate::pages::shared::{draw_line, draw_spinner, icon_button, keep_address_whole};
 
 /// Who a candidate is called: their name, or their address for a blank one.
 pub(super) fn candidate_name(user: &SchedulingUser) -> &str {
@@ -263,6 +263,7 @@ impl HostsView {
             .use_markup(false)
             .name("host-row")
             .build();
+        keep_address_whole(&row, &host.email);
         let roles = HostsDialog::roles();
         let labels: Vec<&str> = roles.iter().map(|(_, label)| *label).collect();
         let role = gtk::DropDown::from_strings(&labels);
@@ -343,6 +344,7 @@ impl HostsView {
             .use_markup(false)
             .name("host-candidate")
             .build();
+        keep_address_whole(&row, &user.email);
         let add_label = sched_text::common_add(lang());
         let add = gtk::Button::builder()
             .label(add_label)

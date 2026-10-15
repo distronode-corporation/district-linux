@@ -119,7 +119,9 @@
                           <object class="GtkFlowBox" id="metrics">
                             <property name="selection-mode">none</property>
                             <property name="homogeneous">True</property>
-                            <property name="min-children-per-line">2</property>
+                            <!-- One tile a line when two do not fit: two side by side
+                                 made the page wider than a 390 px window in French. -->
+                            <property name="min-children-per-line">1</property>
                             <property name="max-children-per-line">4</property>
                             <property name="column-spacing">12</property>
                             <property name="row-spacing">12</property>

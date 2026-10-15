@@ -2422,7 +2422,10 @@ fn numbers_screen(smoke: &Smoke) {
             status: 409,
             code: "messaging_provider_not_configured".to_owned(),
             detail: ErrorDetail {
-                message: Some("Connect a carrier account to search for numbers.".to_owned()),
+                // The service's own words for this code on the number search,
+                // which the French catalog says too: no other sentence, or the
+                // two languages state different facts.
+                message: Some("Messaging provider not configured for workspace".to_owned()),
                 code: Some("messaging_provider_not_configured".to_owned()),
                 ..ErrorDetail::default()
             },
@@ -5971,7 +5974,9 @@ fn support_screens(smoke: &Smoke) {
     list(smoke, Ok(fixture("district-support-requests.json")));
     assert_eq!(smoke.count("request-row"), 3);
     assert!(smoke.shown("open_heading") && smoke.shown("resolved_heading"));
-    assert!(smoke.shows_part("Not filed yet \u{b7} Opening"));
+    // The help desk's own word is never shown: "Opening", in the
+    // category of a request not filed yet, reads as its label.
+    assert!(smoke.shows_part("Not filed yet \u{b7} Received"));
     smoke.shot("77-support");
     smoke.click("refresh_button");
     list(smoke, Err(server_error()));
@@ -6060,7 +6065,7 @@ fn support_screens(smoke: &Smoke) {
         smoke.forget();
     };
     read_request(smoke);
-    assert!(smoke.shows_text("DA-42 \u{b7} In Progress"));
+    assert!(smoke.shows_text("DA-42 \u{b7} In progress"));
     assert_eq!(smoke.count("conversation-message"), 2);
     smoke.shot("79-support-request");
     smoke
@@ -6105,7 +6110,7 @@ fn support_screens(smoke: &Smoke) {
             result: Ok(fixture("district-support-close.json")),
         }
     });
-    assert!(smoke.shows_part("Closed as"));
+    assert!(smoke.shows_part("Closed as Done."));
     assert!(!smoke.shown("close_button"), "resolved: nothing to close");
     smoke.shot("81-support-closed");
     // A question left open closes with its screen.

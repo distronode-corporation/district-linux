@@ -4,6 +4,7 @@
 
 use std::cell::{Cell, OnceCell, RefCell};
 
+use district_core::l10n::support_status_label;
 use district_core::{
     Event, Route, SignedIn, SupportEvent, SupportList, SupportRequests, SupportScreen,
     support_request_key,
@@ -28,6 +29,8 @@ pub(crate) fn in_section(route: &Route) -> bool {
 
 /// The line under a request: its reference, where it stands and when it last
 /// moved. A request still being opened has no reference yet, and says so.
+/// Where it stands is the core's label for its status, in the app's language,
+/// never the help desk's own word.
 pub(crate) fn request_line(request: &SupportRequestSummary) -> String {
     let reference = request
         .issue_key
@@ -35,7 +38,7 @@ pub(crate) fn request_line(request: &SupportRequestSummary) -> String {
         .unwrap_or(text::support_not_filed(lang()));
     format!(
         "{reference} \u{b7} {} \u{b7} {}",
-        request.status_name,
+        support_status_label(&request.status_name, &request.status_category, lang()),
         short_text(&request.updated_at)
     )
 }
@@ -317,8 +320,9 @@ mod tests {
     #[test]
     fn a_request_reads_with_its_reference_or_that_it_has_none_yet() {
         let list: SupportRequestsResponse = fixture("district-support-requests.json");
-        assert!(request_line(&list.requests[0]).starts_with("DA-42 \u{b7} In Progress \u{b7} "));
-        assert!(request_line(&list.requests[1]).starts_with("Not filed yet \u{b7} Opening"));
+        assert!(request_line(&list.requests[0]).starts_with("DA-42 \u{b7} In progress \u{b7} "));
+        assert!(request_line(&list.requests[1]).starts_with("Not filed yet \u{b7} Received"));
+        assert!(request_line(&list.requests[2]).starts_with("DA-40 \u{b7} Done \u{b7} "));
         assert!(in_section(&Route::SupportRequest {
             key: "DA-42".to_owned()
         }));

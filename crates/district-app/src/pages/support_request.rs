@@ -5,6 +5,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
+use district_core::l10n::support_status_label;
 use district_core::{
     Event, SupportEvent, SupportRequestScreen, SupportRequestView as SupportRequestRead,
 };
@@ -18,12 +19,13 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::reply_box::{ReplyBox, ReplyEvents, ReplyState};
 use crate::pages::shared::{
     Ask, Asking, Landing, clear_box, conversation_message, draw_line, draw_spinner, failure_text,
-    short_text,
+    placeholder_text, short_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
-/// The line over a request's subject: its reference, and where it stands.
+/// The line over a request's subject: its reference, and where it stands, as
+/// the core's label for its status, never the help desk's own word.
 pub(crate) fn reference(request: &SupportRequestDetail) -> String {
     format!(
         "{} \u{b7} {}",
@@ -31,7 +33,7 @@ pub(crate) fn reference(request: &SupportRequestDetail) -> String {
             .issue_key
             .as_deref()
             .unwrap_or(text::support_not_filed(lang())),
-        request.status_name
+        support_status_label(&request.status_name, &request.status_category, lang())
     )
 }
 
@@ -214,8 +216,10 @@ impl SupportRequestView {
         imp.subject.set_label(&detail.subject);
         clear_box(&imp.messages);
         for message in &detail.messages {
+            // The service writes the workspace's own messages as "You": a
+            // placeholder, read in the app's language.
             imp.messages.append(&conversation_message(
-                &message.author,
+                &placeholder_text(&message.author),
                 &short_text(&message.created_at),
                 &message.body,
                 message.role == "customer",
@@ -245,10 +249,11 @@ mod tests {
     #[test]
     fn a_request_is_headed_by_its_reference_and_where_it_stands() {
         let read: SupportRequestResponse = fixture("district-support-request.json");
-        assert_eq!(reference(&read.request), "DA-42 \u{b7} In Progress");
+        assert_eq!(reference(&read.request), "DA-42 \u{b7} In progress");
         let mut pending = read.request;
         pending.issue_key = None;
         pending.status_name = "Opening".to_owned();
-        assert_eq!(reference(&pending), "Not filed yet \u{b7} Opening");
+        pending.status_category = "PENDING".to_owned();
+        assert_eq!(reference(&pending), "Not filed yet \u{b7} Received");
     }
 }
