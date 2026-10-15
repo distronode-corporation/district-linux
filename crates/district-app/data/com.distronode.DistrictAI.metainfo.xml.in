@@ -83,23 +83,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/call-log.png</image>
       <caption>@metainfo.screenshot_caption.call_log@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/inbox.png</image>
       <caption>@metainfo.screenshot_caption.inbox@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/call.png</image>
       <caption>@metainfo.screenshot_caption.call@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/contacts.png</image>
       <caption>@metainfo.screenshot_caption.contacts@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v2.2.0/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.0/crates/district-app/data/screenshots/overview.png</image>
       <caption>@metainfo.screenshot_caption.overview@</caption>
     </screenshot>
   </screenshots>
@@ -110,6 +110,20 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="3.0.0" date="2026-10-14">
+      <description>
+        <p>@metainfo.release_3_0_0.p@</p>
+        <ul>
+          <li>@metainfo.release_3_0_0.li1@</li>
+          <li>@metainfo.release_3_0_0.li2@</li>
+          <li>@metainfo.release_3_0_0.li3@</li>
+          <li>@metainfo.release_3_0_0.li4@</li>
+          <li>@metainfo.release_3_0_0.li5@</li>
+          <li>@metainfo.release_3_0_0.li6@</li>
+          <li>@metainfo.release_3_0_0.li7@</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.2.0" date="2026-10-13">
       <description>
         <p>@metainfo.release_2_2_0.p@</p>

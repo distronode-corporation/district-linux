@@ -3509,6 +3509,78 @@ pub fn metainfo_release_2_2_0_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_0_0.li1`
+#[must_use]
+pub fn metainfo_release_3_0_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The call's live transcript, under the call strip",
+        Locale::FrCa => "La transcription en direct de l'appel, sous la barre d'appel",
+    }
+}
+
+/// `metainfo.release_3_0_0.li2`
+#[must_use]
+pub fn metainfo_release_3_0_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Booking pages: bookings, event types, working hours, calendars, the team, developer settings and the page itself, right in the app",
+        Locale::FrCa => "Pages de réservation\u{00A0}: rendez-vous, types de rendez-vous, heures de disponibilité, calendriers, équipe, paramètres de développeur et la page elle-même, directement dans l'application",
+    }
+}
+
+/// `metainfo.release_3_0_0.li3`
+#[must_use]
+pub fn metainfo_release_3_0_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Phone numbers: reapply call routing, release a number, and a new Carrier tab for SIP trunks, one-time passcodes, a paid number lookup and the A2P 10DLC and toll-free registrations",
+        Locale::FrCa => "Numéros de téléphone\u{00A0}: rétablissez l'acheminement, libérez un numéro, et utilisez le nouvel onglet Transporteur pour les raccordements SIP, les codes à usage unique, la recherche de numéro payante et les inscriptions A2P 10DLC et de numéros sans frais",
+    }
+}
+
+/// `metainfo.release_3_0_0.li4`
+#[must_use]
+pub fn metainfo_release_3_0_0_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Start a new conversation from the inbox",
+        Locale::FrCa => "Lancez une nouvelle conversation depuis la boîte de réception",
+    }
+}
+
+/// `metainfo.release_3_0_0.li5`
+#[must_use]
+pub fn metainfo_release_3_0_0_li5(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Report AI-generated content on a call's summary, in a thread and on District HQ answers",
+        Locale::FrCa => "Signalez un contenu généré par l'IA dans le résumé d'un appel, dans un fil et dans les réponses de District HQ",
+    }
+}
+
+/// `metainfo.release_3_0_0.li6`
+#[must_use]
+pub fn metainfo_release_3_0_0_li6(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Knowledge: read a text file into a new document",
+        Locale::FrCa => "Connaissances\u{00A0}: importez un fichier texte dans un nouveau document",
+    }
+}
+
+/// `metainfo.release_3_0_0.li7`
+#[must_use]
+pub fn metainfo_release_3_0_0_li7(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Closing the window keeps the app running so calls still ring, with a tray icon where the desktop has one, and Start at login on the account screen",
+        Locale::FrCa => "Fermer la fenêtre laisse l'application ouverte pour que les appels continuent de sonner, avec une icône dans la zone de notification si le bureau en a une, et l'option «\u{00A0}Lancer à l'ouverture de session\u{00A0}» à l'écran Compte",
+    }
+}
+
+/// `metainfo.release_3_0_0.p`
+#[must_use]
+pub fn metainfo_release_3_0_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District AI is now in Canadian French, and the booking pages are managed in the app.",
+        Locale::FrCa => "District AI est maintenant en français canadien, et les pages de réservation se gèrent dans l'application.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {

@@ -13,15 +13,24 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-14
+
+District AI for Linux in Canadian French, and the booking pages managed in the app.
+
 ### Changed
 
-- Built on District AI core for Rust 4.0.0-beta.5. Since 4.0.0-beta.2 the core writes
+- Built on District AI core for Rust 4.0.0-beta.6. Since 4.0.0-beta.2 the core writes
   its words from a catalog in the language the app chooses (`CoreConfig::locale`), and
   the numbers page's note is the core's `MarketplaceScreen::scope_note`, which replaces
   its read-only note. 4.0.0-beta.3 adds the booking pages' administration
   (`Route::SchedulingAdmin`), 4.0.0-beta.4 the core's reviewed Canadian French, and
   4.0.0-beta.5 French labels for eight more kinds of stored value (a number's status,
-  its registrations, a SIP trunk, a webhook delivery, a host's role, a question's type).
+  its registrations, a SIP trunk, a webhook delivery, a host's role, a question's type),
+  and 4.0.0-beta.6 a call's length, a subscription's and an invoice's price, a chart's
+  days and a carrier balance written the French way (`1 min 5 s`, `249,00 $ US`,
+  `9 août`), which the call list, a call and billing now show. In English only a
+  carrier balance changes, written as money (`Balance $12.50`, before `Balance 12.50
+  USD`).
 - Every word the app writes itself comes from its catalogs,
   `crates/district-app/l10n/linux.toml` and, for the booking pages,
   `crates/district-app/l10n/scheduling.toml`, keyed: the `.ui` templates mark each
@@ -39,9 +48,8 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   "Transferred", as the portal labels them. Every other word is unchanged.
 - The catalogs carry their reviewed Canadian French (fr-CA): 572 entries in
   `crates/district-app/l10n/linux.toml` and `scheduling.toml`, regenerated into
-  `src/l10n/text.rs` and `po/fr.po`, so `FR_COMPLETE` is true. French stays switched off:
-  the `fr-ca` feature is still not among district-app's default features, and the package
-  check that holds a French-off build to no catalog is unchanged.
+  `src/l10n/text.rs` and `po/fr.po`, and the desktop entry and the metadata, so
+  `FR_COMPLETE` is true and French is on (see Added).
 - In French, dates and times are the core's (`district_l10n::format`) rather than the C
   library's: `1er août 2026`, `15 h 04`, `15 août 2026 à 15 h 04`, `samedi 15 août`. The
   stored words the app showed as written (an invoice's or a subscription's status, a
@@ -78,11 +86,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   English words as before. With French on, the packages install them with the catalog's
   French beside the English (`Comment[fr]=`, `xml:lang="fr"`), and deb.yml and
   flatpak.yml check that they hold French exactly when the catalog ships.
-- Canadian French behind the `fr-ca` cargo feature, off by default and in every package:
-  the app follows a French desktop (`glib::language_names`), the core and gettext are
-  checked to agree at start-up, and the packages carry the compiled catalog only with
-  the feature on. Until then deb.yml and flatpak.yml, which a release runs, fail a
-  package that holds a catalog.
+- Canadian French, on by default (the `fr-ca` cargo feature, now among district-app's
+  default features): the app follows a French desktop (`glib::language_names`), any
+  French locale gets Canadian French, the core and gettext are checked to agree at
+  start-up, and both packages carry the compiled catalog (under `fr`, so every French
+  locale finds it) and the desktop entry and metadata with their French. deb.yml and
+  flatpak.yml, which a release runs, fail a package that holds no French while the
+  feature is on.
 - The call's live transcript, under the call strip, as District AI for Windows shows it:
   who said what so far, a line still being heard in a quieter italic until it is final,
   where the transcript stands (connecting, live, reconnecting, ended, or none for this

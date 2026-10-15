@@ -2189,6 +2189,54 @@ msgctxt "metainfo.release_2_2_0.p"
 msgid "\"Manage on the web\" now signs in only the browser the app opened, and Billing names your plan as the pricing page does."
 msgstr "« Gérer sur le Web » ne connecte plus que le navigateur ouvert par l'application, et la section Facturation nomme votre forfait comme la page Tarifs."
 
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.li1"
+msgid "The call's live transcript, under the call strip"
+msgstr "La transcription en direct de l'appel, sous la barre d'appel"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.li2"
+msgid "Booking pages: bookings, event types, working hours, calendars, the team, developer settings and the page itself, right in the app"
+msgstr "Pages de réservation : rendez-vous, types de rendez-vous, heures de disponibilité, calendriers, équipe, paramètres de développeur et la page elle-même, directement dans l'application"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.li3"
+msgid "Phone numbers: reapply call routing, release a number, and a new Carrier tab for SIP trunks, one-time passcodes, a paid number lookup and the A2P 10DLC and toll-free registrations"
+msgstr "Numéros de téléphone : rétablissez l'acheminement, libérez un numéro, et utilisez le nouvel onglet Transporteur pour les raccordements SIP, les codes à usage unique, la recherche de numéro payante et les inscriptions A2P 10DLC et de numéros sans frais"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.li4"
+msgid "Start a new conversation from the inbox"
+msgstr "Lancez une nouvelle conversation depuis la boîte de réception"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.li5"
+msgid "Report AI-generated content on a call's summary, in a thread and on District HQ answers"
+msgstr "Signalez un contenu généré par l'IA dans le résumé d'un appel, dans un fil et dans les réponses de District HQ"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.li6"
+msgid "Knowledge: read a text file into a new document"
+msgstr "Connaissances : importez un fichier texte dans un nouveau document"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.li7"
+msgid "Closing the window keeps the app running so calls still ring, with a tray icon where the desktop has one, and Start at login on the account screen"
+msgstr "Fermer la fenêtre laisse l'application ouverte pour que les appels continuent de sonner, avec une icône dans la zone de notification si le bureau en a une, et l'option « Lancer à l'ouverture de session » à l'écran Compte"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_0.p"
+msgid "District AI is now in Canadian French, and the booking pages are managed in the app."
+msgstr "District AI est maintenant en français canadien, et les pages de réservation se gèrent dans l'application."
+
 #. screen: metainfo; ctx: label; tier: T3
 #. A screenshot's caption in the AppStream metadata.
 msgctxt "metainfo.screenshot_caption.call"
