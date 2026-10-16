@@ -247,6 +247,17 @@ impl Smoke {
             .unwrap_or_default()
     }
 
+    /// The question on top: the last alert dialog on screen. The archive of a
+    /// scheduler account is an alert dialog too, and its question opens over
+    /// it.
+    fn top_question(&self) -> Option<adw::AlertDialog> {
+        descendants(self.window().upcast_ref())
+            .into_iter()
+            .filter(WidgetExt::is_mapped)
+            .filter_map(|widget| widget.downcast::<adw::AlertDialog>().ok())
+            .last()
+    }
+
     /// The first mapped widget of type `T`.
     fn first<T: IsA<gtk::Widget>>(&self) -> Option<T> {
         descendants(self.window().upcast_ref())
@@ -385,9 +396,7 @@ impl Smoke {
 
     /// Answers the question on screen with `response`.
     fn respond(&self, response: &str) {
-        let question = self
-            .first::<adw::AlertDialog>()
-            .expect("a question on screen");
+        let question = self.top_question().expect("a question on screen");
         question.emit_by_name::<()>("response", &[&response]);
         self.pump();
     }
@@ -430,6 +439,36 @@ impl Smoke {
     /// Whether the widget on screen named `name` takes input.
     fn sensitive(&self, name: &str) -> bool {
         self.mapped(name).is_sensitive()
+    }
+
+    /// The widgets on screen whose right edge passes the window's: what a
+    /// page wider than its window cuts off (French and Large Text in a 400 px
+    /// window, above all).
+    fn past_the_edge(&self) -> Vec<String> {
+        fn walk(widget: &gtk::Widget, window: &gtk::Widget, found: &mut Vec<String>) {
+            if !widget.is_mapped() {
+                return;
+            }
+            let right = widget
+                .compute_bounds(window)
+                .map_or(0.0, |bounds| bounds.x() + bounds.width());
+            if right > window.width() as f32 + 6.0 {
+                found.push(format!(
+                    "{} #{}",
+                    widget.type_().name(),
+                    widget.widget_name()
+                ));
+            }
+            let mut child = widget.first_child();
+            while let Some(current) = child {
+                walk(&current, window, found);
+                child = current.next_sibling();
+            }
+        }
+        let window = self.window();
+        let mut found = Vec::new();
+        walk(window.upcast_ref(), window.upcast_ref(), &mut found);
+        found
     }
 
     /// Resizes the window to `width` by `height`, as the desktop would.
@@ -2466,6 +2505,16 @@ fn numbers_screen(smoke: &Smoke) {
     smoke.forget();
     managing_numbers(smoke);
     carrier_tab(smoke);
+    // The screen fits a narrow window, its tabs and buttons included.
+    smoke.resize(400, 760);
+    smoke.click("owned_tab");
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "numbers");
+    smoke.shot("56a-numbers-narrow");
+    smoke.click("search_tab");
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "number search");
+    smoke.shot("56b-numbers-search-narrow");
+    smoke.resize(1024, 720);
+    smoke.forget();
 }
 
 /// A model value from the JSON the service answers with.
@@ -4251,16 +4300,18 @@ fn scheduling_team(smoke: &Smoke) {
     assert_eq!(smoke.count("team-upcoming-row"), 1);
     assert!(smoke.shows_part("Ann Lee · "));
     assert!(smoke.shows_text("Reassign or cancel their upcoming bookings first."));
-    assert!(!smoke.sensitive("team-dialog-action"));
+    assert!(!archive_dialog(smoke).is_response_enabled("archive"));
     smoke.shot("66-booking-team-archive");
-    smoke.click("team-dialog-close");
+    // The way out is a response, as a press of the button sends it.
+    answer_archive(smoke, "keep");
     assert!(!smoke.shown("team-upcoming-row"));
     smoke.click("team-archive");
     let (ticket, _) = admin_request(smoke);
     admin_answer(smoke, ticket, Ok(Data::UpcomingBookings(Vec::new())));
     assert!(!smoke.shown("team-archive-blocked"));
-    smoke.click("team-dialog-action");
-    assert_eq!(questions(smoke), 1);
+    assert!(archive_dialog(smoke).is_response_enabled("archive"));
+    answer_archive(smoke, "archive");
+    assert_eq!(questions(smoke), 2, "the archive, and its question over it");
     assert!(smoke.shows_text("Archive Fay Founder's account?"));
     assert_eq!(
         question(smoke)
@@ -4283,7 +4334,9 @@ fn scheduling_team(smoke: &Smoke) {
     );
     assert!(smoke.shows_text("Fay Founder's scheduler account is closed"));
     team_reads(smoke, members(), read);
-    smoke.click("team-dialog-close");
+    // Escape asks to close, and with no response after it, closes.
+    archive_dialog(smoke).close();
+    smoke.pump();
     assert!(!smoke.shown("team-archive-outcome"));
     smoke.forget();
     smoke.click("back_button");
@@ -7668,7 +7721,24 @@ fn choose(smoke: &Smoke, row: &adw::ComboRow, label: &str) {
 
 /// The question on screen, when there is one.
 fn question(smoke: &Smoke) -> Option<adw::AlertDialog> {
-    smoke.first::<adw::AlertDialog>()
+    smoke.top_question()
+}
+
+/// The archive of a scheduler account, on screen.
+fn archive_dialog(smoke: &Smoke) -> adw::AlertDialog {
+    smoke
+        .mapped("team-archive-dialog")
+        .downcast::<adw::AlertDialog>()
+        .expect("the archive is an alert dialog")
+}
+
+/// Answers the archive with `response`, as pressing its button does: the
+/// dialog asks to close (it never closes by itself), then responds.
+fn answer_archive(smoke: &Smoke, response: &str) {
+    let dialog = archive_dialog(smoke);
+    dialog.close();
+    dialog.emit_by_name::<()>("response", &[&response]);
+    smoke.pump();
 }
 
 /// How many questions are on screen.
@@ -9119,6 +9189,20 @@ fn members_section(smoke: &Smoke) {
     smoke.forget();
 }
 
+/// The settings section `view` on screen in a narrow window, with nothing
+/// past the window's edge, drawn as `shot`; then back to the hub.
+fn narrow_section(smoke: &Smoke, view: &str, shot: &str) {
+    assert!(smoke.shown(view), "{view}");
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "{view}");
+    smoke.shot(shot);
+    // Its end too, where its buttons are.
+    smoke.scroll_within_to_end(view);
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "{view} end");
+    smoke.shot(&format!("{shot}-end"));
+    smoke.forget();
+    smoke.click("back_button");
+}
+
 /// A narrow window: a section has the whole window, the back button leads to
 /// the hub, and so does the split view's own way back.
 fn settings_narrow(smoke: &Smoke) {
@@ -9132,10 +9216,42 @@ fn settings_narrow(smoke: &Smoke) {
     assert!(smoke.shown("members_view"));
     assert!(!smoke.shown("hub_list"), "one pane at a time");
     assert!(smoke.shown("back_button"), "back to the hub");
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "members");
     smoke.shot("127-settings-narrow-section");
     smoke.click("back_button");
     assert!(smoke.shown("hub_list"));
     smoke.shot("128-settings-narrow-hub");
+    // Each section with rows of buttons fits the narrow window too, read.
+    smoke.activate("settings-persona");
+    config_read(smoke, Ok(fixture("district-workspace-config.json")));
+    smoke.reply("LoadPersonaOptions", |ticket| Event::PersonaOptionsLoaded {
+        ticket,
+        result: Ok(persona_options()),
+    });
+    narrow_section(smoke, "persona_view", "128a-settings-narrow-persona");
+    smoke.activate("settings-voice-studio");
+    smoke.reply("LoadVoiceStudio", |ticket| Event::VoiceStudioLoaded {
+        ticket,
+        result: Ok(Box::new(voice_studio())),
+    });
+    narrow_section(
+        smoke,
+        "voice_studio_view",
+        "128b-settings-narrow-voice-studio",
+    );
+    smoke.activate("settings-knowledge");
+    smoke.reply("LoadKnowledge {", |ticket| Event::KnowledgeLoaded {
+        ticket,
+        result: Ok(fixture("district-knowledge.json")),
+    });
+    smoke.reply("LoadKnowledgeMode", |ticket| Event::KnowledgeModeLoaded {
+        ticket,
+        result: Ok(KnowledgeModeResponse {
+            success: true,
+            mode: "internal".to_owned(),
+        }),
+    });
+    narrow_section(smoke, "knowledge_view", "128c-settings-narrow-knowledge");
     smoke.activate("settings-knowledge");
     assert!(smoke.shown("knowledge_view"));
     inner_split(smoke, "settings_page").set_show_content(false);

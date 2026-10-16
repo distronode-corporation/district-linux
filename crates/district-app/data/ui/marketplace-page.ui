@@ -65,6 +65,7 @@
                     <property name="halign">start</property>
                     <style>
                       <class name="linked"/>
+                      <class name="number-tabs"/>
                     </style>
                     <child>
                       <object class="GtkToggleButton" id="owned_tab">

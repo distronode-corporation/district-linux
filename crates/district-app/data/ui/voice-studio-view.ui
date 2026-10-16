@@ -204,6 +204,7 @@
                               <object class="GtkLabel" id="pending_label">
                                 <property name="xalign">0</property>
                                 <property name="hexpand">True</property>
+                                <property name="wrap">True</property>
                                 <property name="use-markup">False</property>
                                 <style>
                                   <class name="dim-label"/>

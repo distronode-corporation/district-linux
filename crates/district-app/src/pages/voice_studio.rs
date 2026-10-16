@@ -27,7 +27,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang};
 use crate::pages::settings_kit::Frame;
-use crate::pages::shared::{draw_busy, draw_line, failure_text};
+use crate::pages::shared::{draw_busy, draw_line, failure_text, wrap_button_label};
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -393,6 +393,7 @@ impl VoiceStudioView {
             &labels.all_saved
         });
         imp.save_button.set_label(&labels.save);
+        wrap_button_label(&imp.save_button);
         draw_busy(
             &imp.save_button,
             &imp.save_spinner,

@@ -1,21 +1,31 @@
-//! Archiving a scheduler account, as a dialog, as iOS draws it: what
-//! archiving does, why it cannot be done yet (still counting, or bookings to
-//! move first), and every upcoming booking that stands in the way, with who
+//! Archiving a scheduler account, as an alert dialog (a yes or no question,
+//! as the HIG has it): its question as the heading, what archiving does as
+//! the body, then why it cannot be done yet (still counting, or bookings to
+//! move first) and every upcoming booking that stands in the way, with who
 //! booked it and when. Archive account is pressable only once the bookings
 //! were read and there are none, and the archive is asked once more, over
 //! the pane. A failed read is drawn as a failure, never as no bookings.
+//!
+//! Built on a dialog with the question between two header buttons, the
+//! heading was squeezed to five short lines in French with Large Text.
+//!
+//! The core decides when it closes, as for every dialog here: it cannot be
+//! closed by itself (`can-close` false), so a response, Escape and the close
+//! button each only ask. A response comes after the close attempt it makes,
+//! so a close attempt that no response follows within the same turn of the
+//! main loop is the way out.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use district_core::scheduling_admin::{ArchiveDialog, SectionLoad, TeamEvent};
 use district_model::SchedulingUpcomingBooking;
 
 use super::TeamPane;
-use super::kit::{Shell, form_line};
+use super::kit::{form_line, send};
 use crate::adw;
 use crate::adw::prelude::*;
-use crate::gtk;
+use crate::gtk::{self, glib};
 use crate::l10n::{lang, text};
 use crate::pages::scheduling_admin::common::{failure_line, write_line};
 use crate::pages::shared::{clear_group, draw_line, draw_spinner, when_text};
@@ -36,7 +46,7 @@ pub(super) fn booking_line(booking: &SchedulingUpcomingBooking) -> (String, Stri
 /// Archiving an account, open.
 #[derive(Debug)]
 pub struct ArchiveView {
-    shell: Shell,
+    dialog: adw::AlertDialog,
     spinner: gtk::Spinner,
     failure: gtk::Label,
     blocked: gtk::Label,
@@ -47,12 +57,27 @@ pub struct ArchiveView {
 }
 
 impl ArchiveView {
+    /// The response that archives.
+    pub(crate) const ARCHIVE: &'static str = "archive";
+    /// The response that keeps the account: the way out.
+    pub(crate) const KEEP: &'static str = "keep";
+
     /// Opens `dialog` over `pane`.
     pub(crate) fn open(pane: &TeamPane, dialog: &ArchiveDialog) -> Rc<Self> {
-        let [body, ..] = ArchiveDialog::labels();
-        let shell = Shell::new(&dialog.title(), "team-archive", "destructive-action");
+        let [body, confirm, keep] = ArchiveDialog::labels();
+        let alert = adw::AlertDialog::builder()
+            .heading(dialog.title().as_str())
+            .body(body)
+            .can_close(false)
+            .name("team-archive-dialog")
+            .build();
+        alert.add_response(Self::KEEP, keep);
+        alert.add_response(Self::ARCHIVE, confirm);
+        alert.set_response_appearance(Self::ARCHIVE, adw::ResponseAppearance::Destructive);
+        alert.set_close_response(Self::KEEP);
+        alert.set_default_response(Some(Self::KEEP));
         let spinner = gtk::Spinner::builder()
-            .halign(gtk::Align::Start)
+            .halign(gtk::Align::Center)
             .visible(false)
             .name("team-upcoming-loading")
             .build();
@@ -61,20 +86,49 @@ impl ArchiveView {
         )]);
         let failure = form_line(&[], "team-upcoming-failure");
         let blocked = form_line(&["dim-label"], "team-archive-blocked");
-        let about = adw::PreferencesGroup::builder().description(body).build();
-        about.add(&blocked);
-        about.add(&spinner);
-        about.add(&failure);
-        shell.page.add(&about);
         let upcoming = adw::PreferencesGroup::new();
-        shell.page.add(&upcoming);
         let outcome = form_line(&[], "team-archive-outcome");
-        let lines = adw::PreferencesGroup::new();
-        lines.add(&outcome);
-        shell.page.add(&lines);
-        shell.connect(&pane.downgrade(), TeamEvent::AskArchive);
+        let extra = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(6)
+            .build();
+        for part in [
+            blocked.upcast_ref::<gtk::Widget>(),
+            spinner.upcast_ref(),
+            failure.upcast_ref(),
+            upcoming.upcast_ref(),
+            outcome.upcast_ref(),
+        ] {
+            extra.append(part);
+        }
+        alert.set_extra_child(Some(&extra));
+        let responded = Rc::new(Cell::new(false));
+        let weak = pane.downgrade();
+        let answered = Rc::clone(&responded);
+        alert.connect_close_attempt(move |_| {
+            answered.set(false);
+            let answered = Rc::clone(&answered);
+            let weak = weak.clone();
+            glib::idle_add_local_once(move || {
+                if !answered.get() {
+                    send(&weak, TeamEvent::CloseDialog);
+                }
+            });
+        });
+        let weak = pane.downgrade();
+        alert.connect_response(None, move |_, response| {
+            responded.set(true);
+            send(
+                &weak,
+                if response == Self::ARCHIVE {
+                    TeamEvent::AskArchive
+                } else {
+                    TeamEvent::CloseDialog
+                },
+            );
+        });
         let view = Rc::new(Self {
-            shell,
+            dialog: alert,
             spinner,
             failure,
             blocked,
@@ -84,18 +138,21 @@ impl ArchiveView {
             outcome,
         });
         view.update(dialog);
-        view.shell.present(pane);
+        view.dialog.present(Some(pane));
         view
     }
 
     /// Draws `dialog` as the core holds it.
     pub(crate) fn update(&self, dialog: &ArchiveDialog) {
         let [_, confirm, keep] = ArchiveDialog::labels();
-        self.shell
-            .draw(keep, confirm, dialog.can_archive(), dialog.write.busy());
+        let busy = dialog.write.busy();
+        self.dialog.set_response_label(Self::KEEP, keep);
+        self.dialog.set_response_label(Self::ARCHIVE, confirm);
+        self.dialog
+            .set_response_enabled(Self::ARCHIVE, dialog.can_archive() && !busy);
         draw_spinner(
             &self.spinner,
-            matches!(dialog.upcoming, SectionLoad::Loading),
+            busy || matches!(dialog.upcoming, SectionLoad::Loading),
         );
         failure_line(&self.failure, dialog.upcoming.failure());
         draw_line(&self.blocked, dialog.blocked_reason());
@@ -116,12 +173,13 @@ impl ArchiveView {
             self.upcoming.add(&row);
             self.rows.borrow_mut().push(row.upcast());
         }
+        self.upcoming.set_visible(!self.rows.borrow().is_empty());
         self.drawn.replace(read.cloned());
     }
 
     /// Closes it.
     pub(crate) fn close(&self) {
-        self.shell.close();
+        self.dialog.force_close();
     }
 }
 

@@ -25,7 +25,7 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::carrier::{CarrierPanel, write_notice};
 use crate::pages::shared::{
     Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, known_wire_label,
-    plain_label, wire_text,
+    plain_label, wire_text, wrap_button_label,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -217,6 +217,9 @@ fn owned_row(
         .name("number-release")
         .css_classes(["destructive-action"])
         .build();
+    // Their words wrap rather than hold a narrow window wider than itself.
+    wrap_button_label(&configure);
+    wrap_button_label(&release);
     buttons.append(&configure);
     buttons.append(&release);
     body.append(&buttons);
@@ -350,6 +353,11 @@ mod imp {
             self.type_row
                 .set_model(Some(&gtk::StringList::new(&labels)));
             self.carrier_tab.set_label(MarketplaceTab::carrier_label());
+            // The three tabs side by side held the screen wider than a narrow
+            // window in French with Large Text: their words wrap instead.
+            for tab in [&*self.owned_tab, &*self.search_tab, &*self.carrier_tab] {
+                wrap_button_label(tab.upcast_ref());
+            }
             self.carrier
                 .set(CarrierPanel::new(&page, &self.carrier_box))
                 .ok();

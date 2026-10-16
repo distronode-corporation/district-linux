@@ -161,35 +161,56 @@
                           <object class="DistrictSaveNotice" id="notice"/>
                         </child>
                         <child>
-                          <object class="GtkBox">
-                            <property name="spacing">10</property>
+                          <!-- Try and Save side by side, or one above the other when
+                               the window is too narrow for both (French, Large Text). -->
+                          <object class="GtkFlowBox">
+                            <property name="selection-mode">none</property>
+                            <property name="min-children-per-line">1</property>
+                            <property name="max-children-per-line">2</property>
+                            <property name="column-spacing">10</property>
+                            <property name="row-spacing">10</property>
                             <child>
-                              <object class="GtkButton" id="preview_button">
-                                <property name="halign">start</property>
-                                <property name="hexpand">True</property>
+                              <object class="GtkFlowBoxChild">
+                                <property name="focusable">False</property>
                                 <property name="child">
-                                  <object class="AdwButtonContent">
-                                    <property name="icon-name">audio-speakers-symbolic</property>
-                                    <property name="label" translatable="yes" context="persona_view.try_receptionist">Try this receptionist</property>
+                                  <object class="GtkButton" id="preview_button">
+                                    <property name="halign">start</property>
+                                    <property name="child">
+                                      <object class="AdwButtonContent">
+                                        <property name="icon-name">audio-speakers-symbolic</property>
+                                        <property name="label" translatable="yes" context="persona_view.try_receptionist">Try this receptionist</property>
+                                      </object>
+                                    </property>
+                                    <style>
+                                      <class name="pill"/>
+                                    </style>
                                   </object>
                                 </property>
-                                <style>
-                                  <class name="pill"/>
-                                </style>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkSpinner" id="save_spinner">
-                                <property name="visible">False</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="save_button">
-                                <property name="label" translatable="yes" context="common.save">Save</property>
-                                <style>
-                                  <class name="pill"/>
-                                  <class name="suggested-action"/>
-                                </style>
+                              <object class="GtkFlowBoxChild">
+                                <property name="focusable">False</property>
+                                <property name="child">
+                                  <object class="GtkBox">
+                                    <property name="spacing">10</property>
+                                    <property name="halign">end</property>
+                                    <child>
+                                      <object class="GtkSpinner" id="save_spinner">
+                                        <property name="visible">False</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="save_button">
+                                        <property name="label" translatable="yes" context="common.save">Save</property>
+                                        <style>
+                                          <class name="pill"/>
+                                          <class name="suggested-action"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </property>
                               </object>
                             </child>
                           </object>

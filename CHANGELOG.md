@@ -57,6 +57,15 @@ A ring stops on this computer as soon as the call is taken somewhere else.
     wrapping mid-address with a hyphen added.
   - In French, a booking page set-up that failed with the service's own English reason
     no longer says that no reason was given.
+  - The persona's Try and Save, the knowledge base's two add buttons and the phone
+    numbers screen's tabs and number actions wrap in a narrow window instead of
+    holding it wider than itself, and the smoke test checks those screens, and the
+    members section, for anything past the window's edge.
+  - Archiving a booking account is an alert dialog (its question as the heading, Keep
+    and Archive as its responses), where its question was squeezed between two header
+    buttons.
+- The AppStream metadata's 3.0.1 notes gain a third item, on the screens and the
+  support statuses, in English and Canadian French.
 
 ### Changed
 
