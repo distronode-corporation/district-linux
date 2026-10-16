@@ -153,7 +153,7 @@ fr = "{band}\u00A0: {count} ({share})"
 ctx = "label"
 screen = "analytics"
 args = { band = "str", count = "str", share = "str" }
-state = "draft"
+state = "reviewed"
 note = "One line of the caller sentiment legend: the band's name, how many calls, and their share (\"33%\", in French \"33\u00A0%\"). Visual QA L-S6."
 
 [analytics.tile_abandoned]
@@ -268,7 +268,7 @@ en = "The audition ended."
 fr = "L'aperçu est terminé."
 ctx = "body"
 screen = "persona"
-state = "draft"
+state = "reviewed"
 
 [audition.starting]
 en = "Starting the call."
