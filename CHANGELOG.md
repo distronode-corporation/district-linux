@@ -13,6 +13,10 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-10-16
+
+Clearer French across the app, and figures, lists and forms that are easier to read.
+
 ### Fixed
 
 - In French, a workflow run's skipped or failed action now says why, in French: the

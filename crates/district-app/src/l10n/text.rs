@@ -3617,6 +3617,51 @@ pub fn metainfo_release_3_0_1_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_0_2.li1`
+#[must_use]
+pub fn metainfo_release_3_0_2_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "In French, a workflow's skipped or failed action now says why, and a call's length no longer breaks across two lines",
+        Locale::FrCa => "En français, une action de flux de travail ignorée ou en échec indique maintenant pourquoi, et la durée d'un appel ne se coupe plus sur deux lignes",
+    }
+}
+
+/// `metainfo.release_3_0_2.li2`
+#[must_use]
+pub fn metainfo_release_3_0_2_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Analytics figures are shown at full contrast, and the help desk and support lists are wider, with ticket titles that wrap instead of being cut",
+        Locale::FrCa => "Les chiffres de l'analytique s'affichent en contraste maximal, et les listes du comptoir clients et du soutien, plus larges, ne coupent plus le titre d'un billet",
+    }
+}
+
+/// `metainfo.release_3_0_2.li3`
+#[must_use]
+pub fn metainfo_release_3_0_2_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Voice Studio says when your changes were not saved, and editing a contact shows its phone number grouped as the list does",
+        Locale::FrCa => "Voice Studio indique quand vos modifications n'ont pas été enregistrées, et le formulaire de contact affiche le numéro de téléphone groupé comme dans la liste",
+    }
+}
+
+/// `metainfo.release_3_0_2.li4`
+#[must_use]
+pub fn metainfo_release_3_0_2_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The ring length slider shows its value beside it, and a carrier account's phone number stays on one line",
+        Locale::FrCa => "Le curseur de durée de sonnerie affiche sa valeur à côté, et le numéro de téléphone d'un compte de transporteur tient sur une ligne",
+    }
+}
+
+/// `metainfo.release_3_0_2.p`
+#[must_use]
+pub fn metainfo_release_3_0_2_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "French is clearer across the app, and figures, lists and forms are easier to read.",
+        Locale::FrCa => "Le français est plus clair partout, et les chiffres, les listes et les formulaires sont plus lisibles.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {

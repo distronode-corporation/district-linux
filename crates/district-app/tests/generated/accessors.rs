@@ -828,6 +828,16 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_release_3_0_1_li3(Locale::FrCa), "Les écrans s'adaptent mieux au texte agrandi et aux fenêtres étroites, et les demandes de soutien affichent leur état dans votre langue.");
     assert_eq!(text::metainfo_release_3_0_1_p(Locale::En), "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can retry what failed to load.");
     assert_eq!(text::metainfo_release_3_0_1_p(Locale::FrCa), "Les appels cessent de sonner dès qu'ils sont pris ailleurs, et les pages de réservation peuvent recharger ce qui n'a pas pu être chargé.");
+    assert_eq!(text::metainfo_release_3_0_2_li1(Locale::En), "In French, a workflow's skipped or failed action now says why, and a call's length no longer breaks across two lines");
+    assert_eq!(text::metainfo_release_3_0_2_li1(Locale::FrCa), "En français, une action de flux de travail ignorée ou en échec indique maintenant pourquoi, et la durée d'un appel ne se coupe plus sur deux lignes");
+    assert_eq!(text::metainfo_release_3_0_2_li2(Locale::En), "Analytics figures are shown at full contrast, and the help desk and support lists are wider, with ticket titles that wrap instead of being cut");
+    assert_eq!(text::metainfo_release_3_0_2_li2(Locale::FrCa), "Les chiffres de l'analytique s'affichent en contraste maximal, et les listes du comptoir clients et du soutien, plus larges, ne coupent plus le titre d'un billet");
+    assert_eq!(text::metainfo_release_3_0_2_li3(Locale::En), "Voice Studio says when your changes were not saved, and editing a contact shows its phone number grouped as the list does");
+    assert_eq!(text::metainfo_release_3_0_2_li3(Locale::FrCa), "Voice Studio indique quand vos modifications n'ont pas été enregistrées, et le formulaire de contact affiche le numéro de téléphone groupé comme dans la liste");
+    assert_eq!(text::metainfo_release_3_0_2_li4(Locale::En), "The ring length slider shows its value beside it, and a carrier account's phone number stays on one line");
+    assert_eq!(text::metainfo_release_3_0_2_li4(Locale::FrCa), "Le curseur de durée de sonnerie affiche sa valeur à côté, et le numéro de téléphone d'un compte de transporteur tient sur une ligne");
+    assert_eq!(text::metainfo_release_3_0_2_p(Locale::En), "French is clearer across the app, and figures, lists and forms are easier to read.");
+    assert_eq!(text::metainfo_release_3_0_2_p(Locale::FrCa), "Le français est plus clair partout, et les chiffres, les listes et les formulaires sont plus lisibles.");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::En), "A call placed from the desktop, with mute and hang up always in reach");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::FrCa), "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main");
     assert_eq!(text::metainfo_screenshot_caption_call_log(Locale::En), "The call log, with each call's summary and transcript");

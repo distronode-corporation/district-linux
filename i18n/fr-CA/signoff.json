@@ -1,11 +1,11 @@
 {
   "signed_off_by": "v3 manager (Opus 5.5 xhigh), final French review, 2026-10-16",
   "release": "v3.0.2",
-  "commit": "289475f85574b13f5da93e78e3bb440cda8152a7",
+  "commit": "3b55c9f373283d799a95d3ef0f1bdea543ec01f2",
   "catalogs": [
     {
       "path": "crates/district-app/l10n/linux.toml",
-      "sha256": "22f0b8af09b224b723004935ef1c5b443eb19825f9efdc4348331adbebbadf1e"
+      "sha256": "c899c5e5f95488d98aa848ad831feadf0edcf44fc97cb0cd32c9b7d100372992"
     },
     {
       "path": "crates/district-app/l10n/scheduling.toml",
