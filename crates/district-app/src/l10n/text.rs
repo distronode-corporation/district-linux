@@ -5306,6 +5306,15 @@ pub fn thread_uploading_image(l: Locale) -> &'static str {
     }
 }
 
+/// `thread.voicemail`
+#[must_use]
+pub fn thread_voicemail(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Voicemail",
+        Locale::FrCa => "Boîte vocale",
+    }
+}
+
 /// `thread.whatsapp`
 #[must_use]
 pub fn thread_whatsapp(l: Locale) -> &'static str {

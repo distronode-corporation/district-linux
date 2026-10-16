@@ -1210,6 +1210,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::thread_sent(Locale::FrCa), "Envoyé");
     assert_eq!(text::thread_uploading_image(Locale::En), "Uploading the image");
     assert_eq!(text::thread_uploading_image(Locale::FrCa), "Téléversement de l'image");
+    assert_eq!(text::thread_voicemail(Locale::En), "Voicemail");
+    assert_eq!(text::thread_voicemail(Locale::FrCa), "Boîte vocale");
     assert_eq!(text::thread_whatsapp(Locale::En), "WhatsApp");
     assert_eq!(text::thread_whatsapp(Locale::FrCa), "WhatsApp");
     assert_eq!(text::thread_writing_reply(Locale::En), "Writing a reply");
