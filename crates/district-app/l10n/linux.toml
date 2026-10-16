@@ -3138,6 +3138,46 @@ screen = "metainfo"
 state = "reviewed"
 note = "The 3.0.1 release's notes in the AppStream metadata, as software centres show them."
 
+[metainfo.release_3_0_2.li1]
+en = "In French, a workflow's skipped or failed action now says why, and a call's length no longer breaks across two lines"
+fr = "En français, une action de flux de travail ignorée ou en échec indique maintenant pourquoi, et la durée d'un appel ne se coupe plus sur deux lignes"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.2 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_0_2.li2]
+en = "Analytics figures are shown at full contrast, and the help desk and support lists are wider, with ticket titles that wrap instead of being cut"
+fr = "Les chiffres de l'analytique s'affichent en contraste maximal, et les listes du comptoir clients et du soutien, plus larges, ne coupent plus le titre d'un billet"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.2 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_0_2.li3]
+en = "Voice Studio says when your changes were not saved, and editing a contact shows its phone number grouped as the list does"
+fr = "Voice Studio indique quand vos modifications n'ont pas été enregistrées, et le formulaire de contact affiche le numéro de téléphone groupé comme dans la liste"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.2 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_0_2.li4]
+en = "The ring length slider shows its value beside it, and a carrier account's phone number stays on one line"
+fr = "Le curseur de durée de sonnerie affiche sa valeur à côté, et le numéro de téléphone d'un compte de transporteur tient sur une ligne"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.2 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_0_2.p]
+en = "French is clearer across the app, and figures, lists and forms are easier to read."
+fr = "Le français est plus clair partout, et les chiffres, les listes et les formulaires sont plus lisibles."
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.2 release's notes in the AppStream metadata, as software centres show them."
+
 [metainfo.screenshot_caption.call]
 en = "A call placed from the desktop, with mute and hang up always in reach"
 fr = "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main"
