@@ -51,6 +51,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 - While District HQ shows a proposed change, Ask is no longer a suggested action beside
   Confirm.
 - The meetings list's spinner keeps its distance from the group's description.
+- Built on District AI core for Rust 5.0.0: a French call length no longer breaks
+  between the minutes and the seconds (« 1 min 5 s », every space U+00A0), a webhook's
+  new signing secret has its own warning, a contact another contact already holds
+  (the service's 409) says so in French and offers no retry, a ticket's row in the
+  queue follows a reply or a status change, and a booking form's complaint goes as
+  soon as the value is changed. The core's one breaking change, the hand-off effects'
+  nonce no longer being optional, does not reach this app, which starts no hand-off.
 
 ## [3.0.1] - 2026-10-15
 
