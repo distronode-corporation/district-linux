@@ -502,6 +502,17 @@ mod tests {
         // stored; French in its own order, with its own quotes.
         assert_eq!(field_words("industry"), "Industry");
         assert_eq!(field_words("leadScore"), "Lead score");
+        // English brackets the CRM's values as French does, and as District
+        // AI for Windows words them.
+        for (field, label) in [
+            ("estimatedValue", "Estimated value"),
+            ("callerType", "Caller type (business/consumer)"),
+            ("lineType", "Line type (mobile/landline/voip)"),
+            ("isDecisionMaker", "Decision maker (true/false)"),
+            ("seniority", "Seniority (e.g. vp, c-suite)"),
+        ] {
+            assert_eq!(field_words(field), label);
+        }
         assert_eq!(operator_words("equals"), "Equals");
         assert_eq!(operator_words("startsWith"), "Starts with");
         let odd = rules[2]

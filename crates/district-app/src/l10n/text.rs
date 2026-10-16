@@ -167,6 +167,15 @@ pub fn analytics_report_title(l: Locale, range: &str) -> String {
     }
 }
 
+/// `analytics.sentiment_legend`
+#[must_use]
+pub fn analytics_sentiment_legend(l: Locale, band: &str, count: &str, share: &str) -> String {
+    match l {
+        Locale::En => format!("{band}: {count} ({share})"),
+        Locale::FrCa => format!("{band}\u{00A0}: {count} ({share})"),
+    }
+}
+
 /// `analytics.tile_abandoned`
 #[must_use]
 pub fn analytics_tile_abandoned(l: Locale) -> &'static str {
@@ -298,7 +307,7 @@ pub fn audition_connecting(l: Locale) -> &'static str {
 pub fn audition_ended(l: Locale) -> &'static str {
     match l {
         Locale::En => "The audition ended.",
-        Locale::FrCa => "L'essai est terminé.",
+        Locale::FrCa => "L'aperçu est terminé.",
     }
 }
 
@@ -1511,15 +1520,6 @@ pub fn contact_form_add_title(l: Locale) -> &'static str {
     match l {
         Locale::En => "Add contact",
         Locale::FrCa => "Nouveau contact",
-    }
-}
-
-/// `contact_form.contact_needs_name_phone_number`
-#[must_use]
-pub fn contact_form_contact_needs_name_phone_number(l: Locale) -> &'static str {
-    match l {
-        Locale::En => "A contact needs a name, and a phone number or an email address.",
-        Locale::FrCa => "Un contact requiert un nom et un numéro de téléphone ou une adresse courriel.",
     }
 }
 
@@ -4407,7 +4407,7 @@ pub fn routing_engine(l: Locale) -> &'static str {
 #[must_use]
 pub fn routing_field_caller_type(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Caller type",
+        Locale::En => "Caller type (business/consumer)",
         Locale::FrCa => "Type d'appelant (business/consumer)",
     }
 }
@@ -4434,7 +4434,7 @@ pub fn routing_field_industry(l: Locale) -> &'static str {
 #[must_use]
 pub fn routing_field_is_decision_maker(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Is decision maker",
+        Locale::En => "Decision maker (true/false)",
         Locale::FrCa => "Décideur (true/false)",
     }
 }
@@ -4443,7 +4443,7 @@ pub fn routing_field_is_decision_maker(l: Locale) -> &'static str {
 #[must_use]
 pub fn routing_field_line_type(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Line type",
+        Locale::En => "Line type (mobile/landline/voip)",
         Locale::FrCa => "Type de ligne (mobile/landline/voip)",
     }
 }
@@ -4452,7 +4452,7 @@ pub fn routing_field_line_type(l: Locale) -> &'static str {
 #[must_use]
 pub fn routing_field_seniority(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Seniority",
+        Locale::En => "Seniority (e.g. vp, c-suite)",
         Locale::FrCa => "Niveau hiérarchique (p. ex. vp, c-suite)",
     }
 }

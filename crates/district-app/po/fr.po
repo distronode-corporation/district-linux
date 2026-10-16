@@ -112,6 +112,12 @@ msgid "Calls over {range}"
 msgstr "Appels sur {range}"
 
 #. screen: analytics; ctx: label; tier: T3
+#. One line of the caller sentiment legend: the band's name, how many calls, and their share ("33%", in French "33 %"). Visual QA L-S6.
+msgctxt "analytics.sentiment_legend"
+msgid "{band}: {count} ({share})"
+msgstr "{band} : {count} ({share})"
+
+#. screen: analytics; ctx: label; tier: T3
 msgctxt "analytics.tile_abandoned"
 msgid "Abandoned"
 msgstr "Abandonnés"
@@ -191,7 +197,7 @@ msgstr "Connexion à votre réceptionniste en cours."
 #. screen: persona; ctx: body; tier: T3
 msgctxt "audition.ended"
 msgid "The audition ended."
-msgstr "L'essai est terminé."
+msgstr "L'aperçu est terminé."
 
 #. screen: persona; ctx: body; tier: T3
 msgctxt "audition.starting"
@@ -928,12 +934,6 @@ msgstr "Ajouter"
 msgctxt "contact_form.add_title"
 msgid "Add contact"
 msgstr "Nouveau contact"
-
-#. screen: contact_form; ctx: body; tier: T3
-#. In contact-form.ui.
-msgctxt "contact_form.contact_needs_name_phone_number"
-msgid "A contact needs a name, and a phone number or an email address."
-msgstr "Un contact requiert un nom et un numéro de téléphone ou une adresse courriel."
 
 #. screen: contacts; ctx: title; tier: T3
 msgctxt "contact_form.edit_title"
@@ -2732,9 +2732,9 @@ msgid "Engine"
 msgstr "Moteur"
 
 #. screen: routing; ctx: label; tier: T3
-#. The contact field `callerType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android l10n/android.toml has it, whose bracketed values are the CRM's and stay English.
+#. The contact field `callerType` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too.
 msgctxt "routing.field_caller_type"
-msgid "Caller type"
+msgid "Caller type (business/consumer)"
 msgstr "Type d'appelant (business/consumer)"
 
 #. screen: routing; ctx: label; tier: T3
@@ -2750,21 +2750,21 @@ msgid "Industry"
 msgstr "Secteur d'activité"
 
 #. screen: routing; ctx: label; tier: T3
-#. The contact field `isDecisionMaker` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English.
+#. The contact field `isDecisionMaker` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too.
 msgctxt "routing.field_is_decision_maker"
-msgid "Is decision maker"
+msgid "Decision maker (true/false)"
 msgstr "Décideur (true/false)"
 
 #. screen: routing; ctx: label; tier: T3
-#. The contact field `lineType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English.
+#. The contact field `lineType` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too.
 msgctxt "routing.field_line_type"
-msgid "Line type"
+msgid "Line type (mobile/landline/voip)"
 msgstr "Type de ligne (mobile/landline/voip)"
 
 #. screen: routing; ctx: label; tier: T3
-#. The contact field `seniority` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English.
+#. The contact field `seniority` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too.
 msgctxt "routing.field_seniority"
-msgid "Seniority"
+msgid "Seniority (e.g. vp, c-suite)"
 msgstr "Niveau hiérarchique (p. ex. vp, c-suite)"
 
 #. screen: routing; ctx: label; tier: T3

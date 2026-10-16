@@ -189,6 +189,8 @@
                     <property name="header-suffix">
                       <object class="GtkSpinner" id="meetings_spinner">
                         <property name="visible">False</property>
+                        <property name="margin-start">12</property>
+                        <property name="valign">start</property>
                       </object>
                     </property>
                     <child>

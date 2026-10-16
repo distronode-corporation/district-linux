@@ -238,8 +238,19 @@ fn recipe_subtitle(recipe: &district_model::StudioRecipe) -> String {
     let mut facts = vec![
         recipe.time_to_first_word.text.clone(),
         recipe.residency.text.clone(),
-        recipe.channel_label.clone(),
     ];
+    // A note that opens with the channel ("Preview: processed globally by
+    // Google") already names it, so the channel is not said twice.
+    let channel = recipe.channel_label.trim();
+    let named = recipe.note.as_deref().is_some_and(|note| {
+        !channel.is_empty()
+            && note
+                .get(..channel.len())
+                .is_some_and(|start| start.eq_ignore_ascii_case(channel))
+    });
+    if !named {
+        facts.push(recipe.channel_label.clone());
+    }
     facts.extend(recipe.note.clone());
     lines.push(facts.join(" \u{b7} "));
     lines.join("\n")
@@ -387,7 +398,15 @@ impl VoiceStudioView {
             (!residency.legs_out.is_empty()).then(|| residency.legs_out.join("\n")),
         );
         draw_line(&imp.notice, notice_text(&section.save, studio));
-        imp.pending_label.set_label(if ready.dirty() {
+        // A save the service refused or answered differently is not saved,
+        // whatever the form now holds, so the line never contradicts the
+        // notice above it.
+        let unsaved = ready.dirty()
+            || matches!(
+                section.save,
+                StudioSaveState::Mismatch | StudioSaveState::Failed(_)
+            );
+        imp.pending_label.set_label(if unsaved {
             &labels.unsaved
         } else {
             &labels.all_saved
@@ -940,5 +959,26 @@ mod tests {
         assert_eq!(shown_keyterms("", &terms, key), "Ada");
         let recipe = &studio.recipes[2];
         assert!(recipe_subtitle(recipe).contains(&recipe.description));
+        assert!(recipe_subtitle(recipe).ends_with(" \u{b7} Stable"));
+    }
+
+    /// LA12: a note that names the channel is not followed by it again.
+    #[test]
+    fn a_recipe_names_its_channel_once() {
+        let studio: VoiceStudioResponse = fixture("district-voice-studio.json");
+        let bilingual = &studio.recipes[3];
+        assert_eq!(bilingual.channel_label, "Preview");
+        let line = recipe_subtitle(bilingual);
+        assert_eq!(line.matches("Preview").count(), 1, "{line}");
+        assert!(line.ends_with(" \u{b7} Preview: processed globally by Google"));
+        let mut other = bilingual.clone();
+        other.note = Some("Processed in the United States".to_owned());
+        let line = recipe_subtitle(&other);
+        assert!(
+            line.ends_with(" \u{b7} Preview \u{b7} Processed in the United States"),
+            "{line}"
+        );
+        other.note = Some("Pre".to_owned());
+        assert!(recipe_subtitle(&other).ends_with(" \u{b7} Preview \u{b7} Pre"));
     }
 }

@@ -17,7 +17,7 @@
         </child>
         <property name="child">
           <object class="AdwNavigationSplitView" id="split_view">
-            <property name="min-sidebar-width">220</property>
+            <property name="min-sidebar-width">280</property>
             <property name="max-sidebar-width">300</property>
             <property name="sidebar-width-fraction">0.3</property>
             <property name="sidebar">

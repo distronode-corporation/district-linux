@@ -147,6 +147,15 @@ args = { range = "str" }
 state = "reviewed"
 note = "The range is \"the last 7 days\" and the like."
 
+[analytics.sentiment_legend]
+en = "{band}: {count} ({share})"
+fr = "{band}\u00A0: {count} ({share})"
+ctx = "label"
+screen = "analytics"
+args = { band = "str", count = "str", share = "str" }
+state = "draft"
+note = "One line of the caller sentiment legend: the band's name, how many calls, and their share (\"33%\", in French \"33\u00A0%\"). Visual QA L-S6."
+
 [analytics.tile_abandoned]
 en = "Abandoned"
 fr = "Abandonnés"
@@ -256,7 +265,7 @@ state = "reviewed"
 
 [audition.ended]
 en = "The audition ended."
-fr = "L'essai est terminé."
+fr = "L'aperçu est terminé."
 ctx = "body"
 screen = "persona"
 state = "reviewed"
@@ -1301,14 +1310,6 @@ fr = "Nouveau contact"
 ctx = "title"
 screen = "contacts"
 state = "reviewed"
-
-[contact_form.contact_needs_name_phone_number]
-en = "A contact needs a name, and a phone number or an email address."
-fr = "Un contact requiert un nom et un numéro de téléphone ou une adresse courriel."
-ctx = "body"
-screen = "contact_form"
-state = "reviewed"
-note = "In contact-form.ui."
 
 [contact_form.edit_title]
 en = "Edit contact"
@@ -3791,13 +3792,13 @@ screen = "routing"
 state = "reviewed"
 
 [routing.field_caller_type]
-en = "Caller type"
+en = "Caller type (business/consumer)"
 fr = "Type d'appelant (business/consumer)"
 ctx = "label"
 screen = "routing"
 tier = "T3"
 state = "reviewed"
-note = "The contact field `callerType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android l10n/android.toml has it, whose bracketed values are the CRM's and stay English."
+note = "The contact field `callerType` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too."
 
 [routing.field_estimated_value]
 en = "Estimated value"
@@ -3819,32 +3820,32 @@ fr_variant = "The routing builder's field as the portal labels it, not the conta
 note = "The contact field `industry` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it."
 
 [routing.field_is_decision_maker]
-en = "Is decision maker"
+en = "Decision maker (true/false)"
 fr = "Décideur (true/false)"
 ctx = "label"
 screen = "routing"
 tier = "T3"
 state = "reviewed"
-note = "The contact field `isDecisionMaker` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English."
+note = "The contact field `isDecisionMaker` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too."
 
 [routing.field_line_type]
-en = "Line type"
+en = "Line type (mobile/landline/voip)"
 fr = "Type de ligne (mobile/landline/voip)"
 ctx = "label"
 screen = "routing"
 tier = "T3"
 state = "reviewed"
 fr_variant = "The routing builder's field as the portal labels it, not the contact detail's label."
-note = "The contact field `lineType` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English."
+note = "The contact field `lineType` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too."
 
 [routing.field_seniority]
-en = "Seniority"
+en = "Seniority (e.g. vp, c-suite)"
 fr = "Niveau hiérarchique (p. ex. vp, c-suite)"
 ctx = "label"
 screen = "routing"
 tier = "T3"
 state = "reviewed"
-note = "The contact field `seniority` a rule tests. English is the field as this app has always shown it; the French is the portal's (personaMediaI18n.ts routingFieldLabels), as district-android has it, whose bracketed values are the CRM's and stay English."
+note = "The contact field `seniority` a rule tests. Both languages are the portal's (personaMediaI18n.ts routingFieldLabels) in sentence case, as District AI for Windows has them: the bracketed values are what the CRM field holds and what goes in the Value box, so they stay English in French too."
 
 [routing.instruction]
 en = "Instruction"

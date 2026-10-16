@@ -234,6 +234,13 @@ impl HqPage {
         imp.retry_button.set_visible(retry);
         let proposal = hq.phase.proposal();
         imp.card.set_visible(proposal.is_some());
+        // One suggested action on screen at a time: while a proposal waits,
+        // its Confirm is the one (visual QA LC26).
+        if proposal.is_some() {
+            imp.ask_button.remove_css_class("suggested-action");
+        } else {
+            imp.ask_button.add_css_class("suggested-action");
+        }
         imp.card_summary.set_label(
             proposal
                 .map(|proposal| proposal.summary.as_str())

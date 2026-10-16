@@ -402,7 +402,7 @@ impl DeskPage {
                     ticket.display_reference,
                     requester(ticket)
                 ))
-                .title_lines(1)
+                .title_lines(2)
                 .subtitle_lines(1)
                 .activatable(true)
                 .name("ticket-row")

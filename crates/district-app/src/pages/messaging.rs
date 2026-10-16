@@ -76,14 +76,15 @@ pub(crate) fn source_words(stored: &str) -> String {
     )
 }
 
-/// Numbers, grouped for reading.
+/// Numbers, grouped for reading. A line wraps between numbers, never inside
+/// one: each number's spaces are non-breaking.
 pub(crate) fn numbers_words(numbers: &[String]) -> String {
     if numbers.is_empty() {
         return text::messaging_no_numbers(lang()).to_owned();
     }
     numbers
         .iter()
-        .map(|number| format_phone_number(number))
+        .map(|number| format_phone_number(number).replace(' ', "\u{a0}"))
         .collect::<Vec<_>>()
         .join(", ")
 }
@@ -562,7 +563,8 @@ mod tests {
         let twilio = &response.accounts[0];
         assert_eq!(
             account_line(twilio),
-            "Twilio \u{b7} Your own carrier account \u{b7} +1 416 555 0111, +1 416 555 0112"
+            "Twilio \u{b7} Your own carrier account \u{b7} \
+             +1\u{a0}416\u{a0}555\u{a0}0111, +1\u{a0}416\u{a0}555\u{a0}0112"
         );
         assert!(editable_here(twilio));
         let mut odd = twilio.clone();
