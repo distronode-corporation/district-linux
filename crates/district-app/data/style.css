@@ -171,3 +171,11 @@ row.unread .conversation-title {
   font-size: 16pt;
   font-weight: 600;
 }
+
+/* The phone numbers screen's three tabs. Their words wrap in a narrow
+   window, and their side padding is the smallest that still reads as a
+   button, so the three fit a 400 px window in French with Large Text. */
+.number-tabs > button {
+  padding-left: 8px;
+  padding-right: 8px;
+}

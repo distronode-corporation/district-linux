@@ -9,7 +9,8 @@
 //! alone. Reading is open to every member, deliveries included; making a
 //! key, adding or changing a webhook, and revoking or deleting are offered
 //! only to a member who may change the workspace, and every removal is asked
-//! once more. A webhook opens to its deliveries under it, read the first time.
+//! once more. A webhook opens to its deliveries under it, read the first time,
+//! with Try again when that read fails.
 //!
 //! A key and a webhook's signing secret are shown once, in the dialog that
 //! made them ([`dialog`]), and never here: the lists carry neither.
@@ -789,6 +790,17 @@ impl DeveloperPane {
                 let line = plain_label(&failure_text(failure), &[tone_class(Tone::Danger)]);
                 line.set_widget_name("developer-deliveries-failure");
                 content.append(&line);
+                if failure.retryable {
+                    let retry = gtk::Button::builder()
+                        .label(text::common_try_again(lang()))
+                        .halign(gtk::Align::Start)
+                        .name("developer-deliveries-retry")
+                        .build();
+                    on_click(&retry, self, || {
+                        developer_event(DeveloperEvent::RetryDeliveries)
+                    });
+                    content.append(&retry);
+                }
             }
             Some(SectionLoad::Ready(rows)) if rows.is_empty() => {
                 content.append(&dim_line(

@@ -3,8 +3,8 @@
 //! the line that says what the last write came to with its Dismiss, and
 //! sending to the core from a dialog through the pane that opened it.
 
-use district_core::Event;
 use district_core::scheduling_admin::{HoursEvent, SchedulingAdminEvent, WriteState};
+use district_core::{Event, FailureText};
 
 use super::HoursPane;
 use crate::adw;
@@ -13,7 +13,7 @@ use crate::gtk::{self, glib};
 use crate::l10n::{lang, sched_text, text};
 use crate::pages::Sends;
 use crate::pages::scheduling_admin::common::write_line;
-use crate::pages::shared::{draw_spinner, icon_button, plain_label};
+use crate::pages::shared::{draw_spinner, icon_button, plain_label, wrap_bound_title};
 
 /// What the member does on the working hours, as the core takes it.
 pub(super) fn hours_event(event: HoursEvent) -> Event {
@@ -36,6 +36,24 @@ pub(super) fn send(pane: &glib::WeakRef<HoursPane>, event: HoursEvent) {
 pub(super) fn pressed(button: &gtk::Button, pane: &glib::WeakRef<HoursPane>, event: HoursEvent) {
     let pane = pane.clone();
     button.connect_clicked(move |_| send(&pane, event.clone()));
+}
+
+/// Try again, for an editor whose read failed: it reads again
+/// ([`HoursEvent::RetryRead`]). Hidden until [`draw_retry`] shows it.
+pub(super) fn retry_button(pane: &glib::WeakRef<HoursPane>, name: &str) -> gtk::Button {
+    let retry = gtk::Button::builder()
+        .label(text::common_try_again(lang()))
+        .halign(gtk::Align::Start)
+        .visible(false)
+        .name(name)
+        .build();
+    pressed(&retry, pane, HoursEvent::RetryRead);
+    retry
+}
+
+/// Shows `retry` while the read failed in a way trying again can fix.
+pub(super) fn draw_retry(retry: &gtk::Button, failure: Option<&FailureText>) {
+    retry.set_visible(failure.is_some_and(|failure| failure.retryable));
 }
 
 /// A dialog over the pane: Cancel at the start of its header, and at its end
@@ -91,6 +109,7 @@ impl Shell {
             .child(&view)
             .name(name)
             .build();
+        wrap_bound_title(&header, &dialog);
         let weak = pane.clone();
         dialog.connect_close_attempt(move |_| send(&weak, HoursEvent::CloseDialog));
         Self {

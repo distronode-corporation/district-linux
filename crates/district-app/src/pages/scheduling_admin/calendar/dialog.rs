@@ -30,7 +30,7 @@ use crate::adw::prelude::*;
 use crate::gtk;
 use crate::l10n::{lang, text};
 use crate::pages::scheduling_admin::common::{failure_line, write_line};
-use crate::pages::shared::{draw_line, draw_spinner, plain_label};
+use crate::pages::shared::{draw_line, draw_spinner, plain_label, wrap_bound_title};
 
 /// What a dialog's controls send: an event, to the pane's sink.
 pub(crate) type Send = Rc<dyn Fn(Event)>;
@@ -149,6 +149,7 @@ impl Shell {
             .child(&view)
             .name(format!("{name}-dialog"))
             .build();
+        wrap_bound_title(&header, &dialog);
         let close = Rc::clone(send);
         cancel.connect_clicked(move |_| close(calendar_event(CalendarEvent::CloseDialog)));
         let close = Rc::clone(send);

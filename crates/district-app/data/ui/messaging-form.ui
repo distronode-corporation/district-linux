@@ -16,6 +16,20 @@
           <object class="AdwHeaderBar">
             <property name="show-start-title-buttons">False</property>
             <property name="show-end-title-buttons">False</property>
+            <!-- The dialog's title, wrapping rather than ellipsized: in French
+                 and with Large Text the end of it, the object, was lost. -->
+            <property name="title-widget">
+              <object class="GtkLabel">
+                <property name="label" bind-source="DistrictMessagingForm" bind-property="title" bind-flags="sync-create"/>
+                <property name="use-markup">False</property>
+                <property name="wrap">True</property>
+                <property name="wrap-mode">word</property>
+                <property name="justify">center</property>
+                <style>
+                  <class name="title"/>
+                </style>
+              </object>
+            </property>
             <child type="start">
               <object class="GtkButton" id="cancel_button">
                 <property name="label" translatable="yes" context="common.cancel">Cancel</property>

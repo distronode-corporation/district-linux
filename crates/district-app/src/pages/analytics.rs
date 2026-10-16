@@ -406,7 +406,7 @@ impl AnalyticsPage {
         }
         let shares: Vec<(f64, usize)> = bands
             .iter()
-            .map(|slice| (slice.share, band(&slice.label)))
+            .map(|slice| (slice.share, band(slice)))
             .collect();
         let bar = chart(
             22,
@@ -419,7 +419,7 @@ impl AnalyticsPage {
         imp.sentiment_box.append(&bar);
         for slice in &bands {
             let line = gtk::Box::builder().spacing(8).build();
-            line.append(&swatch(band(&slice.label)));
+            line.append(&swatch(band(slice)));
             line.append(&caption(
                 &format!(
                     "{}: {} ({})",

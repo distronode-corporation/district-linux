@@ -18,7 +18,9 @@ use district_core::scheduling_admin::{
 };
 
 use super::HoursPane;
-use super::kit::{Outcome, Shell, between, control_of, pressed, send, time_entry};
+use super::kit::{
+    Outcome, Shell, between, control_of, draw_retry, pressed, retry_button, send, time_entry,
+};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
@@ -54,6 +56,7 @@ struct RangeParts {
 #[derive(Debug)]
 struct DayParts {
     group: adw::PreferencesGroup,
+    windows: gtk::Box,
     copy: gtk::Button,
     none: gtk::Label,
     keys: RefCell<Option<Vec<u64>>>,
@@ -67,6 +70,7 @@ pub struct WeekView {
     pane: glib::WeakRef<HoursPane>,
     spinner: gtk::Spinner,
     load_failure: gtk::Label,
+    retry: gtk::Button,
     days: Vec<DayParts>,
     outcome: Outcome,
 }
@@ -87,10 +91,12 @@ impl WeekView {
         )]);
         let load_failure = plain_label("", &[]);
         load_failure.set_widget_name("week-load-failure");
+        let retry = retry_button(&weak, "week-retry");
         let outcome = Outcome::new(&weak, "week-outcome");
         let notices = adw::PreferencesGroup::new();
         notices.add(&spinner);
         notices.add(&load_failure);
+        notices.add(&retry);
         notices.add(&outcome.row);
         shell.page.add(&notices);
         let mut days = Vec::new();
@@ -99,6 +105,7 @@ impl WeekView {
             let add = gtk::Button::builder()
                 .label(add_range)
                 .valign(gtk::Align::Center)
+                .halign(gtk::Align::Start)
                 .css_classes(["flat"])
                 .name("week-add-range")
                 .build();
@@ -109,6 +116,7 @@ impl WeekView {
             let copy = gtk::Button::builder()
                 .label(copy_label)
                 .valign(gtk::Align::Center)
+                .halign(gtk::Align::Start)
                 .css_classes(["flat"])
                 .visible(false)
                 .name("week-copy")
@@ -117,20 +125,41 @@ impl WeekView {
                 copy_label, name,
             ))]);
             pressed(&copy, &weak, HoursEvent::CopyToWeekdays { day });
-            let buttons = gtk::Box::builder().spacing(6).build();
-            buttons.append(&copy);
-            buttons.append(&add);
+            // The day's actions go in its body, under its windows, never
+            // beside its name: as the group's header suffix they took the
+            // width from the title, and in French the day's name read "...".
+            // They wrap to a line each when the dialog is too narrow for both.
+            let buttons = gtk::FlowBox::builder()
+                .selection_mode(gtk::SelectionMode::None)
+                .min_children_per_line(1)
+                .max_children_per_line(2)
+                .column_spacing(6)
+                .row_spacing(6)
+                .margin_top(6)
+                .halign(gtk::Align::Start)
+                .build();
+            for button in [&copy, &add] {
+                buttons.append(button);
+                if let Some(child) = button.parent() {
+                    child.set_focusable(false);
+                }
+            }
             let group = adw::PreferencesGroup::builder()
                 .title(name)
-                .header_suffix(&buttons)
                 .name("week-day")
                 .build();
             let none = plain_label(not_bookable, &["dim-label"]);
             none.set_widget_name("week-not-bookable");
+            let windows = gtk::Box::builder()
+                .orientation(gtk::Orientation::Vertical)
+                .build();
             group.add(&none);
+            group.add(&windows);
+            group.add(&buttons);
             shell.page.add(&group);
             days.push(DayParts {
                 group,
+                windows,
                 copy,
                 none,
                 keys: RefCell::new(None),
@@ -142,6 +171,7 @@ impl WeekView {
             pane: weak,
             spinner,
             load_failure,
+            retry,
             days,
             outcome,
         });
@@ -156,6 +186,7 @@ impl WeekView {
         let read = week.load.value().is_some();
         draw_spinner(&self.spinner, matches!(week.load, SectionLoad::Loading));
         failure_line(&self.load_failure, week.load.failure());
+        draw_retry(&self.retry, week.load.failure());
         self.outcome.draw(&week.write);
         self.shell.draw_save(week.can_save(), busy);
         for (day, parts) in self.days.iter().enumerate() {
@@ -163,7 +194,13 @@ impl WeekView {
             parts.group.set_sensitive(!busy);
             let ranges = week.days.get(day).map_or(&[][..], Vec::as_slice);
             parts.none.set_visible(ranges.is_empty());
-            parts.copy.set_visible(week.offers_copy(day));
+            // The button and the flow box's place for it: an empty place
+            // would leave a gap before Add range.
+            let copies = week.offers_copy(day);
+            parts.copy.set_visible(copies);
+            if let Some(place) = parts.copy.parent() {
+                place.set_visible(copies);
+            }
             let wanted = keys(ranges);
             if parts.keys.borrow().as_ref() != Some(&wanted) {
                 self.build_day(day, parts, ranges);
@@ -185,7 +222,7 @@ impl WeekView {
     fn build_day(&self, day: usize, parts: &DayParts, ranges: &[HoursRange]) {
         let [_, _, _, _, to, remove_label, ..] = WeekEditor::labels();
         for old in parts.ranges.take() {
-            parts.group.remove(&old.holder);
+            parts.windows.remove(&old.holder);
         }
         let mut built = Vec::new();
         for (index, range) in ranges.iter().enumerate() {
@@ -245,7 +282,7 @@ impl WeekView {
                 .build();
             holder.append(&line);
             holder.append(&error);
-            parts.group.add(&holder);
+            parts.windows.append(&holder);
             built.push(RangeParts {
                 holder,
                 start,

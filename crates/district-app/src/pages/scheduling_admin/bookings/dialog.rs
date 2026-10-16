@@ -25,7 +25,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
 use crate::l10n::{lang, text};
-use crate::pages::shared::{draw_busy, draw_line, failure_text, plain_label};
+use crate::pages::shared::{draw_busy, draw_line, failure_text, plain_label, wrap_title};
 use crate::pages::workflows::tone_class;
 
 /// What a dialog's controls send: an event, to the pane's sink.
@@ -341,9 +341,16 @@ impl Shell {
                 "suggested-action"
             }])
             .build();
+        // The buttons are a bar under the scroller, never in it: at the end
+        // of a long body (a reschedule's slots, Large Text) they fell below
+        // the dialog's edge with nothing to say it scrolls.
         let buttons = gtk::Box::builder()
             .spacing(8)
             .halign(gtk::Align::End)
+            .margin_top(12)
+            .margin_bottom(18)
+            .margin_start(18)
+            .margin_end(18)
             .build();
         buttons.append(&spinner);
         buttons.append(&keep);
@@ -352,22 +359,24 @@ impl Shell {
             .orientation(gtk::Orientation::Vertical)
             .spacing(12)
             .margin_top(6)
-            .margin_bottom(18)
+            .margin_bottom(6)
             .margin_start(18)
             .margin_end(18)
             .build();
         column.append(&plain_label(words.body, &[]));
         column.append(&content);
         column.append(&outcome);
-        column.append(&buttons);
         let scroller = gtk::ScrolledWindow::builder()
             .hscrollbar_policy(gtk::PolicyType::Never)
             .propagate_natural_height(true)
             .child(&column)
             .build();
         let toolbar = adw::ToolbarView::new();
-        toolbar.add_top_bar(&adw::HeaderBar::new());
+        let header = adw::HeaderBar::new();
+        wrap_title(&header, words.title);
+        toolbar.add_top_bar(&header);
         toolbar.set_content(Some(&scroller));
+        toolbar.add_bottom_bar(&buttons);
         let dialog = adw::Dialog::builder()
             .title(words.title)
             .content_width(440)

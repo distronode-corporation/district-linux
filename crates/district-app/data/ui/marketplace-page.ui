@@ -65,6 +65,7 @@
                     <property name="halign">start</property>
                     <style>
                       <class name="linked"/>
+                      <class name="number-tabs"/>
                     </style>
                     <child>
                       <object class="GtkToggleButton" id="owned_tab">
@@ -223,6 +224,8 @@
                             </child>
                             <child>
                               <object class="GtkStack" id="search_stack">
+                                <!-- As wide as the page showing, as tab_stack is. -->
+                                <property name="hhomogeneous">False</property>
                                 <property name="vhomogeneous">False</property>
                                 <child>
                                   <object class="GtkStackPage">

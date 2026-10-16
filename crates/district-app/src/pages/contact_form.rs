@@ -15,7 +15,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{lang, text};
 use crate::pages::Sends;
-use crate::pages::shared::{draw_line, draw_spinner};
+use crate::pages::shared::{draw_line, draw_spinner, fit_height};
 use crate::sink::EventSink;
 
 /// Which form the dialog is.
@@ -212,6 +212,7 @@ impl ContactFormDialog {
         let hint = form.hint();
         draw_line(&imp.hint_label, hint);
         draw_line(&imp.failure_label, failure);
+        fit_height(self.upcast_ref());
     }
 }
 

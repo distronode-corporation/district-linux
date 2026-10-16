@@ -165,6 +165,21 @@
                                   <object class="AdwToolbarView">
                                     <child type="top">
                                       <object class="AdwHeaderBar" id="content_header">
+                                        <!-- The page's title, wrapping rather than ellipsized: in
+                                             French, at a narrow width with Large Text, it read
+                                             "Demande de so...". -->
+                                        <property name="title-widget">
+                                          <object class="GtkLabel">
+                                            <property name="label" bind-source="content_page" bind-property="title" bind-flags="sync-create"/>
+                                            <property name="use-markup">False</property>
+                                            <property name="wrap">True</property>
+                                            <property name="wrap-mode">word</property>
+                                            <property name="justify">center</property>
+                                            <style>
+                                              <class name="title"/>
+                                            </style>
+                                          </object>
+                                        </property>
                                         <child type="start">
                                           <object class="GtkButton" id="back_button">
                                             <property name="icon-name">go-previous-symbolic</property>

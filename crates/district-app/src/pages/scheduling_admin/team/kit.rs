@@ -11,7 +11,7 @@ use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
 use crate::l10n::{lang, text};
 use crate::pages::Sends;
-use crate::pages::shared::{draw_spinner, plain_label};
+use crate::pages::shared::{draw_spinner, plain_label, wrap_bound_title};
 
 /// What the member does on the team, as the core takes it.
 pub(super) fn team_event(event: TeamEvent) -> Event {
@@ -74,6 +74,7 @@ impl Shell {
             .child(&view)
             .name(name)
             .build();
+        wrap_bound_title(&header, &dialog);
         Self {
             dialog,
             close,

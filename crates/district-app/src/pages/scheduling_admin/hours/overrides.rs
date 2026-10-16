@@ -17,7 +17,9 @@ use district_core::scheduling_admin::{
 };
 
 use super::HoursPane;
-use super::kit::{Outcome, Shell, between, control_of, pressed, send, time_entry};
+use super::kit::{
+    Outcome, Shell, between, control_of, draw_retry, pressed, retry_button, send, time_entry,
+};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
@@ -87,6 +89,7 @@ pub struct OverridesView {
     add: gtk::Button,
     spinner: gtk::Spinner,
     load_failure: gtk::Label,
+    retry: gtk::Button,
     empty: gtk::Label,
     list: gtk::ListBox,
     outcome: Outcome,
@@ -143,6 +146,7 @@ impl OverridesView {
         )]);
         let load_failure = plain_label("", &[]);
         load_failure.set_widget_name("overrides-load-failure");
+        let retry = retry_button(&weak, "overrides-retry");
         let empty = plain_label(empty_text, &["dim-label"]);
         empty.set_visible(false);
         empty.set_widget_name("overrides-dialog-empty");
@@ -161,6 +165,7 @@ impl OverridesView {
         for widget in [
             spinner.upcast_ref::<gtk::Widget>(),
             load_failure.upcast_ref(),
+            retry.upcast_ref(),
             empty.upcast_ref(),
             list.upcast_ref(),
             outcome.row.upcast_ref(),
@@ -265,6 +270,7 @@ impl OverridesView {
             add,
             spinner,
             load_failure,
+            retry,
             empty,
             list,
             outcome,
@@ -337,6 +343,7 @@ impl OverridesView {
         let load = &editor.load;
         draw_spinner(&self.spinner, matches!(load, SectionLoad::Loading));
         failure_line(&self.load_failure, load.failure());
+        draw_retry(&self.retry, load.failure());
         let read = load.value().is_some();
         let rows = editor.rows();
         self.empty.set_visible(read && rows.is_empty());

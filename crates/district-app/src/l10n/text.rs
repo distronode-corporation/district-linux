@@ -3581,6 +3581,42 @@ pub fn metainfo_release_3_0_0_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_0_1.li1`
+#[must_use]
+pub fn metainfo_release_3_0_1_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A call ringing on this computer stops as soon as it is answered on another device, the ring times out or the caller hangs up",
+        Locale::FrCa => "Un appel qui sonne sur cet ordinateur s'arrête dès qu'il est pris sur un autre appareil, que la sonnerie expire ou que l'appelant raccroche",
+    }
+}
+
+/// `metainfo.release_3_0_1.li2`
+#[must_use]
+pub fn metainfo_release_3_0_1_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Booking pages: a Try again button when working hours, an event type's hosts or a webhook's deliveries fail to load",
+        Locale::FrCa => "Pages de réservation\u{00A0}: bouton Réessayer si les heures de disponibilité, les hôtes d'un type de rendez-vous ou les livraisons d'un webhook ne se chargent pas",
+    }
+}
+
+/// `metainfo.release_3_0_1.li3`
+#[must_use]
+pub fn metainfo_release_3_0_1_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Screens fit large text and narrow windows better, and support requests show their status in your language.",
+        Locale::FrCa => "Les écrans s'adaptent mieux au texte agrandi et aux fenêtres étroites, et les demandes de soutien affichent leur état dans votre langue.",
+    }
+}
+
+/// `metainfo.release_3_0_1.p`
+#[must_use]
+pub fn metainfo_release_3_0_1_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Calls stop ringing as soon as they are answered elsewhere, and the booking pages can retry what failed to load.",
+        Locale::FrCa => "Les appels cessent de sonner dès qu'ils sont pris ailleurs, et les pages de réservation peuvent recharger ce qui n'a pas pu être chargé.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {

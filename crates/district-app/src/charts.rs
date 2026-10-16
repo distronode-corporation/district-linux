@@ -74,13 +74,16 @@ pub(crate) fn colors(dark: bool, high_contrast: bool, foreground: gdk::RGBA) -> 
     }
 }
 
-/// Which band a sentiment slice is, by its label: the service always sends
-/// positive, neutral and friction, and names them.
-pub(crate) fn band(label: &str) -> usize {
-    let label = label.to_lowercase();
-    if label.contains("positive") {
+/// Which band a sentiment slice is, by the service's own name for it
+/// ([`SentimentShare::name`], `Positive Sentiment`, `Neutral Sentiment`,
+/// `Friction Sentiment`), which is the same in every language. Never by its
+/// label: that is translated, and keyed on "Sentiment positif" every French
+/// band read as friction.
+pub(crate) fn band(slice: &SentimentShare) -> usize {
+    let name = slice.name.to_lowercase();
+    if name.contains("positive") {
         0
-    } else if label.contains("neutral") {
+    } else if name.contains("neutral") {
         1
     } else {
         2
@@ -372,9 +375,22 @@ mod tests {
             [Fill::Solid, Fill::Hatched, Fill::Outline]
         );
         assert_eq!(band_fill(2, &light), Fill::Solid, "colour tells them apart");
-        assert_eq!(band("Positive Sentiment"), 0);
-        assert_eq!(band("Neutral"), 1);
-        assert_eq!(band("Friction"), 2);
+        // Keyed on the service's name, whatever the label says: the French
+        // labels hold none of the English words.
+        let slice = |name: &str, label: &str| SentimentShare {
+            name: name.to_owned(),
+            label: label.to_owned(),
+            value: 1,
+            share: 1.0,
+            color: None,
+        };
+        assert_eq!(band(&slice("Positive Sentiment", "Sentiment positif")), 0);
+        assert_eq!(band(&slice("Neutral Sentiment", "Sentiment neutre")), 1);
+        assert_eq!(
+            band(&slice("Friction Sentiment", "Sentiment de friction")),
+            2
+        );
+        assert_eq!(band(&slice("Positive Sentiment", "Positive Sentiment")), 0);
     }
 
     #[test]
@@ -439,12 +455,14 @@ mod tests {
         assert_eq!(columns_summary("Calls", &[]), "Calls: nothing to show.");
         let bands = [
             SentimentShare {
+                name: "Positive Sentiment".to_owned(),
                 label: "Positive".to_owned(),
                 value: 2,
                 share: 2.0 / 3.0,
                 color: None,
             },
             SentimentShare {
+                name: "Friction Sentiment".to_owned(),
                 label: "Friction".to_owned(),
                 value: 1,
                 share: 1.0 / 3.0,

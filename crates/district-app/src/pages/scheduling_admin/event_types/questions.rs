@@ -58,6 +58,7 @@ pub struct QuestionsView {
     form_outcome: gtk::Label,
     form_cancel: gtk::Button,
     form_save: gtk::Button,
+    form_bar: gtk::Box,
     /// The question the form is open on.
     editing: RefCell<Editing>,
     /// The form as the core holds it: its id and choices.
@@ -177,14 +178,25 @@ impl QuestionsView {
         let buttons = gtk::Box::builder()
             .spacing(6)
             .halign(gtk::Align::End)
-            .margin_top(12)
             .build();
         buttons.append(&form_cancel);
         buttons.append(&form_save);
-        let form_lines = adw::PreferencesGroup::new();
-        form_lines.add(&form_validation);
-        form_lines.add(&form_outcome);
-        form_lines.add(&buttons);
+        // The form's fault, its outcome and its buttons are a bar under the
+        // page, never at the end of it: with Large Text they fell below the
+        // dialog's edge under a long form.
+        let form_bar = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(6)
+            .margin_top(12)
+            .margin_bottom(18)
+            .margin_start(18)
+            .margin_end(18)
+            .visible(false)
+            .build();
+        form_bar.append(&form_validation);
+        form_bar.append(&form_outcome);
+        form_bar.append(&buttons);
+        shell.view.add_bottom_bar(&form_bar);
         let page = || {
             gtk::Box::builder()
                 .orientation(gtk::Orientation::Vertical)
@@ -196,7 +208,6 @@ impl QuestionsView {
         let form_page = page();
         form_page.append(&form_group);
         form_page.append(&options_group);
-        form_page.append(&form_lines);
         let stack = gtk::Stack::new();
         stack.add_named(&list_page, Some("list"));
         stack.add_named(&form_page, Some("form"));
@@ -227,6 +238,7 @@ impl QuestionsView {
             form_outcome,
             form_cancel,
             form_save,
+            form_bar,
             editing: RefCell::new(None),
             form: RefCell::new(QuestionForm::default()),
             filling: Cell::new(false),
@@ -310,6 +322,7 @@ impl QuestionsView {
         let editing = editing_of(questions);
         self.stack
             .set_visible_child_name(if editing.is_some() { "form" } else { "list" });
+        self.form_bar.set_visible(editing.is_some());
         if let Some(form) = &questions.editing {
             self.draw_form(questions, form, &editing, busy);
         } else {

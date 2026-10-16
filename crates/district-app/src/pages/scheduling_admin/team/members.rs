@@ -20,7 +20,7 @@ use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
 use crate::l10n::{lang, text};
 use crate::pages::scheduling_admin::common::{failure_line, write_line};
-use crate::pages::shared::{draw_line, draw_spinner, icon_button};
+use crate::pages::shared::{draw_line, draw_spinner, icon_button, keep_address_whole};
 
 /// Who a host or a user is called: their name, or their address for a blank
 /// one.
@@ -185,6 +185,7 @@ impl MembersView {
             .use_markup(false)
             .name("team-host-row")
             .build();
+        keep_address_whole(&row, &member.email);
         let priority = gtk::Entry::builder()
             .text(typed)
             .placeholder_text(priority_label)
@@ -273,6 +274,7 @@ impl MembersView {
                     .activatable_widget(&check)
                     .name("team-add-candidate")
                     .build();
+                keep_address_whole(&row, &user.email);
                 row.add_prefix(&check);
                 row
             })

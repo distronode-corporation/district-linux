@@ -458,6 +458,98 @@ pub(crate) fn plain_label(text: &str, classes: &[&str]) -> gtk::Label {
         .build()
 }
 
+/// Puts `title` in `header` as a title that wraps onto more lines rather than
+/// lose its end to an ellipsis: in French and with Large Text a dialog's title
+/// between its two buttons read "Archiver..." or "Nouvelle demande de ...",
+/// without its object. Words are never broken.
+pub(crate) fn wrap_title(header: &adw::HeaderBar, title: &str) -> gtk::Label {
+    let label = title_label();
+    label.set_label(title);
+    header.set_title_widget(Some(&label));
+    label
+}
+
+/// A header bar title that wraps (see [`wrap_title`]), showing the `title`
+/// property of `source` (a dialog, a navigation page) as it changes.
+pub(crate) fn wrap_bound_title(header: &adw::HeaderBar, source: &impl IsA<glib::Object>) {
+    let label = title_label();
+    source
+        .bind_property("title", &label, "label")
+        .sync_create()
+        .build();
+    header.set_title_widget(Some(&label));
+}
+
+fn title_label() -> gtk::Label {
+    gtk::Label::builder()
+        .use_markup(false)
+        .wrap(true)
+        .wrap_mode(gtk::pango::WrapMode::Word)
+        .justify(gtk::Justification::Center)
+        .css_classes(["title"])
+        .build()
+}
+
+/// Keeps the email address `row` shows as its subtitle whole: on one line,
+/// shortened in the middle when it does not fit, and in full in the row's
+/// tooltip. Wrapped, an address broke mid-word with a hyphen added
+/// (`s-1@example.c-` / `om`), which changes the address.
+/// The person's name, the row's title, wraps between words only, never
+/// inside one with a hyphen added ("Found-" / "er").
+pub(crate) fn keep_address_whole(row: &adw::ActionRow, address: &str) {
+    let widget = row.upcast_ref();
+    if let Some(subtitle) = descendant_label(widget, "subtitle") {
+        subtitle.set_wrap(false);
+        subtitle.set_lines(1);
+        subtitle.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
+    }
+    if let Some(title) = descendant_label(widget, "title") {
+        title.set_wrap_mode(gtk::pango::WrapMode::Word);
+    }
+    row.set_tooltip_text(Some(address));
+}
+
+/// Sets `dialog`'s height to what its content needs at its width now. A
+/// dialog of a fixed width keeps the height it was presented with, so a hint
+/// or an error shown after it opened had its second line cut at the dialog's
+/// edge (French, Large Text).
+pub(crate) fn fit_height(dialog: &adw::Dialog) {
+    if let Some(child) = dialog.child() {
+        let (_, natural, _, _) = child.measure(gtk::Orientation::Vertical, dialog.content_width());
+        if natural != dialog.content_height() {
+            dialog.set_content_height(natural);
+        }
+    }
+}
+
+/// Lets `button`'s label wrap onto more lines, centred, rather than hold the
+/// whole page at the width of one line: "Ouvrir le tableau de bord Web" made
+/// the overview wider than a 390 px window with Large Text.
+pub(crate) fn wrap_button_label(button: &gtk::Button) {
+    if let Some(label) = button.child().and_downcast::<gtk::Label>() {
+        label.set_wrap(true);
+        label.set_wrap_mode(gtk::pango::WrapMode::Word);
+        label.set_justify(gtk::Justification::Center);
+    }
+}
+
+/// The first label under `widget` with the style class `class`.
+fn descendant_label(widget: &gtk::Widget, class: &str) -> Option<gtk::Label> {
+    let mut child = widget.first_child();
+    while let Some(current) = child {
+        if let Some(label) = current.downcast_ref::<gtk::Label>()
+            && label.has_css_class(class)
+        {
+            return Some(label.clone());
+        }
+        if let Some(found) = descendant_label(&current, class) {
+            return Some(found);
+        }
+        child = current.next_sibling();
+    }
+    None
+}
+
 /// Takes every row out of `list`.
 pub(crate) fn clear_list(list: &gtk::ListBox) {
     list.remove_all();

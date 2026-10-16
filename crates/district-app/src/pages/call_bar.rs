@@ -74,6 +74,9 @@ pub(crate) fn ring_shown(ring: &IncomingRing, elsewhere: Option<&str>) -> RingSh
             match ring.phase {
                 RingPhase::Waiting => core_text::live_waiting_title(lang()),
                 RingPhase::Ended(RingEnd::Missed) => core_text::live_missed_title(lang()),
+                RingPhase::Ended(RingEnd::AnsweredElsewhere) => {
+                    core_text::live_answered_elsewhere_title(lang())
+                }
                 _ => core_text::ringing_title(lang()),
             },
             elsewhere,
@@ -403,6 +406,11 @@ mod tests {
                 RingEnd::CallEnded,
                 IncomingRing::TITLE,
                 IncomingRing::CALL_ENDED,
+            ),
+            (
+                RingEnd::AnsweredElsewhere,
+                IncomingRing::ANSWERED_ELSEWHERE_TITLE,
+                IncomingRing::ANSWERED_ELSEWHERE,
             ),
             (
                 RingEnd::AnswerFailed(failure("The service is busy.", true)),

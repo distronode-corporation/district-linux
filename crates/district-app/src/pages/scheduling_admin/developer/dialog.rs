@@ -31,7 +31,7 @@ use crate::adw::prelude::*;
 use crate::gtk;
 use crate::l10n::{lang, text};
 use crate::pages::scheduling_admin::common::{badge, write_line};
-use crate::pages::shared::{draw_line, draw_spinner, plain_label};
+use crate::pages::shared::{draw_line, draw_spinner, plain_label, wrap_bound_title};
 use crate::pages::workflows::tone_class;
 
 /// What a dialog's controls send: an event, to the pane's sink.
@@ -107,6 +107,7 @@ impl Shell {
             .child(&view)
             .name(format!("{name}-dialog"))
             .build();
+        wrap_bound_title(&header, &dialog);
         let close = Rc::clone(send);
         cancel.connect_clicked(move |_| close(developer_event(DeveloperEvent::CloseDialog)));
         let close = Rc::clone(send);
