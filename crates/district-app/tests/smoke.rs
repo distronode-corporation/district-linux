@@ -468,6 +468,41 @@ impl Smoke {
         let window = self.window();
         let mut found = Vec::new();
         walk(window.upcast_ref(), window.upcast_ref(), &mut found);
+        if !found.is_empty() {
+            // What holds it wide: each widget, shown or not, at least as wide
+            // as the window when none of its children is, with its children's
+            // widths.
+            fn wide(widget: &gtk::Widget, limit: i32, found: &mut Vec<String>) {
+                let min = |w: &gtk::Widget| w.measure(gtk::Orientation::Horizontal, -1).0;
+                let children = descendants_once(widget);
+                if min(widget) > limit && children.iter().all(|child| min(child) <= limit) {
+                    let parts: Vec<String> = children
+                        .iter()
+                        .map(|child| format!("{} {}", child.type_().name(), min(child)))
+                        .collect();
+                    found.push(format!(
+                        "WIDE {} #{} {}: {}",
+                        widget.type_().name(),
+                        widget.widget_name(),
+                        min(widget),
+                        parts.join(", ")
+                    ));
+                }
+                for child in children {
+                    wide(&child, limit, found);
+                }
+            }
+            fn descendants_once(widget: &gtk::Widget) -> Vec<gtk::Widget> {
+                let mut children = Vec::new();
+                let mut child = widget.first_child();
+                while let Some(current) = child {
+                    child = current.next_sibling();
+                    children.push(current);
+                }
+                children
+            }
+            wide(window.upcast_ref(), window.width() - 30, &mut found);
+        }
         found
     }
 
