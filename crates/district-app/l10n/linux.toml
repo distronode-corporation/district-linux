@@ -268,7 +268,7 @@ en = "The audition ended."
 fr = "L'aperçu est terminé."
 ctx = "body"
 screen = "persona"
-state = "reviewed"
+state = "draft"
 
 [audition.starting]
 en = "Starting the call."

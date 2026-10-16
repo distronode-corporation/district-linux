@@ -65,8 +65,12 @@ pub(crate) fn run_line(run: &WorkflowRun) -> String {
         .action_results
         .iter()
         .map(|action| {
-            let outcome =
-                wire_text(WireCategory::WorkflowActionOutcome, &action.outcome).to_lowercase();
+            // Mid-sentence, as a reason is: « ignoré », « échec », and « OK » kept
+            // in capitals, which French writes as an acronym.
+            let outcome = lower_first(&wire_text(
+                WireCategory::WorkflowActionOutcome,
+                &action.outcome,
+            ));
             let outcome = match action.reason.as_deref().and_then(reason_words) {
                 Some(reason) => text::workflows_outcome_reason(lang(), &outcome, &reason),
                 None => outcome,
@@ -613,6 +617,11 @@ mod tests {
             assert_eq!(reason_words("contact has no email address"), None);
             let line = run_line(run);
             assert!(!line.contains("autre"), "{line}");
+            assert!(
+                line.starts_with("Envoyer un texto\u{a0}: OK \u{b7} "),
+                "{line}"
+            );
+            assert!(line.contains("\u{a0}: ignoré"), "{line}");
             assert!(!line.contains("contact has"), "{line}");
             assert!(!line.contains('('), "{line}");
         });
@@ -626,6 +635,8 @@ mod tests {
             lower_first("URL du webhook manquante"),
             "URL du webhook manquante"
         );
+        assert_eq!(lower_first("OK"), "OK");
+        assert_eq!(lower_first("Ignoré"), "ignoré");
         assert_eq!(lower_first("A"), "a");
         assert_eq!(lower_first(""), "");
     }

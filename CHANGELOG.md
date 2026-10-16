@@ -19,7 +19,8 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   service's reason opens with a code (`no-recipient: …`), and the line shows that code's
   label (« ignoré (aucun destinataire) », « HTTP 503 » for a webhook's error). A reason
   this app has no label for leaves the parenthesis out, where every reason used to read
-  « autre ». English still shows the service's sentence.
+  « autre ». English still shows the service's sentence. An action that worked reads
+  « Envoyer un texto : OK », with OK in capitals as French writes it (it read « ok »).
 - Call routing rules: the English names of the caller details now bracket the values a
   rule compares, as the French and District AI for Windows do ("Caller type
   (business/consumer)", "Line type (mobile/landline/voip)", "Decision maker
