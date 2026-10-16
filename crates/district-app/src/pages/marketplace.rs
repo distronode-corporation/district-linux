@@ -12,8 +12,8 @@ use district_core::l10n::format;
 use district_core::l10n::numbers_strings as ns;
 use district_core::{
     Capabilities, Event, MarketplaceEvent, MarketplaceScreen, MarketplaceTab, NumberAdmin,
-    NumberAdminEvent, NumberSearchForm, NumberSearchState, OwnedNumbers, OwnedNumbersList,
-    format_phone_number, number_actions_note, price_label,
+    NumberAdminEvent, NumberSearchForm, NumberSearchState, NumberWrite, OwnedNumbers,
+    OwnedNumbersList, format_phone_number, number_actions_note, price_label,
 };
 use district_model::{AvailableNumber, OwnedNumber};
 
@@ -551,11 +551,21 @@ impl MarketplacePage {
     fn draw_controls(&self, admin: &NumberAdmin) {
         let armed = admin.number_write.is_armed();
         let notice = write_notice(&admin.number_write);
+        // A failure reads as one (visual QA LC22); a done write's notice, which
+        // can be mixed news, stays quiet.
+        let failed = matches!(admin.number_write, NumberWrite::Failed { .. });
         for controls in self.imp().controls.borrow().iter() {
             controls.configure.set_sensitive(armed);
             controls.release.set_sensitive(armed);
             let mine = admin.number_written.as_deref() == Some(controls.phone_number.as_str());
             draw_line(&controls.notice, notice.as_deref().filter(|_| mine));
+            if failed {
+                controls.notice.remove_css_class("dim-label");
+                controls.notice.add_css_class("error");
+            } else {
+                controls.notice.remove_css_class("error");
+                controls.notice.add_css_class("dim-label");
+            }
         }
     }
 

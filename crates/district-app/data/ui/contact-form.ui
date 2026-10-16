@@ -51,7 +51,6 @@
           <object class="AdwPreferencesPage">
             <child>
               <object class="AdwPreferencesGroup">
-                <property name="description" translatable="yes" context="contact_form.contact_needs_name_phone_number">A contact needs a name, and a phone number or an email address.</property>
                 <child>
                   <object class="AdwEntryRow" id="name_row">
                     <property name="title" translatable="yes" context="common.name">Name</property>

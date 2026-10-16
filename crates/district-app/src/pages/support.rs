@@ -275,7 +275,7 @@ impl SupportPage {
                     .use_markup(false)
                     .title(&request.subject)
                     .subtitle(request_line(request))
-                    .title_lines(1)
+                    .title_lines(2)
                     .subtitle_lines(1)
                     .activatable(true)
                     .name("request-row")

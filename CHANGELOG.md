@@ -13,6 +13,52 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Fixed
+
+- In French, a workflow run's skipped or failed action now says why, in French: the
+  service's reason opens with a code (`no-recipient: …`), and the line shows that code's
+  label (« ignoré (aucun destinataire) », « HTTP 503 » for a webhook's error). A reason
+  this app has no label for leaves the parenthesis out, where every reason used to read
+  « autre ». English still shows the service's sentence. An action that worked reads
+  « Envoyer un texto : OK », with OK in capitals as French writes it (it read « ok »).
+- Call routing rules: the English names of the caller details now bracket the values a
+  rule compares, as the French and District AI for Windows do ("Caller type
+  (business/consumer)", "Line type (mobile/landline/voip)", "Decision maker
+  (true/false)", "Seniority (e.g. vp, c-suite)").
+- Voice Studio: after a save the service did not hold, the line beside Save says the
+  changes are not saved instead of "All changes saved"; a recipe whose note names its
+  channel ("Preview: processed globally by Google") no longer names it twice.
+- The live transcript's heading reads "Transcript" once the call has ended.
+- Editing a contact shows its phone number grouped for reading, as the list and the
+  contact's page show it, and sends it back unchanged when it is not edited.
+- A phone number in a carrier account's line no longer breaks across two lines.
+- A failed change to a phone number reads as an error.
+- Connecting a calendar says, once, to finish in the browser and come back.
+- French: the caller sentiment legend reads « Sentiment positif : 21 (44 %) », with the
+  non-breaking spaces French typography wants, and the voice audition is called
+  « aperçu » in both its sentences (« L'aperçu est terminé. »).
+
+### Changed
+
+- Analytics figures (the funnel's counts, the month's usage, the months' history, the
+  sentiment legend) are drawn at full contrast; only labels and axes stay dim.
+- The help desk's and support's lists are wider, and a ticket's title wraps to a second
+  line rather than being cut; the workspace settings list is wider too.
+- The ring length slider shows its value beside it instead of drawing it over most of
+  its own track.
+- The composer's "Shift+Enter for a new line" hint wraps rather than being cut short.
+- The add-contact form states its requirement once.
+- While District HQ shows a proposed change, Ask is no longer a suggested action beside
+  Confirm.
+- The meetings list's spinner keeps its distance from the group's description.
+- Built on District AI core for Rust 5.0.0: a French call length no longer breaks
+  between the minutes and the seconds (« 1 min 5 s », every space U+00A0), a webhook's
+  new signing secret has its own warning, a contact another contact already holds
+  (the service's 409) says so in French and offers no retry, a ticket's row in the
+  queue follows a reply or a status change, and a booking form's complaint goes as
+  soon as the value is changed. The core's one breaking change, the hand-off effects'
+  nonce no longer being optional, does not reach this app, which starts no hand-off.
+
 ## [3.0.1] - 2026-10-15
 
 A ring stops on this computer as soon as the call is taken somewhere else.

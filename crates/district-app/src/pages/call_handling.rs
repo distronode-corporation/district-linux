@@ -127,8 +127,6 @@ mod imp {
             on_click(&self.save_button, &*view, || {
                 Event::CallHandling(CallHandlingEvent::Save)
             });
-            self.ring_scale
-                .set_format_value_func(|_, seconds| ring_words(seconds.round() as i64));
             self.ring
                 .set(Echoed::scale(&self.ring_scale, &*view, |seconds| {
                     Event::CallHandling(CallHandlingEvent::SetRingSeconds(seconds.round() as i64))
@@ -243,7 +241,8 @@ impl CallHandlingView {
             .draw_scale(&imp.ring_scale, seconds as f64);
         imp.ring_scale.set_visible(can_change);
         imp.ring_scale.set_sensitive(section.editable());
-        imp.ring_value.set_visible(!can_change);
+        // The value is its own label beside the slider rather than drawn by
+        // it, so the slider keeps its whole width (visual QA LA16).
         imp.ring_value.set_label(&ring_words(seconds));
         imp.viewer_note.set_visible(!can_change);
         imp.save_box.set_visible(can_change && stored.is_some());

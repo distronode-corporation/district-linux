@@ -18,9 +18,10 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::l10n::{core_text, lang, text};
+use crate::l10n::{Locale, core_text, lang, text};
 use crate::pages::shared::{
-    Ask, Asking, clear_list, draw_line, draw_spinner, failure_text, when_text, wire_text,
+    Ask, Asking, clear_list, draw_line, draw_spinner, failure_text, humanize, known_wire_label,
+    when_text, wire_text,
 };
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
@@ -64,14 +65,14 @@ pub(crate) fn run_line(run: &WorkflowRun) -> String {
         .action_results
         .iter()
         .map(|action| {
-            let outcome =
-                wire_text(WireCategory::WorkflowActionOutcome, &action.outcome).to_lowercase();
-            let outcome = match action.reason.as_deref() {
-                Some(reason) => text::workflows_outcome_reason(
-                    lang(),
-                    &outcome,
-                    &wire_text(WireCategory::WorkflowActionReason, reason).to_lowercase(),
-                ),
+            // Mid-sentence, as a reason is: « ignoré », « échec », and « OK » kept
+            // in capitals, which French writes as an acronym.
+            let outcome = lower_first(&wire_text(
+                WireCategory::WorkflowActionOutcome,
+                &action.outcome,
+            ));
+            let outcome = match action.reason.as_deref().and_then(reason_words) {
+                Some(reason) => text::workflows_outcome_reason(lang(), &outcome, &reason),
                 None => outcome,
             };
             text::workflows_action_result(
@@ -83,6 +84,48 @@ pub(crate) fn run_line(run: &WorkflowRun) -> String {
         .collect();
     parts.extend(run.error.clone());
     parts.join(" \u{b7} ")
+}
+
+/// Why an action was skipped or failed, as the run's line says it, or `None`
+/// to say nothing. The service writes an English sentence that opens with a
+/// code (`no-recipient: the contact has no email address`); a row written
+/// before the codes holds the sentence alone. English shows it as sent. Any
+/// other language shows the code's label (`http-503` reads as the
+/// `http-{status}` entry with its number) and, for a code the vocabulary does
+/// not list, nothing, never the English sentence or a generic "Other".
+pub(crate) fn reason_words(reason: &str) -> Option<String> {
+    let reason = reason.trim();
+    if reason.is_empty() {
+        return None;
+    }
+    if lang() == Locale::En {
+        return Some(humanize(reason).to_lowercase());
+    }
+    let code = reason
+        .split_once(':')
+        .map_or(reason, |(code, _)| code)
+        .trim();
+    let label = match code.strip_prefix("http-") {
+        Some(status) if !status.is_empty() && status.bytes().all(|b| b.is_ascii_digit()) => {
+            known_wire_label(WireCategory::WorkflowActionReason, "http-{status}")?
+                .replace("{status}", status)
+        }
+        _ => known_wire_label(WireCategory::WorkflowActionReason, code)?,
+    };
+    Some(lower_first(&label))
+}
+
+/// A label as it reads mid-sentence: its first letter in lower case, unless
+/// it opens with an acronym (`URL du webhook manquante`, `HTTP 503`).
+fn lower_first(label: &str) -> String {
+    let mut chars = label.chars();
+    match (chars.next(), chars.next()) {
+        (Some(first), second) if !second.is_some_and(char::is_uppercase) => first
+            .to_lowercase()
+            .chain(label[first.len_utf8()..].chars())
+            .collect(),
+        _ => label.to_owned(),
+    }
 }
 
 /// What the list was last built from: the workflows and whether each was
@@ -537,5 +580,64 @@ mod tests {
         assert!(!run_line(&run).is_empty() || run.action_results.is_empty());
         run.error = Some("The carrier refused it.".to_owned());
         assert!(run_line(&run).ends_with("The carrier refused it."));
+    }
+
+    /// LC06: English shows the reason as the service wrote it; French shows
+    /// the code's label, and for a sentence with no code it knows, nothing
+    /// rather than "autre" (other).
+    #[test]
+    fn a_skip_reason_reads_as_its_codes_label() {
+        let runs: WorkflowRunsResponse = fixture("district-workflow-runs.json");
+        let run = &runs.runs[1];
+        assert_eq!(reason_words("  "), None);
+        assert_eq!(
+            reason_words("no-recipient: the contact has no email address").as_deref(),
+            Some("no recipient: the contact has no email address")
+        );
+        assert!(run_line(run).contains("(contact has no email address)"));
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(
+                reason_words("no-recipient: the contact has no email address").as_deref(),
+                Some("aucun destinataire")
+            );
+            assert_eq!(
+                reason_words("dnc: recipient has opted out").as_deref(),
+                Some("liste d'exclusion")
+            );
+            assert_eq!(
+                reason_words("http-503: ops webhook returned 503").as_deref(),
+                Some("HTTP 503")
+            );
+            assert_eq!(
+                reason_words("missing-webhook-url: none configured").as_deref(),
+                Some("URL du webhook manquante")
+            );
+            assert_eq!(reason_words("http-: no status"), None);
+            assert_eq!(reason_words("http-5x3: no status"), None);
+            assert_eq!(reason_words("contact has no email address"), None);
+            let line = run_line(run);
+            assert!(!line.contains("autre"), "{line}");
+            assert!(
+                line.starts_with("Envoyer un texto\u{a0}: OK \u{b7} "),
+                "{line}"
+            );
+            assert!(line.contains("\u{a0}: ignoré"), "{line}");
+            assert!(!line.contains("contact has"), "{line}");
+            assert!(!line.contains('('), "{line}");
+        });
+    }
+
+    #[test]
+    fn a_label_reads_mid_sentence() {
+        assert_eq!(lower_first("Aucun destinataire"), "aucun destinataire");
+        assert_eq!(lower_first("Échec d'envoi"), "échec d'envoi");
+        assert_eq!(
+            lower_first("URL du webhook manquante"),
+            "URL du webhook manquante"
+        );
+        assert_eq!(lower_first("OK"), "OK");
+        assert_eq!(lower_first("Ignoré"), "ignoré");
+        assert_eq!(lower_first("A"), "a");
+        assert_eq!(lower_first(""), "");
     }
 }

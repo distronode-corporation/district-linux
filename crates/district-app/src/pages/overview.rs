@@ -327,7 +327,8 @@ mod tests {
         assert_eq!(figures[3], ("3m 12s".to_owned(), "Average call"));
         // The service writes its label in English; French is the core's form.
         district_core::l10n::with_locale(Locale::FrCa, || {
-            assert_eq!(metrics(content)[3].0, "3\u{a0}min 12\u{a0}s");
+            // The core keeps the length whole (every space U+00A0).
+            assert_eq!(metrics(content)[3].0, "3\u{a0}min\u{a0}12\u{a0}s");
         });
 
         let (mut model, effects) = listed(Ok(workspaces()));

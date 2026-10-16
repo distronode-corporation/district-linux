@@ -1982,10 +1982,24 @@ fn contacts_screens(smoke: &Smoke) {
 
     // Editing, from the whole record.
     smoke.click("edit_button");
+    // LB8: the stored 14165550142 reads as everywhere else, and is sent back
+    // as it was stored when it is not changed.
+    let phone = smoke
+        .mapped("phone_row")
+        .dynamic_cast::<gtk::Editable>()
+        .expect("an editable")
+        .text();
+    assert_eq!(phone, "+1 416 555 0142");
     smoke.type_into("name_row", "Ada Lovelace");
     smoke.shot("31-contact-edit");
     smoke.click("submit_button");
-    let tk = smoke.ticket("WriteContact");
+    let write = smoke.take("WriteContact");
+    let sent = format!("{write:?}");
+    assert!(
+        sent.contains("\"14165550142\"") && !sent.contains("416 555"),
+        "{sent}"
+    );
+    let tk = ticket(&write);
     assert!(smoke.shows_text("Saving the contact"));
     smoke.answer(Event::ContactWritten {
         ticket: tk,
@@ -2260,9 +2274,12 @@ fn hq_screen(smoke: &Smoke) {
     propose("Change the greeting");
     assert!(smoke.shown("card"));
     assert!(smoke.shows_text("Nothing has been changed yet."));
+    // LC26: one suggested action at a time.
+    assert!(!smoke.mapped("ask_button").has_css_class("suggested-action"));
     smoke.shot("43-hq-proposal");
     smoke.click("dismiss_button");
     assert!(!smoke.shown("card"));
+    assert!(smoke.mapped("ask_button").has_css_class("suggested-action"));
     assert!(!smoke.pending("ConfirmHq"));
 
     // Confirmed: applied, lost, confirmed again and made.
@@ -2613,10 +2630,14 @@ fn managing_numbers(smoke: &Smoke) {
         .set_expanded(true);
     smoke.pump();
     assert!(smoke.shows_text("Released."));
+    assert!(smoke.mapped("number-notice").has_css_class("dim-label"));
     smoke.click("number-release");
     smoke.respond("confirm");
     number_call(smoke, Err(server_error()));
     assert!(smoke.shows_part("not offered again"));
+    // LC22: the failure reads as one.
+    let notice = smoke.mapped("number-notice");
+    assert!(notice.has_css_class("error") && !notice.has_css_class("dim-label"));
     assert!(!smoke.sensitive("number-release"));
     assert!(!smoke.sensitive("number-configure"));
     smoke.shot("54-numbers-manage");
@@ -4770,6 +4791,18 @@ fn scheduling_calendar(smoke: &Smoke) {
     assert_eq!(url.expose(), "https://scheduler.example.com/sso/one-time");
     assert!(smoke.sensitive("calendar-connect"));
     assert!(smoke.shown("calendar-refresh"));
+    // LD14: the window says where to finish, in a toast.
+    let finish = "Finish in the browser, then come back and refresh this page.";
+    let toasts_finish = descendants(smoke.window().upcast_ref())
+        .into_iter()
+        .filter(|widget| widget.type_().name() == "AdwToastWidget")
+        .any(|toast| {
+            descendants(&toast)
+                .into_iter()
+                .filter_map(|widget| widget.downcast::<gtk::Label>().ok())
+                .any(|label| label.label() == finish)
+        });
+    assert!(toasts_finish, "the hand-off is told in a toast");
     smoke.shot("67-booking-calendars-hand-off");
     smoke.click("calendar-refresh");
     assert!(smoke.shown("calendar-loading"));
@@ -8298,6 +8331,9 @@ fn voice_studio_section(smoke: &Smoke) {
         result: Ok(Box::new(voice_studio())),
     });
     assert!(smoke.shows_text(&labels.save_failed));
+    // LA11: the line beside Save agrees with the notice.
+    assert!(smoke.shows_text(&labels.unsaved));
+    assert!(!smoke.shows_text(&labels.all_saved));
     smoke.scroll_within_to_end("voice_studio_view");
     smoke.shot("100i-studio-save-not-held");
 
@@ -8897,7 +8933,8 @@ fn messaging_section(smoke: &Smoke) {
     );
     assert!(smoke.shows_part("Plivo \u{b7} Your own carrier account \u{b7} No numbers"));
     assert!(smoke.shows_text("Default"));
-    assert!(smoke.shows_part("+1 416 555 0190"));
+    // LA15: a number never breaks across lines.
+    assert!(smoke.shows_part("+1\u{a0}416\u{a0}555\u{a0}0190"));
     let sms = combo(smoke, "channel-row", 0);
     assert_eq!(chosen(&sms), "Twilio (main)");
     assert_eq!(

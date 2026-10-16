@@ -5,9 +5,9 @@
 //! say about it (`ContactForm::hint`). Closing the dialog asks the core, which
 //! refuses while the save is on its way, so the answer always lands on a form.
 
-use std::cell::{Cell, OnceCell};
+use std::cell::{Cell, OnceCell, RefCell};
 
-use district_core::{ContactForm, ContactsEvent, Event};
+use district_core::{ContactForm, ContactsEvent, Event, format_phone_number};
 
 use crate::adw;
 use crate::adw::prelude::*;
@@ -94,6 +94,10 @@ mod imp {
         pub kind: Cell<FormKind>,
         /// Whether the rows are being filled, not typed in.
         pub filling: Cell<bool>,
+        /// The phone number as the form was filled with it and as the row
+        /// shows it, grouped for reading: while the row still shows that,
+        /// the number sent is the one filled in, unchanged.
+        pub phone_filled: RefCell<(String, String)>,
     }
 
     #[glib::object_subclass]
@@ -182,7 +186,11 @@ impl ContactFormDialog {
         imp.submit_button.set_label(action);
         imp.filling.set(true);
         imp.name_row.set_text(&form.name);
-        imp.phone_row.set_text(&form.phone_number);
+        // Shown as everywhere else (+1 416 555 0142), not as stored
+        // (14165550142): visual QA LB8.
+        let shown = phone_shown(&form.phone_number);
+        imp.phone_row.set_text(&shown);
+        imp.phone_filled.replace((form.phone_number.clone(), shown));
         imp.email_row.set_text(&form.email);
         imp.filling.set(false);
         dialog
@@ -193,7 +201,7 @@ impl ContactFormDialog {
         let imp = self.imp();
         ContactForm {
             name: imp.name_row.text().into(),
-            phone_number: imp.phone_row.text().into(),
+            phone_number: phone_typed(&imp.phone_row.text(), &imp.phone_filled.borrow()),
             email: imp.email_row.text().into(),
         }
     }
@@ -216,9 +224,40 @@ impl ContactFormDialog {
     }
 }
 
+/// A filled-in phone number as the row shows it: grouped for reading, or as
+/// it is when it is blank.
+fn phone_shown(stored: &str) -> String {
+    if stored.trim().is_empty() {
+        stored.to_owned()
+    } else {
+        format_phone_number(stored)
+    }
+}
+
+/// The phone number to send for what the row holds: the number filled in
+/// when the row still shows it as filled, else what was typed.
+fn phone_typed(row: &str, (stored, shown): &(String, String)) -> String {
+    if row == shown {
+        stored.clone()
+    } else {
+        row.to_owned()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_filled_number_reads_grouped_and_is_sent_as_it_was() {
+        assert_eq!(phone_shown(""), "");
+        let shown = phone_shown("14165550142");
+        assert_eq!(shown, "+1 416 555 0142");
+        let filled = ("14165550142".to_owned(), shown.clone());
+        assert_eq!(phone_typed(&shown, &filled), "14165550142");
+        assert_eq!(phone_typed("+1 416 555 0199", &filled), "+1 416 555 0199");
+        assert_eq!(phone_typed("", &filled), "");
+    }
 
     #[test]
     fn each_form_sends_its_own_events() {

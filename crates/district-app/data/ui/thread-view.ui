@@ -359,7 +359,9 @@
                                 <property name="label" translatable="yes" context="thread_view.shift_enter_new_line">Shift+Enter for a new line</property>
                                 <property name="hexpand">True</property>
                                 <property name="xalign">1</property>
-                                <property name="ellipsize">end</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="justify">right</property>
                                 <style>
                                   <class name="caption"/>
                                   <class name="dim-label"/>

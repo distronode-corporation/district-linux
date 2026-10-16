@@ -18,7 +18,7 @@ use district_core::{ChartBar, SentimentShare};
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::gtk::{self, cairo, gdk, glib};
-use crate::l10n::{lang, text};
+use crate::l10n::{Locale, lang, text};
 
 /// How a sentiment band is filled.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -250,9 +250,14 @@ pub(crate) fn draw_swatch(
     );
 }
 
-/// A percentage of a share, rounded: `33%`.
+/// A percentage of a share, rounded: `33%`, in French `33 %` with a
+/// non-breaking space.
 pub(crate) fn percent(share: f64) -> String {
-    format!("{:.0}%", share * 100.0)
+    let whole = format!("{:.0}", share * 100.0);
+    match lang() {
+        Locale::En => format!("{whole}%"),
+        Locale::FrCa => format!("{whole}\u{a0}%"),
+    }
 }
 
 /// What a column chart shows, in words: each bar, and the largest.
@@ -474,5 +479,8 @@ mod tests {
             "Caller sentiment: Positive 2 (67%), Friction 1 (33%)."
         );
         assert_eq!(percent(0.0), "0%");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(percent(0.44), "44\u{a0}%");
+        });
     }
 }

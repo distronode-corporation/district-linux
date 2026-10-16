@@ -40,6 +40,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::analytics_history_row(Locale::FrCa, "{month}", "{minutes}", "{messages}"), "{month}\u{00A0}: minutes d'appel, {minutes}; messages, {messages}");
     assert_eq!(text::analytics_report_title(Locale::En, "{range}"), "Calls over {range}");
     assert_eq!(text::analytics_report_title(Locale::FrCa, "{range}"), "Appels sur {range}");
+    assert_eq!(text::analytics_sentiment_legend(Locale::En, "{band}", "{count}", "{share}"), "{band}: {count} ({share})");
+    assert_eq!(text::analytics_sentiment_legend(Locale::FrCa, "{band}", "{count}", "{share}"), "{band}\u{00A0}: {count} ({share})");
     assert_eq!(text::analytics_tile_abandoned(Locale::En), "Abandoned");
     assert_eq!(text::analytics_tile_abandoned(Locale::FrCa), "Abandonnés");
     assert_eq!(text::analytics_tile_average_call(Locale::En), "Average call");
@@ -69,7 +71,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::audition_connecting(Locale::En), "Connecting to your receptionist.");
     assert_eq!(text::audition_connecting(Locale::FrCa), "Connexion à votre réceptionniste en cours.");
     assert_eq!(text::audition_ended(Locale::En), "The audition ended.");
-    assert_eq!(text::audition_ended(Locale::FrCa), "L'essai est terminé.");
+    assert_eq!(text::audition_ended(Locale::FrCa), "L'aperçu est terminé.");
     assert_eq!(text::audition_starting(Locale::En), "Starting the call.");
     assert_eq!(text::audition_starting(Locale::FrCa), "Lancement de l'appel.");
     assert_eq!(text::audition_dialog_another_audition_can_start_few(Locale::En), "Another audition can start in a few seconds.");
@@ -346,8 +348,6 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::contact_form_add(Locale::FrCa), "Ajouter");
     assert_eq!(text::contact_form_add_title(Locale::En), "Add contact");
     assert_eq!(text::contact_form_add_title(Locale::FrCa), "Nouveau contact");
-    assert_eq!(text::contact_form_contact_needs_name_phone_number(Locale::En), "A contact needs a name, and a phone number or an email address.");
-    assert_eq!(text::contact_form_contact_needs_name_phone_number(Locale::FrCa), "Un contact requiert un nom et un numéro de téléphone ou une adresse courriel.");
     assert_eq!(text::contact_form_edit_title(Locale::En), "Edit contact");
     assert_eq!(text::contact_form_edit_title(Locale::FrCa), "Modifier le contact");
     assert_eq!(text::contact_view_block(Locale::En), "Block");
@@ -1006,17 +1006,17 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::routing_compared_by(Locale::FrCa), "Comparaison");
     assert_eq!(text::routing_engine(Locale::En), "Engine");
     assert_eq!(text::routing_engine(Locale::FrCa), "Moteur");
-    assert_eq!(text::routing_field_caller_type(Locale::En), "Caller type");
+    assert_eq!(text::routing_field_caller_type(Locale::En), "Caller type (business/consumer)");
     assert_eq!(text::routing_field_caller_type(Locale::FrCa), "Type d'appelant (business/consumer)");
     assert_eq!(text::routing_field_estimated_value(Locale::En), "Estimated value");
     assert_eq!(text::routing_field_estimated_value(Locale::FrCa), "Valeur estimée");
     assert_eq!(text::routing_field_industry(Locale::En), "Industry");
     assert_eq!(text::routing_field_industry(Locale::FrCa), "Secteur d'activité");
-    assert_eq!(text::routing_field_is_decision_maker(Locale::En), "Is decision maker");
+    assert_eq!(text::routing_field_is_decision_maker(Locale::En), "Decision maker (true/false)");
     assert_eq!(text::routing_field_is_decision_maker(Locale::FrCa), "Décideur (true/false)");
-    assert_eq!(text::routing_field_line_type(Locale::En), "Line type");
+    assert_eq!(text::routing_field_line_type(Locale::En), "Line type (mobile/landline/voip)");
     assert_eq!(text::routing_field_line_type(Locale::FrCa), "Type de ligne (mobile/landline/voip)");
-    assert_eq!(text::routing_field_seniority(Locale::En), "Seniority");
+    assert_eq!(text::routing_field_seniority(Locale::En), "Seniority (e.g. vp, c-suite)");
     assert_eq!(text::routing_field_seniority(Locale::FrCa), "Niveau hiérarchique (p. ex. vp, c-suite)");
     assert_eq!(text::routing_instruction(Locale::En), "Instruction");
     assert_eq!(text::routing_instruction(Locale::FrCa), "Consigne");

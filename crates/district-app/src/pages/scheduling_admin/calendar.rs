@@ -40,11 +40,12 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
-use crate::l10n::{lang, text};
+use crate::l10n::{lang, sched_text, text};
 use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text, plain_label};
 use crate::pages::workflows::tone_class;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
+use crate::window::DistrictWindow;
 
 /// What the member does on the calendars, as the window's events carry it.
 pub(crate) fn calendar_event(event: CalendarEvent) -> Event {
@@ -120,6 +121,8 @@ mod imp {
         pub handed_off: Rc<Cell<bool>>,
         /// Whether the window's activity is watched yet.
         pub watching: Cell<bool>,
+        /// Whether this hand-off's "finish in the browser" was said yet.
+        pub told: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -326,7 +329,20 @@ impl CalendarPane {
     pub(crate) fn update(&self, signed_in: &SignedIn, _section: &SchedulingSection) {
         let imp = self.imp();
         let section = signed_in.scheduling_admin.calendar.as_ref();
-        imp.handed_off.set(rereads_on_return(section, true));
+        let handed_off = rereads_on_return(section, true);
+        // The browser just took the consent page: say where to finish, once
+        // per hand-off, since the section itself barely changes (visual QA
+        // LD14).
+        if handed_off
+            && !imp.told.replace(true)
+            && let Some(window) = self.root().and_downcast::<DistrictWindow>()
+        {
+            window.toast(sched_text::connect_hand_off_note(lang()));
+        }
+        if !handed_off {
+            imp.told.set(false);
+        }
+        imp.handed_off.set(handed_off);
         self.watch_window();
         self.draw(section);
         imp.dialog.sync(

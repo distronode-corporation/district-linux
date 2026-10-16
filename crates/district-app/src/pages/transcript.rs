@@ -69,6 +69,9 @@ impl LineShown {
 /// What the panel shows for a call's live transcript.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct TranscriptShown {
+    /// The panel's heading: "Live transcript" until the call or its
+    /// transcript ends, then "Transcript" (visual QA LB12).
+    pub(crate) heading: &'static str,
     /// The line beside the heading: "Connecting.", "Live", "Reconnecting.",
     /// "Call ended", or, when no live transcript can be shown,
     /// `transcript.unavailable`.
@@ -119,7 +122,13 @@ pub(crate) fn transcript_shown(transcript: &LiveTranscript) -> TranscriptShown {
         ),
         FinalTranscript::Failed(failure) => (false, None, Some(failure.message.clone())),
     };
+    let ended = matches!(transcript.phase(), LiveTranscriptPhase::Ended(_));
     TranscriptShown {
+        heading: if ended {
+            text::common_transcript(lang())
+        } else {
+            core_text::transcript_heading(lang())
+        },
         status: transcript
             .status()
             .unwrap_or(text::transcript_unavailable(lang())),
@@ -262,6 +271,9 @@ impl TranscriptPanel {
             return;
         };
         let shown = transcript_shown(transcript);
+        imp.transcript_heading.set_label(shown.heading);
+        imp.transcript_lines_scroller
+            .update_property(&[gtk::accessible::Property::Label(shown.heading)]);
         imp.transcript_status.set_label(shown.status);
         draw_line(&imp.transcript_incomplete, shown.incomplete);
         draw_line(&imp.transcript_waiting, shown.waiting);
@@ -428,6 +440,7 @@ mod tests {
 
         let live = shown(&live());
         assert_eq!(live.status, LiveTranscript::LIVE);
+        assert_eq!(live.heading, "Live transcript");
         let lines: Vec<(&str, &str, bool, Option<&str>)> = live
             .lines
             .iter()
@@ -504,6 +517,7 @@ mod tests {
         let mut model = live();
         let effects = model.update(Event::Call(CallEvent::HangUp));
         assert_eq!(shown(&model).status, LiveTranscript::ENDED);
+        assert_eq!(shown(&model).heading, "Transcript");
         let effects: Vec<Effect> = effects
             .into_iter()
             .filter_map(|effect| match effect {

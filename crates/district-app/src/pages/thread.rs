@@ -841,7 +841,9 @@ mod tests {
         call.duration = Some(65);
         assert_eq!(call_line(&call), "Incoming call, 01:05");
         district_core::l10n::with_locale(Locale::FrCa, || {
-            assert_eq!(call_line(&call), "Appel entrant, 1\u{a0}min 5\u{a0}s");
+            // The core keeps the length whole, « 1 min 5 s » with every
+            // space U+00A0.
+            assert_eq!(call_line(&call), "Appel entrant, 1\u{a0}min\u{a0}5\u{a0}s");
         });
         call.direction = "outbound".to_owned();
         call.duration = Some(0);

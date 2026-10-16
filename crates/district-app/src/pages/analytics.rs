@@ -101,6 +101,18 @@ fn caption(text: &str, xalign: f32) -> gtk::Label {
         .build()
 }
 
+/// A measured value beside its label: small, but at full contrast, since a
+/// figure is what the reader came for (visual QA LC14). The dim caption is for
+/// axes, labels and notes.
+fn figure(text: &str, xalign: f32) -> gtk::Label {
+    gtk::Label::builder()
+        .label(text)
+        .use_markup(false)
+        .xalign(xalign)
+        .css_classes(["caption", "numeric"])
+        .build()
+}
+
 /// Takes every child out of `grid`.
 fn clear_grid(grid: &gtk::Grid) {
     while let Some(child) = grid.first_child() {
@@ -389,7 +401,7 @@ impl AnalyticsPage {
             bar.set_valign(gtk::Align::Center);
             grid.attach(&caption(&stage.label, 0.0), 0, row, 1, 1);
             grid.attach(&bar, 1, row, 1, 1);
-            grid.attach(&caption(&stage.value.to_string(), 1.0), 2, row, 1, 1);
+            grid.attach(&figure(&stage.value.to_string(), 1.0), 2, row, 1, 1);
         }
     }
 
@@ -420,12 +432,12 @@ impl AnalyticsPage {
         for slice in &bands {
             let line = gtk::Box::builder().spacing(8).build();
             line.append(&swatch(band(slice)));
-            line.append(&caption(
-                &format!(
-                    "{}: {} ({})",
-                    slice.label,
-                    slice.value,
-                    percent(slice.share)
+            line.append(&figure(
+                &text::analytics_sentiment_legend(
+                    lang(),
+                    &slice.label,
+                    &slice.value.to_string(),
+                    &percent(slice.share),
                 ),
                 0.0,
             ));
@@ -478,7 +490,7 @@ impl AnalyticsPage {
                 .use_markup(false)
                 .title(line.label)
                 .build();
-            row.add_suffix(&caption(&line.amount, 1.0));
+            row.add_suffix(&figure(&line.amount, 1.0));
             imp.usage_list.append(&row);
         }
         imp.usage.replace(Some(month.clone()));
@@ -559,8 +571,8 @@ impl AnalyticsPage {
             bar.set_valign(gtk::Align::Center);
             grid.attach(&caption(&month.month, 0.0), 0, row, 1, 1);
             grid.attach(&bar, 1, row, 1, 1);
-            grid.attach(&caption(&month.minutes_text, 1.0), 2, row, 1, 1);
-            grid.attach(&caption(&month.messages_text, 1.0), 3, row, 1, 1);
+            grid.attach(&figure(&month.minutes_text, 1.0), 2, row, 1, 1);
+            grid.attach(&figure(&month.messages_text, 1.0), 3, row, 1, 1);
         }
         imp.history.replace(Some(months.to_vec()));
     }
