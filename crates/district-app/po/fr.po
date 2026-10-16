@@ -3295,6 +3295,12 @@ msgid "Uploading the image"
 msgstr "Téléversement de l'image"
 
 #. screen: inbox; ctx: label; tier: T3
+#. The channel a message went by: a message the voice agent took on a call. The French is the glossary's term for voicemail (the portal's « Boîte vocale et messages »).
+msgctxt "thread.voicemail"
+msgid "Voicemail"
+msgstr "Boîte vocale"
+
+#. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.whatsapp"
 msgid "WhatsApp"
 msgstr "WhatsApp"
