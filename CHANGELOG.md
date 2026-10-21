@@ -13,6 +13,12 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Security
+
+- rustls-webpki 0.103.16 in Cargo.lock, for RUSTSEC-2026-0382 (CVE-2026-111943):
+  0.103.15 could accept a certificate chain through one of the distrusted emSign
+  intermediates, whose private keys are now public.
+
 ## [3.0.2] - 2026-10-16
 
 Clearer French across the app, and figures, lists and forms that are easier to read.
