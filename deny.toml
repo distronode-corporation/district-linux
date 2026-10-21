@@ -19,7 +19,32 @@ unsound = "all"
 # Every vulnerability and unmaintained or unsound notice fails the check unless it
 # is listed here with the reason it is tolerated and what would retire it. Remove an
 # entry the day it can go.
-ignore = []
+ignore = [
+  # zip 0.6.6: three extraction advisories (SUID/SGID bits kept, symlink targets
+  # outside the destination, permissions applied through symlinks). zip arrives only
+  # through webrtc-sys-build 0.3.19, LiveKit's latest release, as a build dependency
+  # of webrtc-sys; the fix is zip >= 9 and no webrtc-sys-build takes it yet. It is
+  # build time only, and every CI and release build that compiles webrtc-sys sets
+  # LK_CUSTOM_WEBRTC to the pinned, checksummed libwebrtc, so webrtc-sys-build
+  # downloads and extracts nothing there. (A local build without it would extract
+  # LiveKit's own prebuilt from GitHub; CONTRIBUTING.md already says to set it.)
+  # Re-check at the next webrtc-sys-build release, or on 2026-11-16, whichever is
+  # first. Decided by Sean on 2026-10-17 (decisions log, GitLab #2).
+  { id = "RUSTSEC-2026-0367", reason = "zip 0.6.6 via webrtc-sys-build 0.3.19, build time only, nothing extracted with LK_CUSTOM_WEBRTC; re-check at the next webrtc-sys-build release or 2026-11-16" },
+  { id = "RUSTSEC-2026-0368", reason = "zip 0.6.6 via webrtc-sys-build 0.3.19, build time only, nothing extracted with LK_CUSTOM_WEBRTC; re-check at the next webrtc-sys-build release or 2026-11-16" },
+  { id = "RUSTSEC-2026-0369", reason = "zip 0.6.6 via webrtc-sys-build 0.3.19, build time only, nothing extracted with LK_CUSTOM_WEBRTC; re-check at the next webrtc-sys-build release or 2026-11-16" },
+
+  # zvariant 5.15.0, zbus_names 4.3.4, zvariant_derive 5.15.0: unmaintained notices
+  # (2026-10-16), not vulnerabilities. Upstream merged all three into zbus 6.0.0 as
+  # `zbus::wire`, `zbus::names` and its derive macros, but every zbus 5 release still
+  # pulls them. zbus 5.19 arrives directly (district-desktop, for logind) and through
+  # ashpd 0.13, oo7 0.6 and ksni 0.3, none of which takes zbus 6 yet. They go when
+  # those three move and the tree carries only zbus 6 (issue #61). Review by
+  # 2027-01-21. Decided by Sean on 2026-10-21 (decisions log, GitLab #2).
+  { id = "RUSTSEC-2026-0370", reason = "zvariant unmaintained (merged into zbus 6), via zbus 5.19 from district-desktop, ashpd, oo7, ksni; not a vulnerability; replacement tracked in #61; review by 2027-01-21" },
+  { id = "RUSTSEC-2026-0371", reason = "zbus_names unmaintained (merged into zbus 6), via zbus 5.19 from district-desktop, ashpd, oo7, ksni; not a vulnerability; replacement tracked in #61; review by 2027-01-21" },
+  { id = "RUSTSEC-2026-0372", reason = "zvariant_derive unmaintained (merged into zbus 6), via zbus 5.19 from district-desktop, ashpd, oo7, ksni; not a vulnerability; replacement tracked in #61; review by 2027-01-21" },
+]
 
 [licenses]
 # The project is Apache-2.0. Permissive licences only; no copyleft reaches a
