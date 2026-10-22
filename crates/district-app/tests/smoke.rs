@@ -444,7 +444,26 @@ impl Smoke {
     /// The widgets on screen whose right edge passes the window's: what a
     /// page wider than its window cuts off (French and Large Text in a 400 px
     /// window, above all).
+    ///
+    /// A view mapped a moment ago may not have had its first layout yet: on a
+    /// loaded runner the frame clock can fall a few frames behind `pump`, and
+    /// the knowledge view's buttons were then measured at the width they had
+    /// before the window narrowed (3 of about 60 CI runs). So an overflow
+    /// counts only when it is still there after the layout has had up to two
+    /// seconds to settle; one that is real never goes away.
     fn past_the_edge(&self) -> Vec<String> {
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            let found = self.past_the_edge_now();
+            if found.is_empty() || std::time::Instant::now() >= deadline {
+                return found;
+            }
+            self.pump();
+        }
+    }
+
+    /// `past_the_edge` as the widgets are allocated right now.
+    fn past_the_edge_now(&self) -> Vec<String> {
         fn walk(widget: &gtk::Widget, window: &gtk::Widget, found: &mut Vec<String>) {
             if !widget.is_mapped() {
                 return;
