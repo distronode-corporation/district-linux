@@ -75,10 +75,15 @@ pub(crate) fn delivery(event: &TimelineEvent) -> Option<String> {
 }
 
 /// The channel a message went by, as a person names it.
+///
+/// The server writes four: `sms`, `email`, `whatsapp`, and `voicemail` for a
+/// message the voice agent took on a call. Anything else reads as a text
+/// message, as `sms` does.
 pub(crate) fn channel(event_type: &str) -> &'static str {
     match event_type {
         "email" => text::thread_email(lang()),
         "whatsapp" => text::thread_whatsapp(lang()),
+        "voicemail" => text::thread_voicemail(lang()),
         _ => text::common_text_message(lang()),
     }
 }
@@ -833,6 +838,17 @@ mod tests {
         assert_eq!(channel("email"), "Email");
         assert_eq!(channel("whatsapp"), "WhatsApp");
         assert_eq!(channel("sms"), "Text message");
+        assert_eq!(channel("voicemail"), "Voicemail");
+    }
+
+    #[test]
+    fn every_channel_the_server_writes_has_a_name_in_french() {
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(channel("sms"), "Texto");
+            assert_eq!(channel("email"), "Courriel");
+            assert_eq!(channel("whatsapp"), "WhatsApp");
+            assert_eq!(channel("voicemail"), "Boîte vocale");
+        });
     }
 
     #[test]
