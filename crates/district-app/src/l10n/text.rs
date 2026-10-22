@@ -3662,6 +3662,33 @@ pub fn metainfo_release_3_0_2_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_0_3.li1`
+#[must_use]
+pub fn metainfo_release_3_0_3_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Security update: the app's secure (TLS) connections no longer accept a certificate issued through the distrusted emSign intermediates (rustls-webpki 0.103.16, RUSTSEC-2026-0382), and the app is built on District AI core for Rust 5.0.1, which carries the same fix",
+        Locale::FrCa => "Mise à jour de sécurité\u{00A0}: les connexions sécurisées (TLS) de l'application n'acceptent plus un certificat émis par les autorités intermédiaires emSign retirées de la liste de confiance (rustls-webpki 0.103.16, RUSTSEC-2026-0382), et l'application repose sur District AI core for Rust 5.0.1, qui apporte le même correctif",
+    }
+}
+
+/// `metainfo.release_3_0_3.li2`
+#[must_use]
+pub fn metainfo_release_3_0_3_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "In a conversation, a message left as a voicemail is labelled Voicemail, where it read Text message",
+        Locale::FrCa => "Dans une conversation, un message laissé dans la boîte vocale porte la mention «\u{00A0}Boîte vocale\u{00A0}» au lieu de «\u{00A0}Texto\u{00A0}»",
+    }
+}
+
+/// `metainfo.release_3_0_3.p`
+#[must_use]
+pub fn metainfo_release_3_0_3_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A security update for the app's secure connections, and voicemail named as such in a conversation.",
+        Locale::FrCa => "Une mise à jour de sécurité pour les connexions sécurisées, et les messages vocaux nommés comme tels dans une conversation.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {

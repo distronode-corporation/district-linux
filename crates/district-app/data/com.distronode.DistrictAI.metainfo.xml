@@ -100,23 +100,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.2/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/call-log.png</image>
       <caption>The call log, with each call's summary and transcript</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.2/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/inbox.png</image>
       <caption>Your customers' text messages and emails in one inbox</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.2/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/call.png</image>
       <caption>A call placed from the desktop, with mute and hang up always in reach</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.2/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/contacts.png</image>
       <caption>Your contacts, with each customer's details</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.2/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/overview.png</image>
       <caption>The workspace at a glance, with its latest calls</caption>
     </screenshot>
   </screenshots>
@@ -127,6 +127,23 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="3.0.3" date="2026-10-22">
+      <description>
+        <p>
+          A security update for the app's secure connections, and voicemail
+          named as such in a conversation.
+        </p>
+        <ul>
+          <li>Security update: the app's secure (TLS) connections no longer
+            accept a certificate issued through the distrusted emSign
+            intermediates (rustls-webpki 0.103.16, RUSTSEC-2026-0382), and the
+            app is built on District AI core for Rust 5.0.1, which carries the
+            same fix</li>
+          <li>In a conversation, a message left as a voicemail is labelled
+            Voicemail, where it read Text message</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.0.2" date="2026-10-16">
       <description>
         <p>

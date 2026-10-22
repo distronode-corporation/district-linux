@@ -2291,6 +2291,24 @@ msgctxt "metainfo.release_3_0_2.p"
 msgid "French is clearer across the app, and figures, lists and forms are easier to read."
 msgstr "Le français est plus clair partout, et les chiffres, les listes et les formulaires sont plus lisibles."
 
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.3 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_3.li1"
+msgid "Security update: the app's secure (TLS) connections no longer accept a certificate issued through the distrusted emSign intermediates (rustls-webpki 0.103.16, RUSTSEC-2026-0382), and the app is built on District AI core for Rust 5.0.1, which carries the same fix"
+msgstr "Mise à jour de sécurité : les connexions sécurisées (TLS) de l'application n'acceptent plus un certificat émis par les autorités intermédiaires emSign retirées de la liste de confiance (rustls-webpki 0.103.16, RUSTSEC-2026-0382), et l'application repose sur District AI core for Rust 5.0.1, qui apporte le même correctif"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.3 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_3.li2"
+msgid "In a conversation, a message left as a voicemail is labelled Voicemail, where it read Text message"
+msgstr "Dans une conversation, un message laissé dans la boîte vocale porte la mention « Boîte vocale » au lieu de « Texto »"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.0.3 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_0_3.p"
+msgid "A security update for the app's secure connections, and voicemail named as such in a conversation."
+msgstr "Une mise à jour de sécurité pour les connexions sécurisées, et les messages vocaux nommés comme tels dans une conversation."
+
 #. screen: metainfo; ctx: label; tier: T3
 #. A screenshot's caption in the AppStream metadata.
 msgctxt "metainfo.screenshot_caption.call"

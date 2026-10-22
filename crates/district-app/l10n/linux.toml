@@ -3178,6 +3178,30 @@ screen = "metainfo"
 state = "reviewed"
 note = "The 3.0.2 release's notes in the AppStream metadata, as software centres show them."
 
+[metainfo.release_3_0_3.li1]
+en = "Security update: the app's secure (TLS) connections no longer accept a certificate issued through the distrusted emSign intermediates (rustls-webpki 0.103.16, RUSTSEC-2026-0382), and the app is built on District AI core for Rust 5.0.1, which carries the same fix"
+fr = "Mise à jour de sécurité\u00A0: les connexions sécurisées (TLS) de l'application n'acceptent plus un certificat émis par les autorités intermédiaires emSign retirées de la liste de confiance (rustls-webpki 0.103.16, RUSTSEC-2026-0382), et l'application repose sur District AI core for Rust 5.0.1, qui apporte le même correctif"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.3 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_0_3.li2]
+en = "In a conversation, a message left as a voicemail is labelled Voicemail, where it read Text message"
+fr = "Dans une conversation, un message laissé dans la boîte vocale porte la mention «\u00A0Boîte vocale\u00A0» au lieu de «\u00A0Texto\u00A0»"
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.3 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_0_3.p]
+en = "A security update for the app's secure connections, and voicemail named as such in a conversation."
+fr = "Une mise à jour de sécurité pour les connexions sécurisées, et les messages vocaux nommés comme tels dans une conversation."
+ctx = "body"
+screen = "metainfo"
+state = "reviewed"
+note = "The 3.0.3 release's notes in the AppStream metadata, as software centres show them."
+
 [metainfo.screenshot_caption.call]
 en = "A call placed from the desktop, with mute and hang up always in reach"
 fr = "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main"

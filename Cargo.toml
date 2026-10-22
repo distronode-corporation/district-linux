@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "3.0.2"
+version = "3.0.3"
 edition = "2024"
 # NOT 1.85, WHICH IS WHAT EDITION 2024 ALONE WOULD IMPLY. The floor is the highest
 # `rust_version` any crate in the resolved dependency graph declares, and today that

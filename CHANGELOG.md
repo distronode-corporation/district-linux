@@ -13,11 +13,35 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [3.0.3] - 2026-10-22
+
+A security update for the app's secure connections, and voicemail named as such in a
+conversation.
+
 ### Security
 
-- rustls-webpki 0.103.16 in Cargo.lock, for RUSTSEC-2026-0382 (CVE-2026-111943):
-  0.103.15 could accept a certificate chain through one of the distrusted emSign
-  intermediates, whose private keys are now public.
+- Security update for TLS: rustls-webpki, which checks the certificates of every secure
+  connection the app makes, is 0.103.16 in Cargo.lock, for RUSTSEC-2026-0382
+  (CVE-2026-111943): 0.103.15 could accept a certificate chain through one of the
+  distrusted emSign intermediates, whose private keys are now public.
+- Built on District AI core for Rust 5.0.1, the core's security release for the same
+  advisory (rustls-webpki 0.103.16 in its lock), with serde_json and syn patch releases.
+  Nothing the app calls changes; the Flatpak's sources fetch the new tag's commit.
+
+### Fixed
+
+- In a conversation, a message the receptionist took as a voicemail now names its
+  channel "Voicemail" (« Boîte vocale » in French); it read "Text message" (« Texto »).
+  The server writes four channels (`sms`, `email`, `whatsapp` and `voicemail`), and an
+  unknown one still reads as a text message.
+- The smoke test's narrow-window check no longer fails now and then on the knowledge
+  view: it waits up to two seconds for a view that has just appeared to be laid out at
+  the window's width before calling anything too wide.
+
+### Changed
+
+- Calls are built on LiveKit's Rust SDK 0.9.4 (from 0.9.3); the native libwebrtc is
+  unchanged. tokio 1.53.3, serde_json 1.0.154, toml 1.1.8 and other patch releases.
 
 ## [3.0.2] - 2026-10-16
 
