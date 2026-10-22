@@ -3684,8 +3684,8 @@ pub fn metainfo_release_3_0_3_li2(l: Locale) -> &'static str {
 #[must_use]
 pub fn metainfo_release_3_0_3_p(l: Locale) -> &'static str {
     match l {
-        Locale::En => "A security update for the app's secure connections, and voicemail named as such in a conversation.",
-        Locale::FrCa => "Une mise à jour de sécurité pour les connexions sécurisées, et les messages vocaux nommés comme tels dans une conversation.",
+        Locale::En => "A security update for the app's secure connections. Voicemail is now labelled in conversations.",
+        Locale::FrCa => "Une mise à jour de sécurité des connexions sécurisées de l'application. Les messages vocaux sont maintenant identifiés dans les conversations.",
     }
 }
 

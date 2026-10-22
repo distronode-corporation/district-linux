@@ -15,8 +15,8 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [3.0.3] - 2026-10-22
 
-A security update for the app's secure connections, and voicemail named as such in a
-conversation.
+A security update for the app's secure connections. Voicemail is now labelled in
+conversations.
 
 ### Security
 

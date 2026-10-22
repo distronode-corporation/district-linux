@@ -842,8 +842,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_release_3_0_3_li1(Locale::FrCa), "Mise à jour de sécurité\u{00A0}: les connexions sécurisées (TLS) de l'application n'acceptent plus un certificat émis par les autorités intermédiaires emSign retirées de la liste de confiance (rustls-webpki 0.103.16, RUSTSEC-2026-0382), et l'application repose sur District AI core for Rust 5.0.1, qui apporte le même correctif");
     assert_eq!(text::metainfo_release_3_0_3_li2(Locale::En), "In a conversation, a message left as a voicemail is labelled Voicemail, where it read Text message");
     assert_eq!(text::metainfo_release_3_0_3_li2(Locale::FrCa), "Dans une conversation, un message laissé dans la boîte vocale porte la mention «\u{00A0}Boîte vocale\u{00A0}» au lieu de «\u{00A0}Texto\u{00A0}»");
-    assert_eq!(text::metainfo_release_3_0_3_p(Locale::En), "A security update for the app's secure connections, and voicemail named as such in a conversation.");
-    assert_eq!(text::metainfo_release_3_0_3_p(Locale::FrCa), "Une mise à jour de sécurité pour les connexions sécurisées, et les messages vocaux nommés comme tels dans une conversation.");
+    assert_eq!(text::metainfo_release_3_0_3_p(Locale::En), "A security update for the app's secure connections. Voicemail is now labelled in conversations.");
+    assert_eq!(text::metainfo_release_3_0_3_p(Locale::FrCa), "Une mise à jour de sécurité des connexions sécurisées de l'application. Les messages vocaux sont maintenant identifiés dans les conversations.");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::En), "A call placed from the desktop, with mute and hang up always in reach");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::FrCa), "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main");
     assert_eq!(text::metainfo_screenshot_caption_call_log(Locale::En), "The call log, with each call's summary and transcript");
