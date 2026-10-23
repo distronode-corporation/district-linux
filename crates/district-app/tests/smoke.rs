@@ -436,6 +436,16 @@ impl Smoke {
             .any(|label| label.text().contains(text))
     }
 
+    /// How many labels on screen hold `text` somewhere in what they show.
+    fn parts_shown(&self, text: &str) -> usize {
+        descendants(self.window().upcast_ref())
+            .into_iter()
+            .filter(WidgetExt::is_mapped)
+            .filter_map(|widget| widget.downcast::<gtk::Label>().ok())
+            .filter(|label| label.text().contains(text))
+            .count()
+    }
+
     /// Whether the widget on screen named `name` takes input.
     fn sensitive(&self, name: &str) -> bool {
         self.mapped(name).is_sensitive()
@@ -2473,7 +2483,11 @@ fn numbers_screen(smoke: &Smoke) {
     assert!(smoke.shown("partial_note"));
     assert!(smoke.count("number-row") >= 1);
     assert!(smoke.shows_part("+1 416 555 0100"), "numbers read grouped");
-    assert!(smoke.shows_part("cannot be bought in this app"));
+    // Where numbers are bought is said once, under the button that goes
+    // there, and not again in a note above it.
+    assert!(smoke.shows_part("Numbers are bought on the District AI website"));
+    assert!(!smoke.shown("note_label"));
+    assert!(!smoke.shows_part("cannot be bought in this app"));
     smoke.shot("51-numbers");
     smoke.click("web_button");
     let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
@@ -7337,6 +7351,23 @@ fn viewer_screens(smoke: &Smoke) {
         !smoke.shown("web_button"),
         "nothing to buy with there either"
     );
+    // Said once above the tabs, and not again under each number: a viewer's
+    // own number does not open, and Distronode's says why it cannot change.
+    let rows = smoke.count("number-row");
+    for index in 0..rows {
+        smoke
+            .nth::<adw::ExpanderRow>("number-row", index)
+            .set_expanded(true);
+    }
+    smoke.pump();
+    assert_eq!(smoke.parts_shown("need an agency or client role"), 1);
+    assert!(
+        (0..rows).any(|index| !smoke
+            .nth::<adw::ExpanderRow>("number-row", index)
+            .enables_expansion()),
+        "the number the workspace holds has nothing to open on"
+    );
+    assert!(smoke.shows_part("held on Distronode's carrier account"));
     smoke.shot("87-numbers-viewer");
     smoke.forget();
 

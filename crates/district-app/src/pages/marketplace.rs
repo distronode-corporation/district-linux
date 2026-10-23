@@ -13,7 +13,7 @@ use district_core::l10n::numbers_strings as ns;
 use district_core::{
     Capabilities, Event, MarketplaceEvent, MarketplaceScreen, MarketplaceTab, NumberAdmin,
     NumberAdminEvent, NumberSearchForm, NumberSearchState, NumberWrite, OwnedNumbers,
-    OwnedNumbersList, format_phone_number, number_actions_note, price_label,
+    OwnedNumbersList, format_phone_number, number_actions_note, numbers_scope_note, price_label,
 };
 use district_model::{AvailableNumber, OwnedNumber};
 
@@ -160,9 +160,40 @@ pub struct NumberControls {
     notice: gtk::Label,
 }
 
+/// What a held number's row opens on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RowNote {
+    /// Its controls: reapply its routing, or release it.
+    Controls,
+    /// The sentence saying why nothing can be done to it.
+    Says(&'static str),
+    /// Nothing: the reason is the screen's note, said once above the tabs.
+    Nothing,
+}
+
+/// What `number`'s row opens on for a member who `can_change`. A viewer's
+/// reason (`numbers_scope_note`) is the screen's own note, so a row does not
+/// say it again under every number; a number Distronode holds still says why.
+fn row_note(number: &OwnedNumber, can_change: bool) -> RowNote {
+    match number_actions_note(number, can_change) {
+        None => RowNote::Controls,
+        Some(note) if note == numbers_scope_note(can_change) => RowNote::Nothing,
+        Some(note) => RowNote::Says(note),
+    }
+}
+
+/// What the screen says above its tabs: a viewer's reason nothing here can
+/// change. A member who could buy a number sees the web marketplace's button
+/// instead, whose caption says where numbers are bought, so the core's note
+/// saying the same is not drawn above it.
+fn screen_note(capabilities: &Capabilities) -> Option<&'static str> {
+    (!MarketplaceScreen::offers_web(capabilities))
+        .then(|| MarketplaceScreen::scope_note(capabilities))
+}
+
 /// A held number as a row that opens on what can be done to it: reapply its
 /// routing or release it; or the sentence saying why nothing can (a number
-/// Distronode holds, or a viewer).
+/// Distronode holds). A viewer's row does not open ([`row_note`]).
 fn owned_row(
     page: &MarketplacePage,
     number: &OwnedNumber,
@@ -193,9 +224,16 @@ fn owned_row(
         .margin_end(12)
         .build();
     row.add_row(&body);
-    if let Some(note) = number_actions_note(number, can_change) {
-        body.append(&plain_label(note, &["dim-label"]));
-        return (row, None);
+    match row_note(number, can_change) {
+        RowNote::Controls => {}
+        RowNote::Says(note) => {
+            body.append(&plain_label(note, &["dim-label"]));
+            return (row, None);
+        }
+        RowNote::Nothing => {
+            row.set_enable_expansion(false);
+            return (row, None);
+        }
     }
     let l = lang();
     body.append(&plain_label(
@@ -468,8 +506,9 @@ impl MarketplacePage {
     /// Draws `screen` for a member with `capabilities`.
     pub(crate) fn update(&self, screen: &MarketplaceScreen, capabilities: &Capabilities) {
         let imp = self.imp();
-        imp.note_label
-            .set_label(MarketplaceScreen::scope_note(capabilities));
+        let note = screen_note(capabilities);
+        imp.note_label.set_label(note.unwrap_or_default());
+        imp.note_label.set_visible(note.is_some());
         imp.web_box
             .set_visible(MarketplaceScreen::offers_web(capabilities));
         imp.owned_tab
@@ -733,5 +772,45 @@ mod tests {
             line(&[None, Some(" ".to_owned()), Some("a".to_owned())]),
             "a"
         );
+    }
+
+    /// Each help sentence is said once on the screen: a member who can buy
+    /// reads where numbers are bought under the web button only, and a
+    /// viewer reads why nothing changes above the tabs only, never again
+    /// under each number.
+    #[test]
+    fn the_screens_help_is_said_once() {
+        let agency = Capabilities::for_role(Some("agency"));
+        let viewer = Capabilities::for_role(Some("viewer"));
+        assert!(MarketplaceScreen::offers_web(&agency));
+        assert_eq!(screen_note(&agency), None, "the web caption says it");
+        assert!(
+            core_text::marketplace_web_caption(crate::l10n::Locale::En)
+                .starts_with("Numbers are bought on the District AI website")
+        );
+        assert!(!MarketplaceScreen::offers_web(&viewer));
+        let viewer_note = screen_note(&viewer).expect("a viewer is told once");
+        assert_eq!(viewer_note, numbers_scope_note(false));
+        assert!(viewer_note.contains("need an agency or client role"));
+
+        let held: OwnedNumbersResponse = fixture("district-provider-numbers.json");
+        let own = held.numbers.iter().find(|n| !n.managed).expect("one held");
+        let managed = held
+            .numbers
+            .iter()
+            .find(|n| n.managed)
+            .expect("one managed");
+        assert_eq!(row_note(own, true), RowNote::Controls);
+        assert_eq!(
+            row_note(own, false),
+            RowNote::Nothing,
+            "said above the tabs"
+        );
+        let RowNote::Says(why) = row_note(managed, true) else {
+            panic!("a number Distronode holds says why");
+        };
+        assert!(why.contains("held on Distronode's carrier account"));
+        assert_eq!(row_note(managed, false), RowNote::Says(why));
+        assert_ne!(why, viewer_note);
     }
 }
