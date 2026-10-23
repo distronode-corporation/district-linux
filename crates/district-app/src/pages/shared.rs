@@ -1206,6 +1206,34 @@ mod tests {
         assert!(now_is_readable());
     }
 
+    /// A time of day in French is the house style, `9 h`, `9 h 30`, `17 h`,
+    /// `0 h 15`, on every screen, because every one draws it through
+    /// `clock_time`; English keeps the clock form. The space between the
+    /// digits and `h` is the core's choice (`format::time`), so it is read as
+    /// any space here and the core's own tests hold which one.
+    #[test]
+    fn french_times_read_in_the_house_style_and_english_keeps_the_clock() {
+        let spaced = |text: String| text.replace(['\u{a0}', '\u{202f}'], " ");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            for (iso, said) in [
+                ("2026-08-15T09:00:00Z", "9 h"),
+                ("2026-08-15T09:30:00Z", "9 h 30"),
+                ("2026-08-15T17:00:00Z", "17 h"),
+                ("2026-08-15T00:15:00Z", "0 h 15"),
+            ] {
+                let when = utc(iso);
+                assert_eq!(spaced(time_of_day(&when)), said, "{iso}");
+                assert_eq!(spaced(clock_time(&when, false)), said, "{iso}, 12 h");
+            }
+        });
+        district_core::l10n::with_locale(Locale::En, || {
+            assert_eq!(time_of_day(&utc("2026-08-15T09:00:00Z")), "09:00");
+            assert_eq!(time_of_day(&utc("2026-08-15T09:30:00Z")), "09:30");
+            assert_eq!(time_of_day(&utc("2026-08-15T17:00:00Z")), "17:00");
+            assert_eq!(clock_time(&utc("2026-08-15T09:00:00Z"), false), "9:00 AM");
+        });
+    }
+
     /// French dates and times are the core's (`district_l10n::format`), not
     /// the C library's under a French locale, which writes `1 août` and
     /// `15:04`.
