@@ -685,7 +685,7 @@ msgstr ""
 #. screen: common; ctx: title; tier: T3
 #. In desk-page.ui, desk-settings-view.ui.
 msgctxt "common.help_desk"
-msgid "Help desk"
+msgid "Desk"
 msgstr ""
 
 #. screen: common; ctx: label; tier: T3
@@ -1193,7 +1193,7 @@ msgstr ""
 #. screen: desk_settings_view; ctx: body; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.shown_customers_help_desks_pages"
-msgid "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
+msgid "Shown to customers on the Desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
 msgstr ""
 
 #. screen: desk_settings_view; ctx: label; tier: T3
@@ -1205,7 +1205,7 @@ msgstr ""
 #. screen: desk_settings_view; ctx: body; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.while_desk_off_no_tickets"
-msgid "While the desk is off, no tickets are recorded."
+msgid "While the Desk is off, no tickets are recorded."
 msgstr ""
 
 #. screen: desk; ctx: label; tier: T3
@@ -2102,7 +2102,7 @@ msgstr ""
 #. screen: metainfo; ctx: body; tier: T3
 #. The app's description in its AppStream metadata, as software centres show it.
 msgctxt "metainfo.description.li8"
-msgid "The help desk, support requests, workflows and booking pages"
+msgid "The Desk, support requests, workflows and booking pages"
 msgstr ""
 
 #. screen: metainfo; ctx: body; tier: T3
@@ -2658,12 +2658,12 @@ msgstr ""
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.help_desk"
-msgid "Help desk"
+msgid "Desk"
 msgstr ""
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.help_desk_settings"
-msgid "Help desk settings"
+msgid "Desk settings"
 msgstr ""
 
 #. screen: navigation; ctx: title; tier: T3
@@ -3410,7 +3410,7 @@ msgstr ""
 #. screen: ticket_form; ctx: body; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.optional_replies_emailed_address_given"
-msgid "Optional. Replies are emailed to the address given here, when the desk emails customers."
+msgid "Optional. Replies are emailed to the address given here, when the Desk emails customers."
 msgstr ""
 
 #. screen: desk; ctx: button; tier: T3

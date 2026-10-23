@@ -252,8 +252,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::common_distronode(Locale::FrCa), "Distronode");
     assert_eq!(text::common_email_address(Locale::En), "Email address");
     assert_eq!(text::common_email_address(Locale::FrCa), "Adresse courriel");
-    assert_eq!(text::common_help_desk(Locale::En), "Help desk");
-    assert_eq!(text::common_help_desk(Locale::FrCa), "Comptoir clients");
+    assert_eq!(text::common_help_desk(Locale::En), "Desk");
+    assert_eq!(text::common_help_desk(Locale::FrCa), "Comptoir");
     assert_eq!(text::common_line_type(Locale::En), "Line type");
     assert_eq!(text::common_line_type(Locale::FrCa), "Type de ligne");
     assert_eq!(text::common_location(Locale::En), "Location");
@@ -442,11 +442,11 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::desk_settings_view_name_customers_see(Locale::FrCa), "Nom affiché aux clients");
     assert_eq!(text::desk_settings_view_remove(Locale::En), "Remove");
     assert_eq!(text::desk_settings_view_remove(Locale::FrCa), "Retirer");
-    assert_eq!(text::desk_settings_view_shown_customers_help_desks_pages(Locale::En), "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions.");
+    assert_eq!(text::desk_settings_view_shown_customers_help_desks_pages(Locale::En), "Shown to customers on the Desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions.");
     assert_eq!(text::desk_settings_view_shown_customers_help_desks_pages(Locale::FrCa), "Affiché aux clients sur les pages du comptoir. Une image PNG, JPEG ou WebP; District AI en vérifie la taille et les dimensions.");
     assert_eq!(text::desk_settings_view_take_tickets(Locale::En), "Take tickets");
     assert_eq!(text::desk_settings_view_take_tickets(Locale::FrCa), "Recevoir des billets");
-    assert_eq!(text::desk_settings_view_while_desk_off_no_tickets(Locale::En), "While the desk is off, no tickets are recorded.");
+    assert_eq!(text::desk_settings_view_while_desk_off_no_tickets(Locale::En), "While the Desk is off, no tickets are recorded.");
     assert_eq!(text::desk_settings_view_while_desk_off_no_tickets(Locale::FrCa), "Quand le comptoir est désactivé, aucun billet n'est consigné.");
     assert_eq!(text::desk_ticket_came_in_by(Locale::En), "Came in by");
     assert_eq!(text::desk_ticket_came_in_by(Locale::FrCa), "Canal");
@@ -776,8 +776,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_description_li6(Locale::FrCa), "District HQ, qui répond à vos questions sur votre espace de travail, et l'analytique de vos appels");
     assert_eq!(text::metainfo_description_li7(Locale::En), "Your receptionist's settings in District Studio: its persona and language, its voice part by part, its skills, what it knows, and where it sends calls");
     assert_eq!(text::metainfo_description_li7(Locale::FrCa), "Les paramètres de votre réceptionniste dans District Studio\u{00A0}: sa persona et sa langue, sa voix élément par élément, ses compétences, ce qu'elle sait et où elle achemine les appels");
-    assert_eq!(text::metainfo_description_li8(Locale::En), "The help desk, support requests, workflows and booking pages");
-    assert_eq!(text::metainfo_description_li8(Locale::FrCa), "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation");
+    assert_eq!(text::metainfo_description_li8(Locale::En), "The Desk, support requests, workflows and booking pages");
+    assert_eq!(text::metainfo_description_li8(Locale::FrCa), "Le comptoir, les demandes de soutien, les flux de travail et les pages de réservation");
     assert_eq!(text::metainfo_description_p1(Locale::En), "District AI answers your business's phone calls with an AI receptionist. This app brings your District AI workspace to the Linux desktop, so you can see what the receptionist handled, reply to your customers and take calls yourself.");
     assert_eq!(text::metainfo_description_p1(Locale::FrCa), "District AI répond aux appels de votre entreprise grâce à une réceptionniste IA. Cette application amène votre espace de travail District AI sur le bureau Linux\u{00A0}: vous voyez ce que la réceptionniste a traité, vous répondez à vos clients et vous prenez des appels vous-même.");
     assert_eq!(text::metainfo_description_p2(Locale::En), "You need a District AI account. What you can see and change follows your role in each workspace, and taking or placing calls needs a role that allows them. The app signs in through your web browser, so it never sees your password, and it follows your system's light and dark style.");
@@ -976,9 +976,9 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::route_dialler(Locale::FrCa), "Clavier");
     assert_eq!(text::route_district_hq(Locale::En), "District HQ");
     assert_eq!(text::route_district_hq(Locale::FrCa), "District HQ");
-    assert_eq!(text::route_help_desk(Locale::En), "Help desk");
-    assert_eq!(text::route_help_desk(Locale::FrCa), "Comptoir clients");
-    assert_eq!(text::route_help_desk_settings(Locale::En), "Help desk settings");
+    assert_eq!(text::route_help_desk(Locale::En), "Desk");
+    assert_eq!(text::route_help_desk(Locale::FrCa), "Comptoir");
+    assert_eq!(text::route_help_desk_settings(Locale::En), "Desk settings");
     assert_eq!(text::route_help_desk_settings(Locale::FrCa), "Paramètres du comptoir");
     assert_eq!(text::route_inbox(Locale::En), "Inbox");
     assert_eq!(text::route_inbox(Locale::FrCa), "Boîte de réception");
@@ -1252,7 +1252,7 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::ticket_form_new_support_request(Locale::FrCa), "Nouvelle demande de soutien");
     assert_eq!(text::ticket_form_new_ticket(Locale::En), "New ticket");
     assert_eq!(text::ticket_form_new_ticket(Locale::FrCa), "Nouveau billet");
-    assert_eq!(text::ticket_form_optional_replies_emailed_address_given(Locale::En), "Optional. Replies are emailed to the address given here, when the desk emails customers.");
+    assert_eq!(text::ticket_form_optional_replies_emailed_address_given(Locale::En), "Optional. Replies are emailed to the address given here, when the Desk emails customers.");
     assert_eq!(text::ticket_form_optional_replies_emailed_address_given(Locale::FrCa), "Facultatif. Si le comptoir envoie des courriels aux clients, vos réponses sont envoyées à l'adresse indiquée ici.");
     assert_eq!(text::ticket_form_raise(Locale::En), "Raise");
     assert_eq!(text::ticket_form_raise(Locale::FrCa), "Créer");

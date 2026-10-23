@@ -1095,8 +1095,8 @@ pub fn common_email_address(l: Locale) -> &'static str {
 #[must_use]
 pub fn common_help_desk(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Help desk",
-        Locale::FrCa => "Comptoir clients",
+        Locale::En => "Desk",
+        Locale::FrCa => "Comptoir",
     }
 }
 
@@ -1935,7 +1935,7 @@ pub fn desk_settings_view_remove(l: Locale) -> &'static str {
 #[must_use]
 pub fn desk_settings_view_shown_customers_help_desks_pages(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions.",
+        Locale::En => "Shown to customers on the Desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions.",
         Locale::FrCa => "Affiché aux clients sur les pages du comptoir. Une image PNG, JPEG ou WebP; District AI en vérifie la taille et les dimensions.",
     }
 }
@@ -1953,7 +1953,7 @@ pub fn desk_settings_view_take_tickets(l: Locale) -> &'static str {
 #[must_use]
 pub fn desk_settings_view_while_desk_off_no_tickets(l: Locale) -> &'static str {
     match l {
-        Locale::En => "While the desk is off, no tickets are recorded.",
+        Locale::En => "While the Desk is off, no tickets are recorded.",
         Locale::FrCa => "Quand le comptoir est désactivé, aucun billet n'est consigné.",
     }
 }
@@ -3387,8 +3387,8 @@ pub fn metainfo_description_li7(l: Locale) -> &'static str {
 #[must_use]
 pub fn metainfo_description_li8(l: Locale) -> &'static str {
     match l {
-        Locale::En => "The help desk, support requests, workflows and booking pages",
-        Locale::FrCa => "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation",
+        Locale::En => "The Desk, support requests, workflows and booking pages",
+        Locale::FrCa => "Le comptoir, les demandes de soutien, les flux de travail et les pages de réservation",
     }
 }
 
@@ -4272,8 +4272,8 @@ pub fn route_district_hq(l: Locale) -> &'static str {
 #[must_use]
 pub fn route_help_desk(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Help desk",
-        Locale::FrCa => "Comptoir clients",
+        Locale::En => "Desk",
+        Locale::FrCa => "Comptoir",
     }
 }
 
@@ -4281,7 +4281,7 @@ pub fn route_help_desk(l: Locale) -> &'static str {
 #[must_use]
 pub fn route_help_desk_settings(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Help desk settings",
+        Locale::En => "Desk settings",
         Locale::FrCa => "Paramètres du comptoir",
     }
 }
@@ -5499,7 +5499,7 @@ pub fn ticket_form_new_ticket(l: Locale) -> &'static str {
 #[must_use]
 pub fn ticket_form_optional_replies_emailed_address_given(l: Locale) -> &'static str {
     match l {
-        Locale::En => "Optional. Replies are emailed to the address given here, when the desk emails customers.",
+        Locale::En => "Optional. Replies are emailed to the address given here, when the Desk emails customers.",
         Locale::FrCa => "Facultatif. Si le comptoir envoie des courriels aux clients, vos réponses sont envoyées à l'adresse indiquée ici.",
     }
 }

@@ -962,8 +962,8 @@ state = "reviewed"
 note = "In contact-form.ui, members-view.ui, ticket-form.ui."
 
 [common.help_desk]
-en = "Help desk"
-fr = "Comptoir clients"
+en = "Desk"
+fr = "Comptoir"
 ctx = "title"
 screen = "common"
 state = "reviewed"
@@ -1664,7 +1664,7 @@ state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.shown_customers_help_desks_pages]
-en = "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
+en = "Shown to customers on the Desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
 fr = "Affiché aux clients sur les pages du comptoir. Une image PNG, JPEG ou WebP; District AI en vérifie la taille et les dimensions."
 ctx = "body"
 screen = "desk_settings_view"
@@ -1680,7 +1680,7 @@ state = "reviewed"
 note = "In desk-settings-view.ui."
 
 [desk_settings_view.while_desk_off_no_tickets]
-en = "While the desk is off, no tickets are recorded."
+en = "While the Desk is off, no tickets are recorded."
 fr = "Quand le comptoir est désactivé, aucun billet n'est consigné."
 ctx = "body"
 screen = "desk_settings_view"
@@ -2932,8 +2932,8 @@ state = "reviewed"
 note = "The app's description in its AppStream metadata, as software centres show it."
 
 [metainfo.description.li8]
-en = "The help desk, support requests, workflows and booking pages"
-fr = "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation"
+en = "The Desk, support requests, workflows and booking pages"
+fr = "Le comptoir, les demandes de soutien, les flux de travail et les pages de réservation"
 ctx = "body"
 screen = "metainfo"
 state = "reviewed"
@@ -3693,14 +3693,14 @@ state = "reviewed"
 same_ok = true
 
 [route.help_desk]
-en = "Help desk"
-fr = "Comptoir clients"
+en = "Desk"
+fr = "Comptoir"
 ctx = "title"
 screen = "navigation"
 state = "reviewed"
 
 [route.help_desk_settings]
-en = "Help desk settings"
+en = "Desk settings"
 fr = "Paramètres du comptoir"
 ctx = "title"
 screen = "navigation"
@@ -4610,7 +4610,7 @@ screen = "desk"
 state = "reviewed"
 
 [ticket_form.optional_replies_emailed_address_given]
-en = "Optional. Replies are emailed to the address given here, when the desk emails customers."
+en = "Optional. Replies are emailed to the address given here, when the Desk emails customers."
 fr = "Facultatif. Si le comptoir envoie des courriels aux clients, vos réponses sont envoyées à l'adresse indiquée ici."
 ctx = "body"
 screen = "ticket_form"
