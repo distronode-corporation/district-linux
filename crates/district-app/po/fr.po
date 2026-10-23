@@ -687,8 +687,8 @@ msgstr "Adresse courriel"
 #. screen: common; ctx: title; tier: T3
 #. In desk-page.ui, desk-settings-view.ui.
 msgctxt "common.help_desk"
-msgid "Help desk"
-msgstr "Comptoir clients"
+msgid "Desk"
+msgstr "Comptoir"
 
 #. screen: common; ctx: label; tier: T3
 msgctxt "common.line_type"
@@ -1196,7 +1196,7 @@ msgstr "Retirer"
 #. screen: desk_settings_view; ctx: body; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.shown_customers_help_desks_pages"
-msgid "Shown to customers on the help desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
+msgid "Shown to customers on the Desk's pages. A PNG, JPEG or WebP image; District AI checks its size and dimensions."
 msgstr "Affiché aux clients sur les pages du comptoir. Une image PNG, JPEG ou WebP; District AI en vérifie la taille et les dimensions."
 
 #. screen: desk_settings_view; ctx: label; tier: T3
@@ -1208,7 +1208,7 @@ msgstr "Recevoir des billets"
 #. screen: desk_settings_view; ctx: body; tier: T3
 #. In desk-settings-view.ui.
 msgctxt "desk_settings_view.while_desk_off_no_tickets"
-msgid "While the desk is off, no tickets are recorded."
+msgid "While the Desk is off, no tickets are recorded."
 msgstr "Quand le comptoir est désactivé, aucun billet n'est consigné."
 
 #. screen: desk; ctx: label; tier: T3
@@ -2108,8 +2108,8 @@ msgstr "Les paramètres de votre réceptionniste dans District Studio : sa pers
 #. screen: metainfo; ctx: body; tier: T3
 #. The app's description in its AppStream metadata, as software centres show it.
 msgctxt "metainfo.description.li8"
-msgid "The help desk, support requests, workflows and booking pages"
-msgstr "Le comptoir clients, les demandes de soutien, les flux de travail et les pages de réservation"
+msgid "The Desk, support requests, workflows and booking pages"
+msgstr "Le comptoir, les demandes de soutien, les flux de travail et les pages de réservation"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The app's description in its AppStream metadata, as software centres show it.
@@ -2665,12 +2665,12 @@ msgstr "District HQ"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.help_desk"
-msgid "Help desk"
-msgstr "Comptoir clients"
+msgid "Desk"
+msgstr "Comptoir"
 
 #. screen: navigation; ctx: title; tier: T3
 msgctxt "route.help_desk_settings"
-msgid "Help desk settings"
+msgid "Desk settings"
 msgstr "Paramètres du comptoir"
 
 #. screen: navigation; ctx: title; tier: T3
@@ -3418,7 +3418,7 @@ msgstr "Nouveau billet"
 #. screen: ticket_form; ctx: body; tier: T3
 #. In ticket-form.ui.
 msgctxt "ticket_form.optional_replies_emailed_address_given"
-msgid "Optional. Replies are emailed to the address given here, when the desk emails customers."
+msgid "Optional. Replies are emailed to the address given here, when the Desk emails customers."
 msgstr "Facultatif. Si le comptoir envoie des courriels aux clients, vos réponses sont envoyées à l'adresse indiquée ici."
 
 #. screen: desk; ctx: button; tier: T3

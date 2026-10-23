@@ -34,7 +34,7 @@ brings a District AI workspace to the Linux desktop:
   quit, and can start at login), a dialler places your own without
   picking up a phone, the call's live transcript shows under it, and meeting
   rooms are joined the same way, audio only.
-- **The rest of the workspace:** District HQ, analytics, the help desk, support
+- **The rest of the workspace:** District HQ, analytics, the Desk, support
   requests, workflows, booking pages and their sections (the overview, event
   types, hours, bookings, calendars, team, settings and developer settings,
   each managed in the app), billing (read only), and the phone

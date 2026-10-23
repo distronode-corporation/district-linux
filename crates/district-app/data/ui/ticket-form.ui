@@ -96,7 +96,7 @@
             <child>
               <object class="AdwPreferencesGroup" id="customer_group">
                 <property name="title" translatable="yes" context="ticket_form.customer">The customer</property>
-                <property name="description" translatable="yes" context="ticket_form.optional_replies_emailed_address_given">Optional. Replies are emailed to the address given here, when the desk emails customers.</property>
+                <property name="description" translatable="yes" context="ticket_form.optional_replies_emailed_address_given">Optional. Replies are emailed to the address given here, when the Desk emails customers.</property>
                 <child>
                   <object class="AdwEntryRow" id="name_row">
                     <property name="title" translatable="yes" context="common.name">Name</property>

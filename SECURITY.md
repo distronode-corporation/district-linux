@@ -326,9 +326,9 @@ District AI core for Rust):
   then, the refusal stays, and the engine's tests (`devices::`) hold it to the
   refusal in both orders.
 
-### The help desk and support requests
+### The Desk and support requests
 
-- Help desk tickets carry the workspace's customers' names, contact details and
+- Desk tickets carry the workspace's customers' names, contact details and
   correspondence, and support requests the workspace's own correspondence with
   Distronode. The service refuses a viewer every route behind both, reads
   included, and the app sends none of those requests for a member whose role it
@@ -336,7 +336,7 @@ District AI core for Rust):
 - When the overview shows that a member's role has narrowed while a ticket or a
   request is open, the app leaves it and drops what it had read, rather than
   keeping it behind another screen.
-- The help desk's logo is uploaded only from a file the member picks in the
+- The Desk's logo is uploaded only from a file the member picks in the
   desktop's file chooser (the file chooser portal inside a Flatpak), read no
   further than one byte past five megabytes; the service checks its type, size
   and dimensions, and says why it refused one. A file chooser still open when the
