@@ -164,42 +164,51 @@
                 </child>
                 <child>
                   <!-- Side by side, or one above the other when the window is too
-                       narrow for both (French, Large Text). -->
-                  <object class="GtkFlowBox">
-                    <property name="selection-mode">none</property>
-                    <property name="min-children-per-line">1</property>
-                    <property name="max-children-per-line">2</property>
-                    <property name="column-spacing">10</property>
-                    <property name="row-spacing">10</property>
+                       narrow for both (French, Large Text), at the row's end. The
+                       box holds them there: the flow box itself starts its lines,
+                       because a GtkFlowBox aligned to its end (GTK 4.14) places
+                       the last of a full last line one column past its own edge,
+                       at a width read past the end of its array of sizes. -->
+                  <object class="GtkBox">
                     <property name="halign">end</property>
                     <child>
-                      <object class="GtkFlowBoxChild">
-                        <property name="focusable">False</property>
-                        <property name="child">
-                          <object class="GtkButton" id="file_button">
-                            <property name="label" translatable="yes" context="knowledge_view.read_text_file">Read a text file</property>
-                            <accessibility>
-                              <property name="description" translatable="yes" context="knowledge_view.file_hint">A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.</property>
-                            </accessibility>
-                            <style>
-                              <class name="pill"/>
-                            </style>
+                      <object class="GtkFlowBox">
+                        <property name="selection-mode">none</property>
+                        <property name="min-children-per-line">1</property>
+                        <property name="max-children-per-line">2</property>
+                        <property name="column-spacing">10</property>
+                        <property name="row-spacing">10</property>
+                        <property name="halign">start</property>
+                        <child>
+                          <object class="GtkFlowBoxChild">
+                            <property name="focusable">False</property>
+                            <property name="child">
+                              <object class="GtkButton" id="file_button">
+                                <property name="label" translatable="yes" context="knowledge_view.read_text_file">Read a text file</property>
+                                <accessibility>
+                                  <property name="description" translatable="yes" context="knowledge_view.file_hint">A plain text file (.txt or .md) of up to 1 MB fills the title and the text. Nothing is added until you press Add document.</property>
+                                </accessibility>
+                                <style>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </property>
                           </object>
-                        </property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkFlowBoxChild">
-                        <property name="focusable">False</property>
-                        <property name="child">
-                          <object class="GtkButton" id="add_button">
-                            <property name="label" translatable="yes" context="knowledge_view.add_document_button">Add document</property>
-                            <style>
-                              <class name="pill"/>
-                              <class name="suggested-action"/>
-                            </style>
+                        </child>
+                        <child>
+                          <object class="GtkFlowBoxChild">
+                            <property name="focusable">False</property>
+                            <property name="child">
+                              <object class="GtkButton" id="add_button">
+                                <property name="label" translatable="yes" context="knowledge_view.add_document_button">Add document</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="suggested-action"/>
+                                </style>
+                              </object>
+                            </property>
                           </object>
-                        </property>
+                        </child>
                       </object>
                     </child>
                   </object>

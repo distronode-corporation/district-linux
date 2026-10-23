@@ -454,26 +454,7 @@ impl Smoke {
     /// The widgets on screen whose right edge passes the window's: what a
     /// page wider than its window cuts off (French and Large Text in a 400 px
     /// window, above all).
-    ///
-    /// A view mapped a moment ago may not have had its first layout yet: on a
-    /// loaded runner the frame clock can fall a few frames behind `pump`, and
-    /// the knowledge view's buttons were then measured at the width they had
-    /// before the window narrowed (3 of about 60 CI runs). So an overflow
-    /// counts only when it is still there after the layout has had up to two
-    /// seconds to settle; one that is real never goes away.
     fn past_the_edge(&self) -> Vec<String> {
-        let deadline = std::time::Instant::now() + Duration::from_secs(2);
-        loop {
-            let found = self.past_the_edge_now();
-            if found.is_empty() || std::time::Instant::now() >= deadline {
-                return found;
-            }
-            self.pump();
-        }
-    }
-
-    /// `past_the_edge` as the widgets are allocated right now.
-    fn past_the_edge_now(&self) -> Vec<String> {
         fn walk(widget: &gtk::Widget, window: &gtk::Widget, found: &mut Vec<String>) {
             if !widget.is_mapped() {
                 return;
@@ -533,6 +514,40 @@ impl Smoke {
             wide(window.upcast_ref(), window.width() - 30, &mut found);
         }
         found
+    }
+
+    /// The flow box children on screen that lie outside their own flow box,
+    /// each with where it is and where its box is. A flow box lays every
+    /// child inside itself; one outside is the layout gone wrong, whatever
+    /// the window's width (an end-aligned GtkFlowBox in GTK 4.14 put its last
+    /// child one column past its edge, at a width it read past the end of an
+    /// array, so how far past the window it reached changed run to run).
+    fn flow_box_strays(&self) -> Vec<String> {
+        descendants(self.window().upcast_ref())
+            .into_iter()
+            .filter(WidgetExt::is_mapped)
+            .filter_map(|widget| widget.downcast::<gtk::FlowBoxChild>().ok())
+            .filter_map(|child| {
+                let flow = child.parent()?;
+                let bounds = child.compute_bounds(&flow)?;
+                let outside = bounds.x() < -1.0
+                    || bounds.y() < -1.0
+                    || bounds.x() + bounds.width() > flow.width() as f32 + 1.0
+                    || bounds.y() + bounds.height() > flow.height() as f32 + 1.0;
+                outside.then(|| {
+                    format!(
+                        "{} at ({}, {}) {}x{} in a {}x{} flow box",
+                        child.widget_name(),
+                        bounds.x(),
+                        bounds.y(),
+                        bounds.width(),
+                        bounds.height(),
+                        flow.width(),
+                        flow.height()
+                    )
+                })
+            })
+            .collect()
     }
 
     /// Resizes the window to `width` by `height`, as the desktop would.
@@ -9315,6 +9330,7 @@ fn members_section(smoke: &Smoke) {
 /// past the window's edge, drawn as `shot`; then back to the hub.
 fn narrow_section(smoke: &Smoke, view: &str, shot: &str) {
     assert!(smoke.shown(view), "{view}");
+    assert_eq!(smoke.flow_box_strays(), Vec::<String>::new(), "{view}");
     assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "{view}");
     smoke.shot(shot);
     // Its end too, where its buttons are.

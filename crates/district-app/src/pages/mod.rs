@@ -402,6 +402,31 @@ mod tests {
         assert!(objects(ui, "GtkButton")[0].ends_with("</object></object>"));
     }
 
+    /// No flow box is aligned to its end. GTK 4.14's GtkFlowBox (Ubuntu
+    /// 24.04, and CI) lays out an end-aligned box's last line as though it
+    /// were short of items even when it is full: with one button a line, the
+    /// second of two is put one column past the box's own edge, at a width
+    /// read past the end of its array of sizes (49 px in one run, 2977 in
+    /// another). The knowledge view's two buttons did, and a narrow window
+    /// then failed the smoke test now and again. A box that holds the flow
+    /// box at the end does the same job without it.
+    #[test]
+    fn no_flow_box_is_aligned_to_its_end() {
+        let mut checked = 0;
+        for (file, ui) in TEMPLATES {
+            for flow in objects(ui, "GtkFlowBox") {
+                checked += 1;
+                // Its own properties, before its first child.
+                let own = flow.split("<child>").next().unwrap_or(flow);
+                assert!(
+                    !own.contains(r#"<property name="halign">end</property>"#),
+                    "{file}: a GtkFlowBox aligned to its end\n{own}"
+                );
+            }
+        }
+        assert!(checked >= 6, "the check found the flow boxes: {checked}");
+    }
+
     #[test]
     fn text_is_shown_as_it_is_never_as_markup() {
         assert_eq!(
