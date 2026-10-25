@@ -33,7 +33,7 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   dropped because the computer sleeps, the app quits or you sign out still send nothing.
   A ring the service ends because every member it rang declined (you among them, here
   or on another device) stops here without a missed call.
-- Built on District AI core for Rust 6.0.0. In English the Desk is called the Desk
+- Built on District AI core for Rust 6.1.0. In English the Desk is called the Desk
   ("The Desk is off", "Turn on the Desk", "Could not load the Desk"). The working hours
   editor shows French times as « 9 h » and « 9 h 30 », reads `9:30` or `9 h 30` as well
   as `09:30`, still saves HH:MM, and refuses a time past 23:59 before the save.
