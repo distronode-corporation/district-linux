@@ -76,6 +76,22 @@ modules:
         CARGO_NET_OFFLINE: "true"
         # The llvm22 extension's, for webrtc-sys (see sdk-extensions).
         CXX: clang++
+        # Line tables, and no stripping by the linker, so flatpak-builder has
+        # debug information to split off: it strips the installed binary (as
+        # `strip = true` in Cargo.toml would have) and keeps the debug file
+        # in the build directory's files/lib/debug, which the bundle does not
+        # hold. flatpak.yml checks both and keeps the debug file for
+        # release.yml, which uploads it to Sentry.
+        CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
+        CARGO_PROFILE_RELEASE_STRIP: "false"
+      # From the environment flatpak-builder runs in, and never written into
+      # the manifest it records: the DSN a release's crash reports go to and
+      # the build their release names (crates/district-app/src/crash.rs).
+      # flatpak.yml sets them only for a release; unset, the build has no DSN
+      # and the app never sends a report.
+      secret-env:
+        - LINUX_SENTRY_DSN
+        - DISTRICT_AI_BUILD
     build-commands:
       - clang++ --version
       - cargo --version
