@@ -6,14 +6,23 @@
 //! link in them goes to the core, which opens only a web page. A proposed
 //! change is shown by the service's own summary of it, and is made only when
 //! the member presses Confirm.
+//!
+//! By voice, the member talks to the same assistant: where their voice is
+//! processed is said before anything starts, what the assistant is doing is a
+//! line above the question box, both sides' words join the conversation as
+//! they are transcribed, and every change proposed by voice is a card of its
+//! own, applied only by the member's spoken "confirm" (which the assistant
+//! hears and acts on) or by a click on its Confirm.
 
 use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::{
-    Event, HqAuthor, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqText, ReportTarget,
-    SignedIn,
+    Event, HqAuthor, HqCardState, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqText,
+    HqVoiceCard, HqVoiceControls, HqVoicePhase, MediaConnection, MediaSession, MicrophoneState,
+    ReportTarget, SignedIn,
 };
+use district_model::HqAgentState;
 
 use crate::adw;
 use crate::adw::prelude::*;
@@ -21,6 +30,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::markdown::to_markup;
+use crate::pages::call_bar::microphone_button;
 use crate::pages::report::{self, Offer};
 use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
 use crate::pages::{Sends, on_click};
@@ -40,11 +50,82 @@ pub(crate) fn status_line(phase: &HqPhase, controls: &HqControls) -> Option<(Str
     }
 }
 
-/// Where the messages of `transcript` not drawn yet start, when it is what
-/// was `drawn` with more after it; `None` when it is anything else (another
-/// workspace's, or emptied), which is drawn afresh.
-pub(crate) fn appended(drawn: &[HqMessage], transcript: &[HqMessage]) -> Option<usize> {
-    transcript.starts_with(drawn).then_some(drawn.len())
+/// How many of the messages `drawn` are still the first of `transcript`:
+/// from there on the conversation is drawn again. Typed turns only grow it;
+/// spoken words change their own line as they are transcribed, and another
+/// workspace's conversation shares nothing.
+pub(crate) fn unchanged(drawn: &[HqMessage], transcript: &[HqMessage]) -> usize {
+    drawn
+        .iter()
+        .zip(transcript)
+        .take_while(|(drawn, now)| drawn == now)
+        .count()
+}
+
+/// What the line about the voice session says, and whether it is a problem
+/// rather than news, or `None` when there is nothing to say. `calls` is
+/// whether this build can carry audio at all.
+pub(crate) fn voice_line(
+    phase: &HqVoicePhase,
+    session: Option<&MediaSession>,
+    calls: bool,
+) -> Option<(Cow<'static, str>, bool)> {
+    let news = |text: &'static str| Some((Cow::Borrowed(text), false));
+    match phase {
+        HqVoicePhase::Off | HqVoicePhase::Disclosing if !calls => {
+            Some((Cow::Borrowed(core_text::media_unavailable(lang())), false))
+        }
+        HqVoicePhase::Off | HqVoicePhase::Disclosing => None,
+        HqVoicePhase::Minting => news(core_text::hq_voice_connecting(lang())),
+        HqVoicePhase::Live { agent } => {
+            if let Some(notice) = session.and_then(MediaSession::notice) {
+                return Some((Cow::Borrowed(notice), true));
+            }
+            match (session.map(|session| session.connection), agent) {
+                (None | Some(MediaConnection::Connecting), _) => {
+                    news(core_text::hq_voice_connecting(lang()))
+                }
+                (_, None | Some(HqAgentState::Initializing)) => {
+                    news(core_text::hq_voice_agent_joining(lang()))
+                }
+                (_, Some(HqAgentState::Idle | HqAgentState::Listening)) => {
+                    news(core_text::hq_voice_listening(lang()))
+                }
+                (_, Some(HqAgentState::Thinking)) => news(core_text::hq_voice_thinking(lang())),
+                (_, Some(HqAgentState::Speaking)) => news(core_text::hq_voice_speaking(lang())),
+            }
+        }
+        HqVoicePhase::Ended(end) => end.message().map(|text| (Cow::Borrowed(text), true)),
+        HqVoicePhase::Failed(failure) => {
+            Some((Cow::Owned(failure_text(failure).into_owned()), true))
+        }
+    }
+}
+
+/// The note under a change proposed by voice: what to do with it, what is
+/// being done, or why the last click failed (after a confirmation, that the
+/// change may have been made).
+pub(crate) fn voice_card_note<'a>(
+    card: &'a HqVoiceCard,
+    controls: &HqVoiceControls,
+) -> Cow<'a, str> {
+    match &card.state {
+        HqCardState::Open if controls.can_confirm => {
+            Cow::Borrowed(core_text::hq_voice_card_note(lang()))
+        }
+        HqCardState::Open => Cow::Borrowed(text::hq_viewer_note(lang())),
+        HqCardState::Confirming => Cow::Borrowed(core_text::hq_applying(lang())),
+        HqCardState::Cancelling => Cow::Borrowed(core_text::hq_voice_cancelling(lang())),
+        HqCardState::Failed {
+            failure,
+            confirming: true,
+        } => Cow::Owned(format!(
+            "{}\n{}",
+            failure_text(failure),
+            text::hq_unknown_note(lang())
+        )),
+        HqCardState::Failed { failure, .. } => failure_text(failure),
+    }
 }
 
 /// The note under a proposed change: that nothing has changed yet (and, for a
@@ -64,8 +145,10 @@ pub(crate) fn card_note(phase: &HqPhase, controls: &HqControls) -> Option<&'stat
 /// needs the member's attention.
 pub(crate) fn note_class(note: HqNote) -> &'static str {
     match note {
-        HqNote::Applied => "success",
-        HqNote::NotApplied | HqNote::Mismatched => "warning",
+        HqNote::Applied | HqNote::Cancelled => "success",
+        HqNote::NotApplied | HqNote::Mismatched | HqNote::AlreadyHandled | HqNote::Expired => {
+            "warning"
+        }
     }
 }
 
@@ -111,7 +194,16 @@ mod imp {
         pub prompt_entry: TemplateChild<gtk::Entry>,
         #[template_child]
         pub ask_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub bottom: TemplateChild<gtk::Box>,
         pub sink: OnceCell<EventSink>,
+        /// The voice controls, built once.
+        pub voice: OnceCell<super::Voice>,
+        /// The cards proposed by voice when last drawn, with whether they
+        /// could be confirmed.
+        pub drawn_cards: RefCell<(Vec<HqVoiceCard>, bool)>,
+        /// What the microphone button asks for, as last drawn.
+        pub microphone_wanted: Cell<bool>,
         /// The conversation the messages were last built from.
         pub drawn: RefCell<Vec<HqMessage>>,
         /// Whether a question could be asked when last drawn.
@@ -164,6 +256,7 @@ mod imp {
                     page.ask();
                 }
             });
+            page.build_voice();
             // A new line of the conversation scrolls into view.
             self.scroller
                 .vadjustment()
@@ -182,6 +275,33 @@ glib::wrapper! {
     pub struct HqPage(ObjectSubclass<imp::HqPage>)
         @extends adw::Bin, gtk::Widget,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+/// The voice controls, made in code: the line saying what the session is
+/// doing with its buttons, the residency statement, a notice, and the cards.
+#[derive(Debug)]
+pub struct Voice {
+    spinner: gtk::Spinner,
+    line: gtk::Label,
+    microphone: gtk::Button,
+    start: gtk::Button,
+    stop: gtk::Button,
+    dismiss: gtk::Button,
+    disclosure: gtk::Box,
+    notice: gtk::Box,
+    notice_line: gtk::Label,
+    cards: gtk::Box,
+}
+
+/// A button with `label`, named `name` for the smoke test and the screen
+/// reader's sake, styled `classes`.
+fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
+    gtk::Button::builder()
+        .label(label)
+        .name(name)
+        .valign(gtk::Align::Center)
+        .css_classes(classes.to_vec())
+        .build()
 }
 
 impl Sends for HqPage {
@@ -205,6 +325,289 @@ impl HqPage {
             imp.prompt_entry.set_text("");
             self.send(Event::Hq(HqEvent::Ask(prompt)));
         }
+    }
+
+    /// Builds the voice controls into the bottom of the page, above the line
+    /// to ask on.
+    fn build_voice(&self) {
+        let imp = self.imp();
+        let spinner = gtk::Spinner::new();
+        let line = plain_label("", &["dim-label"]);
+        line.set_hexpand(true);
+        line.set_widget_name("voice_line");
+        let microphone = gtk::Button::builder()
+            .icon_name("microphone-disabled-symbolic")
+            .name("voice_microphone")
+            .valign(gtk::Align::Center)
+            .css_classes(["circular"])
+            .build();
+        let start = button(core_text::hq_voice_start(lang()), "voice_start", &["pill"]);
+        start.set_icon_name("audio-input-microphone-symbolic");
+        let stop = button(
+            core_text::hq_voice_stop(lang()),
+            "voice_stop",
+            &["pill", "destructive-action"],
+        );
+        let dismiss = gtk::Button::builder()
+            .icon_name("window-close-symbolic")
+            .name("voice_dismiss")
+            .tooltip_text(text::common_dismiss_a11y(lang()))
+            .valign(gtk::Align::Center)
+            .css_classes(["flat", "circular"])
+            .build();
+        let bar = gtk::Box::builder().spacing(8).name("voice_bar").build();
+        for widget in [
+            spinner.upcast_ref::<gtk::Widget>(),
+            line.upcast_ref(),
+            dismiss.upcast_ref(),
+            microphone.upcast_ref(),
+            stop.upcast_ref(),
+            start.upcast_ref(),
+        ] {
+            bar.append(widget);
+        }
+
+        // Where the voice is processed, said before anything starts.
+        let disclosure = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(6)
+            .name("voice_disclosure")
+            .css_classes(["card", "proposal-card"])
+            .visible(false)
+            .build();
+        disclosure.append(&plain_label(
+            core_text::hq_voice_disclosure_title(lang()),
+            &["heading"],
+        ));
+        disclosure.append(&plain_label(core_text::hq_voice_disclosure(lang()), &[]));
+        let choices = gtk::Box::builder()
+            .spacing(8)
+            .halign(gtk::Align::End)
+            .margin_top(6)
+            .build();
+        let decline = button(
+            core_text::hq_voice_disclosure_decline(lang()),
+            "voice_decline",
+            &["pill"],
+        );
+        let accept = button(
+            core_text::hq_voice_disclosure_accept(lang()),
+            "voice_accept",
+            &["pill", "suggested-action"],
+        );
+        choices.append(&decline);
+        choices.append(&accept);
+        disclosure.append(&choices);
+
+        let notice_line = plain_label("", &["error"]);
+        notice_line.set_hexpand(true);
+        let notice = gtk::Box::builder()
+            .spacing(8)
+            .name("voice_notice")
+            .visible(false)
+            .build();
+        let notice_dismiss = gtk::Button::builder()
+            .icon_name("window-close-symbolic")
+            .tooltip_text(text::common_dismiss_a11y(lang()))
+            .name("voice_notice_dismiss")
+            .valign(gtk::Align::Center)
+            .css_classes(["flat", "circular"])
+            .build();
+        notice.append(&notice_line);
+        notice.append(&notice_dismiss);
+
+        let cards = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(8)
+            .name("voice_cards")
+            .build();
+
+        // Above the typed card and the question line, in reading order.
+        for widget in [
+            cards.upcast_ref::<gtk::Widget>(),
+            notice.upcast_ref(),
+            disclosure.upcast_ref(),
+            bar.upcast_ref(),
+        ] {
+            imp.bottom.prepend(widget);
+        }
+
+        on_click(&start, self, || Event::Hq(HqEvent::StartVoice));
+        on_click(&stop, self, || Event::Hq(HqEvent::StopVoice));
+        on_click(&accept, self, || Event::Hq(HqEvent::AcceptVoiceDisclosure));
+        on_click(&decline, self, || {
+            Event::Hq(HqEvent::DeclineVoiceDisclosure)
+        });
+        on_click(&dismiss, self, || Event::Hq(HqEvent::DismissVoiceNotice));
+        on_click(&notice_dismiss, self, || {
+            Event::Hq(HqEvent::DismissVoiceNotice)
+        });
+        let weak = self.downgrade();
+        microphone.connect_clicked(move |_| {
+            if let Some(page) = weak.upgrade() {
+                page.send(Event::Microphone(page.imp().microphone_wanted.get()));
+            }
+        });
+        imp.voice
+            .set(Voice {
+                spinner,
+                line,
+                microphone,
+                start,
+                stop,
+                dismiss,
+                disclosure,
+                notice,
+                notice_line,
+                cards,
+            })
+            .ok();
+    }
+
+    /// Draws the voice controls and the cards proposed by voice.
+    fn draw_voice(&self, signed_in: &SignedIn) {
+        let imp = self.imp();
+        let Some(voice) = imp.voice.get() else {
+            return;
+        };
+        let state = &signed_in.hq.voice;
+        let controls = signed_in.hq_voice_controls();
+        let capabilities = signed_in.capabilities();
+        let session = signed_in.hq_voice_session();
+        // A member who may change things may talk; a build without calls says
+        // why it cannot.
+        let member = capabilities.can_change;
+        let calls = capabilities.can_dial;
+        voice.start.set_visible(member && !controls.can_stop);
+        voice.start.set_sensitive(controls.can_start);
+        voice.stop.set_visible(controls.can_stop);
+        let live = matches!(state.phase, HqVoicePhase::Live { .. });
+        let microphone = session.map_or(MicrophoneState::Off, |session| session.microphone);
+        let (icon, action, wanted) = microphone_button(microphone);
+        imp.microphone_wanted.set(wanted);
+        voice.microphone.set_visible(live && session.is_some());
+        voice.microphone.set_icon_name(icon);
+        voice
+            .microphone
+            .set_tooltip_text(Some(&text::call_bar_microphone_tooltip(lang(), action)));
+        let line = member
+            .then(|| voice_line(&state.phase, session, calls))
+            .flatten();
+        let busy = matches!(state.phase, HqVoicePhase::Minting)
+            || (live
+                && line.as_ref().is_some_and(|(_, problem)| !problem)
+                && !matches!(
+                    state.phase,
+                    HqVoicePhase::Live {
+                        agent: Some(
+                            HqAgentState::Idle
+                                | HqAgentState::Listening
+                                | HqAgentState::Thinking
+                                | HqAgentState::Speaking
+                        )
+                    }
+                ));
+        draw_spinner(&voice.spinner, busy);
+        let problem = line.as_ref().is_some_and(|(_, problem)| *problem);
+        voice
+            .line
+            .set_css_classes(if problem { &["error"] } else { &["dim-label"] });
+        draw_line(&voice.line, line.map(|(text, _)| text));
+        voice.dismiss.set_visible(matches!(
+            state.phase,
+            HqVoicePhase::Ended(_) | HqVoicePhase::Failed(_)
+        ));
+        voice
+            .disclosure
+            .set_visible(state.phase == HqVoicePhase::Disclosing);
+        voice.notice.set_visible(state.notice.is_some());
+        voice.notice_line.set_label(
+            state
+                .notice
+                .as_ref()
+                .map(|failure| failure_text(failure))
+                .as_deref()
+                .unwrap_or_default(),
+        );
+        let drawn = (state.cards.clone(), controls.can_confirm);
+        if *imp.drawn_cards.borrow() != drawn {
+            clear_box(&voice.cards);
+            for (index, card) in state.cards.iter().enumerate() {
+                voice
+                    .cards
+                    .append(&self.voice_card(card, &controls, index == 0));
+            }
+            imp.drawn_cards.replace(drawn);
+        }
+    }
+
+    /// One change proposed by voice, with its Cancel and Confirm. Only the
+    /// first card's Confirm is the suggested action: one on screen at a time.
+    fn voice_card(&self, card: &HqVoiceCard, controls: &HqVoiceControls, first: bool) -> gtk::Box {
+        let row = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(6)
+            .name("voice_card")
+            .css_classes(["card", "proposal-card"])
+            .build();
+        row.append(&plain_label(
+            core_text::hq_confirm_title(lang()),
+            &["heading"],
+        ));
+        let summary = plain_label(card.summary(), &[]);
+        summary.set_selectable(true);
+        row.append(&summary);
+        let failed = matches!(card.state, HqCardState::Failed { .. });
+        row.append(&plain_label(
+            &voice_card_note(card, controls),
+            if failed {
+                &["error"]
+            } else {
+                &["dim-label", "caption"]
+            },
+        ));
+        let buttons = gtk::Box::builder()
+            .spacing(8)
+            .halign(gtk::Align::End)
+            .margin_top(6)
+            .build();
+        let spinner = gtk::Spinner::new();
+        draw_spinner(
+            &spinner,
+            matches!(
+                card.state,
+                HqCardState::Confirming | HqCardState::Cancelling
+            ),
+        );
+        let cancel = button(
+            core_text::hq_voice_cancel_action(lang()),
+            "voice_card_cancel",
+            &["pill"],
+        );
+        cancel.set_sensitive(card.is_actionable());
+        let confirm = button(
+            core_text::hq_confirm_action(lang()),
+            "voice_card_confirm",
+            if first {
+                &["pill", "suggested-action"]
+            } else {
+                &["pill"]
+            },
+        );
+        confirm.set_sensitive(card.is_actionable() && controls.can_confirm);
+        let id = card.proposal.proposal_id.clone();
+        on_click(&cancel, self, move || {
+            Event::Hq(HqEvent::CancelVoiceCard(id.clone()))
+        });
+        let id = card.proposal.proposal_id.clone();
+        on_click(&confirm, self, move || {
+            Event::Hq(HqEvent::ConfirmVoiceCard(id.clone()))
+        });
+        buttons.append(&spinner);
+        buttons.append(&cancel);
+        buttons.append(&confirm);
+        row.append(&buttons);
+        row
     }
 
     /// Draws the conversation of `signed_in`'s workspace.
@@ -232,11 +635,12 @@ impl HqPage {
         let (line, retry) = status.unwrap_or_default();
         imp.status_label.set_label(&line);
         imp.retry_button.set_visible(retry);
+        self.draw_voice(signed_in);
         let proposal = hq.phase.proposal();
         imp.card.set_visible(proposal.is_some());
         // One suggested action on screen at a time: while a proposal waits,
-        // its Confirm is the one (visual QA LC26).
-        if proposal.is_some() {
+        // its Confirm is the one (visual QA LC26), a voice card's included.
+        if proposal.is_some() || !hq.voice.cards.is_empty() {
             imp.ask_button.remove_css_class("suggested-action");
         } else {
             imp.ask_button.add_css_class("suggested-action");
@@ -264,23 +668,31 @@ impl HqPage {
         imp.dismiss_button.set_sensitive(controls.can_dismiss);
     }
 
-    /// Draws the conversation. It only grows while the workspace is open, so
-    /// the messages drawn stay, and only the new ones are added: drawing every
-    /// answer's Markdown again for each new one would cost more the longer
-    /// the conversation, and lose what the member had selected in it.
+    /// Draws the conversation. The messages drawn that have not changed
+    /// stay, and only what follows them is drawn again: drawing every answer's
+    /// Markdown again for each new line would cost more the longer the
+    /// conversation, and lose what the member had selected in it. A spoken
+    /// line changes as it is transcribed, so it and what follows it are drawn
+    /// again.
     fn draw_messages(&self, transcript: &[HqMessage]) {
         let imp = self.imp();
         let start = {
             let drawn = imp.drawn.borrow();
-            match appended(&drawn, transcript) {
-                Some(start) if start == transcript.len() => return,
-                Some(start) => start,
-                None => {
-                    clear_box(&imp.messages);
-                    0
-                }
+            let start = unchanged(&drawn, transcript);
+            if start == drawn.len() && start == transcript.len() {
+                return;
             }
+            start
         };
+        // One widget per message, in order: those after `start` go.
+        let mut child = imp.messages.first_child();
+        for _ in 0..start {
+            child = child.and_then(|widget| widget.next_sibling());
+        }
+        while let Some(widget) = child {
+            child = widget.next_sibling();
+            imp.messages.remove(&widget);
+        }
         for message in &transcript[start..] {
             imp.messages.append(&self.message(message));
         }
@@ -292,6 +704,26 @@ impl HqPage {
     /// own.
     fn message(&self, message: &HqMessage) -> gtk::Widget {
         match (&message.text, message.author) {
+            // Spoken words, as transcribed: plain text, dimmed until final.
+            (HqText::Spoken { text, is_final, .. }, author) => {
+                let member = author == HqAuthor::Member;
+                let mut classes = vec!["bubble", if member { "outbound" } else { "inbound" }];
+                if !is_final {
+                    classes.push("dim-label");
+                }
+                let label = plain_label(text, &classes);
+                label.set_selectable(true);
+                if member {
+                    label.set_halign(gtk::Align::End);
+                    label.set_margin_start(48);
+                    label.set_widget_name("hq-spoken-question");
+                } else {
+                    label.set_halign(gtk::Align::Start);
+                    label.set_margin_end(48);
+                    label.set_widget_name("hq-spoken-answer");
+                }
+                label.upcast()
+            }
             (HqText::Note(note), _) => {
                 let label = plain_label(note.text(), &["caption-heading", note_class(*note)]);
                 label.set_widget_name("hq-note");
@@ -372,6 +804,9 @@ mod tests {
         assert_eq!(note_class(HqNote::Applied), "success");
         assert_eq!(note_class(HqNote::Mismatched), "warning");
         assert_eq!(note_class(HqNote::NotApplied), "warning");
+        assert_eq!(note_class(HqNote::Cancelled), "success");
+        assert_eq!(note_class(HqNote::AlreadyHandled), "warning");
+        assert_eq!(note_class(HqNote::Expired), "warning");
     }
 
     #[test]
@@ -381,12 +816,28 @@ mod tests {
             text: HqText::Said(text.to_owned()),
         };
         let all = [said("a"), said("b"), said("c")];
-        assert_eq!(appended(&[], &[]), Some(0), "nothing to draw");
-        assert_eq!(appended(&[], &all[..1]), Some(0));
-        assert_eq!(appended(&all[..1], &all[..1]), Some(1), "drawn");
-        assert_eq!(appended(&all[..1], &all), Some(1));
-        assert_eq!(appended(&all[..2], &all[..1]), None);
-        assert_eq!(appended(&all[..1], &all[1..]), None, "another workspace's");
-        assert_eq!(appended(&all[..1], &[]), None, "emptied");
+        assert_eq!(unchanged(&[], &[]), 0, "nothing to draw");
+        assert_eq!(unchanged(&[], &all[..1]), 0);
+        assert_eq!(unchanged(&all[..1], &all[..1]), 1, "drawn");
+        assert_eq!(unchanged(&all[..1], &all), 1);
+        assert_eq!(unchanged(&all[..2], &all[..1]), 1);
+        assert_eq!(unchanged(&all[..1], &all[1..]), 0, "another workspace's");
+        assert_eq!(unchanged(&all[..1], &[]), 0, "emptied");
+        let spoken = |text: &str| HqMessage {
+            author: HqAuthor::Member,
+            text: HqText::Spoken {
+                segment: "s1".to_owned(),
+                text: text.to_owned(),
+                is_final: false,
+            },
+        };
+        assert_eq!(
+            unchanged(
+                &[said("a"), spoken("How")],
+                &[said("a"), spoken("How many")]
+            ),
+            1,
+            "a spoken line that grew is drawn again"
+        );
     }
 }

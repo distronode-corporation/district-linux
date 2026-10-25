@@ -2,8 +2,8 @@
     {
         "type": "git",
         "url": "https://github.com/distronode-corporation/district-core-rust",
-        "commit": "524845aaa21432613d3cd2f24fe5fe7bf42ceb20",
-        "dest": "flatpak-cargo/git/district-core-rust-524845a"
+        "commit": "2af10f984b0251590b910ef2a1c2a399c938aeb4",
+        "dest": "flatpak-cargo/git/district-core-rust-2af10f9"
     },
     {
         "type": "archive",
@@ -996,7 +996,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-api\" \"cargo/vendor/district-api\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-api\" \"cargo/vendor/district-api\""
         ]
     },
     {
@@ -1014,7 +1014,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-auth\" \"cargo/vendor/district-auth\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-auth\" \"cargo/vendor/district-auth\""
         ]
     },
     {
@@ -1032,12 +1032,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-call\" \"cargo/vendor/district-call\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-call\" \"cargo/vendor/district-call\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-call\"\ndescription = \"The District AI call engine. The LiveKit implementation sits behind the optional `livekit` feature.\"\nversion = \"5.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies.district-core]\npath = \"crates/district-core\"\n\n[dependencies.tokio]\nfeatures = [\"sync\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.futures-util]\noptional = true\nversion = \"0.3.34\"\ndefault-features = false\n\n[dependencies.livekit]\noptional = true\nversion = \"0.9.3\"\ndefault-features = false\nfeatures = [\"native\", \"rustls-tls-native-roots\"]\n\n[dependencies.rustls]\noptional = true\nversion = \"0.23.45\"\ndefault-features = false\nfeatures = [\"aws_lc_rs\", \"std\", \"tls12\"]\n\n[dependencies.url]\noptional = true\nversion = \"2.5.8\"\n\n[dependencies.log]\noptional = true\nversion = \"0.4.34\"\nfeatures = [\"max_level_warn\"]\n\n[dev-dependencies]\nserde_json = \"1.0.151\"\nbase64 = \"0.22.1\"\nhmac = \"0.12.1\"\nsha2 = \"0.10.9\"\n\n[dev-dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dev-dependencies.district-model]\npath = \"crates/district-model\"\n\n[dev-dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dev-dependencies.log]\nfeatures = [\"std\", \"max_level_warn\"]\nversion = \"0.4.34\"\n\n[dev-dependencies.pbkdf2]\nversion = \"0.12.2\"\ndefault-features = false\nfeatures = [\"hmac\"]\n\n[features]\nlivekit = [\"dep:livekit\", \"dep:futures-util\", \"dep:log\", \"dep:rustls\", \"dep:url\", \"tokio/rt\", \"tokio/time\", \"tokio/macros\"]\n\n[[test]]\nname = \"engine\"\npath = \"tests/engine/main.rs\"\nrequired-features = [\"livekit\"]\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-call\"\ndescription = \"The District AI call engine. The LiveKit implementation sits behind the optional `livekit` feature.\"\nversion = \"5.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies.district-core]\npath = \"crates/district-core\"\n\n[dependencies.tokio]\nfeatures = [\"sync\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.futures-util]\noptional = true\nversion = \"0.3.34\"\ndefault-features = false\n\n[dependencies.livekit]\noptional = true\nversion = \"0.9.3\"\ndefault-features = false\nfeatures = [\"native\", \"rustls-tls-native-roots\"]\n\n[dependencies.rustls]\noptional = true\nversion = \"0.23.45\"\ndefault-features = false\nfeatures = [\"aws_lc_rs\", \"std\", \"tls12\"]\n\n[dependencies.url]\noptional = true\nversion = \"2.5.8\"\n\n[dependencies.district-model]\noptional = true\npath = \"crates/district-model\"\n\n[dependencies.log]\noptional = true\nversion = \"0.4.34\"\nfeatures = [\"max_level_warn\"]\n\n[dev-dependencies]\nserde_json = \"1.0.151\"\nbase64 = \"0.22.1\"\nhmac = \"0.12.1\"\nsha2 = \"0.10.9\"\n\n[dev-dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dev-dependencies.district-model]\npath = \"crates/district-model\"\n\n[dev-dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dev-dependencies.log]\nfeatures = [\"std\", \"max_level_warn\"]\nversion = \"0.4.34\"\n\n[dev-dependencies.pbkdf2]\nversion = \"0.12.2\"\ndefault-features = false\nfeatures = [\"hmac\"]\n\n[features]\nlivekit = [\"dep:livekit\", \"dep:district-model\", \"dep:futures-util\", \"dep:log\", \"dep:rustls\", \"dep:url\", \"tokio/rt\", \"tokio/time\", \"tokio/macros\"]\n\n[[test]]\nname = \"engine\"\npath = \"tests/engine/main.rs\"\nrequired-features = [\"livekit\"]\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-call",
         "dest-filename": "Cargo.toml"
     },
@@ -1050,7 +1050,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-core\" \"cargo/vendor/district-core\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-core\" \"cargo/vendor/district-core\""
         ]
     },
     {
@@ -1068,7 +1068,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-host\" \"cargo/vendor/district-host\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-host\" \"cargo/vendor/district-host\""
         ]
     },
     {
@@ -1086,7 +1086,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-l10n\" \"cargo/vendor/district-l10n\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-l10n\" \"cargo/vendor/district-l10n\""
         ]
     },
     {
@@ -1104,7 +1104,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-live\" \"cargo/vendor/district-live\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-live\" \"cargo/vendor/district-live\""
         ]
     },
     {
@@ -1122,7 +1122,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-524845a/crates/district-model\" \"cargo/vendor/district-model\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-2af10f9/crates/district-model\" \"cargo/vendor/district-model\""
         ]
     },
     {
@@ -5936,7 +5936,7 @@
     },
     {
         "type": "inline",
-        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/distronode-corporation/district-core-rust\"]\ngit = \"https://github.com/distronode-corporation/district-core-rust\"\nreplace-with = \"vendored-sources\"\ntag = \"v5.1.0\"\n",
+        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/distronode-corporation/district-core-rust\"]\ngit = \"https://github.com/distronode-corporation/district-core-rust\"\nreplace-with = \"vendored-sources\"\nrev = \"2af10f984b0251590b910ef2a1c2a399c938aeb4\"\n",
         "dest": "cargo",
         "dest-filename": "config"
     }

@@ -13,6 +13,17 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Added
+
+- District HQ by voice, in a build with calls. "Voice" on District HQ first says where
+  your voice is processed (in the United States, for every workspace), and starts nothing
+  until you accept; then the assistant joins an end-to-end encrypted room, a line says what
+  it is doing, and both sides' words join the conversation as they are spoken. A change
+  asked for by voice is a card, applied only when you say "confirm" or click its Confirm,
+  and cancelled the same ways. The session ends when you press Stop voice, leave District
+  HQ, or after 30 minutes. Agency and client members only; a build without calls says it
+  cannot.
+
 ### Changed
 
 - Built on District AI core for Rust 5.1.0. In English the Desk is called the Desk
