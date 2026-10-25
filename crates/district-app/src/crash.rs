@@ -29,8 +29,15 @@
 //!   `district_crash::apply` before anything else starts (`Denied` while
 //!   there is none), and every change hands the new one, so turning the
 //!   switch off closes the reporter at once.
+//! - What is on disk never says yes after the user has said no: a refusal is
+//!   applied before anything is written, and one that cannot be written as a
+//!   new file renamed over the old is written over it in place, or else the
+//!   file is removed ([`write`]). A yes is applied only once it is kept, so
+//!   the switch, which shows what is in force, shows a yes that could not be
+//!   kept going back off, as "Start at login" does.
 
-use std::io;
+use std::fs::OpenOptions;
+use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
 
 use district_crash::{Consent, CrashError, Settings, Status};
@@ -63,9 +70,11 @@ pub trait CrashReports {
     fn available(&self) -> bool;
     /// The answer kept, or `None` until the user has given one.
     fn answer(&self) -> Option<Consent>;
-    /// Keeps `consent` as the answer and applies it at once. An answer that
-    /// cannot be written still holds until the app quits.
-    fn set(&self, consent: Consent);
+    /// Keeps `consent` as the answer, and applies it: a refusal at once,
+    /// whatever happens on disk, and a yes only once it is kept. The error
+    /// says why the answer could not be kept; what is in force is then
+    /// `Denied`.
+    fn set(&self, consent: Consent) -> io::Result<()>;
 }
 
 /// What `district_crash` is told about this build: the DSN and the build
@@ -137,11 +146,14 @@ impl CrashReports for DesktopCrashReports {
         read(&self.dir)
     }
 
-    fn set(&self, consent: Consent) {
-        if let Err(error) = write(&self.dir, consent) {
-            eprintln!("district-ai: the crash reports answer could not be kept: {error}");
+    fn set(&self, consent: Consent) -> io::Result<()> {
+        if consent == Consent::Denied {
+            self.apply_now(consent);
+            return write(&self.dir, consent);
         }
+        write(&self.dir, consent)?;
         self.apply_now(consent);
+        Ok(())
     }
 }
 
@@ -158,14 +170,79 @@ fn read(dir: &Path) -> Option<Consent> {
     }
 }
 
-/// Writes `consent` as the answer in `dir`.
+/// Writes `consent` as the answer in `dir`: a new file beside the old one,
+/// renamed over it, so the file holds one whole answer or the other.
+///
+/// A refusal must leave no yes behind it, so one that cannot be written that
+/// way (no room for a new file, a folder the app may not add to) is written
+/// over the old file in place, and failing that the old file is removed: no
+/// answer, so the question comes again. Only a file the app can neither
+/// change nor remove (a read-only file in a read-only folder, or a read-only
+/// file system) can keep an earlier yes, and the error then says so.
 fn write(dir: &Path, consent: Consent) -> io::Result<()> {
-    std::fs::create_dir_all(dir)?;
-    let word = match consent {
-        Consent::Granted => GRANTED,
-        Consent::Denied => DENIED,
+    let text = match consent {
+        Consent::Granted => format!("{GRANTED}\n"),
+        Consent::Denied => format!("{DENIED}\n"),
     };
-    std::fs::write(dir.join(CRASH_REPORTS_FILE), format!("{word}\n"))
+    let error = match replace(dir, &text) {
+        Ok(()) => return Ok(()),
+        Err(error) => error,
+    };
+    if consent == Consent::Granted {
+        return Err(error);
+    }
+    let file = dir.join(CRASH_REPORTS_FILE);
+    if overwrite(&file, &text).is_ok() {
+        return Ok(());
+    }
+    match std::fs::remove_file(&file) {
+        Ok(()) => Err(error),
+        // Nothing there, so no earlier answer either.
+        Err(missing)
+            if matches!(
+                missing.kind(),
+                io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+            ) =>
+        {
+            Err(error)
+        }
+        Err(removing) => Err(io::Error::new(
+            removing.kind(),
+            format!(
+                "{error}, and the answer kept before could not be written over or removed, \
+                 so the next start may turn crash reports back on: {removing}"
+            ),
+        )),
+    }
+}
+
+/// Writes `text` to a new file in `dir` and renames it over the answer.
+fn replace(dir: &Path, text: &str) -> io::Result<()> {
+    std::fs::create_dir_all(dir)?;
+    let temporary = dir.join(format!(".{CRASH_REPORTS_FILE}.{}.tmp", std::process::id()));
+    let written = write_synced(
+        OpenOptions::new().write(true).create(true).truncate(true),
+        &temporary,
+        text,
+    )
+    .and_then(|()| std::fs::rename(&temporary, dir.join(CRASH_REPORTS_FILE)));
+    if written.is_err() {
+        // A stray temporary file holds nothing the answer does not.
+        std::fs::remove_file(&temporary).ok();
+    }
+    written
+}
+
+/// Writes `text` over `file` in place, if there is one. Cut short, it leaves
+/// the file empty or holding part of a word, which is no answer.
+fn overwrite(file: &Path, text: &str) -> io::Result<()> {
+    write_synced(OpenOptions::new().write(true).truncate(true), file, text)
+}
+
+fn write_synced(options: &OpenOptions, path: &Path, text: &str) -> io::Result<()> {
+    let mut file = options.open(path)?;
+    file.write_all(text.as_bytes())?;
+    file.sync_all()
 }
 
 #[cfg(test)]
@@ -238,7 +315,7 @@ mod tests {
         let dir = temp("no-dsn");
         let reports = DesktopCrashReports::new(dir.clone(), settings_for(None, None));
         assert!(!reports.available());
-        reports.set(Consent::Granted);
+        reports.set(Consent::Granted).unwrap();
         assert_eq!(reports.answer(), Some(Consent::Granted));
         reports.start();
         assert!(!district_crash::is_enabled());
@@ -259,7 +336,7 @@ mod tests {
         assert!(reports.available());
         assert_eq!(reports.answer(), None);
         reports.start();
-        reports.set(Consent::Granted);
+        reports.set(Consent::Granted).unwrap();
         assert_eq!(
             std::fs::read_to_string(dir.join(CRASH_REPORTS_FILE)).unwrap(),
             "granted\n"
@@ -267,7 +344,7 @@ mod tests {
         let again = DesktopCrashReports::with_apply(dir.clone(), with_dsn(), record);
         assert_eq!(again.answer(), Some(Consent::Granted));
         again.start();
-        again.set(Consent::Denied);
+        again.set(Consent::Denied).unwrap();
         assert_eq!(reports.answer(), Some(Consent::Denied));
         assert_eq!(
             *APPLIED.lock().unwrap(),
@@ -291,9 +368,111 @@ mod tests {
         let dir = temp("blocked");
         std::fs::write(&dir, "a file where the folder would be").unwrap();
         let reports = DesktopCrashReports::with_apply(dir.clone(), with_dsn(), refuse);
-        reports.set(Consent::Granted);
+        assert!(reports.set(Consent::Granted).is_err());
         assert_eq!(reports.answer(), None);
+        // Nothing there to have said yes: the error is the write's alone.
+        let error = reports.set(Consent::Denied).unwrap_err();
+        assert!(!error.to_string().contains("turn crash reports back on"));
         reports.start();
         std::fs::remove_file(dir).ok();
+    }
+
+    std::thread_local! {
+        /// Every consent handed to [`seen`] on this test's thread, in order.
+        static SEEN: std::cell::RefCell<Vec<Consent>> = const { std::cell::RefCell::new(Vec::new()) };
+    }
+
+    fn seen(_: &Settings, consent: Consent) -> Result<Status, CrashError> {
+        SEEN.with_borrow_mut(|seen| seen.push(consent));
+        Ok(Status::Off(OffReason::NoConsent))
+    }
+
+    fn seen_so_far() -> Vec<Consent> {
+        SEEN.with_borrow(Clone::clone)
+    }
+
+    /// `dir` holding the answer "granted", with `dir` and the file given
+    /// the modes `dir_mode` and `file_mode`.
+    fn granted_in(name: &str, dir_mode: u32, file_mode: u32) -> PathBuf {
+        use std::os::unix::fs::PermissionsExt as _;
+        let dir = temp(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join(CRASH_REPORTS_FILE);
+        std::fs::write(&file, "granted\n").unwrap();
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(file_mode)).unwrap();
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(dir_mode)).unwrap();
+        dir
+    }
+
+    fn remove(dir: PathBuf) {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).ok();
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    /// Turning reports off over a "granted" the app may not write over in
+    /// place leaves "denied", not the old yes: a new file is renamed over it.
+    #[test]
+    fn a_refusal_replaces_a_yes_it_may_not_write_over() {
+        let dir = granted_in("read-only-answer", 0o700, 0o400);
+        let reports = DesktopCrashReports::with_apply(dir.clone(), with_dsn(), seen);
+        assert_eq!(reports.answer(), Some(Consent::Granted));
+        reports.set(Consent::Denied).unwrap();
+        assert_eq!(reports.answer(), Some(Consent::Denied));
+        assert_eq!(seen_so_far(), [Consent::Denied]);
+        let left: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert_eq!(left, [CRASH_REPORTS_FILE], "no temporary file left");
+        remove(dir);
+    }
+
+    /// In a folder the app may not add to, a refusal is written over the old
+    /// yes in place, and a yes is neither kept nor applied.
+    #[test]
+    fn in_a_read_only_folder_a_refusal_is_written_in_place() {
+        let dir = granted_in("read-only-folder", 0o500, 0o600);
+        let reports = DesktopCrashReports::with_apply(dir.clone(), with_dsn(), seen);
+        reports.set(Consent::Denied).unwrap();
+        assert_eq!(reports.answer(), Some(Consent::Denied));
+        assert!(reports.set(Consent::Granted).is_err());
+        assert_eq!(reports.answer(), Some(Consent::Denied));
+        assert_eq!(seen_so_far(), [Consent::Denied], "the yes never applied");
+        remove(dir);
+    }
+
+    /// A refusal that can be neither written nor written over removes the
+    /// old yes: no answer, so the question comes again.
+    #[test]
+    fn a_refusal_that_cannot_be_written_removes_the_yes() {
+        let dir = granted_in("unwritable", 0o700, 0o400);
+        // A folder where the new file would go, so no new file can be
+        // written, and the old one may not be written over.
+        let temporary = dir.join(format!(".{CRASH_REPORTS_FILE}.{}.tmp", std::process::id()));
+        std::fs::create_dir(&temporary).unwrap();
+        let reports = DesktopCrashReports::with_apply(dir.clone(), with_dsn(), seen);
+        assert!(reports.set(Consent::Denied).is_err());
+        assert!(!dir.join(CRASH_REPORTS_FILE).exists());
+        assert_eq!(reports.answer(), None);
+        assert_eq!(seen_so_far(), [Consent::Denied]);
+        remove(dir);
+    }
+
+    /// Where nothing can be changed, the refusal still holds in this run,
+    /// and the error says the old yes is still on disk.
+    #[test]
+    fn a_yes_that_cannot_be_taken_back_is_reported() {
+        let dir = granted_in("locked", 0o500, 0o400);
+        let reports = DesktopCrashReports::with_apply(dir.clone(), with_dsn(), seen);
+        let error = reports.set(Consent::Denied).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("the next start may turn crash reports back on"),
+            "{error}"
+        );
+        assert_eq!(seen_so_far(), [Consent::Denied]);
+        remove(dir);
     }
 }

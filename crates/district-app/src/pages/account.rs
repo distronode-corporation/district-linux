@@ -118,6 +118,8 @@ mod imp {
                         Some(&on.to_variant()),
                     )
                     .ok();
+                    // What is in force, which a yes that could not be kept
+                    // leaves off.
                     row.set_active(page.state_of(CRASH_REPORTS_ACTION).unwrap_or_default());
                 }
             });
