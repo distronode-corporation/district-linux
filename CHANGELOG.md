@@ -13,6 +13,13 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Added
+
+- Crash reports, off until you allow them: the app asks once, with Don't send as the
+  default, and Send crash reports on the account screen changes it. A report holds the
+  error, where it happened and the versions, never your computer's name, your user name
+  or your IP address.
+
 ### Changed
 
 - Declining a call that rings here now tells the service, so once every member rung has

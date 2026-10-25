@@ -61,7 +61,8 @@ How the app is built, so a report can say which part of it breaks.
   keeps the session in memory only, so the user signs in again at the next start.
 - The app's preferences file (`settings.toml` under `$XDG_CONFIG_HOME`, readable
   by its owner only) holds "ring on this computer" and the id of the workspace
-  last chosen, and nothing secret.
+  last chosen, and nothing secret. Beside it, `crash-reports` holds the answer
+  about crash reports, `granted` or `denied`.
 - The access token is kept only in memory.
 - The service rotates the refresh token on every refresh and treats a second
   presentation of one as theft. The app therefore refreshes one request at a
@@ -396,6 +397,20 @@ District AI core for Rust):
   never filled in, and is emptied when the number is saved.
 - A save that replaces a list asks first, saying what it will do, and a section
   whose read failed shows no form to save from.
+
+### Crash reports
+
+- Crash reports are off until you allow them. The app asks once, with Don't send
+  as the default, and you can change it on the account screen.
+- A report holds the error, where in the app it happened, and the versions of the
+  app and the operating system. It holds neither your computer's name, nor your
+  user name, nor your IP address, and your home folder's name is replaced in any
+  file path.
+- Reports go to Sentry, in the European Union (de.sentry.io). Sentry still sees
+  the connection's IP address, as any server does, and is set not to store it.
+- Only the packages built by this repository's workflows carry the reporting
+  address, which the code does not contain: a build you compile yourself from
+  source, or a fork's, never asks and never sends.
 
 ### Privileges
 

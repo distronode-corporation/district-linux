@@ -1756,7 +1756,7 @@ pub fn crash_dont_send(l: Locale) -> &'static str {
 pub fn crash_question_body(l: Locale) -> &'static str {
     match l {
         Locale::En => "If District AI crashes, it can send Distronode a report so we can fix the problem. A report holds the error, where in the app it happened, and the versions of the app and your system. Your computer's name and your user name are left out. Reports go through Sentry, the error reporting service we use. You can change this later on the account screen.",
-        Locale::FrCa => "Si District AI plante, l'application peut envoyer un rapport à Distronode pour que nous puissions corriger le problème. Un rapport contient l'erreur, l'endroit de l'application où elle s'est produite, et les versions de l'application et de votre système. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés. Les rapports passent par Sentry, le service de signalement d'erreurs que nous utilisons. Vous pourrez modifier ce choix plus tard à l'écran Compte.",
+        Locale::FrCa => "Si District AI plante, l'application peut envoyer un rapport à Distronode pour que nous puissions corriger le problème. Un rapport contient l'erreur, l'endroit de l'application où elle s'est produite et les versions de l'application et de votre système. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés. Les rapports passent par Sentry, le service de signalement d'erreurs que nous utilisons. Vous pourrez modifier ce choix plus tard à l'écran Compte.",
     }
 }
 
