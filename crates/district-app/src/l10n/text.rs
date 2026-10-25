@@ -3748,7 +3748,7 @@ pub fn metainfo_release_3_0_3_p(l: Locale) -> &'static str {
 pub fn metainfo_release_3_1_0_li1(l: Locale) -> &'static str {
     match l {
         Locale::En => "Crash reports, off until you allow them: the app asks once, with Don't send as the default, and Send crash reports on the account screen changes your answer; a report leaves out your computer's name and your user name",
-        Locale::FrCa => "Rapports de plantage, désactivés tant que vous ne les autorisez pas\u{00A0}: l'application pose la question une seule fois, avec «\u{00A0}Ne pas envoyer\u{00A0}» par défaut, et l'option «\u{00A0}Envoyer les rapports de plantage\u{00A0}» de l'écran Compte permet de changer votre réponse; un rapport ne contient ni le nom de votre ordinateur ni votre nom d'utilisateur",
+        Locale::FrCa => "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés\u{00A0}: l'application pose la question une seule fois, avec «\u{00A0}Ne pas envoyer\u{00A0}» par défaut, et l'option «\u{00A0}Envoyer les rapports de plantage\u{00A0}» de l'écran Compte permet de changer votre réponse; un rapport ne contient ni le nom de votre ordinateur ni votre nom d'utilisateur",
     }
 }
 
@@ -3757,7 +3757,7 @@ pub fn metainfo_release_3_1_0_li1(l: Locale) -> &'static str {
 pub fn metainfo_release_3_1_0_li2(l: Locale) -> &'static str {
     match l {
         Locale::En => "Declining a call that rings on this computer tells the service, so once every member it rang has declined, the receptionist takes a message at once instead of keeping the caller waiting until the ring runs out",
-        Locale::FrCa => "Refuser un appel qui sonne sur cet ordinateur en informe le service\u{00A0}: dès que tous les membres qui l'ont reçu l'ont refusé, la réceptionniste prend un message aussitôt au lieu de faire patienter l'appelant jusqu'à la fin de la sonnerie",
+        Locale::FrCa => "Refuser un appel qui sonne sur cet ordinateur en informe le service\u{00A0}: dès que tous les membres sollicités l'ont refusé, la réceptionniste prend un message aussitôt au lieu de faire patienter l'appelant jusqu'à la fin de la sonnerie",
     }
 }
 
@@ -3811,7 +3811,7 @@ pub fn metainfo_release_3_1_0_li7(l: Locale) -> &'static str {
 pub fn metainfo_release_3_1_0_p(l: Locale) -> &'static str {
     match l {
         Locale::En => "Crash reports, off until you allow them. Declining a call now lets the receptionist take a message at once, and the help desk is now called the Desk.",
-        Locale::FrCa => "Rapports de plantage, désactivés tant que vous ne les autorisez pas. Refuser un appel permet maintenant à la réceptionniste de prendre un message aussitôt, et le comptoir clients devient «\u{00A0}Comptoir\u{00A0}».",
+        Locale::FrCa => "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés. Refuser un appel permet maintenant à la réceptionniste de prendre un message aussitôt, et le comptoir clients devient «\u{00A0}Comptoir\u{00A0}».",
     }
 }
 

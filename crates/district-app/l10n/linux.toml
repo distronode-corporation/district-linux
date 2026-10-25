@@ -3258,18 +3258,18 @@ note = "The 3.0.3 release's notes in the AppStream metadata, as software centres
 
 [metainfo.release_3_1_0.li1]
 en = "Crash reports, off until you allow them: the app asks once, with Don't send as the default, and Send crash reports on the account screen changes your answer; a report leaves out your computer's name and your user name"
-fr = "Rapports de plantage, désactivés tant que vous ne les autorisez pas\u00A0: l'application pose la question une seule fois, avec «\u00A0Ne pas envoyer\u00A0» par défaut, et l'option «\u00A0Envoyer les rapports de plantage\u00A0» de l'écran Compte permet de changer votre réponse; un rapport ne contient ni le nom de votre ordinateur ni votre nom d'utilisateur"
+fr = "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés\u00A0: l'application pose la question une seule fois, avec «\u00A0Ne pas envoyer\u00A0» par défaut, et l'option «\u00A0Envoyer les rapports de plantage\u00A0» de l'écran Compte permet de changer votre réponse; un rapport ne contient ni le nom de votre ordinateur ni votre nom d'utilisateur"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_1_0.li2]
 en = "Declining a call that rings on this computer tells the service, so once every member it rang has declined, the receptionist takes a message at once instead of keeping the caller waiting until the ring runs out"
-fr = "Refuser un appel qui sonne sur cet ordinateur en informe le service\u00A0: dès que tous les membres qui l'ont reçu l'ont refusé, la réceptionniste prend un message aussitôt au lieu de faire patienter l'appelant jusqu'à la fin de la sonnerie"
+fr = "Refuser un appel qui sonne sur cet ordinateur en informe le service\u00A0: dès que tous les membres sollicités l'ont refusé, la réceptionniste prend un message aussitôt au lieu de faire patienter l'appelant jusqu'à la fin de la sonnerie"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_1_0.li3]
@@ -3277,7 +3277,7 @@ en = "The help desk is now called the Desk throughout the app"
 fr = "Le comptoir clients s'appelle maintenant «\u00A0Comptoir\u00A0» partout dans l'application"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_1_0.li4]
@@ -3285,7 +3285,7 @@ en = "In English, a call's outcome now reads as on the web console, such as Call
 fr = "En anglais, le résultat d'un appel s'affiche maintenant comme dans la console Web, par exemple «\u00A0Callback requested\u00A0», «\u00A0Passed to a person\u00A0» et «\u00A0Information only\u00A0»"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_1_0.li5]
@@ -3293,7 +3293,7 @@ en = "Booking pages: working hours accept 9:30 and 9 h 30 as well as 09:30, show
 fr = "Pages de réservation\u00A0: les heures de disponibilité acceptent 9:30 et 9\u00A0h\u00A030 aussi bien que 09:30, s'affichent en français sous la forme 9\u00A0h\u00A030 et refusent, avant d'enregistrer, une heure au-delà de 23\u00A0h\u00A059"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_1_0.li6]
@@ -3301,7 +3301,7 @@ en = "Phone numbers: the note above the tabs is shown to every member and no lon
 fr = "Numéros de téléphone\u00A0: la note au-dessus des onglets s'affiche pour tous les membres sans se répéter sous chaque numéro, et le lien vers la place de marché des numéros sur le Web indique qu'il s'ouvre dans votre navigateur"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_1_0.li7]
@@ -3309,15 +3309,15 @@ en = "Knowledge: Add document stays on its row in a narrow window with GTK 4.14,
 fr = "Connaissances\u00A0: le bouton «\u00A0Ajouter un document\u00A0» reste à sa place dans une fenêtre étroite avec GTK 4.14, comme sur Ubuntu 24.04"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_1_0.p]
 en = "Crash reports, off until you allow them. Declining a call now lets the receptionist take a message at once, and the help desk is now called the Desk."
-fr = "Rapports de plantage, désactivés tant que vous ne les autorisez pas. Refuser un appel permet maintenant à la réceptionniste de prendre un message aussitôt, et le comptoir clients devient «\u00A0Comptoir\u00A0»."
+fr = "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés. Refuser un appel permet maintenant à la réceptionniste de prendre un message aussitôt, et le comptoir clients devient «\u00A0Comptoir\u00A0»."
 ctx = "body"
 screen = "metainfo"
-state = "draft"
+state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.screenshot_caption.call]
