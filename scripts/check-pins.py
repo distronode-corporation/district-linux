@@ -24,7 +24,7 @@ Three sets of copies, each with one source:
                 packages' THIRD-PARTY-LICENSES.txt only when a package is built,
                 so a licence allowed in one and not the other would pass review
                 and fail the release.
-    core        District AI core for Rust, whose seven crates Cargo.toml pins by
+    core        District AI core for Rust, whose eight crates Cargo.toml pins by
                 git tag with the exact version beside it. Every one names the
                 same repository, tag and version, and nothing else (no branch, no
                 rev, no path, and no [patch] or [replace] table anywhere in
@@ -84,6 +84,7 @@ CORE_CRATES = (
     "district-core",
     "district-host",
     "district-call",
+    "district-crash",
 )
 # The files this repository keeps as copies of the core's, compared byte for
 # byte with the core's at the locked commit.

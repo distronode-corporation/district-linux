@@ -33,14 +33,14 @@ publish = false
 [workspace.dependencies]
 # District AI core for Rust: the shared crates both desktop apps build on (the
 # data types, the HTTP client, sign-in, live updates, the application state, the
-# call engine and what a desktop app keeps on the machine), in their own
-# repository since 2.2.0. Pinned by tag, with the exact version beside it so that
-# Cargo refuses a tag that does not hold that version; Cargo.lock records the
-# commit the tag named, and `--locked` holds every build to it. All seven move
-# together, in one change: scripts/check-pins.py fails CI while any of them names
-# another tag, while Cargo.lock's commit is not the one the tag names, or while
-# packaging/flatpak/cargo-sources.json lacks that commit. deny.toml's
-# `[sources] allow-git` names this repository and no other.
+# call engine, what a desktop app keeps on the machine and opt-in crash
+# reports), in their own repository since 2.2.0. Pinned by tag, with the exact
+# version beside it so that Cargo refuses a tag that does not hold that version;
+# Cargo.lock records the commit the tag named, and `--locked` holds every build
+# to it. All eight move together, in one change: scripts/check-pins.py fails CI
+# while any of them names another tag, while Cargo.lock's commit is not the one
+# the tag names, or while packaging/flatpak/cargo-sources.json lacks that
+# commit. deny.toml's `[sources] allow-git` names this repository and no other.
 #
 # The core also sets `log`'s `max_level_warn` (district-live and district-call
 # do), which compiles every log line below warn out of the whole build, this
@@ -56,6 +56,11 @@ district-call = { git = "https://github.com/distronode-corporation/district-core
 # there is no registry version to keep in step (deny.toml's `allow-wildcard-paths`
 # relies on `publish = false` above).
 district-desktop = { path = "crates/district-desktop" }
+# The core's eighth crate, pinned with the seven above, at their tag: opt-in
+# crash reports (district-app's src/crash.rs, and "Crash reports" in
+# CONTRIBUTING.md). Its own crate in the core, so an app that does not offer
+# crash reports builds no Sentry code; here only the app depends on it.
+district-crash = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v6.0.0", version = "=6.0.0" }
 
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"

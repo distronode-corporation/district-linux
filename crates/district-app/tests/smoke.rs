@@ -39,8 +39,8 @@ use adw::prelude::*;
 use common::{descendants, ticket};
 use district_api::{ApiError, ErrorDetail, ReauthReason, RetryReason, TokenError};
 use district_app::{
-    APP_ID, AUTOSTART_COMMAND, DesktopBackground, Effects, Parts, START_AT_LOGIN_MARKER, UiBridge,
-    application,
+    APP_ID, AUTOSTART_COMMAND, CRASH_REPORTS_FILE, DesktopBackground, DesktopCrashReports, Effects,
+    Parts, START_AT_LOGIN_MARKER, UiBridge, application, settings_for,
 };
 use district_auth::{
     AccessClaims, Persistence, RevokeStatus, SignOutReport, StoreError, StoreErrorKind,
@@ -52,6 +52,7 @@ use district_core::{
     PREVIEW_COOLDOWN, Participant, PresenceState, RING_DEADLINE, RestoreError, RingSurface, Route,
     SignedInSession, Ticket, Urgency, UrlOpener,
 };
+use district_crash::{Consent, CrashError, OffReason, Settings, Status};
 use district_host::SleepHandler;
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
 use district_model::{
@@ -120,8 +121,28 @@ struct Smoke {
     /// Where background mode keeps "Start at login": the app's own folder,
     /// and the autostart folder, both private to this run.
     background_dirs: (PathBuf, PathBuf),
+    /// Where the answer about crash reports is kept: the app's own folder,
+    /// private to this run.
+    crash_dir: PathBuf,
     /// The runtime the tray runs on, on this run's private session bus.
     _runtime: tokio::runtime::Runtime,
+}
+
+/// Every consent the app handed the crash reporter, in order: the app is
+/// given [`record`] in place of `district_crash::apply`, so nothing is set up
+/// and nothing could be sent.
+static APPLIED: std::sync::Mutex<Vec<Consent>> = std::sync::Mutex::new(Vec::new());
+
+fn record(_: &Settings, consent: Consent) -> Result<Status, CrashError> {
+    APPLIED.lock().unwrap().push(consent);
+    Ok(match consent {
+        Consent::Granted => Status::On,
+        Consent::Denied => Status::Off(OffReason::NoConsent),
+    })
+}
+
+fn applied() -> Vec<Consent> {
+    APPLIED.lock().unwrap().clone()
 }
 
 fn fixture<T: DeserializeOwned>(name: &str) -> T {
@@ -731,6 +752,14 @@ fn start() -> Smoke {
         background_dirs.0.clone(),
         background_dirs.1.clone(),
     );
+    // As a release is built, with a DSN (one that names nothing), so the app
+    // asks and has the switch; the answer kept in this run's own folder.
+    let crash_dir = root.join("crash");
+    let crash_reports = DesktopCrashReports::with_apply(
+        crash_dir.clone(),
+        settings_for(Some("https://key@example.com/1"), Some("smoke")),
+        record,
+    );
     let app = application(Parts {
         config: CoreConfig {
             web_base_url: "https://www.distronode.com".to_owned(),
@@ -750,6 +779,7 @@ fn start() -> Smoke {
         startup_notice: None,
         background: Rc::new(background),
         tray_bridge: UiBridge::new(commands.clone()),
+        crash_reports: Rc::new(crash_reports),
     });
     // Never the running app's own instance, whatever is on this session bus.
     app.set_flags(app.flags() | gio::ApplicationFlags::NON_UNIQUE);
@@ -763,6 +793,7 @@ fn start() -> Smoke {
         bridge: UiBridge::new(commands),
         shots,
         background_dirs,
+        crash_dir,
         _runtime: runtime,
     };
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -772,6 +803,50 @@ fn start() -> Smoke {
     }
     smoke.pump();
     smoke
+}
+
+/// The first start: the question about crash reports, over the window
+/// before anything else, with "Don't send" first and the default. Closing it
+/// answers that, which is kept, and is what the reporter is handed.
+fn crash_question(smoke: &Smoke) {
+    let answer = smoke.crash_dir.join(CRASH_REPORTS_FILE);
+    assert!(!answer.exists(), "never answered");
+    assert!(
+        applied().is_empty(),
+        "the app hands nothing over until asked"
+    );
+    let question = smoke.top_question().expect("asked at the first start");
+    assert_eq!(question.heading().as_deref(), Some("Send crash reports?"));
+    assert!(
+        question
+            .body()
+            .contains("Your computer's name and your user name are left out.")
+    );
+    assert_eq!(question.default_response().as_deref(), Some("dont-send"));
+    assert_eq!(question.close_response(), "dont-send");
+    assert_eq!(question.response_label("dont-send"), "Don't send");
+    assert_eq!(question.response_label("send"), "Send reports");
+    // "Don't send" is the first answer, and the one with the focus.
+    let labels: Vec<String> = descendants(question.upcast_ref())
+        .into_iter()
+        .filter_map(|widget| widget.downcast::<gtk::Button>().ok())
+        .filter_map(|button| button.label().map(|label| label.to_string()))
+        .collect();
+    assert_eq!(labels, ["Don't send", "Send reports"]);
+    smoke.shot("00-crash-question");
+    // Escape, or closing it any way, is "Don't send".
+    question.close();
+    smoke.pump();
+    assert!(smoke.top_question().is_none(), "answered");
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "denied\n");
+    assert_eq!(applied(), [Consent::Denied]);
+    assert_eq!(
+        smoke
+            .app
+            .action_state("crash-reports")
+            .and_then(|state| state.get::<bool>()),
+        Some(false)
+    );
 }
 
 /// Start-up: the check for a stored session, a network failure, trying again,
@@ -1030,6 +1105,30 @@ fn account_and_devices(smoke: &Smoke) {
     row.set_active(false);
     smoke.pump();
     assert!(!entry.exists() && !marker.exists());
+    assert!(!row.is_active());
+
+    // Send crash reports: off, as the first start's question was answered;
+    // on hands the reporter the consent and keeps it, and off again takes it
+    // back.
+    let answer = smoke.crash_dir.join(CRASH_REPORTS_FILE);
+    let row = smoke
+        .mapped("crash_reports_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap();
+    assert!(!row.is_active());
+    assert_eq!(applied(), [Consent::Denied]);
+    row.set_active(true);
+    smoke.pump();
+    assert_eq!(applied(), [Consent::Denied, Consent::Granted]);
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "granted\n");
+    assert!(row.is_active());
+    row.set_active(false);
+    smoke.pump();
+    assert_eq!(
+        applied(),
+        [Consent::Denied, Consent::Granted, Consent::Denied]
+    );
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "denied\n");
     assert!(!row.is_active());
 
     smoke.activate("devices_row");
@@ -7675,6 +7774,10 @@ fn reopening(smoke: &Smoke) {
         smoke.shown("sidebar-overview"),
         "a new one, drawn from the same state"
     );
+    assert!(
+        smoke.top_question().is_none(),
+        "crash reports are asked about once, and were answered"
+    );
 
     // The tray: a click on the icon brings the window back, and so does its
     // menu's first item.
@@ -9656,6 +9759,7 @@ fn client_members(smoke: &Smoke) {
 
 fn main() {
     let smoke = start();
+    crash_question(&smoke);
     restoring(&smoke);
     signing_in(&smoke);
     overview_page(&smoke);

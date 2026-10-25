@@ -6,12 +6,14 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use district_core::{Effect, Event, Model, SessionState, SignedOut, SignedOutWhy};
+use district_crash::Consent;
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::app::{APP_ID, Parts};
 use crate::background::{Background, START_AT_LOGIN_ACTION, keeps_running};
 use crate::bridge::{UiBridge, UiCommand};
+use crate::crash::{CRASH_REPORTS_ACTION, CrashReports};
 use crate::effects::Effects;
 use crate::gtk::{self, gdk, gio, glib};
 use crate::guard;
@@ -28,6 +30,10 @@ const RINGTONE: &str = "/com/distronode/DistrictAI/sounds/ringtone.wav";
 
 /// The AppStream metadata, in the resources built into the binary.
 const METAINFO: &str = "/com/distronode/DistrictAI/com.distronode.DistrictAI.metainfo.xml";
+
+/// The answers to the question about crash reports.
+const DONT_SEND: &str = "dont-send";
+const SEND: &str = "send";
 
 /// How long the app waits, as it quits, for the effects quitting asks for:
 /// unregistering this desktop's presence, ending a call at the carrier.
@@ -66,6 +72,10 @@ pub(crate) struct Controller {
     /// The question before leaving a settings section with changes that are
     /// not saved, while it shows.
     discard: RefCell<Option<adw::AlertDialog>>,
+    /// The user's answer about crash reports.
+    crash_reports: Rc<dyn CrashReports>,
+    /// The question about crash reports, while it shows.
+    crash_question: RefCell<Option<adw::AlertDialog>>,
 }
 
 impl Controller {
@@ -91,6 +101,8 @@ impl Controller {
             discard: RefCell::new(None),
             background: parts.background,
             tray_bridge: RefCell::new(Some(parts.tray_bridge)),
+            crash_reports: parts.crash_reports,
+            crash_question: RefCell::new(None),
         })
     }
 
@@ -275,6 +287,56 @@ impl Controller {
             .upgrade()
             .unwrap_or_else(|| self.create_window(&app));
         window.present();
+        self.ask_crash_reports(&window);
+    }
+
+    /// Asks whether to send crash reports, over `window`, in a build that
+    /// can send them and only until the user has answered: once, the first
+    /// time the window shows, whether the app is new or upgraded from a
+    /// version that never asked. "Don't send" is the first answer and the
+    /// default, and closing the question gives it. A question that goes with
+    /// its window unanswered is asked again with the next one.
+    fn ask_crash_reports(self: &Rc<Self>, window: &DistrictWindow) {
+        let showing = self
+            .crash_question
+            .borrow()
+            .as_ref()
+            .is_some_and(|question| {
+                question.root().and_downcast::<DistrictWindow>().as_ref() == Some(window)
+            });
+        if !self.crash_reports.available() || self.crash_reports.answer().is_some() || showing {
+            return;
+        }
+        let dialog = adw::AlertDialog::new(
+            Some(text::crash_question_title(lang())),
+            Some(text::crash_question_body(lang())),
+        );
+        dialog.add_response(DONT_SEND, text::crash_dont_send(lang()));
+        dialog.add_response(SEND, text::crash_send(lang()));
+        dialog.set_default_response(Some(DONT_SEND));
+        dialog.set_close_response(DONT_SEND);
+        let controller = Rc::downgrade(self);
+        dialog.connect_closed(move |closed| {
+            if let Some(controller) = controller.upgrade() {
+                let mut question = controller.crash_question.borrow_mut();
+                if question.as_ref() == Some(closed) {
+                    *question = None;
+                }
+            }
+        });
+        let controller = Rc::downgrade(self);
+        dialog.connect_response(None, move |_, response| {
+            if let Some(controller) = controller.upgrade()
+                && let Some(app) = controller.app.upgrade()
+            {
+                // Through the action, as the switch goes, so the switch
+                // shows the answer.
+                app.activate_action(CRASH_REPORTS_ACTION, Some(&(response == SEND).to_variant()));
+                controller.render();
+            }
+        });
+        dialog.present(Some(window));
+        self.crash_question.replace(Some(dialog));
     }
 
     fn create_window(self: &Rc<Self>, app: &adw::Application) -> DistrictWindow {
@@ -424,6 +486,28 @@ impl Controller {
             })
             .build();
         app.add_action_entries([about, quit, open, button, start_at_login]);
+        // Only in a build that can send reports: without the action the
+        // account screen shows no switch.
+        if self.crash_reports.available() {
+            let crash_reports = Rc::clone(&self.crash_reports);
+            let granted = crash_reports.answer() == Some(Consent::Granted);
+            let send = gio::ActionEntry::builder(CRASH_REPORTS_ACTION)
+                .parameter_type(Some(glib::VariantTy::BOOLEAN))
+                .state(granted.to_variant())
+                .activate(move |_: &adw::Application, action, parameter| {
+                    if let Some(on) = parameter.and_then(glib::Variant::get::<bool>) {
+                        crash_reports.set(if on {
+                            Consent::Granted
+                        } else {
+                            Consent::Denied
+                        });
+                        // What is in force now, kept or not.
+                        action.set_state(&on.to_variant());
+                    }
+                })
+                .build();
+            app.add_action_entries([send]);
+        }
         app.set_accels_for_action("app.quit", &["<Control>q"]);
         app.set_accels_for_action(&format!("win.{MICROPHONE_ACTION}"), &[MICROPHONE_SHORTCUT]);
         app.set_accels_for_action(&format!("win.{HANG_UP_ACTION}"), &[HANG_UP_SHORTCUT]);

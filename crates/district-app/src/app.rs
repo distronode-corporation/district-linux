@@ -13,6 +13,7 @@ use crate::adw::prelude::*;
 use crate::background::Background;
 use crate::bridge::{UiBridge, UiCommand};
 use crate::controller::Controller;
+use crate::crash::CrashReports;
 use crate::effects::Effects;
 use crate::gtk::gio;
 
@@ -45,6 +46,9 @@ pub struct Parts {
     /// Where the tray asks the main thread for the window, or to quit: a
     /// bridge onto `commands`.
     pub tray_bridge: UiBridge,
+    /// The user's answer about crash reports, asked for once, the first time
+    /// the window shows, and switched on the account screen.
+    pub crash_reports: Rc<dyn CrashReports>,
 }
 
 /// The application, built from `parts`. Run it with `run`, or, in a test,
