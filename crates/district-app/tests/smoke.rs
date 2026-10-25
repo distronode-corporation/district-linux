@@ -1130,6 +1130,19 @@ fn account_and_devices(smoke: &Smoke) {
     );
     assert_eq!(fs::read_to_string(&answer).unwrap(), "denied\n");
     assert!(!row.is_active());
+    // A yes that cannot be kept (a folder the app may not add to) is not
+    // applied either, and the switch goes back off.
+    let mode = <fs::Permissions as std::os::unix::fs::PermissionsExt>::from_mode;
+    fs::set_permissions(&smoke.crash_dir, mode(0o500)).unwrap();
+    row.set_active(true);
+    smoke.pump();
+    fs::set_permissions(&smoke.crash_dir, mode(0o700)).unwrap();
+    assert!(!row.is_active(), "not kept, so not in force");
+    assert_eq!(
+        applied(),
+        [Consent::Denied, Consent::Granted, Consent::Denied]
+    );
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "denied\n");
 
     smoke.activate("devices_row");
     let Effect::LoadDevices { ticket } = smoke.take("LoadDevices") else {

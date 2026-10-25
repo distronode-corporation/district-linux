@@ -276,11 +276,30 @@ jobs:
             echo "::error::the debug file's build ID ($debug) is not the installed binary's ($installed)"
             exit 1
           fi
-          if readelf --sections installed-district-ai | grep -qE '\.(debug_[a-z]+|symtab) '; then
-            echo "::error::the binary in the bundle still holds debug sections or a symbol table"
+          # Each section's whole name: without --wide, readelf cuts a long
+          # name short ("[...]"), which no pattern can then match.
+          section_names() {
+            readelf --wide --sections "$1" 2>/dev/null |
+              awk '/^ *\[ *[0-9]+\]/ { sub(/^ *\[ *[0-9]+\] +/, ""); print $1 }'
+          }
+          installed_sections="$(section_names installed-district-ai)"
+          debug_sections="$(section_names debug-files/flatpak/district-ai.debug)"
+          if [ -z "$installed_sections" ] || [ -z "$debug_sections" ]; then
+            echo "::error::readelf listed no sections in the installed binary or the debug file"
             exit 1
           fi
-          if ! readelf --sections debug-files/flatpak/district-ai.debug | grep -q '\.debug_line '; then
+          # flatpak-builder compresses the debug sections before it splits
+          # them off, the GNU way, which renames each .debug_X to .zdebug_X
+          # (sentry-cli reads either), so both names count. .debug_gdb_scripts
+          # is not debug information: rustc puts it in an allocated section
+          # (it tells GDB which pretty printers to load), so stripping keeps it.
+          left="$(printf '%s\n' "$installed_sections" |
+            grep -E '^\.(z?debug_[a-z_]+|symtab)$' | grep -vx '\.debug_gdb_scripts' || true)"
+          if [ -n "$left" ]; then
+            echo "::error::the binary in the bundle still holds debug sections or a symbol table: $(printf '%s' "$left" | tr '\n' ' ')"
+            exit 1
+          fi
+          if ! printf '%s\n' "$debug_sections" | grep -qE '^\.z?debug_line$'; then
             echo "::error::the debug file holds no line tables"
             exit 1
           fi

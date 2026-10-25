@@ -496,13 +496,20 @@ impl Controller {
                 .state(granted.to_variant())
                 .activate(move |_: &adw::Application, action, parameter| {
                     if let Some(on) = parameter.and_then(glib::Variant::get::<bool>) {
-                        crash_reports.set(if on {
+                        let kept = crash_reports.set(if on {
                             Consent::Granted
                         } else {
                             Consent::Denied
                         });
-                        // What is in force now, kept or not.
-                        action.set_state(&on.to_variant());
+                        if let Err(error) = &kept {
+                            eprintln!(
+                                "district-ai: the crash reports answer could not be kept: {error}"
+                            );
+                        }
+                        // What is in force now: a refusal whether or not it
+                        // was kept, a yes only once it was (src/crash.rs), so
+                        // a yes that could not be kept puts the switch back.
+                        action.set_state(&(on && kept.is_ok()).to_variant());
                     }
                 })
                 .build();

@@ -737,7 +737,9 @@ fn start() -> Store {
         fn answer(&self) -> Option<district_crash::Consent> {
             None
         }
-        fn set(&self, _consent: district_crash::Consent) {}
+        fn set(&self, _consent: district_crash::Consent) -> std::io::Result<()> {
+            Ok(())
+        }
     }
     let (events, receiver) = async_channel::unbounded();
     let (commands, command_receiver) = async_channel::unbounded();

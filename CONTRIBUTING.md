@@ -349,7 +349,12 @@ is sent unless it is handed both a DSN and the user's consent (its SECURITY.md,
   switch, "Send crash reports".
 - At start the stored answer is handed to `district_crash::apply` before
   anything else (`Denied` while there is none), and every change hands the new
-  one.
+  one: a refusal at once, whether or not it can be written, and a yes only once
+  it is kept, so a yes that cannot be written puts the switch back off, as
+  "Start at login" does. The file is replaced whole (a new file renamed over
+  it), and a refusal that cannot be written that way is written over the old
+  file in place or else removes it, so what is on disk never says yes after
+  the user said no.
 - Reports name the release `com.distronode.DistrictAI@<version>+<build>`: the
   version is `[workspace.package] version`, which `--version`, the About dialog
   and the User-Agent name too, and the build is `DISTRICT_AI_BUILD` from the
