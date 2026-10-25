@@ -2498,11 +2498,12 @@ fn numbers_screen(smoke: &Smoke) {
     assert!(smoke.shown("partial_note"));
     assert!(smoke.count("number-row") >= 1);
     assert!(smoke.shows_part("+1 416 555 0100"), "numbers read grouped");
-    // Where numbers are bought is said once, under the button that goes
-    // there, and not again in a note above it.
-    assert!(smoke.shows_part("Numbers are bought on the District AI website"));
-    assert!(!smoke.shown("note_label"));
-    assert!(!smoke.shows_part("cannot be bought in this app"));
+    // Where numbers are bought is said once, in the note above the tabs,
+    // and the button that goes there only says it opens the browser.
+    assert!(smoke.shown("note_label"));
+    assert!(smoke.shows_part("cannot be bought in this app"));
+    assert!(smoke.shows_part("Opens in your browser."));
+    assert!(!smoke.shows_part("Numbers are bought on the District AI website"));
     smoke.shot("51-numbers");
     smoke.click("web_button");
     let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
@@ -5774,7 +5775,7 @@ fn desk_screens(smoke: &Smoke) {
         !smoke.pending("LoadDeskTickets"),
         "a desk that is off records nothing"
     );
-    assert_eq!(smoke.status_title("list_status"), "The help desk is off");
+    assert_eq!(smoke.status_title("list_status"), "The Desk is off");
     smoke.shot("67-desk-off");
     smoke.click("turn_on_button");
     let turn_on = smoke.take("SaveDeskSettings");
@@ -5793,10 +5794,7 @@ fn desk_screens(smoke: &Smoke) {
         ticket,
         result: Err(server_error()),
     });
-    assert_eq!(
-        smoke.status_title("list_status"),
-        "Could not load the help desk"
-    );
+    assert_eq!(smoke.status_title("list_status"), "Could not load the Desk");
     let read_queue = |smoke: &Smoke, queue: DeskTicketsResponse| {
         smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
             ticket,
@@ -5956,7 +5954,7 @@ fn desk_screens(smoke: &Smoke) {
     });
     assert_eq!(
         smoke.status_title("status"),
-        "Could not load the desk's settings"
+        "Could not load the Desk settings"
     );
     smoke.click("retry_button");
     smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
@@ -6948,12 +6946,14 @@ fn assert_ring_notification(notification: &Notification, call_id: &str) {
     assert!(format!("{events:?}").contains("Answer"));
 }
 
-/// Calls rung here: one ringing in the window and declined there; one
-/// missed; one rung while the window is hidden, which rings through its
-/// notification and is answered from the notification's button; a second
-/// ringing behind that call without a sound, ringing once the caller hangs
-/// up, and answered elsewhere first; and two the service ends, one answered on
-/// another device and one whose window closed.
+/// Calls rung here: one ringing in the window and declined there, which tells
+/// the service; one missed; two rung while the window is hidden, which ring
+/// through their notification, one declined and one answered from the
+/// notification's buttons; a second ringing behind that call without a sound,
+/// ringing once the caller hangs up, and answered elsewhere first; and four the
+/// service ends, one answered on another device, one whose window closed, one
+/// it withdrew and one every member declined. Only the member's own Decline is
+/// sent.
 fn ringing(smoke: &Smoke) {
     smoke.activate("sidebar-overview");
     smoke.forget();
@@ -6978,9 +6978,22 @@ fn ringing(smoke: &Smoke) {
     smoke.click("decline_button");
     assert!(smoke.pending("StopRingtone"));
     assert!(smoke.pending("WithdrawNotification"));
+    // The member's own refusal is told to the service, once, naming the call
+    // and its workspace and nothing else.
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        (AGENCY, "call_ring_1")
+    );
     assert!(
-        !smoke.pending("AnswerCall"),
-        "declining tells the service nothing"
+        !smoke.pending("DeclineCall") && !smoke.pending("AnswerCall"),
+        "a decline is sent once, and is not an answer"
     );
     assert!(!smoke.shown("ring_strip"));
     smoke.bridge.stop_ringtone();
@@ -6998,6 +7011,18 @@ fn ringing(smoke: &Smoke) {
     smoke.pump();
     smoke.click("decline_button");
     assert!(!smoke.shown("ring_strip"));
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        ("ws-contract-client", "call_ring_elsewhere"),
+        "the decline names the workspace the call rang in"
+    );
     smoke.forget();
 
     // Nobody answers before the service would stop holding the caller.
@@ -7014,6 +7039,10 @@ fn ringing(smoke: &Smoke) {
     smoke.shot("153-ring-missed");
     smoke.click("ring_dismiss");
     assert!(!smoke.shown("ring_strip"));
+    assert!(
+        !smoke.pending("DeclineCall"),
+        "a ring that runs out, and its dismissal, send nothing"
+    );
     smoke.forget();
 
     // Answered on another device: the service says the ring is over, and it
@@ -7030,7 +7059,9 @@ fn ringing(smoke: &Smoke) {
     ring_cancelled(smoke, "call_ring_taken", "answered");
     assert!(smoke.pending("StopRingtone"));
     assert!(smoke.pending("WithdrawNotification"));
-    assert!(!smoke.pending("Notify") && !smoke.pending("AnswerCall"));
+    assert!(
+        !smoke.pending("Notify") && !smoke.pending("AnswerCall") && !smoke.pending("DeclineCall")
+    );
     assert_eq!(
         smoke.label("ring_title"),
         IncomingRing::ANSWERED_ELSEWHERE_TITLE
@@ -7064,14 +7095,80 @@ fn ringing(smoke: &Smoke) {
     assert_eq!(missed.title, Notification::MISSED_TITLE);
     assert_eq!(smoke.label("ring_title"), Notification::MISSED_TITLE);
     assert_eq!(smoke.label("ring_message"), IncomingRing::MISSED);
+    assert!(!smoke.pending("DeclineCall"), "nobody declined it");
     smoke.click("ring_dismiss");
     assert!(!smoke.shown("ring_strip"));
+    smoke.forget();
+
+    // The service withdrew it for a reason of its own: missed, and nothing
+    // sent, because no person decided anything.
+    ring(smoke, "call_ring_withdrawn");
+    smoke.take("Notify");
+    smoke.forget();
+    ring_cancelled(smoke, "call_ring_withdrawn", "withdrawn");
+    assert!(smoke.pending("StopRingtone"));
+    let Effect::Notify(missed) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    assert_eq!(missed.title, Notification::MISSED_TITLE);
+    assert_eq!(smoke.label("ring_title"), Notification::MISSED_TITLE);
+    assert!(!smoke.pending("DeclineCall"), "nobody declined it");
+    smoke.click("ring_dismiss");
+    assert!(!smoke.shown("ring_strip"));
+    smoke.forget();
+
+    // Every member rung declined, this one on another device: the ring is
+    // silenced and put away as a decline here is, with no missed call, and
+    // nothing is sent, because the service already knows.
+    ring(smoke, "call_ring_declined");
+    assert!(smoke.pending("StartRingtone"));
+    let Effect::Notify(declined) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    smoke.bridge.notify(&declined);
+    smoke.bridge.start_ringtone();
+    smoke.pump();
+    smoke.forget();
+    ring_cancelled(smoke, "call_ring_declined", "declined");
+    assert!(smoke.pending("StopRingtone"));
+    assert!(smoke.pending("WithdrawNotification"));
+    assert!(!smoke.pending("Notify"), "not a missed call");
+    assert!(!smoke.pending("DeclineCall") && !smoke.pending("AnswerCall"));
+    assert!(!smoke.shown("ring_strip"), "put away, as a decline here is");
+    smoke.bridge.stop_ringtone();
+    smoke.bridge.withdraw(&declined.id);
+    smoke.pump();
     smoke.forget();
 
     // The window hidden: the ring is its urgent notification and the
     // ringtone, and the notification's Answer takes the call.
     smoke.window().set_visible(false);
     smoke.pump();
+    // The notification's Decline is the member's refusal too, and is sent.
+    ring(smoke, "call_ring_declined_hidden");
+    smoke.forget();
+    smoke.app.activate_action(
+        "notification-button",
+        Some(&("decline", "call_ring_declined_hidden").to_variant()),
+    );
+    smoke.pump();
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        (AGENCY, "call_ring_declined_hidden")
+    );
+    assert!(smoke.pending("StopRingtone") && smoke.pending("WithdrawNotification"));
+    assert!(
+        !smoke.pending("PresentWindow"),
+        "declining leaves the window hidden"
+    );
+    smoke.forget();
     ring(smoke, "call_ring_3");
     assert!(smoke.pending("StartRingtone"));
     let Effect::Notify(notification) = smoke.take("Notify") else {
@@ -7154,9 +7251,11 @@ fn ringing(smoke: &Smoke) {
     smoke.forget();
 }
 
-/// The machine going to sleep with a call under way: the presence
-/// unregistered and the call ended (at the carrier too) before the sleep is
-/// let go; and waking, which registers again.
+/// The machine going to sleep with a call under way: a call waiting behind it
+/// declined, which is sent, and another left waiting, which the sleep drops
+/// without sending anything; the presence unregistered and the call ended (at
+/// the carrier too) before the sleep is let go; and waking, which registers
+/// again.
 fn sleeping(smoke: &Smoke) {
     smoke.activate("sidebar-calls");
     smoke.forget();
@@ -7173,6 +7272,30 @@ fn sleeping(smoke: &Smoke) {
         session,
         MediaEvent::ParticipantJoined(Participant::new("sip_callee", None, false)),
     );
+    smoke.forget();
+
+    // A call waiting behind this one, declined: the decline is sent for a
+    // waiting ring as for one that rings.
+    ring(smoke, "call_waiting_declined");
+    assert_eq!(smoke.label("ring_title"), Notification::WAITING_TITLE);
+    smoke.forget();
+    smoke.click("decline_button");
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        (AGENCY, "call_waiting_declined")
+    );
+    assert!(!smoke.shown("ring_strip"));
+    // Another waits as the machine goes to sleep: it is dropped, and no
+    // person declined it, so nothing is sent.
+    ring(smoke, "call_waiting_asleep");
+    assert!(smoke.shown("ring_strip"));
     smoke.forget();
 
     let bridge = smoke.bridge.clone();
@@ -7196,6 +7319,11 @@ fn sleeping(smoke: &Smoke) {
     assert!(smoke.pending("HangUpCall"), "the call ends at the carrier");
     assert!(smoke.pending("DisconnectMedia"));
     assert!(smoke.shows_part(ActiveCall::ENDED));
+    assert!(
+        !smoke.pending("DeclineCall"),
+        "a ring dropped for the sleep is not a decline"
+    );
+    assert!(!smoke.shown("ring_strip"), "the waiting ring is dropped");
     smoke.forget();
 
     smoke.bridge.resumed();
