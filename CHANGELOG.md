@@ -22,6 +22,10 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Changed
 
+- A call's outcome now reads in English as the portal and the French app show it:
+  "Callback requested", "Passed to a person", "Information only", and the rest of the
+  core's labels, instead of the stored word ("Callback", "Escalated", "Info"). An
+  outcome the core does not list still shows as stored.
 - Declining a call that rings here now tells the service, so once every member rung has
   declined, the receptionist takes a message at once instead of holding the caller until
   the ring runs out. Only a press of Decline is sent, in the window or on the

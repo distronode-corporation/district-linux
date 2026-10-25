@@ -355,9 +355,12 @@ pub(crate) fn day_heading(when: &glib::DateTime, now: &glib::DateTime) -> String
 /// generic one, never the stored text turned into English words.
 ///
 /// English keeps the words this app has always shown, [`humanize`] of the
-/// value, except for the two values whose portal labels it takes on:
-/// sentiment `negative` reads "Friction", and transfer status `success`
-/// "Transferred". (A failed transfer and its reasons have portal sentences
+/// value, except where it takes on the portal's labels: sentiment `negative`
+/// reads "Friction", transfer status `success` "Transferred", and a call's
+/// outcome (disposition) reads the core's label for every value the
+/// vocabulary lists ("Callback requested", "Passed to a person", "Information
+/// only"), as French does; an outcome it does not list is still humanized,
+/// never "Other". (A failed transfer and its reasons have portal sentences
 /// too, which English does not take on yet; every other value the vocabulary
 /// knows reads the same either way.)
 pub(crate) fn wire_text(category: WireCategory, raw: &str) -> String {
@@ -366,9 +369,13 @@ pub(crate) fn wire_text(category: WireCategory, raw: &str) -> String {
     if raw.trim().is_empty() {
         return String::new();
     }
-    let portal = PORTAL_LABELS
-        .iter()
-        .any(|(known, value)| *known == category && raw.trim().eq_ignore_ascii_case(value));
+    let portal = PORTAL_LABELS.iter().any(|(known, value)| {
+        *known == category
+            && value.map_or_else(
+                || known_wire_label(category, raw).is_some(),
+                |value| raw.trim().eq_ignore_ascii_case(value),
+            )
+    });
     if locale == Locale::En && !portal {
         return humanize(raw);
     }
@@ -391,10 +398,13 @@ pub(crate) fn placeholder_text(raw: &str) -> Cow<'_, str> {
     placeholder_label(raw, lang()).map_or(Cow::Borrowed(raw), Cow::Borrowed)
 }
 
-/// The values whose English label is the portal's rather than [`humanize`]'s.
-const PORTAL_LABELS: [(WireCategory, &str); 2] = [
-    (WireCategory::Sentiment, "negative"),
-    (WireCategory::TransferStatus, "success"),
+/// The values whose English label is the portal's rather than [`humanize`]'s:
+/// one value of a category, or with `None` every value the vocabulary lists
+/// in it.
+const PORTAL_LABELS: [(WireCategory, Option<&str>); 3] = [
+    (WireCategory::Sentiment, Some("negative")),
+    (WireCategory::TransferStatus, Some("success")),
+    (WireCategory::Disposition, None),
 ];
 
 /// A status value the service wrote in its own form (`no-answer`,
@@ -1417,6 +1427,46 @@ mod tests {
                 wire_label(WireCategory::BillingInvoiceStatus, "paid", Locale::FrCa)
             );
             assert_eq!(wire_text(WireCategory::MeetingStatus, "archived"), "Autre");
+        });
+    }
+
+    /// English takes the portal's labels for a call's outcome, every value
+    /// the vocabulary lists, as French does; an outcome it does not list
+    /// stays humanized, and the single-value entries still hold.
+    #[test]
+    fn a_call_outcome_reads_as_the_portal_label_in_english() {
+        assert_eq!(
+            wire_text(WireCategory::Disposition, "callback"),
+            "Callback requested"
+        );
+        assert_eq!(
+            wire_text(WireCategory::Disposition, " Escalated "),
+            "Passed to a person"
+        );
+        assert_eq!(
+            wire_text(WireCategory::Disposition, "info"),
+            "Information only"
+        );
+        assert_eq!(
+            wire_text(WireCategory::Disposition, "wrong-number"),
+            "Wrong number"
+        );
+        assert_eq!(wire_text(WireCategory::Disposition, "other"), "Other");
+        assert_eq!(
+            wire_text(WireCategory::Disposition, "left-early"),
+            "Left early"
+        );
+        assert_eq!(wire_text(WireCategory::Sentiment, "negative"), "Friction");
+        assert_eq!(wire_text(WireCategory::Sentiment, "positive"), "Positive");
+        assert_eq!(
+            wire_text(WireCategory::TransferStatus, "success"),
+            "Transferred"
+        );
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(
+                wire_text(WireCategory::Disposition, "callback"),
+                "Rappel demand\u{e9}"
+            );
         });
     }
 }
