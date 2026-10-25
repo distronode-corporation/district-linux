@@ -1,6 +1,7 @@
 # District AI for Linux
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/distronode-corporation/district-linux/badge)](https://scorecard.dev/viewer/?uri=github.com/distronode-corporation/district-linux)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15874/badge)](https://www.bestpractices.dev/projects/15874)
 
 A native GTK 4 and libadwaita desktop client for District AI, the AI voice
 receptionist from Distronode.
