@@ -241,9 +241,13 @@ desktop's devices through a sound server, and reconnecting.
   same and no more; so does an answered call, which is shown as "Caller".
 - Answering asks the service for the call's media credential, which is also what
   tells the receptionist a person took the call, so it is asked for only when the
-  member answers, once. Declining, or letting the ring run out, sends nothing:
-  the service learns only that nobody answered, so a refusal cannot be told
-  apart from a desktop nobody was at.
+  member answers, once. Declining sends the call's id and workspace, once, only
+  when the member presses Decline (in the window or on the notification), so
+  that once every member rung has declined the receptionist takes a message at
+  once. A ring that runs out, that the service withdraws, or that is dropped
+  because the machine sleeps, the app quits or the member signs out sends
+  nothing: the service learns only that nobody answered, as for a desktop
+  nobody was at.
 - Placing a call rings a telephone and is billed, so it is sent only when the
   member presses Call, once, and never again by itself. A viewer is not offered
   the dialler. The number is sent as typed, so the service's do-not-call check
