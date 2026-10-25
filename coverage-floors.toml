@@ -23,9 +23,9 @@
 # District AI core for Rust with the crate.
 #
 # Only this workspace's crates are measured. The core's crates (district-model,
-# -api, -auth, -live, -core, -host and -call) are dependencies here, pinned by
-# tag, and their own repository holds them to their floors (100, and 97 for the
-# call engine's build).
+# -api, -auth, -live, -core, -host, -call and -crash) are dependencies here,
+# pinned by tag, and their own repository holds them to their floors (100, and
+# 97 for the call engine's build).
 
 [crates.district-desktop]
 floor = 100

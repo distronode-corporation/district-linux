@@ -13,8 +13,19 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Added
+
+- Crash reports, off until you allow them: the app asks once, with Don't send as the
+  default, and Send crash reports on the account screen changes it. A report holds the
+  error, where it happened and the versions, never your computer's name, your user name
+  or your IP address.
+
 ### Changed
 
+- A call's outcome now reads in English as the portal and the French app show it:
+  "Callback requested", "Passed to a person", "Information only", and the rest of the
+  core's labels, instead of the stored word ("Callback", "Escalated", "Info"). An
+  outcome the core does not list still shows as stored.
 - Declining a call that rings here now tells the service, so once every member rung has
   declined, the receptionist takes a message at once instead of holding the caller until
   the ring runs out. Only a press of Decline is sent, in the window or on the
@@ -22,7 +33,7 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   dropped because the computer sleeps, the app quits or you sign out still send nothing.
   A ring the service ends because every member it rang declined (you among them, here
   or on another device) stops here without a missed call.
-- Built on District AI core for Rust 6.0.0. In English the Desk is called the Desk
+- Built on District AI core for Rust 6.1.0. In English the Desk is called the Desk
   ("The Desk is off", "Turn on the Desk", "Could not load the Desk"). The working hours
   editor shows French times as « 9 h » and « 9 h 30 », reads `9:30` or `9 h 30` as well
   as `09:30`, still saves HH:MM, and refuses a time past 23:59 before the save.

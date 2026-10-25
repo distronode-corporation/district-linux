@@ -6,7 +6,7 @@ name: Release
 # is the signed provenance attestation over both, attached so it can be
 # verified offline and found by OpenSSF Scorecard.
 #
-# Three stages, and only the last can write anything:
+# Four stages, and only the last two can write anything:
 #
 # - `guard` refuses a tag that should not be built: one on a commit that is not
 #   on main (CI never tested it), one that the versions in Cargo.toml,
@@ -23,6 +23,20 @@ name: Release
 #   DRAFT release with the notes from CHANGELOG.md, checks that GitHub holds
 #   exactly the two packages and the provenance bundle, and only then makes the
 #   release public.
+# - `sentry`, once the release is public, uploads the binaries' debug files
+#   (deb.yml and flatpak.yml split them off; neither package holds them) and
+#   creates the Sentry release the crash reports name,
+#   `com.distronode.DistrictAI@<version>+<the commit's first twelve
+#   characters>`, with its commits, then finalizes it. After `publish`, so a
+#   release that never went out has nothing in Sentry, and a Sentry outage
+#   never holds a release back: a failed run is re-run once Sentry answers,
+#   which uploads only what Sentry does not hold yet.
+#
+# Crash reports are off in every build until its user says yes. The packages
+# carry the DSN reports go to, the LINUX_SENTRY_DSN repository secret, which
+# deb.yml and flatpak.yml take from here and only on a `v` tag push
+# (crates/district-app/src/crash.rs). `sentry` needs SENTRY_AUTH_TOKEN, a
+# secret of the `release` environment.
 #
 # ⛔ THE LICENCE GATE. A build with calls statically links libwebrtc, so
 # publishing it distributes the libwebrtc the pin names. The repository
@@ -156,12 +170,18 @@ jobs:
     permissions:
       contents: read
     uses: $/.github/workflows/deb.yml
+    # Only the DSN, which the binary carries for anyone to read anyway; no
+    # token reaches a job that runs build scripts.
+    secrets:
+      LINUX_SENTRY_DSN: ${{ secrets.LINUX_SENTRY_DSN }}
 
   flatpak:
     needs: guard
     permissions:
       contents: read
     uses: $/.github/workflows/flatpak.yml
+    secrets:
+      LINUX_SENTRY_DSN: ${{ secrets.LINUX_SENTRY_DSN }}
 
   # The only job that can write to the repository and the only one that can
   # make a release public. It sees packages, never source, and runs no build.
@@ -317,3 +337,66 @@ jobs:
 
       - name: Publish
         run: gh release edit "$TAG" --draft=false --latest
+
+  # The binaries' debug files and the Sentry release, once the release is
+  # public. It runs no build: it sees the debug files, the checkout for
+  # `set-commits --auto` (which reads the commit and the repository's remote),
+  # and the token, which nothing else in this workflow holds.
+  sentry:
+    needs: [guard, publish]
+    environment: release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      SENTRY_URL: https://de.sentry.io
+      SENTRY_ORG: distronode-corporation-eu
+      SENTRY_PROJECT: district-linux
+      SENTRY_DISABLE_UPDATE_CHECK: "true"
+      VERSION: ${{ needs.guard.outputs.version }}
+    steps:
+      # The whole history, so set-commits can find the previous release's
+      # commit.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: $/.github/actions/install-sentry-cli
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: debug-files-*
+          merge-multiple: true
+          path: debug-files
+
+      # One debug file per package, each with a build ID and line tables,
+      # read on this runner before anything is sent.
+      - name: The two debug files are what Sentry needs
+        run: |
+          set -euo pipefail
+          find debug-files -type f | sort
+          for package in deb flatpak; do
+            file="debug-files/$package/district-ai.debug"
+            [ -s "$file" ] || { echo "::error::no debug file for the $package"; exit 1; }
+            sentry-cli debug-files check "$file"
+          done
+          [ "$(find debug-files -type f | wc -l)" -eq 2 ] || { echo "::error::expected exactly two debug files"; exit 1; }
+
+      - name: Upload the debug files
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: sentry-cli debug-files upload --type elf debug-files
+
+      # The name the binaries were built with (deb.yml and flatpak.yml set
+      # DISTRICT_AI_BUILD to the same twelve characters).
+      - name: Create, link and finalize the Sentry release
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          release="com.distronode.DistrictAI@${VERSION}+${GITHUB_SHA::12}"
+          sentry-cli releases new "$release"
+          sentry-cli releases set-commits "$release" --auto
+          sentry-cli releases finalize "$release"

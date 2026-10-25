@@ -33,6 +33,18 @@ msgctxt "account_page.computer"
 msgid "This computer"
 msgstr ""
 
+#. screen: account_page; ctx: label; tier: T1
+#. In account-page.ui. A switch: when the app crashes, it sends a report to Distronode. Off until the user turns it on, or answers Send reports to the question at the first start (crash.question_title). Shown only in a build that can send reports.
+msgctxt "account_page.crash_reports"
+msgid "Send crash reports"
+msgstr ""
+
+#. screen: account_page; ctx: body; tier: T1
+#. In account-page.ui. Under the Send crash reports switch. What it says must stay true of district-crash: the machine's name and the user are never sent, and home directory paths have the user's name replaced.
+msgctxt "account_page.crash_reports_body"
+msgid "If District AI crashes, send Distronode a report so we can fix the problem. Your computer's name and your user name are left out."
+msgstr ""
+
 #. screen: account_page; ctx: label; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.delete_account"
@@ -1055,6 +1067,30 @@ msgstr ""
 #. In contacts-page.ui.
 msgctxt "contacts_page.no_contact_open"
 msgid "No contact open"
+msgstr ""
+
+#. screen: crash; ctx: button; tier: T1
+#. The first answer to the question at the first start, and the one it takes when closed: no crash reports are sent.
+msgctxt "crash.dont_send"
+msgid "Don't send"
+msgstr ""
+
+#. screen: crash; ctx: body; tier: T1
+#. Asked once, at the first start of a build that can send reports (existing users see it once after the update that brings it). What it says must stay true of district-crash (its SECURITY.md, Crash reports). The account screen is the Account item in the sidebar.
+msgctxt "crash.question_body"
+msgid "If District AI crashes, it can send Distronode a report so we can fix the problem. A report holds the error, where in the app it happened, and the versions of the app and your system. Your computer's name and your user name are left out. Reports go through Sentry, the error reporting service we use. You can change this later on the account screen."
+msgstr ""
+
+#. screen: crash; ctx: title; tier: T1
+#. The question at the first start. The answer is kept; Don't send is the default.
+msgctxt "crash.question_title"
+msgid "Send crash reports?"
+msgstr ""
+
+#. screen: crash; ctx: button; tier: T1
+#. The second answer to the question at the first start: crash reports are sent from now on, until the switch on the account screen is turned off.
+msgctxt "crash.send"
+msgid "Send reports"
 msgstr ""
 
 #. screen: desk; ctx: label; tier: T3

@@ -41,6 +41,24 @@ pub fn account_page_computer(l: Locale) -> &'static str {
     }
 }
 
+/// `account_page.crash_reports`
+#[must_use]
+pub fn account_page_crash_reports(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Send crash reports",
+        Locale::FrCa => "Envoyer les rapports de plantage",
+    }
+}
+
+/// `account_page.crash_reports_body`
+#[must_use]
+pub fn account_page_crash_reports_body(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "If District AI crashes, send Distronode a report so we can fix the problem. Your computer's name and your user name are left out.",
+        Locale::FrCa => "Si District AI plante, envoyer un rapport à Distronode pour que nous puissions corriger le problème. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés.",
+    }
+}
+
 /// `account_page.delete_account`
 #[must_use]
 pub fn account_page_delete_account(l: Locale) -> &'static str {
@@ -1721,6 +1739,42 @@ pub fn contacts_page_no_contact_open(l: Locale) -> &'static str {
     match l {
         Locale::En => "No contact open",
         Locale::FrCa => "Aucun contact sélectionné",
+    }
+}
+
+/// `crash.dont_send`
+#[must_use]
+pub fn crash_dont_send(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Don't send",
+        Locale::FrCa => "Ne pas envoyer",
+    }
+}
+
+/// `crash.question_body`
+#[must_use]
+pub fn crash_question_body(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "If District AI crashes, it can send Distronode a report so we can fix the problem. A report holds the error, where in the app it happened, and the versions of the app and your system. Your computer's name and your user name are left out. Reports go through Sentry, the error reporting service we use. You can change this later on the account screen.",
+        Locale::FrCa => "Si District AI plante, l'application peut envoyer un rapport à Distronode pour que nous puissions corriger le problème. Un rapport contient l'erreur, l'endroit de l'application où elle s'est produite et les versions de l'application et de votre système. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés. Les rapports passent par Sentry, le service de signalement d'erreurs que nous utilisons. Vous pourrez modifier ce choix plus tard à l'écran Compte.",
+    }
+}
+
+/// `crash.question_title`
+#[must_use]
+pub fn crash_question_title(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Send crash reports?",
+        Locale::FrCa => "Envoyer les rapports de plantage?",
+    }
+}
+
+/// `crash.send`
+#[must_use]
+pub fn crash_send(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Send reports",
+        Locale::FrCa => "Envoyer les rapports",
     }
 }
 

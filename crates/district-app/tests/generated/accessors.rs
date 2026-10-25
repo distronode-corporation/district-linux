@@ -12,6 +12,10 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::account_page_account(Locale::FrCa), "Votre compte");
     assert_eq!(text::account_page_computer(Locale::En), "This computer");
     assert_eq!(text::account_page_computer(Locale::FrCa), "Cet ordinateur");
+    assert_eq!(text::account_page_crash_reports(Locale::En), "Send crash reports");
+    assert_eq!(text::account_page_crash_reports(Locale::FrCa), "Envoyer les rapports de plantage");
+    assert_eq!(text::account_page_crash_reports_body(Locale::En), "If District AI crashes, send Distronode a report so we can fix the problem. Your computer's name and your user name are left out.");
+    assert_eq!(text::account_page_crash_reports_body(Locale::FrCa), "Si District AI plante, envoyer un rapport à Distronode pour que nous puissions corriger le problème. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés.");
     assert_eq!(text::account_page_delete_account(Locale::En), "Delete your account");
     assert_eq!(text::account_page_delete_account(Locale::FrCa), "Supprimer votre compte");
     assert_eq!(text::account_page_device_name(Locale::En), "Device name");
@@ -396,6 +400,14 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::contacts_page_contacts_a11y(Locale::FrCa), "Contacts");
     assert_eq!(text::contacts_page_no_contact_open(Locale::En), "No contact open");
     assert_eq!(text::contacts_page_no_contact_open(Locale::FrCa), "Aucun contact sélectionné");
+    assert_eq!(text::crash_dont_send(Locale::En), "Don't send");
+    assert_eq!(text::crash_dont_send(Locale::FrCa), "Ne pas envoyer");
+    assert_eq!(text::crash_question_body(Locale::En), "If District AI crashes, it can send Distronode a report so we can fix the problem. A report holds the error, where in the app it happened, and the versions of the app and your system. Your computer's name and your user name are left out. Reports go through Sentry, the error reporting service we use. You can change this later on the account screen.");
+    assert_eq!(text::crash_question_body(Locale::FrCa), "Si District AI plante, l'application peut envoyer un rapport à Distronode pour que nous puissions corriger le problème. Un rapport contient l'erreur, l'endroit de l'application où elle s'est produite et les versions de l'application et de votre système. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés. Les rapports passent par Sentry, le service de signalement d'erreurs que nous utilisons. Vous pourrez modifier ce choix plus tard à l'écran Compte.");
+    assert_eq!(text::crash_question_title(Locale::En), "Send crash reports?");
+    assert_eq!(text::crash_question_title(Locale::FrCa), "Envoyer les rapports de plantage?");
+    assert_eq!(text::crash_send(Locale::En), "Send reports");
+    assert_eq!(text::crash_send(Locale::FrCa), "Envoyer les rapports");
     assert_eq!(text::desk_every_ticket(Locale::En), "Every ticket");
     assert_eq!(text::desk_every_ticket(Locale::FrCa), "Tous les billets");
     assert_eq!(text::desk_no_customer_details(Locale::En), "No customer details");

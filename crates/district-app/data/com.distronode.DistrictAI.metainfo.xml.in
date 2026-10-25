@@ -60,8 +60,10 @@
     <!-- Contacts' email addresses and phone numbers are shared with every member
          of the workspace, and replies can go out by email. -->
     <content_attribute id="social-contacts">intense</content_attribute>
-    <!-- Everything goes through the District AI service's online API. The app
-         sends no crash reports, analytics or diagnostics. -->
+    <!-- Everything goes through the District AI service's online API. Crash
+         reports are sent only after the user says yes (asked once, off by
+         default) and hold no computer name, user name or IP address; the app
+         sends no analytics. -->
     <content_attribute id="social-info">mild</content_attribute>
     <!-- Messages sent, calls placed and the AI features (a reply written by
          AI, a District HQ question, a persona audition, a knowledge document)

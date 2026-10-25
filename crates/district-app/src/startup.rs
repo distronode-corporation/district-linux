@@ -22,6 +22,7 @@ use crate::adw::prelude::*;
 use crate::app::{Parts, application};
 use crate::background::DesktopBackground;
 use crate::bridge::UiBridge;
+use crate::crash::{DesktopCrashReports, build_settings};
 use crate::effects::RuntimeEffects;
 use crate::gtk::glib;
 use crate::l10n::{desktop_locale, text};
@@ -56,6 +57,10 @@ pub fn run() -> glib::ExitCode {
 fn launch() -> Result<glib::ExitCode, String> {
     let locale = desktop_locale();
     let dirs = XdgDirs::from_env().map_err(|error| error.to_string())?;
+    // Crash reports first, so a panic in anything after is reported once the
+    // user has said yes, and nothing is set up until then (src/crash.rs).
+    let crash_reports = DesktopCrashReports::new(dirs.app_config_dir(), build_settings());
+    crash_reports.start();
     let device_id = dirs
         .device_identity()
         .load_or_create()
@@ -174,6 +179,7 @@ fn launch() -> Result<glib::ExitCode, String> {
         startup_notice,
         background: Rc::new(background),
         tray_bridge,
+        crash_reports: Rc::new(crash_reports),
     });
     let code = app.run();
     drop(app);

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- The account: this build and this computer, whether the app starts at
-     login, whether calls ring here, the devices signed in, signing out, and
+     login, whether it sends crash reports, whether calls ring here, the devices signed in, signing out, and
      where deleting the account starts. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
@@ -30,6 +30,14 @@
                 <property name="title" translatable="yes" context="account_page.start_at_login">Start at login</property>
                 <property name="subtitle" translatable="yes" context="account_page.start_at_login_body">Open District AI in the background when you log in, so calls ring here before you open the window. Closing the window keeps it running; Quit stops it.</property>
                 <property name="use-markup">False</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="crash_reports_row">
+                <property name="title" translatable="yes" context="account_page.crash_reports">Send crash reports</property>
+                <property name="subtitle" translatable="yes" context="account_page.crash_reports_body">If District AI crashes, send Distronode a report so we can fix the problem. Your computer's name and your user name are left out.</property>
+                <property name="use-markup">False</property>
+                <property name="visible">False</property>
               </object>
             </child>
           </object>
