@@ -182,13 +182,12 @@ fn row_note(number: &OwnedNumber, can_change: bool) -> RowNote {
     }
 }
 
-/// What the screen says above its tabs: a viewer's reason nothing here can
-/// change. A member who could buy a number sees the web marketplace's button
-/// instead, whose caption says where numbers are bought, so the core's note
-/// saying the same is not drawn above it.
-fn screen_note(capabilities: &Capabilities) -> Option<&'static str> {
-    (!MarketplaceScreen::offers_web(capabilities))
-        .then(|| MarketplaceScreen::scope_note(capabilities))
+/// What the screen says above its tabs, to every member: where numbers are
+/// bought, or a viewer's reason nothing here can change. Since the core's
+/// 5.1.0 the web marketplace's caption only says the button opens the
+/// browser, so this note is the one place a member who can buy reads where.
+fn screen_note(capabilities: &Capabilities) -> &'static str {
+    MarketplaceScreen::scope_note(capabilities)
 }
 
 /// A held number as a row that opens on what can be done to it: reapply its
@@ -507,8 +506,8 @@ impl MarketplacePage {
     pub(crate) fn update(&self, screen: &MarketplaceScreen, capabilities: &Capabilities) {
         let imp = self.imp();
         let note = screen_note(capabilities);
-        imp.note_label.set_label(note.unwrap_or_default());
-        imp.note_label.set_visible(note.is_some());
+        imp.note_label.set_label(note);
+        imp.note_label.set_visible(true);
         imp.web_box
             .set_visible(MarketplaceScreen::offers_web(capabilities));
         imp.owned_tab
@@ -775,21 +774,22 @@ mod tests {
     }
 
     /// Each help sentence is said once on the screen: a member who can buy
-    /// reads where numbers are bought under the web button only, and a
-    /// viewer reads why nothing changes above the tabs only, never again
-    /// under each number.
+    /// reads where numbers are bought above the tabs, and the web button's
+    /// caption only says it opens the browser; a viewer reads why nothing
+    /// changes above the tabs only, never again under each number.
     #[test]
     fn the_screens_help_is_said_once() {
         let agency = Capabilities::for_role(Some("agency"));
         let viewer = Capabilities::for_role(Some("viewer"));
         assert!(MarketplaceScreen::offers_web(&agency));
-        assert_eq!(screen_note(&agency), None, "the web caption says it");
-        assert!(
-            core_text::marketplace_web_caption(crate::l10n::Locale::En)
-                .starts_with("Numbers are bought on the District AI website")
+        assert_eq!(screen_note(&agency), numbers_scope_note(true));
+        assert!(screen_note(&agency).contains("cannot be bought in this app"));
+        assert_eq!(
+            core_text::marketplace_web_caption(crate::l10n::Locale::En),
+            "Opens in your browser."
         );
         assert!(!MarketplaceScreen::offers_web(&viewer));
-        let viewer_note = screen_note(&viewer).expect("a viewer is told once");
+        let viewer_note = screen_note(&viewer);
         assert_eq!(viewer_note, numbers_scope_note(false));
         assert!(viewer_note.contains("need an agency or client role"));
 

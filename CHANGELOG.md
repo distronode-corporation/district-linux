@@ -13,6 +13,17 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Changed
+
+- Built on District AI core for Rust 5.1.0. In English the Desk is called the Desk
+  ("The Desk is off", "Turn on the Desk", "Could not load the Desk"). The working hours
+  editor shows French times as « 9 h » and « 9 h 30 », reads `9:30` or `9 h 30` as well
+  as `09:30`, still saves HH:MM, and refuses a time past 23:59 before the save.
+- Phone numbers: a member who can buy numbers now sees the note above the tabs saying
+  new numbers are bought on the website, as a viewer sees theirs, and the link to the
+  web marketplace is captioned "Opens in your browser." Until now the link's caption said
+  where numbers are bought, and the core's 5.1.0 caption no longer does.
+
 ## [3.0.3] - 2026-10-22
 
 A security update for the app's secure connections. Voicemail is now labelled in

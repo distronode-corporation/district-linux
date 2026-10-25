@@ -2498,11 +2498,12 @@ fn numbers_screen(smoke: &Smoke) {
     assert!(smoke.shown("partial_note"));
     assert!(smoke.count("number-row") >= 1);
     assert!(smoke.shows_part("+1 416 555 0100"), "numbers read grouped");
-    // Where numbers are bought is said once, under the button that goes
-    // there, and not again in a note above it.
-    assert!(smoke.shows_part("Numbers are bought on the District AI website"));
-    assert!(!smoke.shown("note_label"));
-    assert!(!smoke.shows_part("cannot be bought in this app"));
+    // Where numbers are bought is said once, in the note above the tabs,
+    // and the button that goes there only says it opens the browser.
+    assert!(smoke.shown("note_label"));
+    assert!(smoke.shows_part("cannot be bought in this app"));
+    assert!(smoke.shows_part("Opens in your browser."));
+    assert!(!smoke.shows_part("Numbers are bought on the District AI website"));
     smoke.shot("51-numbers");
     smoke.click("web_button");
     let Effect::OpenUrl { url } = smoke.take("OpenUrl") else {
@@ -5774,7 +5775,7 @@ fn desk_screens(smoke: &Smoke) {
         !smoke.pending("LoadDeskTickets"),
         "a desk that is off records nothing"
     );
-    assert_eq!(smoke.status_title("list_status"), "The help desk is off");
+    assert_eq!(smoke.status_title("list_status"), "The Desk is off");
     smoke.shot("67-desk-off");
     smoke.click("turn_on_button");
     let turn_on = smoke.take("SaveDeskSettings");
@@ -5793,10 +5794,7 @@ fn desk_screens(smoke: &Smoke) {
         ticket,
         result: Err(server_error()),
     });
-    assert_eq!(
-        smoke.status_title("list_status"),
-        "Could not load the help desk"
-    );
+    assert_eq!(smoke.status_title("list_status"), "Could not load the Desk");
     let read_queue = |smoke: &Smoke, queue: DeskTicketsResponse| {
         smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
             ticket,
@@ -5956,7 +5954,7 @@ fn desk_screens(smoke: &Smoke) {
     });
     assert_eq!(
         smoke.status_title("status"),
-        "Could not load the desk's settings"
+        "Could not load the Desk settings"
     );
     smoke.click("retry_button");
     smoke.reply("LoadDeskSettings", |ticket| Event::DeskSettingsLoaded {
