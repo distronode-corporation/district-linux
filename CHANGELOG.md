@@ -13,6 +13,11 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-25
+
+Crash reports, off until you allow them. Declining a call now lets the receptionist take
+a message at once, and the help desk is now called the Desk.
+
 ### Added
 
 - Crash reports, off until you allow them: the app asks once, with Don't send as the
@@ -33,14 +38,33 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   dropped because the computer sleeps, the app quits or you sign out still send nothing.
   A ring the service ends because every member it rang declined (you among them, here
   or on another device) stops here without a missed call.
-- Built on District AI core for Rust 6.1.0. In English the Desk is called the Desk
-  ("The Desk is off", "Turn on the Desk", "Could not load the Desk"). The working hours
-  editor shows French times as « 9 h » and « 9 h 30 », reads `9:30` or `9 h 30` as well
-  as `09:30`, still saves HH:MM, and refuses a time past 23:59 before the save.
+- The help desk is called the Desk wherever the app names it: the navigation, the page's
+  and its settings' headings ("Desk settings"), the store description and the core's
+  messages ("The Desk is off", "Turn on the Desk", "Could not load the Desk"). In French
+  it is « Comptoir », where it read « Comptoir clients ».
+- Built on District AI core for Rust 6.1.0. The working hours editor shows French times
+  as « 9 h » and « 9 h 30 », reads `9:30` or `9 h 30` as well as `09:30`, still saves
+  HH:MM, and refuses a time past 23:59 before the save.
 - Phone numbers: a member who can buy numbers now sees the note above the tabs saying
   new numbers are bought on the website, as a viewer sees theirs, and the link to the
   web marketplace is captioned "Opens in your browser." Until now the link's caption said
-  where numbers are bought, and the core's 5.1.0 caption no longer does.
+  where numbers are bought, and the core's 5.1.0 caption no longer does. A viewer's
+  numbers no longer open on that note again under every number; a number Distronode
+  holds still opens on why it cannot change.
+
+### Fixed
+
+- Knowledge: in a narrow window on GTK 4.14 (Ubuntu 24.04's), Add document stays on its
+  row. GTK 4.14 misplaces the last button of a full line in an end-aligned flow box, so
+  the view's flow box now starts its lines, inside a box that holds it at the row's end.
+
+### Security
+
+- webpki-root-certs 1.0.10 in Cargo.lock, for RUSTSEC-2026-0383 (CVE-2026-111943):
+  1.0.9 still bundled emSign ECC Root CA - G3, so it could accept a certificate path
+  through the distrusted emSign intermediates. Only a wasm32 build compiles that crate,
+  so the app in neither package was ever built with that root; the lock moves so that
+  no future target can be.
 
 ## [3.0.3] - 2026-10-22
 

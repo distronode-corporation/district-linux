@@ -77,11 +77,12 @@
     <!-- Contacts' email addresses and phone numbers are shared with every member
          of the workspace, and replies can go out by email. -->
     <content_attribute id="social-contacts">intense</content_attribute>
-    <!-- Everything goes through the District AI service's online API. Crash
-         reports are sent only after the user says yes (asked once, off by
-         default) and hold no computer name, user name or IP address; the app
-         sends no analytics. -->
-    <content_attribute id="social-info">mild</content_attribute>
+    <!-- Everything goes through the District AI service's online API, and the
+         app can share diagnostic data that does not identify the user, which
+         is OARS's moderate: crash reports, sent only after the user says yes
+         (asked once, off by default), holding no computer name, user name or
+         IP address. The app sends no analytics. -->
+    <content_attribute id="social-info">moderate</content_attribute>
     <!-- Messages sent, calls placed and the AI features (a reply written by
          AI, a District HQ question, a persona audition, a knowledge document)
          are billed to the workspace's District AI account. -->
@@ -102,23 +103,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/call-log.png</image>
       <caption>The call log, with each call's summary and transcript</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/inbox.png</image>
       <caption>Your customers' text messages and emails in one inbox</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/call.png</image>
       <caption>A call placed from the desktop, with mute and hang up always in reach</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/contacts.png</image>
       <caption>Your contacts, with each customer's details</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/overview.png</image>
       <caption>The workspace at a glance, with its latest calls</caption>
     </screenshot>
   </screenshots>
@@ -129,6 +130,36 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="3.1.0" date="2026-10-25">
+      <description>
+        <p>
+          Crash reports, off until you allow them. Declining a call now lets the
+          receptionist take a message at once, and the help desk is now called
+          the Desk.
+        </p>
+        <ul>
+          <li>Crash reports, off until you allow them: the app asks once, with
+            Don't send as the default, and Send crash reports on the account
+            screen changes your answer; a report leaves out your computer's name
+            and your user name</li>
+          <li>Declining a call that rings on this computer tells the service, so
+            once every member it rang has declined, the receptionist takes a
+            message at once instead of keeping the caller waiting until the ring
+            runs out</li>
+          <li>The help desk is now called the Desk throughout the app</li>
+          <li>In English, a call's outcome now reads as on the web console, such
+            as Callback requested, Passed to a person and Information only</li>
+          <li>Booking pages: working hours accept 9:30 and 9 h 30 as well as
+            09:30, show French times as 9 h 30, and refuse a time past 23:59
+            before saving</li>
+          <li>Phone numbers: the note above the tabs is shown to every member
+            and no longer repeated under each number, and the link to the number
+            marketplace on the web says it opens in your browser</li>
+          <li>Knowledge: Add document stays on its row in a narrow window with
+            GTK 4.14, as on Ubuntu 24.04</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.0.3" date="2026-10-22">
       <description>
         <p>

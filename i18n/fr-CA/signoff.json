@@ -1,11 +1,11 @@
 {
-  "signed_off_by": "v3 manager (Opus 5.5), final French review, 2026-10-23",
-  "release": "main after v3.0.3 (unreleased)",
-  "commit": "59f06cd866fd1b8468c60536ff8ab4a27db38e5d",
+  "signed_off_by": "ThinkPad manager session 78da7e6a (Opus 5.5), 2026-10-25: xhigh fr-CA review of every catalog change since v3.0.3 (the crash-report strings and copy reviewed 2026-10-25 and applied by Sean's decision on GitLab #2), plus the manager's review of the 3.1.0 release notes",
+  "release": "v3.1.0",
+  "commit": "c7de1378fd4d74e25e16b5eeaa811d363f38b46c",
   "catalogs": [
     {
       "path": "crates/district-app/l10n/linux.toml",
-      "sha256": "fd969a190980c87e47bfdd4a7ba41d7b2619ceb7effdca32e161e2e226d355aa"
+      "sha256": "ae130f7539a686ebe7fcc220416a9f9ad19f91fe304496420a4f62da1565e36d"
     },
     {
       "path": "crates/district-app/l10n/scheduling.toml",

@@ -2345,6 +2345,54 @@ msgctxt "metainfo.release_3_0_3.p"
 msgid "A security update for the app's secure connections. Voicemail is now labelled in conversations."
 msgstr "Une mise à jour de sécurité des connexions sécurisées de l'application. Les messages vocaux sont maintenant identifiés dans les conversations."
 
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li1"
+msgid "Crash reports, off until you allow them: the app asks once, with Don't send as the default, and Send crash reports on the account screen changes your answer; a report leaves out your computer's name and your user name"
+msgstr "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés : l'application pose la question une seule fois, avec « Ne pas envoyer » par défaut, et l'option « Envoyer les rapports de plantage » de l'écran Compte permet de changer votre réponse; un rapport ne contient ni le nom de votre ordinateur ni votre nom d'utilisateur"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li2"
+msgid "Declining a call that rings on this computer tells the service, so once every member it rang has declined, the receptionist takes a message at once instead of keeping the caller waiting until the ring runs out"
+msgstr "Refuser un appel qui sonne sur cet ordinateur en informe le service : dès que tous les membres sollicités l'ont refusé, la réceptionniste prend un message aussitôt au lieu de faire patienter l'appelant jusqu'à la fin de la sonnerie"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li3"
+msgid "The help desk is now called the Desk throughout the app"
+msgstr "Le comptoir clients s'appelle maintenant « Comptoir » partout dans l'application"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li4"
+msgid "In English, a call's outcome now reads as on the web console, such as Callback requested, Passed to a person and Information only"
+msgstr "En anglais, le résultat d'un appel s'affiche maintenant comme dans la console Web, par exemple « Callback requested », « Passed to a person » et « Information only »"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li5"
+msgid "Booking pages: working hours accept 9:30 and 9 h 30 as well as 09:30, show French times as 9 h 30, and refuse a time past 23:59 before saving"
+msgstr "Pages de réservation : les heures de disponibilité acceptent 9:30 et 9 h 30 aussi bien que 09:30, s'affichent en français sous la forme 9 h 30 et refusent, avant d'enregistrer, une heure au-delà de 23 h 59"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li6"
+msgid "Phone numbers: the note above the tabs is shown to every member and no longer repeated under each number, and the link to the number marketplace on the web says it opens in your browser"
+msgstr "Numéros de téléphone : la note au-dessus des onglets s'affiche pour tous les membres sans se répéter sous chaque numéro, et le lien vers la place de marché des numéros sur le Web indique qu'il s'ouvre dans votre navigateur"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li7"
+msgid "Knowledge: Add document stays on its row in a narrow window with GTK 4.14, as on Ubuntu 24.04"
+msgstr "Connaissances : le bouton « Ajouter un document » reste à sa place dans une fenêtre étroite avec GTK 4.14, comme sur Ubuntu 24.04"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.p"
+msgid "Crash reports, off until you allow them. Declining a call now lets the receptionist take a message at once, and the help desk is now called the Desk."
+msgstr "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés. Refuser un appel permet maintenant à la réceptionniste de prendre un message aussitôt, et le comptoir clients devient « Comptoir »."
+
 #. screen: metainfo; ctx: label; tier: T3
 #. A screenshot's caption in the AppStream metadata.
 msgctxt "metainfo.screenshot_caption.call"

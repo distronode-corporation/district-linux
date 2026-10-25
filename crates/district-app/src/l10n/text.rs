@@ -3743,6 +3743,78 @@ pub fn metainfo_release_3_0_3_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_1_0.li1`
+#[must_use]
+pub fn metainfo_release_3_1_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Crash reports, off until you allow them: the app asks once, with Don't send as the default, and Send crash reports on the account screen changes your answer; a report leaves out your computer's name and your user name",
+        Locale::FrCa => "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés\u{00A0}: l'application pose la question une seule fois, avec «\u{00A0}Ne pas envoyer\u{00A0}» par défaut, et l'option «\u{00A0}Envoyer les rapports de plantage\u{00A0}» de l'écran Compte permet de changer votre réponse; un rapport ne contient ni le nom de votre ordinateur ni votre nom d'utilisateur",
+    }
+}
+
+/// `metainfo.release_3_1_0.li2`
+#[must_use]
+pub fn metainfo_release_3_1_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Declining a call that rings on this computer tells the service, so once every member it rang has declined, the receptionist takes a message at once instead of keeping the caller waiting until the ring runs out",
+        Locale::FrCa => "Refuser un appel qui sonne sur cet ordinateur en informe le service\u{00A0}: dès que tous les membres sollicités l'ont refusé, la réceptionniste prend un message aussitôt au lieu de faire patienter l'appelant jusqu'à la fin de la sonnerie",
+    }
+}
+
+/// `metainfo.release_3_1_0.li3`
+#[must_use]
+pub fn metainfo_release_3_1_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The help desk is now called the Desk throughout the app",
+        Locale::FrCa => "Le comptoir clients s'appelle maintenant «\u{00A0}Comptoir\u{00A0}» partout dans l'application",
+    }
+}
+
+/// `metainfo.release_3_1_0.li4`
+#[must_use]
+pub fn metainfo_release_3_1_0_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "In English, a call's outcome now reads as on the web console, such as Callback requested, Passed to a person and Information only",
+        Locale::FrCa => "En anglais, le résultat d'un appel s'affiche maintenant comme dans la console Web, par exemple «\u{00A0}Callback requested\u{00A0}», «\u{00A0}Passed to a person\u{00A0}» et «\u{00A0}Information only\u{00A0}»",
+    }
+}
+
+/// `metainfo.release_3_1_0.li5`
+#[must_use]
+pub fn metainfo_release_3_1_0_li5(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Booking pages: working hours accept 9:30 and 9 h 30 as well as 09:30, show French times as 9 h 30, and refuse a time past 23:59 before saving",
+        Locale::FrCa => "Pages de réservation\u{00A0}: les heures de disponibilité acceptent 9:30 et 9\u{00A0}h\u{00A0}30 aussi bien que 09:30, s'affichent en français sous la forme 9\u{00A0}h\u{00A0}30 et refusent, avant d'enregistrer, une heure au-delà de 23\u{00A0}h\u{00A0}59",
+    }
+}
+
+/// `metainfo.release_3_1_0.li6`
+#[must_use]
+pub fn metainfo_release_3_1_0_li6(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Phone numbers: the note above the tabs is shown to every member and no longer repeated under each number, and the link to the number marketplace on the web says it opens in your browser",
+        Locale::FrCa => "Numéros de téléphone\u{00A0}: la note au-dessus des onglets s'affiche pour tous les membres sans se répéter sous chaque numéro, et le lien vers la place de marché des numéros sur le Web indique qu'il s'ouvre dans votre navigateur",
+    }
+}
+
+/// `metainfo.release_3_1_0.li7`
+#[must_use]
+pub fn metainfo_release_3_1_0_li7(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Knowledge: Add document stays on its row in a narrow window with GTK 4.14, as on Ubuntu 24.04",
+        Locale::FrCa => "Connaissances\u{00A0}: le bouton «\u{00A0}Ajouter un document\u{00A0}» reste à sa place dans une fenêtre étroite avec GTK 4.14, comme sur Ubuntu 24.04",
+    }
+}
+
+/// `metainfo.release_3_1_0.p`
+#[must_use]
+pub fn metainfo_release_3_1_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Crash reports, off until you allow them. Declining a call now lets the receptionist take a message at once, and the help desk is now called the Desk.",
+        Locale::FrCa => "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés. Refuser un appel permet maintenant à la réceptionniste de prendre un message aussitôt, et le comptoir clients devient «\u{00A0}Comptoir\u{00A0}».",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {
