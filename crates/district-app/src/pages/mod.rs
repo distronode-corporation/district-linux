@@ -49,6 +49,7 @@ mod thread;
 mod ticket_form;
 mod tools;
 mod transcript;
+mod voice_dock;
 mod voice_studio;
 mod workflows;
 
@@ -72,6 +73,7 @@ pub(crate) use session::SessionPage;
 pub(crate) use settings::{SettingsPage, in_section as in_settings};
 pub(crate) use shared::{draw_line, draw_spinner};
 pub(crate) use support::{SupportPage, in_section as in_support};
+pub(crate) use voice_dock::VoiceDock;
 pub(crate) use workflows::WorkflowsPage;
 
 use district_core::Event;

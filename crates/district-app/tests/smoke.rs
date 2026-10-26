@@ -2547,7 +2547,7 @@ fn hq_voice(smoke: &Smoke) {
         .expect("a voice credential");
     smoke.answer(Event::HqVoiceIssued {
         ticket: minted,
-        result: Ok(credential),
+        result: Ok(credential.clone()),
     });
     // The voice agent is told where the member is, as the web tells it.
     let Effect::ReportHqVoiceScreen {
@@ -2687,6 +2687,87 @@ fn hq_voice(smoke: &Smoke) {
     smoke.shot("49-hq-voice-ended");
     smoke.click("voice_dismiss");
     assert!(!smoke.shown("voice_line"));
+
+    // A session goes on from screen to screen: the voice dock holds its
+    // controls and its cards, and the agent hears of each page.
+    smoke.forget();
+    smoke.click("voice_start");
+    smoke.reply("RequestHqVoice", |ticket| Event::HqVoiceIssued {
+        ticket,
+        result: Ok(credential),
+    });
+    let session = smoke.session();
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(
+        session,
+        MediaEvent::ParticipantJoined(Participant::new("agent-hq", None, true)),
+    );
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    smoke.media(session, MediaEvent::AgentState("listening".to_owned()));
+    let reported = |smoke: &Smoke| {
+        let Effect::ReportHqVoiceScreen { screen, .. } = smoke.take("ReportHqVoiceScreen") else {
+            unreachable!()
+        };
+        (screen.version, screen.page)
+    };
+    assert_eq!(reported(smoke), (1, "hq".to_owned()));
+    assert!(
+        !smoke.shown("voice_dock"),
+        "District HQ has its own controls"
+    );
+    smoke.activate("sidebar-calls");
+    assert!(
+        !smoke.pending("DisconnectMedia"),
+        "the session goes on off District HQ"
+    );
+    assert_eq!(reported(smoke), (2, "calls".to_owned()));
+    assert!(smoke.shown("voice_dock") && smoke.shows_text("District HQ voice"));
+    assert!(smoke.shows_text("Listening. Speak to District HQ."));
+    assert_eq!(
+        smoke.count("voice_card"),
+        1,
+        "the change left waiting is in the dock"
+    );
+    assert!(smoke.shown("voice_dock_review"));
+    smoke.click("voice_dock_microphone");
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(!enabled, "the dock mutes a live microphone");
+    smoke.shot("50-hq-voice-dock");
+    // A card confirmed from the dock, the way back to District HQ, and back.
+    smoke.click("voice_card_confirm");
+    smoke.reply("ConfirmHqVoice", |ticket| Event::HqVoiceConfirmed {
+        ticket,
+        result: Ok(fixture("district-hq-confirm.json")),
+    });
+    assert_eq!(smoke.count("voice_card"), 0);
+    assert!(!smoke.shown("voice_dock_review"));
+    smoke.media(session, voice_proposal("p-5"));
+    smoke.click("voice_dock_review");
+    assert_eq!(reported(smoke), (3, "hq".to_owned()));
+    assert!(!smoke.shown("voice_dock") && smoke.shown("voice_card"));
+    smoke.activate("sidebar-calls");
+    assert_eq!(reported(smoke), (4, "calls".to_owned()));
+    // The narrow window keeps the dock inside it.
+    smoke.resize(400, 760);
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "voice dock");
+    smoke.resize(1024, 720);
+    // Stop voice from another screen ends the session; the card stays.
+    smoke.mapped("voice_dock_stop").grab_focus();
+    smoke.click("voice_dock_stop");
+    assert!(smoke.pending("DisconnectMedia"));
+    assert!(!smoke.shown("voice_dock_stop") && smoke.shown("voice_card"));
+    assert!(
+        smoke.focused("voice_dock_review"),
+        "the keyboard stays in the dock"
+    );
+    smoke.click("voice_card_cancel");
+    smoke.reply("CancelHqVoice", |ticket| Event::HqVoiceCancelled {
+        ticket,
+        result: Ok(district_model::HqProposalCancelResponse { success: true }),
+    });
+    assert!(!smoke.shown("voice_dock"), "nothing left to show");
     smoke.forget();
 }
 

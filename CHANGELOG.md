@@ -19,13 +19,18 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   where your voice is processed (in the United States, for every workspace), and starts
   nothing until you accept; then the assistant joins an end-to-end encrypted room, a line
   says what it is doing, and both sides' words join the conversation as they are spoken.
-  The assistant is told which page you are on, as the web dashboard tells it, by the
-  page's name only. A change asked for by voice is a card, applied only when you say
-  "confirm" or click its Confirm, and cancelled the same ways. The session ends when you
-  press Stop voice, leave District HQ, or after 30 minutes. The keyboard goes with the
-  session: to Start voice in the statement, to Stop voice once it starts, and back to the
-  voice button when it ends. Agency and client members only; a build without calls says
-  it cannot.
+  The assistant is told which page you are on, and which call, contact or conversation
+  is open, as the web dashboard tells it, by the page's name and an id only. A change
+  asked for by voice is a card, applied only when you say
+  "confirm" or click its Confirm, and cancelled the same ways. The session goes on when
+  you leave District HQ: a voice dock below every other screen shows what the assistant
+  is doing, the microphone, Stop voice and every change waiting, in full, to confirm or
+  cancel there, with Review in District HQ to go back to the conversation. The session
+  ends when you press Stop voice (on District HQ or in the dock), close the window, or
+  after 30 minutes; minimising the window keeps it. The keyboard goes with the session:
+  to Start voice in the statement, to Stop voice once it starts, and back to the voice
+  button (or the dock's next control) when it ends. Agency and client members only; a
+  build without calls says it cannot.
 
 ### Changed
 

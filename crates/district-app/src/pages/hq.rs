@@ -301,13 +301,88 @@ pub struct Voice {
 
 /// A button with `label`, named `name` for the smoke test and the screen
 /// reader's sake, styled `classes`.
-fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
+pub(crate) fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
     gtk::Button::builder()
         .label(label)
         .name(name)
         .valign(gtk::Align::Center)
         .css_classes(classes.to_vec())
         .build()
+}
+
+/// One change proposed by voice, with its Cancel and Confirm. Only the
+/// first card's Confirm is the suggested action: one on screen at a time.
+/// District HQ and the voice dock show the same card, sent from `page`.
+pub(crate) fn voice_card<P: Sends>(
+    page: &P,
+    card: &HqVoiceCard,
+    controls: &HqVoiceControls,
+    first: bool,
+) -> gtk::Box {
+    let row = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(6)
+        .name("voice_card")
+        .css_classes(["card", "proposal-card"])
+        .build();
+    row.append(&plain_label(
+        core_text::hq_confirm_title(lang()),
+        &["heading"],
+    ));
+    let summary = plain_label(card.summary(), &[]);
+    summary.set_selectable(true);
+    row.append(&summary);
+    let failed = matches!(card.state, HqCardState::Failed { .. });
+    row.append(&plain_label(
+        &voice_card_note(card, controls),
+        if failed {
+            &["error"]
+        } else {
+            &["dim-label", "caption"]
+        },
+    ));
+    let buttons = gtk::Box::builder()
+        .spacing(8)
+        .halign(gtk::Align::End)
+        .margin_top(6)
+        .build();
+    let spinner = gtk::Spinner::new();
+    draw_spinner(
+        &spinner,
+        matches!(
+            card.state,
+            HqCardState::Confirming | HqCardState::Cancelling
+        ),
+    );
+    let cancel = button(
+        core_text::hq_voice_cancel_action(lang()),
+        "voice_card_cancel",
+        &["pill"],
+    );
+    cancel.set_sensitive(card.is_actionable());
+    let confirm = button(
+        core_text::hq_confirm_action(lang()),
+        "voice_card_confirm",
+        if first {
+            &["pill", "suggested-action"]
+        } else {
+            &["pill"]
+        },
+    );
+    confirm.set_sensitive(card.is_actionable() && controls.can_confirm);
+    let id = card.proposal.proposal_id.clone();
+    on_click(&cancel, page, move || {
+        Event::Hq(HqEvent::CancelVoiceCard(id.clone()))
+    });
+    let id = card.proposal.proposal_id.clone();
+    on_click(&confirm, page, move || {
+        Event::Hq(HqEvent::ConfirmVoiceCard(id.clone()))
+    });
+    buttons.append(&spinner);
+    buttons.append(&cancel);
+    buttons.append(&confirm);
+    row.append(&buttons);
+    row
 }
 
 impl Sends for HqPage {
@@ -584,79 +659,10 @@ impl HqPage {
             for (index, card) in state.cards.iter().enumerate() {
                 voice
                     .cards
-                    .append(&self.voice_card(card, &controls, index == 0));
+                    .append(&voice_card(self, card, &controls, index == 0));
             }
             imp.drawn_cards.replace(drawn);
         }
-    }
-
-    /// One change proposed by voice, with its Cancel and Confirm. Only the
-    /// first card's Confirm is the suggested action: one on screen at a time.
-    fn voice_card(&self, card: &HqVoiceCard, controls: &HqVoiceControls, first: bool) -> gtk::Box {
-        let row = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
-            .spacing(6)
-            .name("voice_card")
-            .css_classes(["card", "proposal-card"])
-            .build();
-        row.append(&plain_label(
-            core_text::hq_confirm_title(lang()),
-            &["heading"],
-        ));
-        let summary = plain_label(card.summary(), &[]);
-        summary.set_selectable(true);
-        row.append(&summary);
-        let failed = matches!(card.state, HqCardState::Failed { .. });
-        row.append(&plain_label(
-            &voice_card_note(card, controls),
-            if failed {
-                &["error"]
-            } else {
-                &["dim-label", "caption"]
-            },
-        ));
-        let buttons = gtk::Box::builder()
-            .spacing(8)
-            .halign(gtk::Align::End)
-            .margin_top(6)
-            .build();
-        let spinner = gtk::Spinner::new();
-        draw_spinner(
-            &spinner,
-            matches!(
-                card.state,
-                HqCardState::Confirming | HqCardState::Cancelling
-            ),
-        );
-        let cancel = button(
-            core_text::hq_voice_cancel_action(lang()),
-            "voice_card_cancel",
-            &["pill"],
-        );
-        cancel.set_sensitive(card.is_actionable());
-        let confirm = button(
-            core_text::hq_confirm_action(lang()),
-            "voice_card_confirm",
-            if first {
-                &["pill", "suggested-action"]
-            } else {
-                &["pill"]
-            },
-        );
-        confirm.set_sensitive(card.is_actionable() && controls.can_confirm);
-        let id = card.proposal.proposal_id.clone();
-        on_click(&cancel, self, move || {
-            Event::Hq(HqEvent::CancelVoiceCard(id.clone()))
-        });
-        let id = card.proposal.proposal_id.clone();
-        on_click(&confirm, self, move || {
-            Event::Hq(HqEvent::ConfirmVoiceCard(id.clone()))
-        });
-        buttons.append(&spinner);
-        buttons.append(&cancel);
-        buttons.append(&confirm);
-        row.append(&buttons);
-        row
     }
 
     /// Draws the conversation of `signed_in`'s workspace.

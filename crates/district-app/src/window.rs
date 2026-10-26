@@ -23,7 +23,7 @@ use crate::l10n::{lang, text};
 use crate::pages::{
     AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
     DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
-    SchedulingAdminPage, SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage,
+    SchedulingAdminPage, SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage, VoiceDock,
     WorkflowsPage, draw_line, draw_spinner, in_contacts, in_desk, in_settings, in_support, report,
 };
 
@@ -72,6 +72,8 @@ mod imp {
         pub signed_in_view: TemplateChild<adw::ToolbarView>,
         #[template_child]
         pub call_bar: TemplateChild<CallBar>,
+        #[template_child]
+        pub voice_dock: TemplateChild<VoiceDock>,
         #[template_child]
         pub split_view: TemplateChild<adw::NavigationSplitView>,
         #[template_child]
@@ -176,6 +178,7 @@ mod imp {
             RoomsPage::static_type();
             SettingsPage::static_type();
             CallBar::static_type();
+            VoiceDock::static_type();
             DialerPage::static_type();
             klass.bind_template();
         }
@@ -301,6 +304,7 @@ impl DistrictWindow {
         imp.rooms_page.set_sink(sink.clone());
         imp.settings_page.set_sink(sink.clone());
         imp.call_bar.set_sink(sink.clone());
+        imp.voice_dock.set_sink(sink.clone());
         imp.dialer_page.set_sink(sink.clone());
         imp.sink.set(sink).ok();
         window
@@ -403,7 +407,10 @@ impl DistrictWindow {
                 self.draw_sidebar(signed_in, &capabilities);
                 self.draw_content(model, signed_in, view);
                 let calling = imp.call_bar.update(signed_in);
-                imp.signed_in_view.set_reveal_bottom_bars(calling);
+                imp.call_bar.set_visible(calling);
+                // A voice session's controls, on every screen but District HQ.
+                let docked = imp.voice_dock.update(signed_in);
+                imp.signed_in_view.set_reveal_bottom_bars(calling || docked);
                 self.enable_call_actions(Some(signed_in));
             }
             other => {
