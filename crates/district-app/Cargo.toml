@@ -68,6 +68,7 @@ district-api = { workspace = true }
 district-auth = { workspace = true }
 district-call = { workspace = true }
 district-core = { workspace = true }
+district-crash = { workspace = true }
 district-desktop = { workspace = true }
 district-host = { workspace = true }
 district-live = { workspace = true }

@@ -33,6 +33,18 @@ msgctxt "account_page.computer"
 msgid "This computer"
 msgstr "Cet ordinateur"
 
+#. screen: account_page; ctx: label; tier: T1
+#. In account-page.ui. A switch: when the app crashes, it sends a report to Distronode. Off until the user turns it on, or answers Send reports to the question at the first start (crash.question_title). Shown only in a build that can send reports.
+msgctxt "account_page.crash_reports"
+msgid "Send crash reports"
+msgstr "Envoyer les rapports de plantage"
+
+#. screen: account_page; ctx: body; tier: T1
+#. In account-page.ui. Under the Send crash reports switch. What it says must stay true of district-crash: the machine's name and the user are never sent, and home directory paths have the user's name replaced.
+msgctxt "account_page.crash_reports_body"
+msgid "If District AI crashes, send Distronode a report so we can fix the problem. Your computer's name and your user name are left out."
+msgstr "Si District AI plante, envoyer un rapport à Distronode pour que nous puissions corriger le problème. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés."
+
 #. screen: account_page; ctx: label; tier: T3
 #. In account-page.ui.
 msgctxt "account_page.delete_account"
@@ -1059,6 +1071,30 @@ msgstr "Contacts"
 msgctxt "contacts_page.no_contact_open"
 msgid "No contact open"
 msgstr "Aucun contact sélectionné"
+
+#. screen: crash; ctx: button; tier: T1
+#. The first answer to the question at the first start, and the one it takes when closed: no crash reports are sent.
+msgctxt "crash.dont_send"
+msgid "Don't send"
+msgstr "Ne pas envoyer"
+
+#. screen: crash; ctx: body; tier: T1
+#. Asked once, at the first start of a build that can send reports (existing users see it once after the update that brings it). What it says must stay true of district-crash (its SECURITY.md, Crash reports). The account screen is the Account item in the sidebar.
+msgctxt "crash.question_body"
+msgid "If District AI crashes, it can send Distronode a report so we can fix the problem. A report holds the error, where in the app it happened, and the versions of the app and your system. Your computer's name and your user name are left out. Reports go through Sentry, the error reporting service we use. You can change this later on the account screen."
+msgstr "Si District AI plante, l'application peut envoyer un rapport à Distronode pour que nous puissions corriger le problème. Un rapport contient l'erreur, l'endroit de l'application où elle s'est produite et les versions de l'application et de votre système. Le nom de votre ordinateur et votre nom d'utilisateur en sont retirés. Les rapports passent par Sentry, le service de signalement d'erreurs que nous utilisons. Vous pourrez modifier ce choix plus tard à l'écran Compte."
+
+#. screen: crash; ctx: title; tier: T1
+#. The question at the first start. The answer is kept; Don't send is the default.
+msgctxt "crash.question_title"
+msgid "Send crash reports?"
+msgstr "Envoyer les rapports de plantage?"
+
+#. screen: crash; ctx: button; tier: T1
+#. The second answer to the question at the first start: crash reports are sent from now on, until the switch on the account screen is turned off.
+msgctxt "crash.send"
+msgid "Send reports"
+msgstr "Envoyer les rapports"
 
 #. screen: desk; ctx: label; tier: T3
 #. The help desk filter that shows all tickets.
@@ -2308,6 +2344,54 @@ msgstr "Dans une conversation, un message laissé dans la boîte vocale porte la
 msgctxt "metainfo.release_3_0_3.p"
 msgid "A security update for the app's secure connections. Voicemail is now labelled in conversations."
 msgstr "Une mise à jour de sécurité des connexions sécurisées de l'application. Les messages vocaux sont maintenant identifiés dans les conversations."
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li1"
+msgid "Crash reports, off until you allow them: the app asks once, with Don't send as the default, and Send crash reports on the account screen changes your answer; a report leaves out your computer's name and your user name"
+msgstr "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés : l'application pose la question une seule fois, avec « Ne pas envoyer » par défaut, et l'option « Envoyer les rapports de plantage » de l'écran Compte permet de changer votre réponse; un rapport ne contient ni le nom de votre ordinateur ni votre nom d'utilisateur"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li2"
+msgid "Declining a call that rings on this computer tells the service, so once every member it rang has declined, the receptionist takes a message at once instead of keeping the caller waiting until the ring runs out"
+msgstr "Refuser un appel qui sonne sur cet ordinateur en informe le service : dès que tous les membres sollicités l'ont refusé, la réceptionniste prend un message aussitôt au lieu de faire patienter l'appelant jusqu'à la fin de la sonnerie"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li3"
+msgid "The help desk is now called the Desk throughout the app"
+msgstr "Le comptoir clients s'appelle maintenant « Comptoir » partout dans l'application"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li4"
+msgid "In English, a call's outcome now reads as on the web console, such as Callback requested, Passed to a person and Information only"
+msgstr "En anglais, le résultat d'un appel s'affiche maintenant comme dans la console Web, par exemple « Callback requested », « Passed to a person » et « Information only »"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li5"
+msgid "Booking pages: working hours accept 9:30 and 9 h 30 as well as 09:30, show French times as 9 h 30, and refuse a time past 23:59 before saving"
+msgstr "Pages de réservation : les heures de disponibilité acceptent 9:30 et 9 h 30 aussi bien que 09:30, s'affichent en français sous la forme 9 h 30 et refusent, avant d'enregistrer, une heure au-delà de 23 h 59"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li6"
+msgid "Phone numbers: the note above the tabs is shown to every member and no longer repeated under each number, and the link to the number marketplace on the web says it opens in your browser"
+msgstr "Numéros de téléphone : la note au-dessus des onglets s'affiche pour tous les membres sans se répéter sous chaque numéro, et le lien vers la place de marché des numéros sur le Web indique qu'il s'ouvre dans votre navigateur"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.li7"
+msgid "Knowledge: Add document stays on its row in a narrow window with GTK 4.14, as on Ubuntu 24.04"
+msgstr "Connaissances : le bouton « Ajouter un document » reste à sa place dans une fenêtre étroite avec GTK 4.14, comme sur Ubuntu 24.04"
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.1.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_1_0.p"
+msgid "Crash reports, off until you allow them. Declining a call now lets the receptionist take a message at once, and the help desk is now called the Desk."
+msgstr "Rapports de plantage, désactivés tant que vous ne les avez pas autorisés. Refuser un appel permet maintenant à la réceptionniste de prendre un message aussitôt, et le comptoir clients devient « Comptoir »."
 
 #. screen: metainfo; ctx: label; tier: T3
 #. A screenshot's caption in the AppStream metadata.

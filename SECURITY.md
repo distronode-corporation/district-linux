@@ -24,7 +24,7 @@ backported.
 
 | Version | Supported |
 | --- | --- |
-| 3.0.x (the current release, [3.0.3](https://github.com/distronode-corporation/district-linux/releases/latest)) | Yes |
+| 3.1.x (the current release, [3.1.0](https://github.com/distronode-corporation/district-linux/releases/latest)) | Yes |
 | Anything older | No |
 
 ## Security model
@@ -61,7 +61,8 @@ How the app is built, so a report can say which part of it breaks.
   keeps the session in memory only, so the user signs in again at the next start.
 - The app's preferences file (`settings.toml` under `$XDG_CONFIG_HOME`, readable
   by its owner only) holds "ring on this computer" and the id of the workspace
-  last chosen, and nothing secret.
+  last chosen, and nothing secret. Beside it, `crash-reports` holds the answer
+  about crash reports, `granted` or `denied`.
 - The access token is kept only in memory.
 - The service rotates the refresh token on every refresh and treats a second
   presentation of one as theft. The app therefore refreshes one request at a
@@ -241,9 +242,13 @@ desktop's devices through a sound server, and reconnecting.
   same and no more; so does an answered call, which is shown as "Caller".
 - Answering asks the service for the call's media credential, which is also what
   tells the receptionist a person took the call, so it is asked for only when the
-  member answers, once. Declining, or letting the ring run out, sends nothing:
-  the service learns only that nobody answered, so a refusal cannot be told
-  apart from a desktop nobody was at.
+  member answers, once. Declining sends the call's id and workspace, once, only
+  when the member presses Decline (in the window or on the notification), so
+  that once every member rung has declined the receptionist takes a message at
+  once. A ring that runs out, that the service withdraws, or that is dropped
+  because the machine sleeps, the app quits or the member signs out sends
+  nothing: the service learns only that nobody answered, as for a desktop
+  nobody was at.
 - Placing a call rings a telephone and is billed, so it is sent only when the
   member presses Call, once, and never again by itself. A viewer is not offered
   the dialler. The number is sent as typed, so the service's do-not-call check
@@ -392,6 +397,20 @@ District AI core for Rust):
   never filled in, and is emptied when the number is saved.
 - A save that replaces a list asks first, saying what it will do, and a section
   whose read failed shows no form to save from.
+
+### Crash reports
+
+- Crash reports are off until you allow them. The app asks once, with Don't send
+  as the default, and you can change it on the account screen.
+- A report holds the error, where in the app it happened, and the versions of the
+  app and the operating system. It holds neither your computer's name, nor your
+  user name, nor your IP address, and your home folder's name is replaced in any
+  file path.
+- Reports go to Sentry, in the European Union (de.sentry.io). Sentry still sees
+  the connection's IP address, as any server does, and is set not to store it.
+- Only the packages built by this repository's workflows carry the reporting
+  address, which the code does not contain: a build you compile yourself from
+  source, or a fork's, never asks and never sends.
 
 ### Privileges
 

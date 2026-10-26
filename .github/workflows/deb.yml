@@ -4,7 +4,15 @@ name: Deb
 # what the package declares and holds, and installs it in clean Ubuntu 24.04,
 # Debian 13 and Ubuntu 26.04 containers to run it there. While the licence
 # gate is open (LIBWEBRTC_LICENCE_CLEARED), the package is also kept for a week
-# as this run's artifact; release.yml calls it to build the release's .deb.
+# as this run's artifact, and so is the binary's debug file, which the package
+# does not hold; release.yml calls it to build the release's .deb, and uploads
+# that debug file to Sentry.
+#
+# Crash reports: only a release (release.yml, on a `v` tag) builds with the
+# DSN, the LINUX_SENTRY_DSN secret it passes in, so only a release's binary can
+# send a report, and only once its user has said yes. Every other run builds
+# without one, which reports nothing and never asks
+# (crates/district-app/src/crash.rs).
 #
 # Run by hand, from release.yml, and on pull requests that change what the .deb
 # is built from. Minutes are metered while the repository is private, and a
@@ -12,6 +20,11 @@ name: Deb
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      # Where a release's crash reports go. Not a credential (the binary
+      # carries it for anyone to read), and given only by release.yml.
+      LINUX_SENTRY_DSN:
+        required: false
   pull_request:
     paths:
       # A dependency bump can change what the binary links, and so Depends.
@@ -117,8 +130,16 @@ jobs:
       - name: Cargo.lock is up to date
         run: cargo fetch --locked
 
+      # The DSN only for a release's tag push (release.yml passes the secret;
+      # nothing else does), and the build its crash reports name: the commit's
+      # first twelve characters, as release.yml names the Sentry release.
       - name: Build the .deb
-        run: scripts/build-deb.sh
+        env:
+          LINUX_SENTRY_DSN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && secrets.LINUX_SENTRY_DSN || '' }}
+        run: |
+          set -euo pipefail
+          export DISTRICT_AI_BUILD="${GITHUB_SHA::12}"
+          scripts/build-deb.sh
 
       - name: Stage the .deb
         env:
@@ -134,6 +155,31 @@ jobs:
           fi
           cp "target/debian/$want" staging/
           ls -l staging
+
+      # The debug file build-deb.sh split off, beside the package, for
+      # release.yml to upload to Sentry: its build ID must be the packaged
+      # binary's, or no crash report from this package could be matched to it.
+      - name: Stage the debug file
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p debug-files/deb
+          cp target/release/district-ai.debug debug-files/deb/
+          dpkg-deb --fsys-tarfile "staging/district-ai_${VERSION}-1_amd64.deb" \
+            | tar -x -O ./usr/bin/district-ai > "$RUNNER_TEMP/district-ai"
+          packaged="$(readelf --notes "$RUNNER_TEMP/district-ai" | awk '/Build ID:/ { print $3 }')"
+          debug="$(readelf --notes debug-files/deb/district-ai.debug 2>/dev/null | awk '/Build ID:/ { print $3 }')"
+          echo "packaged binary $packaged, debug file $debug"
+          if [ -z "$packaged" ] || [ "$packaged" != "$debug" ]; then
+            echo "::error::the debug file's build ID ($debug) is not the packaged binary's ($packaged)"
+            exit 1
+          fi
+          if ! readelf --sections debug-files/deb/district-ai.debug | grep -q '\.debug_line '; then
+            echo "::error::the debug file holds no line tables"
+            exit 1
+          fi
+          ls -l debug-files/deb
 
       # ⛔ EXACTLY, NOT "CONTAINS". Depends is dpkg-shlibdeps's reading of what
       # the binary links on this runner (the entries with versions) and what it
@@ -303,3 +349,13 @@ jobs:
           retention-days: 7
           # Already compressed.
           compression-level: 0
+
+      # Not named district-ai-*, which release.yml's publish job takes as the
+      # release's assets.
+      - if: vars.LIBWEBRTC_LICENCE_CLEARED == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: debug-files-deb
+          path: debug-files/
+          if-no-files-found: error
+          retention-days: 7

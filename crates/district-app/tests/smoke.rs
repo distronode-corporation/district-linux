@@ -39,8 +39,8 @@ use adw::prelude::*;
 use common::{descendants, ticket};
 use district_api::{ApiError, ErrorDetail, ReauthReason, RetryReason, TokenError};
 use district_app::{
-    APP_ID, AUTOSTART_COMMAND, DesktopBackground, Effects, Parts, START_AT_LOGIN_MARKER, UiBridge,
-    application,
+    APP_ID, AUTOSTART_COMMAND, CRASH_REPORTS_FILE, DesktopBackground, DesktopCrashReports, Effects,
+    Parts, START_AT_LOGIN_MARKER, UiBridge, application, settings_for,
 };
 use district_auth::{
     AccessClaims, Persistence, RevokeStatus, SignOutReport, StoreError, StoreErrorKind,
@@ -52,6 +52,7 @@ use district_core::{
     PREVIEW_COOLDOWN, Participant, PresenceState, RING_DEADLINE, RestoreError, RingSurface, Route,
     SignedInSession, Ticket, Urgency, UrlOpener,
 };
+use district_crash::{Consent, CrashError, OffReason, Settings, Status};
 use district_host::SleepHandler;
 use district_live::{Disconnect, LiveError, LiveUpdate, WorkspaceUpdate};
 use district_model::{
@@ -120,8 +121,28 @@ struct Smoke {
     /// Where background mode keeps "Start at login": the app's own folder,
     /// and the autostart folder, both private to this run.
     background_dirs: (PathBuf, PathBuf),
+    /// Where the answer about crash reports is kept: the app's own folder,
+    /// private to this run.
+    crash_dir: PathBuf,
     /// The runtime the tray runs on, on this run's private session bus.
     _runtime: tokio::runtime::Runtime,
+}
+
+/// Every consent the app handed the crash reporter, in order: the app is
+/// given [`record`] in place of `district_crash::apply`, so nothing is set up
+/// and nothing could be sent.
+static APPLIED: std::sync::Mutex<Vec<Consent>> = std::sync::Mutex::new(Vec::new());
+
+fn record(_: &Settings, consent: Consent) -> Result<Status, CrashError> {
+    APPLIED.lock().unwrap().push(consent);
+    Ok(match consent {
+        Consent::Granted => Status::On,
+        Consent::Denied => Status::Off(OffReason::NoConsent),
+    })
+}
+
+fn applied() -> Vec<Consent> {
+    APPLIED.lock().unwrap().clone()
 }
 
 fn fixture<T: DeserializeOwned>(name: &str) -> T {
@@ -731,6 +752,14 @@ fn start() -> Smoke {
         background_dirs.0.clone(),
         background_dirs.1.clone(),
     );
+    // As a release is built, with a DSN (one that names nothing), so the app
+    // asks and has the switch; the answer kept in this run's own folder.
+    let crash_dir = root.join("crash");
+    let crash_reports = DesktopCrashReports::with_apply(
+        crash_dir.clone(),
+        settings_for(Some("https://key@example.com/1"), Some("smoke")),
+        record,
+    );
     let app = application(Parts {
         config: CoreConfig {
             web_base_url: "https://www.distronode.com".to_owned(),
@@ -750,6 +779,7 @@ fn start() -> Smoke {
         startup_notice: None,
         background: Rc::new(background),
         tray_bridge: UiBridge::new(commands.clone()),
+        crash_reports: Rc::new(crash_reports),
     });
     // Never the running app's own instance, whatever is on this session bus.
     app.set_flags(app.flags() | gio::ApplicationFlags::NON_UNIQUE);
@@ -763,6 +793,7 @@ fn start() -> Smoke {
         bridge: UiBridge::new(commands),
         shots,
         background_dirs,
+        crash_dir,
         _runtime: runtime,
     };
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -772,6 +803,50 @@ fn start() -> Smoke {
     }
     smoke.pump();
     smoke
+}
+
+/// The first start: the question about crash reports, over the window
+/// before anything else, with "Don't send" first and the default. Closing it
+/// answers that, which is kept, and is what the reporter is handed.
+fn crash_question(smoke: &Smoke) {
+    let answer = smoke.crash_dir.join(CRASH_REPORTS_FILE);
+    assert!(!answer.exists(), "never answered");
+    assert!(
+        applied().is_empty(),
+        "the app hands nothing over until asked"
+    );
+    let question = smoke.top_question().expect("asked at the first start");
+    assert_eq!(question.heading().as_deref(), Some("Send crash reports?"));
+    assert!(
+        question
+            .body()
+            .contains("Your computer's name and your user name are left out.")
+    );
+    assert_eq!(question.default_response().as_deref(), Some("dont-send"));
+    assert_eq!(question.close_response(), "dont-send");
+    assert_eq!(question.response_label("dont-send"), "Don't send");
+    assert_eq!(question.response_label("send"), "Send reports");
+    // "Don't send" is the first answer, and the one with the focus.
+    let labels: Vec<String> = descendants(question.upcast_ref())
+        .into_iter()
+        .filter_map(|widget| widget.downcast::<gtk::Button>().ok())
+        .filter_map(|button| button.label().map(|label| label.to_string()))
+        .collect();
+    assert_eq!(labels, ["Don't send", "Send reports"]);
+    smoke.shot("00-crash-question");
+    // Escape, or closing it any way, is "Don't send".
+    question.close();
+    smoke.pump();
+    assert!(smoke.top_question().is_none(), "answered");
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "denied\n");
+    assert_eq!(applied(), [Consent::Denied]);
+    assert_eq!(
+        smoke
+            .app
+            .action_state("crash-reports")
+            .and_then(|state| state.get::<bool>()),
+        Some(false)
+    );
 }
 
 /// Start-up: the check for a stored session, a network failure, trying again,
@@ -1031,6 +1106,43 @@ fn account_and_devices(smoke: &Smoke) {
     smoke.pump();
     assert!(!entry.exists() && !marker.exists());
     assert!(!row.is_active());
+
+    // Send crash reports: off, as the first start's question was answered;
+    // on hands the reporter the consent and keeps it, and off again takes it
+    // back.
+    let answer = smoke.crash_dir.join(CRASH_REPORTS_FILE);
+    let row = smoke
+        .mapped("crash_reports_row")
+        .downcast::<adw::SwitchRow>()
+        .unwrap();
+    assert!(!row.is_active());
+    assert_eq!(applied(), [Consent::Denied]);
+    row.set_active(true);
+    smoke.pump();
+    assert_eq!(applied(), [Consent::Denied, Consent::Granted]);
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "granted\n");
+    assert!(row.is_active());
+    row.set_active(false);
+    smoke.pump();
+    assert_eq!(
+        applied(),
+        [Consent::Denied, Consent::Granted, Consent::Denied]
+    );
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "denied\n");
+    assert!(!row.is_active());
+    // A yes that cannot be kept (a folder the app may not add to) is not
+    // applied either, and the switch goes back off.
+    let mode = <fs::Permissions as std::os::unix::fs::PermissionsExt>::from_mode;
+    fs::set_permissions(&smoke.crash_dir, mode(0o500)).unwrap();
+    row.set_active(true);
+    smoke.pump();
+    fs::set_permissions(&smoke.crash_dir, mode(0o700)).unwrap();
+    assert!(!row.is_active(), "not kept, so not in force");
+    assert_eq!(
+        applied(),
+        [Consent::Denied, Consent::Granted, Consent::Denied]
+    );
+    assert_eq!(fs::read_to_string(&answer).unwrap(), "denied\n");
 
     smoke.activate("devices_row");
     let Effect::LoadDevices { ticket } = smoke.take("LoadDevices") else {
@@ -7127,12 +7239,14 @@ fn assert_ring_notification(notification: &Notification, call_id: &str) {
     assert!(format!("{events:?}").contains("Answer"));
 }
 
-/// Calls rung here: one ringing in the window and declined there; one
-/// missed; one rung while the window is hidden, which rings through its
-/// notification and is answered from the notification's button; a second
-/// ringing behind that call without a sound, ringing once the caller hangs
-/// up, and answered elsewhere first; and two the service ends, one answered on
-/// another device and one whose window closed.
+/// Calls rung here: one ringing in the window and declined there, which tells
+/// the service; one missed; two rung while the window is hidden, which ring
+/// through their notification, one declined and one answered from the
+/// notification's buttons; a second ringing behind that call without a sound,
+/// ringing once the caller hangs up, and answered elsewhere first; and four the
+/// service ends, one answered on another device, one whose window closed, one
+/// it withdrew and one every member declined. Only the member's own Decline is
+/// sent.
 fn ringing(smoke: &Smoke) {
     smoke.activate("sidebar-overview");
     smoke.forget();
@@ -7157,9 +7271,22 @@ fn ringing(smoke: &Smoke) {
     smoke.click("decline_button");
     assert!(smoke.pending("StopRingtone"));
     assert!(smoke.pending("WithdrawNotification"));
+    // The member's own refusal is told to the service, once, naming the call
+    // and its workspace and nothing else.
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        (AGENCY, "call_ring_1")
+    );
     assert!(
-        !smoke.pending("AnswerCall"),
-        "declining tells the service nothing"
+        !smoke.pending("DeclineCall") && !smoke.pending("AnswerCall"),
+        "a decline is sent once, and is not an answer"
     );
     assert!(!smoke.shown("ring_strip"));
     smoke.bridge.stop_ringtone();
@@ -7177,6 +7304,18 @@ fn ringing(smoke: &Smoke) {
     smoke.pump();
     smoke.click("decline_button");
     assert!(!smoke.shown("ring_strip"));
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        ("ws-contract-client", "call_ring_elsewhere"),
+        "the decline names the workspace the call rang in"
+    );
     smoke.forget();
 
     // Nobody answers before the service would stop holding the caller.
@@ -7193,6 +7332,10 @@ fn ringing(smoke: &Smoke) {
     smoke.shot("153-ring-missed");
     smoke.click("ring_dismiss");
     assert!(!smoke.shown("ring_strip"));
+    assert!(
+        !smoke.pending("DeclineCall"),
+        "a ring that runs out, and its dismissal, send nothing"
+    );
     smoke.forget();
 
     // Answered on another device: the service says the ring is over, and it
@@ -7209,7 +7352,9 @@ fn ringing(smoke: &Smoke) {
     ring_cancelled(smoke, "call_ring_taken", "answered");
     assert!(smoke.pending("StopRingtone"));
     assert!(smoke.pending("WithdrawNotification"));
-    assert!(!smoke.pending("Notify") && !smoke.pending("AnswerCall"));
+    assert!(
+        !smoke.pending("Notify") && !smoke.pending("AnswerCall") && !smoke.pending("DeclineCall")
+    );
     assert_eq!(
         smoke.label("ring_title"),
         IncomingRing::ANSWERED_ELSEWHERE_TITLE
@@ -7243,14 +7388,80 @@ fn ringing(smoke: &Smoke) {
     assert_eq!(missed.title, Notification::MISSED_TITLE);
     assert_eq!(smoke.label("ring_title"), Notification::MISSED_TITLE);
     assert_eq!(smoke.label("ring_message"), IncomingRing::MISSED);
+    assert!(!smoke.pending("DeclineCall"), "nobody declined it");
     smoke.click("ring_dismiss");
     assert!(!smoke.shown("ring_strip"));
+    smoke.forget();
+
+    // The service withdrew it for a reason of its own: missed, and nothing
+    // sent, because no person decided anything.
+    ring(smoke, "call_ring_withdrawn");
+    smoke.take("Notify");
+    smoke.forget();
+    ring_cancelled(smoke, "call_ring_withdrawn", "withdrawn");
+    assert!(smoke.pending("StopRingtone"));
+    let Effect::Notify(missed) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    assert_eq!(missed.title, Notification::MISSED_TITLE);
+    assert_eq!(smoke.label("ring_title"), Notification::MISSED_TITLE);
+    assert!(!smoke.pending("DeclineCall"), "nobody declined it");
+    smoke.click("ring_dismiss");
+    assert!(!smoke.shown("ring_strip"));
+    smoke.forget();
+
+    // Every member rung declined, this one on another device: the ring is
+    // silenced and put away as a decline here is, with no missed call, and
+    // nothing is sent, because the service already knows.
+    ring(smoke, "call_ring_declined");
+    assert!(smoke.pending("StartRingtone"));
+    let Effect::Notify(declined) = smoke.take("Notify") else {
+        unreachable!()
+    };
+    smoke.bridge.notify(&declined);
+    smoke.bridge.start_ringtone();
+    smoke.pump();
+    smoke.forget();
+    ring_cancelled(smoke, "call_ring_declined", "declined");
+    assert!(smoke.pending("StopRingtone"));
+    assert!(smoke.pending("WithdrawNotification"));
+    assert!(!smoke.pending("Notify"), "not a missed call");
+    assert!(!smoke.pending("DeclineCall") && !smoke.pending("AnswerCall"));
+    assert!(!smoke.shown("ring_strip"), "put away, as a decline here is");
+    smoke.bridge.stop_ringtone();
+    smoke.bridge.withdraw(&declined.id);
+    smoke.pump();
     smoke.forget();
 
     // The window hidden: the ring is its urgent notification and the
     // ringtone, and the notification's Answer takes the call.
     smoke.window().set_visible(false);
     smoke.pump();
+    // The notification's Decline is the member's refusal too, and is sent.
+    ring(smoke, "call_ring_declined_hidden");
+    smoke.forget();
+    smoke.app.activate_action(
+        "notification-button",
+        Some(&("decline", "call_ring_declined_hidden").to_variant()),
+    );
+    smoke.pump();
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        (AGENCY, "call_ring_declined_hidden")
+    );
+    assert!(smoke.pending("StopRingtone") && smoke.pending("WithdrawNotification"));
+    assert!(
+        !smoke.pending("PresentWindow"),
+        "declining leaves the window hidden"
+    );
+    smoke.forget();
     ring(smoke, "call_ring_3");
     assert!(smoke.pending("StartRingtone"));
     let Effect::Notify(notification) = smoke.take("Notify") else {
@@ -7333,9 +7544,11 @@ fn ringing(smoke: &Smoke) {
     smoke.forget();
 }
 
-/// The machine going to sleep with a call under way: the presence
-/// unregistered and the call ended (at the carrier too) before the sleep is
-/// let go; and waking, which registers again.
+/// The machine going to sleep with a call under way: a call waiting behind it
+/// declined, which is sent, and another left waiting, which the sleep drops
+/// without sending anything; the presence unregistered and the call ended (at
+/// the carrier too) before the sleep is let go; and waking, which registers
+/// again.
 fn sleeping(smoke: &Smoke) {
     smoke.activate("sidebar-calls");
     smoke.forget();
@@ -7352,6 +7565,30 @@ fn sleeping(smoke: &Smoke) {
         session,
         MediaEvent::ParticipantJoined(Participant::new("sip_callee", None, false)),
     );
+    smoke.forget();
+
+    // A call waiting behind this one, declined: the decline is sent for a
+    // waiting ring as for one that rings.
+    ring(smoke, "call_waiting_declined");
+    assert_eq!(smoke.label("ring_title"), Notification::WAITING_TITLE);
+    smoke.forget();
+    smoke.click("decline_button");
+    let Effect::DeclineCall {
+        workspace_id,
+        call_id,
+    } = smoke.take("DeclineCall")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        (workspace_id.as_str(), call_id.as_str()),
+        (AGENCY, "call_waiting_declined")
+    );
+    assert!(!smoke.shown("ring_strip"));
+    // Another waits as the machine goes to sleep: it is dropped, and no
+    // person declined it, so nothing is sent.
+    ring(smoke, "call_waiting_asleep");
+    assert!(smoke.shown("ring_strip"));
     smoke.forget();
 
     let bridge = smoke.bridge.clone();
@@ -7375,6 +7612,11 @@ fn sleeping(smoke: &Smoke) {
     assert!(smoke.pending("HangUpCall"), "the call ends at the carrier");
     assert!(smoke.pending("DisconnectMedia"));
     assert!(smoke.shows_part(ActiveCall::ENDED));
+    assert!(
+        !smoke.pending("DeclineCall"),
+        "a ring dropped for the sleep is not a decline"
+    );
+    assert!(!smoke.shown("ring_strip"), "the waiting ring is dropped");
     smoke.forget();
 
     smoke.bridge.resumed();
@@ -7725,6 +7967,10 @@ fn reopening(smoke: &Smoke) {
     assert!(
         smoke.shown("sidebar-overview"),
         "a new one, drawn from the same state"
+    );
+    assert!(
+        smoke.top_question().is_none(),
+        "crash reports are asked about once, and were answered"
     );
 
     // The tray: a click on the icon brings the window back, and so does its
@@ -9707,6 +9953,7 @@ fn client_members(smoke: &Smoke) {
 
 fn main() {
     let smoke = start();
+    crash_question(&smoke);
     restoring(&smoke);
     signing_in(&smoke);
     overview_page(&smoke);

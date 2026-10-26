@@ -41,7 +41,7 @@ use std::time::{Duration, Instant};
 
 use adw::prelude::*;
 use common::{descendants, ticket};
-use district_app::{Background, Effects, Parts, UiBridge, application};
+use district_app::{Background, CrashReports, Effects, Parts, UiBridge, application};
 use district_auth::AccessClaims;
 use district_core::{
     CALL_TICK, CoreConfig, Effect, Event, MediaEvent, MediaUpdate, MicrophoneState, Participant,
@@ -728,6 +728,19 @@ fn start() -> Store {
         }
         fn set_starts_at_login(&self, _on: bool) {}
     }
+    // As a build with no crash report DSN: no question over the pictures.
+    struct NoCrashReports;
+    impl CrashReports for NoCrashReports {
+        fn available(&self) -> bool {
+            false
+        }
+        fn answer(&self) -> Option<district_crash::Consent> {
+            None
+        }
+        fn set(&self, _consent: district_crash::Consent) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
     let (events, receiver) = async_channel::unbounded();
     let (commands, command_receiver) = async_channel::unbounded();
     let app = application(Parts {
@@ -747,6 +760,7 @@ fn start() -> Store {
         startup_notice: None,
         background: Rc::new(NoBackground),
         tray_bridge: UiBridge::new(commands.clone()),
+        crash_reports: Rc::new(NoCrashReports),
     });
     // Never the running app's own instance, whatever is on this session bus.
     app.set_flags(app.flags() | gio::ApplicationFlags::NON_UNIQUE);

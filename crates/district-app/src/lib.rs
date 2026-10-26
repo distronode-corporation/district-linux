@@ -38,6 +38,7 @@ mod background;
 mod bridge;
 mod charts;
 mod controller;
+mod crash;
 mod effects;
 mod guard;
 pub mod l10n;
@@ -54,6 +55,9 @@ mod window;
 pub use app::{APP_ID, Parts, application};
 pub use background::{AUTOSTART_COMMAND, Background, DesktopBackground, START_AT_LOGIN_MARKER};
 pub use bridge::{UiBridge, UiCommand};
+pub use crash::{
+    Apply, CRASH_REPORTS_FILE, CrashReports, DesktopCrashReports, build_settings, settings_for,
+};
 pub use effects::{Effects, RunEffect, RuntimeEffects};
 pub use startup::run;
 
