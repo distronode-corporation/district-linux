@@ -2520,7 +2520,11 @@ fn hq_voice(smoke: &Smoke) {
         "the statement's own Start voice is the one on screen"
     );
     assert!(smoke.focused("voice_accept"));
-    assert!(smoke.shows_part("Your voice is processed in the United States."));
+    assert!(smoke.shows_part("Your voice is processed in the United States,"));
+    assert!(
+        !smoke.shown("voice_region_notice"),
+        "a United States workspace has no line of its own"
+    );
     assert!(
         !smoke.pending("RequestHqVoice"),
         "nothing before the member accepts"

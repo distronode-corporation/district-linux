@@ -293,6 +293,7 @@ pub struct Voice {
     stop: gtk::Button,
     dismiss: gtk::Button,
     disclosure: gtk::Box,
+    region_notice: gtk::Label,
     accept: gtk::Button,
     notice: gtk::Box,
     notice_line: gtk::Label,
@@ -471,6 +472,11 @@ impl HqPage {
             core_text::hq_voice_disclosure_title(lang()),
             &["heading"],
         ));
+        // For a workspace whose data lives outside the United States, the web's
+        // line first: its data stays there, its voice conversations do not.
+        let region_notice = plain_label("", &[]);
+        region_notice.set_widget_name("voice_region_notice");
+        disclosure.append(&region_notice);
         disclosure.append(&plain_label(core_text::hq_voice_disclosure(lang()), &[]));
         let choices = gtk::Box::builder()
             .spacing(8)
@@ -550,6 +556,7 @@ impl HqPage {
                 stop,
                 dismiss,
                 disclosure,
+                region_notice,
                 accept,
                 notice,
                 notice_line,
@@ -632,6 +639,7 @@ impl HqPage {
         voice
             .disclosure
             .set_visible(state.phase == HqVoicePhase::Disclosing);
+        draw_line(&voice.region_notice, signed_in.hq_voice_region_notice());
         voice.notice.set_visible(state.notice.is_some());
         voice.notice_line.set_label(
             state
