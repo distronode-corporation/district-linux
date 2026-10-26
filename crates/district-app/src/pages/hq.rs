@@ -16,6 +16,7 @@
 
 use std::borrow::Cow;
 use std::cell::{Cell, OnceCell, RefCell};
+use std::mem::{Discriminant, discriminant};
 
 use district_core::{
     Event, HqAuthor, HqCardState, HqControls, HqEvent, HqMessage, HqNote, HqPhase, HqText,
@@ -204,6 +205,9 @@ mod imp {
         pub drawn_cards: RefCell<(Vec<HqVoiceCard>, bool)>,
         /// What the microphone button asks for, as last drawn.
         pub microphone_wanted: Cell<bool>,
+        /// The voice session's stage when last drawn, to move the keyboard
+        /// with it.
+        pub voice_stage: Cell<Option<Discriminant<HqVoicePhase>>>,
         /// The conversation the messages were last built from.
         pub drawn: RefCell<Vec<HqMessage>>,
         /// Whether a question could be asked when last drawn.
@@ -281,6 +285,7 @@ glib::wrapper! {
 /// doing with its buttons, the residency statement, a notice, and the cards.
 #[derive(Debug)]
 pub struct Voice {
+    bar: gtk::Box,
     spinner: gtk::Spinner,
     line: gtk::Label,
     microphone: gtk::Button,
@@ -288,6 +293,7 @@ pub struct Voice {
     stop: gtk::Button,
     dismiss: gtk::Button,
     disclosure: gtk::Box,
+    accept: gtk::Button,
     notice: gtk::Box,
     notice_line: gtk::Label,
     cards: gtk::Box,
@@ -341,8 +347,19 @@ impl HqPage {
             .valign(gtk::Align::Center)
             .css_classes(["circular"])
             .build();
-        let start = button(core_text::hq_voice_start(lang()), "voice_start", &["pill"]);
-        start.set_icon_name("audio-input-microphone-symbolic");
+        // The icon beside the words, never in their place: a button given an
+        // icon name loses its label, and with it its name to a screen reader.
+        let start = gtk::Button::builder()
+            .child(
+                &adw::ButtonContent::builder()
+                    .icon_name("audio-input-microphone-symbolic")
+                    .label(core_text::hq_voice_start(lang()))
+                    .build(),
+            )
+            .name("voice_start")
+            .valign(gtk::Align::Center)
+            .css_classes(["pill"])
+            .build();
         let stop = button(
             core_text::hq_voice_stop(lang()),
             "voice_stop",
@@ -450,6 +467,7 @@ impl HqPage {
         });
         imp.voice
             .set(Voice {
+                bar,
                 spinner,
                 line,
                 microphone,
@@ -457,6 +475,7 @@ impl HqPage {
                 stop,
                 dismiss,
                 disclosure,
+                accept,
                 notice,
                 notice_line,
                 cards,
@@ -478,7 +497,25 @@ impl HqPage {
         // why it cannot.
         let member = capabilities.can_change;
         let calls = capabilities.can_dial;
-        voice.start.set_visible(member && !controls.can_stop);
+        // Whether the keyboard goes with the session to its next stage: when
+        // the stage changed while it was on these controls (or nowhere, once
+        // the control it was on went), read before anything is hidden.
+        let stage = discriminant(&state.phase);
+        let moved = imp
+            .voice_stage
+            .replace(Some(stage))
+            .is_some_and(|was| was != stage);
+        let follow = moved
+            && self
+                .root()
+                .and_then(|root| root.focus())
+                .is_none_or(|focus| {
+                    focus.is_ancestor(&voice.bar) || focus.is_ancestor(&voice.disclosure)
+                });
+        // While the statement is up, its own Start voice is the one.
+        voice
+            .start
+            .set_visible(member && !controls.can_stop && state.phase != HqVoicePhase::Disclosing);
         voice.start.set_sensitive(controls.can_start);
         voice.stop.set_visible(controls.can_stop);
         let live = matches!(state.phase, HqVoicePhase::Live { .. });
@@ -529,6 +566,18 @@ impl HqPage {
                 .as_deref()
                 .unwrap_or_default(),
         );
+        if follow {
+            // Start voice in the statement, Stop voice once it starts, and
+            // the voice button once it ends.
+            let next = match state.phase {
+                HqVoicePhase::Disclosing => &voice.accept,
+                HqVoicePhase::Minting | HqVoicePhase::Live { .. } => &voice.stop,
+                HqVoicePhase::Off | HqVoicePhase::Ended(_) | HqVoicePhase::Failed(_) => {
+                    &voice.start
+                }
+            };
+            next.grab_focus();
+        }
         let drawn = (state.cards.clone(), controls.can_confirm);
         if *imp.drawn_cards.borrow() != drawn {
             clear_box(&voice.cards);

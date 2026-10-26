@@ -330,6 +330,12 @@ impl Smoke {
             .any(|label| label.label() == text)
     }
 
+    /// Whether the mapped widget named `name` holds the window's keyboard
+    /// focus.
+    fn focused(&self, name: &str) -> bool {
+        self.mapped(name).is_focus()
+    }
+
     /// The mapped widget named `name`.
     fn mapped(&self, name: &str) -> gtk::Widget {
         self.all(name)
@@ -2501,8 +2507,19 @@ fn voice_proposal(id: &str) -> MediaEvent {
 fn hq_voice(smoke: &Smoke) {
     smoke.activate("sidebar-hq");
     assert!(smoke.shown("voice_start") && !smoke.shown("voice_disclosure"));
+    assert!(
+        smoke.shows_text("Start voice"),
+        "the button says what it does, beside its icon"
+    );
+    // The keyboard goes with the session from stage to stage.
+    smoke.mapped("voice_start").grab_focus();
     smoke.click("voice_start");
     assert!(smoke.shown("voice_disclosure"));
+    assert!(
+        !smoke.shown("voice_start"),
+        "the statement's own Start voice is the one on screen"
+    );
+    assert!(smoke.focused("voice_accept"));
     assert!(smoke.shows_part("Your voice is processed in the United States."));
     assert!(
         !smoke.pending("RequestHqVoice"),
@@ -2511,11 +2528,13 @@ fn hq_voice(smoke: &Smoke) {
     smoke.shot("46-hq-voice-disclosure");
     smoke.click("voice_decline");
     assert!(!smoke.shown("voice_disclosure"));
+    assert!(smoke.focused("voice_start"));
     smoke.click("voice_start");
     smoke.click("voice_accept");
     let minted = smoke.ticket("RequestHqVoice");
     assert!(smoke.shows_text("Connecting to District HQ."));
     assert!(smoke.shown("voice_stop") && !smoke.shown("voice_start"));
+    assert!(smoke.focused("voice_stop"));
     let credential: district_model::HqVoiceTokenResponse =
         serde_json::from_value(serde_json::json!({
             "success": true,
@@ -2530,6 +2549,18 @@ fn hq_voice(smoke: &Smoke) {
         ticket: minted,
         result: Ok(credential),
     });
+    // The voice agent is told where the member is, as the web tells it.
+    let Effect::ReportHqVoiceScreen {
+        room_name, screen, ..
+    } = smoke.take("ReportHqVoiceScreen")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        room_name,
+        "hq_ws-contract-test_00000000-0000-4000-8000-000000000000"
+    );
+    assert_eq!((screen.version, screen.page.as_str()), (1, "hq"));
     let session = smoke.session();
     smoke.media(session, MediaEvent::Connected);
     assert!(smoke.shows_text("Waiting for District HQ to join."));
@@ -2640,7 +2671,9 @@ fn hq_voice(smoke: &Smoke) {
     smoke.shot("48-hq-voice-narrow");
     smoke.resize(1024, 720);
 
-    // The agent leaves: the session ends, the card stays to be clicked.
+    // The agent leaves: the session ends, the card stays to be clicked, and
+    // the keyboard is back on the voice button.
+    smoke.mapped("voice_stop").grab_focus();
     smoke.media(
         session,
         MediaEvent::ParticipantLeft {
@@ -2650,6 +2683,7 @@ fn hq_voice(smoke: &Smoke) {
     assert!(smoke.pending("DisconnectMedia"));
     assert!(smoke.shows_text("Voice session ended because District HQ left the session."));
     assert!(smoke.shown("voice_card") && smoke.shown("voice_start"));
+    assert!(smoke.focused("voice_start"));
     smoke.shot("49-hq-voice-ended");
     smoke.click("voice_dismiss");
     assert!(!smoke.shown("voice_line"));

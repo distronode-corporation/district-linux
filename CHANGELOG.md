@@ -15,14 +15,17 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Added
 
-- District HQ by voice, in a build with calls. "Voice" on District HQ first says where
-  your voice is processed (in the United States, for every workspace), and starts nothing
-  until you accept; then the assistant joins an end-to-end encrypted room, a line says what
-  it is doing, and both sides' words join the conversation as they are spoken. A change
-  asked for by voice is a card, applied only when you say "confirm" or click its Confirm,
-  and cancelled the same ways. The session ends when you press Stop voice, leave District
-  HQ, or after 30 minutes. Agency and client members only; a build without calls says it
-  cannot.
+- District HQ by voice, in a build with calls. Start voice on District HQ first says
+  where your voice is processed (in the United States, for every workspace), and starts
+  nothing until you accept; then the assistant joins an end-to-end encrypted room, a line
+  says what it is doing, and both sides' words join the conversation as they are spoken.
+  The assistant is told which page you are on, as the web dashboard tells it, by the
+  page's name only. A change asked for by voice is a card, applied only when you say
+  "confirm" or click its Confirm, and cancelled the same ways. The session ends when you
+  press Stop voice, leave District HQ, or after 30 minutes. The keyboard goes with the
+  session: to Start voice in the statement, to Stop voice once it starts, and back to the
+  voice button when it ends. Agency and client members only; a build without calls says
+  it cannot.
 
 ### Changed
 
