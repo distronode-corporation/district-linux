@@ -13,6 +13,12 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-27
+
+District HQ by voice: talk to District HQ in a build with calls, with every change it
+proposes waiting for your confirmation, and a voice dock that keeps the session's controls
+on every other screen.
+
 ### Added
 
 - District HQ by voice, in a build with calls. Start voice on District HQ first says
@@ -35,8 +41,15 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ### Changed
 
-- Built on District AI core for Rust at the commit of its HQ voice change, until that
-  change is released.
+- Built on District AI core for Rust 7.0.0, the release of its HQ voice change. Retrying a
+  District HQ question that failed sends your last typed question again, even when spoken
+  words or a note came after it.
+
+### Fixed
+
+- Voice Studio: an unsaved edit's signal chain and time-to-first-word meter count the
+  brain's measured time again, at the thinking level the service measured it at, so they
+  read "About 970 ms" where the service does instead of "At least 520 ms".
 
 ## [3.1.0] - 2026-10-25
 

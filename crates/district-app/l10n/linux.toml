@@ -3320,6 +3320,46 @@ screen = "metainfo"
 state = "reviewed"
 note = "The 3.1.0 release's notes in the AppStream metadata, as software centres show them."
 
+[metainfo.release_3_2_0.li1]
+en = "Start voice on District HQ first says where your voice is processed and starts nothing until you accept; the session is end-to-end encrypted, and both sides' words join the conversation as they are spoken"
+fr = "«\u00A0Démarrer le mode vocal\u00A0», dans District HQ, indique d'abord où votre voix est traitée et ne lance rien tant que vous n'avez pas accepté; la session est chiffrée de bout en bout, et les paroles des deux côtés s'ajoutent à la conversation à mesure qu'elles sont prononcées"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_2_0.li2]
+en = "A change asked for by voice is a card, applied only when you say confirm or click Confirm, and cancelled the same ways"
+fr = "Un changement demandé de vive voix s'affiche sur une carte et n'est appliqué que si vous dites «\u00A0je confirme\u00A0» ou cliquez sur Confirmer; il s'annule de la même façon"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_2_0.li3]
+en = "The session goes on when you leave District HQ: a voice dock below every other screen holds the microphone, Stop voice and each change waiting to be confirmed or cancelled, until you stop the session, close the window or reach 30 minutes"
+fr = "La session se poursuit quand vous quittez District HQ\u00A0: un bandeau sous chacun des autres écrans réunit le micro, «\u00A0Arrêter le mode vocal\u00A0» et chaque changement à confirmer ou à annuler, jusqu'à ce que vous arrêtiez la session, fermiez la fenêtre ou atteigniez 30\u00A0minutes"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_2_0.li4]
+en = "Voice Studio: the time to the first word shown for an unsaved edit matches the service's measurement again"
+fr = "Voice Studio\u00A0: le délai avant le premier mot affiché pour une modification non enregistrée correspond de nouveau à celui que mesure le service"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.2.0 release's notes in the AppStream metadata, as software centres show them."
+
+[metainfo.release_3_2_0.p]
+en = "District HQ by voice: talk to District HQ, every change it proposes waits for your confirmation, and a voice dock keeps the session's controls on every other screen."
+fr = "District HQ par la voix\u00A0: parlez à District HQ, chaque changement proposé attend votre confirmation, et un bandeau garde les commandes de la session vocale sur tous les autres écrans."
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.2.0 release's notes in the AppStream metadata, as software centres show them."
+
 [metainfo.screenshot_caption.call]
 en = "A call placed from the desktop, with mute and hang up always in reach"
 fr = "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main"

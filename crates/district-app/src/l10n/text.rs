@@ -3815,6 +3815,51 @@ pub fn metainfo_release_3_1_0_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_2_0.li1`
+#[must_use]
+pub fn metainfo_release_3_2_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Start voice on District HQ first says where your voice is processed and starts nothing until you accept; the session is end-to-end encrypted, and both sides' words join the conversation as they are spoken",
+        Locale::FrCa => "«\u{00A0}Démarrer le mode vocal\u{00A0}», dans District HQ, indique d'abord où votre voix est traitée et ne lance rien tant que vous n'avez pas accepté; la session est chiffrée de bout en bout, et les paroles des deux côtés s'ajoutent à la conversation à mesure qu'elles sont prononcées",
+    }
+}
+
+/// `metainfo.release_3_2_0.li2`
+#[must_use]
+pub fn metainfo_release_3_2_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A change asked for by voice is a card, applied only when you say confirm or click Confirm, and cancelled the same ways",
+        Locale::FrCa => "Un changement demandé de vive voix s'affiche sur une carte et n'est appliqué que si vous dites «\u{00A0}je confirme\u{00A0}» ou cliquez sur Confirmer; il s'annule de la même façon",
+    }
+}
+
+/// `metainfo.release_3_2_0.li3`
+#[must_use]
+pub fn metainfo_release_3_2_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The session goes on when you leave District HQ: a voice dock below every other screen holds the microphone, Stop voice and each change waiting to be confirmed or cancelled, until you stop the session, close the window or reach 30 minutes",
+        Locale::FrCa => "La session se poursuit quand vous quittez District HQ\u{00A0}: un bandeau sous chacun des autres écrans réunit le micro, «\u{00A0}Arrêter le mode vocal\u{00A0}» et chaque changement à confirmer ou à annuler, jusqu'à ce que vous arrêtiez la session, fermiez la fenêtre ou atteigniez 30\u{00A0}minutes",
+    }
+}
+
+/// `metainfo.release_3_2_0.li4`
+#[must_use]
+pub fn metainfo_release_3_2_0_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Voice Studio: the time to the first word shown for an unsaved edit matches the service's measurement again",
+        Locale::FrCa => "Voice Studio\u{00A0}: le délai avant le premier mot affiché pour une modification non enregistrée correspond de nouveau à celui que mesure le service",
+    }
+}
+
+/// `metainfo.release_3_2_0.p`
+#[must_use]
+pub fn metainfo_release_3_2_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "District HQ by voice: talk to District HQ, every change it proposes waits for your confirmation, and a voice dock keeps the session's controls on every other screen.",
+        Locale::FrCa => "District HQ par la voix\u{00A0}: parlez à District HQ, chaque changement proposé attend votre confirmation, et un bandeau garde les commandes de la session vocale sur tous les autres écrans.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {
