@@ -27,7 +27,7 @@ use crate::gtk::{self, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::Sends;
 use crate::pages::call_bar::microphone_button;
-use crate::pages::hq::{button, voice_card, voice_line};
+use crate::pages::hq::{button, voice_card, voice_cards_scroller, voice_line};
 use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
 use crate::sink::EventSink;
 
@@ -52,6 +52,7 @@ struct Parts {
     microphone: gtk::Button,
     stop: gtk::Button,
     cards: gtk::Box,
+    cards_scroller: gtk::ScrolledWindow,
     review: gtk::Button,
 }
 
@@ -120,6 +121,14 @@ impl VoiceDock {
         let line = plain_label("", &["dim-label"]);
         line.set_hexpand(true);
         line.set_widget_name("voice_dock_line");
+        // The dock's name and its line wrap between words, never inside one:
+        // beside Stop voice in a narrow window, French broke them mid-word
+        // ("Distr-ict").
+        let heading = plain_label(label, &["heading"]);
+        heading.set_widget_name("voice_dock_heading");
+        for label in [&heading, &line] {
+            label.set_wrap_mode(gtk::pango::WrapMode::Word);
+        }
         let dismiss = gtk::Button::builder()
             .icon_name("window-close-symbolic")
             .name("voice_dock_dismiss")
@@ -143,11 +152,20 @@ impl VoiceDock {
             "voice_dock_stop",
             &["pill", "destructive-action"],
         );
+        // The dock's name above its line, so that in a narrow window the two
+        // share one column beside the buttons rather than each taking one.
+        let words = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(2)
+            .hexpand(true)
+            .valign(gtk::Align::Center)
+            .build();
+        words.append(&heading);
+        words.append(&line);
         let bar = gtk::Box::builder().spacing(8).build();
-        bar.append(&plain_label(label, &["heading"]));
         for widget in [
             spinner.upcast_ref::<gtk::Widget>(),
-            line.upcast_ref(),
+            words.upcast_ref(),
             dismiss.upcast_ref(),
             microphone.upcast_ref(),
             stop.upcast_ref(),
@@ -161,6 +179,7 @@ impl VoiceDock {
             .spacing(8)
             .name("voice_dock_cards")
             .build();
+        let cards_scroller = voice_cards_scroller(&cards, "voice_dock_cards_scroller");
         let review = button(
             core_text::hq_voice_dock_review(lang()),
             "voice_dock_review",
@@ -178,19 +197,15 @@ impl VoiceDock {
         for widget in [
             bar.upcast_ref::<gtk::Widget>(),
             notice.upcast_ref(),
-            cards.upcast_ref(),
+            cards_scroller.upcast_ref(),
             review.upcast_ref(),
         ] {
             column.append(widget);
         }
-        // Tall cards scroll inside the dock rather than push the page away.
-        let scroller = gtk::ScrolledWindow::builder()
-            .hscrollbar_policy(gtk::PolicyType::Never)
-            .propagate_natural_height(true)
-            .max_content_height(320)
-            .child(&column)
-            .build();
-        self.set_child(Some(&scroller));
+        // Only the cards scroll (voice_cards_scroller): the dock's name, its
+        // line, the microphone and Stop voice stay on screen whatever the
+        // cards' height, and the cards never push the page or the window.
+        self.set_child(Some(&column));
         self.add_css_class("toolbar");
 
         crate::pages::on_click(&stop, self, || Event::Hq(HqEvent::StopVoice));
@@ -212,6 +227,7 @@ impl VoiceDock {
                 microphone,
                 stop,
                 cards,
+                cards_scroller,
                 review,
             })
             .ok();
@@ -292,6 +308,7 @@ impl VoiceDock {
             }
             imp.drawn_cards.replace(drawn);
         }
+        parts.cards_scroller.set_visible(!state.cards.is_empty());
         if follow {
             // Stop voice while the session runs, the dismiss button once it
             // has ended with something to say, and the way to the cards

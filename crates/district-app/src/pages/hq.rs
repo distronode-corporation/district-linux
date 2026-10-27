@@ -298,6 +298,7 @@ pub struct Voice {
     notice: gtk::Box,
     notice_line: gtk::Label,
     cards: gtk::Box,
+    cards_scroller: gtk::ScrolledWindow,
 }
 
 /// A button with `label`, named `name` for the smoke test and the screen
@@ -308,6 +309,28 @@ pub(crate) fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
         .name(name)
         .valign(gtk::Align::Center)
         .css_classes(classes.to_vec())
+        .build()
+}
+
+/// The tallest the cards proposed by voice grow before they scroll, and the
+/// least of them that stays on screen, on District HQ and in the voice dock.
+const VOICE_CARDS_MAX_HEIGHT: i32 = 260;
+const VOICE_CARDS_MIN_HEIGHT: i32 = 72;
+
+/// `cards` in a window of their own that scrolls once they are taller than
+/// [`VOICE_CARDS_MAX_HEIGHT`]. Without it each card added to the least height
+/// of the page, and of every page (the window's stack is as tall as its
+/// tallest page), so two cards and a call pushed the window past a 700 px
+/// screen, the cards' buttons beneath its edge. Hidden while there is no card.
+pub(crate) fn voice_cards_scroller(cards: &gtk::Box, name: &str) -> gtk::ScrolledWindow {
+    gtk::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .propagate_natural_height(true)
+        .min_content_height(VOICE_CARDS_MIN_HEIGHT)
+        .max_content_height(VOICE_CARDS_MAX_HEIGHT)
+        .name(name)
+        .visible(false)
+        .child(cards)
         .build()
 }
 
@@ -415,6 +438,8 @@ impl HqPage {
         let imp = self.imp();
         let spinner = gtk::Spinner::new();
         let line = plain_label("", &["dim-label"]);
+        // Wrapped between words only: beside the voice buttons it is narrow.
+        line.set_wrap_mode(gtk::pango::WrapMode::Word);
         line.set_hexpand(true);
         line.set_widget_name("voice_line");
         let microphone = gtk::Button::builder()
@@ -478,11 +503,25 @@ impl HqPage {
         region_notice.set_widget_name("voice_region_notice");
         disclosure.append(&region_notice);
         disclosure.append(&plain_label(core_text::hq_voice_disclosure(lang()), &[]));
-        let choices = gtk::Box::builder()
-            .spacing(8)
+        // Side by side, or one above the other when the window is too narrow
+        // for both (French at 400 px), at the card's end. The box holds them
+        // there: the flow box itself starts its lines, because a GtkFlowBox
+        // aligned to its end (GTK 4.14) places the last of a full last line
+        // one column past its own edge.
+        let choices = gtk::FlowBox::builder()
+            .selection_mode(gtk::SelectionMode::None)
+            .min_children_per_line(1)
+            .max_children_per_line(2)
+            .column_spacing(8)
+            .row_spacing(8)
+            .halign(gtk::Align::Start)
+            .name("voice_choices")
+            .build();
+        let choices_end = gtk::Box::builder()
             .halign(gtk::Align::End)
             .margin_top(6)
             .build();
+        choices_end.append(&choices);
         let decline = button(
             core_text::hq_voice_disclosure_decline(lang()),
             "voice_decline",
@@ -493,9 +532,14 @@ impl HqPage {
             "voice_accept",
             &["pill", "suggested-action"],
         );
-        choices.append(&decline);
-        choices.append(&accept);
-        disclosure.append(&choices);
+        for choice in [&decline, &accept] {
+            choices.append(choice);
+            // The button takes the keyboard, never the flow box's child.
+            if let Some(child) = choice.parent() {
+                child.set_focusable(false);
+            }
+        }
+        disclosure.append(&choices_end);
 
         let notice_line = plain_label("", &["error"]);
         notice_line.set_hexpand(true);
@@ -519,10 +563,11 @@ impl HqPage {
             .spacing(8)
             .name("voice_cards")
             .build();
+        let cards_scroller = voice_cards_scroller(&cards, "voice_cards_scroller");
 
         // Above the typed card and the question line, in reading order.
         for widget in [
-            cards.upcast_ref::<gtk::Widget>(),
+            cards_scroller.upcast_ref::<gtk::Widget>(),
             notice.upcast_ref(),
             disclosure.upcast_ref(),
             bar.upcast_ref(),
@@ -561,6 +606,7 @@ impl HqPage {
                 notice,
                 notice_line,
                 cards,
+                cards_scroller,
             })
             .ok();
     }
@@ -671,6 +717,7 @@ impl HqPage {
             }
             imp.drawn_cards.replace(drawn);
         }
+        voice.cards_scroller.set_visible(!state.cards.is_empty());
     }
 
     /// Draws the conversation of `signed_in`'s workspace.

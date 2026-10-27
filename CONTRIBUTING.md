@@ -475,7 +475,12 @@ GSK_RENDERER=cairo GDK_BACKEND=x11 GTK_A11Y=none GTK_MEDIA=none GSETTINGS_BACKEN
 The environment makes it the same everywhere: the software renderer, X11 under
 Xvfb, no accessibility bus, no media backend (a missing GStreamer plugin
 aborts GTK rather than failing the ringtone), and settings kept in memory, so
-the file chooser the test opens does not save its own into yours. Set `DISTRICT_SMOKE_SHOTS` to a
+the file chooser the test opens does not save its own into yours. Last, the
+test runs itself again in a French desktop's environment and checks District
+HQ's residency statement and the voice dock in a 400 px window, in the app's
+French and the core's, which needs `msgfmt` (the gettext package) and the
+`fr_CA.UTF-8` locale (`sudo localedef -i fr_CA -f UTF-8 fr_CA.UTF-8`), as
+CI has them. Set `DISTRICT_SMOKE_SHOTS` to a
 directory to have it save every screen there as a PNG, light and dark; look at
 them after changing a page. Keep decisions out of the widgets: a page reads the
 core's state and sends events, and what it shows is tested in `district-core`
