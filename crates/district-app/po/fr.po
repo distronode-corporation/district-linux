@@ -2409,7 +2409,7 @@ msgstr "Un changement demandé de vive voix s'affiche sur une carte et n'est app
 #. The 3.2.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_2_0.li3"
 msgid "The session goes on when you leave District HQ: a voice dock below every other screen holds the microphone, Stop voice and each change waiting to be confirmed or cancelled, until you stop the session, close the window or reach 30 minutes"
-msgstr "La session se poursuit quand vous quittez District HQ : un bandeau sous chacun des autres écrans réunit le micro, « Arrêter le mode vocal » et chaque changement à confirmer ou à annuler, jusqu'à ce que vous arrêtiez la session, fermiez la fenêtre ou atteigniez 30 minutes"
+msgstr "La session se poursuit quand vous quittez District HQ : un bandeau sous chacun des autres écrans réunit le micro, « Arrêter le mode vocal » et chaque changement à confirmer ou à annuler, jusqu'à ce que vous arrêtiez la session ou fermiez la fenêtre, ou que la limite de 30 minutes soit atteinte"
 
 #. screen: metainfo; ctx: body; tier: T3
 #. The 3.2.0 release's notes in the AppStream metadata, as software centres show them.

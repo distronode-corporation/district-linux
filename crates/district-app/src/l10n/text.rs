@@ -3838,7 +3838,7 @@ pub fn metainfo_release_3_2_0_li2(l: Locale) -> &'static str {
 pub fn metainfo_release_3_2_0_li3(l: Locale) -> &'static str {
     match l {
         Locale::En => "The session goes on when you leave District HQ: a voice dock below every other screen holds the microphone, Stop voice and each change waiting to be confirmed or cancelled, until you stop the session, close the window or reach 30 minutes",
-        Locale::FrCa => "La session se poursuit quand vous quittez District HQ\u{00A0}: un bandeau sous chacun des autres écrans réunit le micro, «\u{00A0}Arrêter le mode vocal\u{00A0}» et chaque changement à confirmer ou à annuler, jusqu'à ce que vous arrêtiez la session, fermiez la fenêtre ou atteigniez 30\u{00A0}minutes",
+        Locale::FrCa => "La session se poursuit quand vous quittez District HQ\u{00A0}: un bandeau sous chacun des autres écrans réunit le micro, «\u{00A0}Arrêter le mode vocal\u{00A0}» et chaque changement à confirmer ou à annuler, jusqu'à ce que vous arrêtiez la session ou fermiez la fenêtre, ou que la limite de 30\u{00A0}minutes soit atteinte",
     }
 }
 
