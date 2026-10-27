@@ -27,7 +27,7 @@ use std::time::Duration;
 
 use district_host::SleepSource;
 use futures_util::StreamExt;
-use zbus::zvariant::OwnedFd;
+use zbus::OwnedFd;
 
 /// logind's bus name.
 pub const LOGIN1_SERVICE: &str = "org.freedesktop.login1";

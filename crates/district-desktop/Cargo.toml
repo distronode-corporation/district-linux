@@ -34,6 +34,8 @@ tempfile = { workspace = true }
 # `sync` for the lock oo7's keyring type holds, to build a file-backed one;
 # `time` to wait for a test keyring daemon to start.
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
+# `service` for the `interface` macro that serves a stand-in logind in the tests.
+zbus = { workspace = true, features = ["service"] }
 
 [lints]
 workspace = true
