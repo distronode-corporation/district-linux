@@ -2,8 +2,21 @@
     {
         "type": "git",
         "url": "https://github.com/distronode-corporation/district-core-rust",
-        "commit": "9d4dbc4310bc504fcfedbe572e5a8a83ce0cb5d9",
-        "dest": "flatpak-cargo/git/district-core-rust-9d4dbc4"
+        "commit": "5b4754267728b7ef0c5b9c98682a7090347266d1",
+        "dest": "flatpak-cargo/git/district-core-rust-5b47542"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/addr2line/addr2line-0.25.1.crate",
+        "sha256": "1b5d307320b3181d6d7954e663bd7c774a838b8220fe0593c86d9fb09f498b4b",
+        "dest": "cargo/vendor/addr2line-0.25.1"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"1b5d307320b3181d6d7954e663bd7c774a838b8220fe0593c86d9fb09f498b4b\", \"files\": {}}",
+        "dest": "cargo/vendor/addr2line-0.25.1",
+        "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
@@ -211,6 +224,19 @@
         "type": "inline",
         "contents": "{\"package\": \"9bff6c3b54fad79a2e60b8102caf565819711497c1f5f092f49508e2f5c31b27\", \"files\": {}}",
         "dest": "cargo/vendor/aws-lc-sys-0.45.0",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/backtrace/backtrace-0.3.76.crate",
+        "sha256": "bb531853791a215d7c62a30daf0dde835f381ab5de4589cfe7c649d2cbe92bd6",
+        "dest": "cargo/vendor/backtrace-0.3.76"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"bb531853791a215d7c62a30daf0dde835f381ab5de4589cfe7c649d2cbe92bd6\", \"files\": {}}",
+        "dest": "cargo/vendor/backtrace-0.3.76",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -892,6 +918,19 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/debugid/debugid-0.8.0.crate",
+        "sha256": "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d",
+        "dest": "cargo/vendor/debugid-0.8.0"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d\", \"files\": {}}",
+        "dest": "cargo/vendor/debugid-0.8.0",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/defmt/defmt-1.1.1.crate",
         "sha256": "e2953bfe4f93bbd20cc71198842756f77d161884c99ebbabc41d80231ded88d1",
         "dest": "cargo/vendor/defmt-1.1.1"
@@ -926,6 +965,19 @@
         "type": "inline",
         "contents": "{\"package\": \"10d60334b3b2e7c9d91ef8150abfb6fa4c1c39ebbcf4a81c2e346aad939fee3e\", \"files\": {}}",
         "dest": "cargo/vendor/defmt-parser-1.0.0",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/deranged/deranged-0.5.9.crate",
+        "sha256": "9e9de72ce2ad1f90dc62fa25f0f430ef85eb4b0d8fa0be4f30373bc40a21d28e",
+        "dest": "cargo/vendor/deranged-0.5.9"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"9e9de72ce2ad1f90dc62fa25f0f430ef85eb4b0d8fa0be4f30373bc40a21d28e\", \"files\": {}}",
+        "dest": "cargo/vendor/deranged-0.5.9",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -996,12 +1048,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-api\" \"cargo/vendor/district-api\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-api\" \"cargo/vendor/district-api\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-api\"\ndescription = \"The District AI HTTP client and its endpoint table.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nhttpdate = \"1.0.3\"\nserde_json = \"1.0.151\"\nthiserror = \"2.0.21\"\nurl = \"2.5.8\"\n\n[dependencies.district-l10n]\npath = \"crates/district-l10n\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.reqwest]\nversion = \"0.13.5\"\ndefault-features = false\nfeatures = [\"rustls\", \"json\", \"multipart\"]\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies]\ntoml = \"1.1.6\"\nwiremock = \"0.6.5\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"test-util\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-api\"\ndescription = \"The District AI HTTP client and its endpoint table.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nhttpdate = \"1.0.3\"\nserde_json = \"1.0.151\"\nthiserror = \"2.0.21\"\nurl = \"2.5.8\"\n\n[dependencies.district-l10n]\npath = \"crates/district-l10n\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.reqwest]\nversion = \"0.13.5\"\ndefault-features = false\nfeatures = [\"rustls\", \"json\", \"multipart\"]\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies]\ntoml = \"1.1.6\"\nwiremock = \"0.6.5\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"test-util\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-api",
         "dest-filename": "Cargo.toml"
     },
@@ -1014,12 +1066,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-auth\" \"cargo/vendor/district-auth\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-auth\" \"cargo/vendor/district-auth\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-auth\"\ndescription = \"Signing in to District AI: OAuth 2.0 with PKCE through the system browser, token refresh and sign-out.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nbase64 = \"0.22.1\"\ngetrandom = \"0.4.3\"\nserde_json = \"1.0.151\"\nsha2 = \"0.10.9\"\nthiserror = \"2.0.21\"\nurl = \"2.5.8\"\n\n[dependencies.district-api]\npath = \"crates/district-api\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.reqwest]\nversion = \"0.13.5\"\ndefault-features = false\nfeatures = [\"rustls\", \"json\", \"multipart\"]\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dependencies.subtle]\nversion = \"2.6.1\"\ndefault-features = false\n\n[dependencies.tokio]\nfeatures = [\"rt\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dev-dependencies]\nwiremock = \"0.6.5\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"net\", \"rt\", \"rt-multi-thread\", \"test-util\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-auth\"\ndescription = \"Signing in to District AI: OAuth 2.0 with PKCE through the system browser, token refresh and sign-out.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nbase64 = \"0.22.1\"\ngetrandom = \"0.4.3\"\nserde_json = \"1.0.151\"\nsha2 = \"0.10.9\"\nthiserror = \"2.0.21\"\nurl = \"2.5.8\"\n\n[dependencies.district-api]\npath = \"crates/district-api\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.reqwest]\nversion = \"0.13.5\"\ndefault-features = false\nfeatures = [\"rustls\", \"json\", \"multipart\"]\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dependencies.subtle]\nversion = \"2.6.1\"\ndefault-features = false\n\n[dependencies.tokio]\nfeatures = [\"rt\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dev-dependencies]\nwiremock = \"0.6.5\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"net\", \"rt\", \"rt-multi-thread\", \"test-util\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-auth",
         "dest-filename": "Cargo.toml"
     },
@@ -1032,12 +1084,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-call\" \"cargo/vendor/district-call\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-call\" \"cargo/vendor/district-call\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-call\"\ndescription = \"The District AI call engine. The LiveKit implementation sits behind the optional `livekit` feature.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies.district-core]\npath = \"crates/district-core\"\n\n[dependencies.tokio]\nfeatures = [\"sync\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.futures-util]\noptional = true\nversion = \"0.3.34\"\ndefault-features = false\n\n[dependencies.livekit]\noptional = true\nversion = \"0.9.3\"\ndefault-features = false\nfeatures = [\"native\", \"rustls-tls-native-roots\"]\n\n[dependencies.rustls]\noptional = true\nversion = \"0.23.45\"\ndefault-features = false\nfeatures = [\"aws_lc_rs\", \"std\", \"tls12\"]\n\n[dependencies.url]\noptional = true\nversion = \"2.5.8\"\n\n[dependencies.log]\noptional = true\nversion = \"0.4.34\"\nfeatures = [\"max_level_warn\"]\n\n[dev-dependencies]\nserde_json = \"1.0.151\"\nbase64 = \"0.22.1\"\nhmac = \"0.12.1\"\nsha2 = \"0.10.9\"\n\n[dev-dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dev-dependencies.district-model]\npath = \"crates/district-model\"\n\n[dev-dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dev-dependencies.log]\nfeatures = [\"std\", \"max_level_warn\"]\nversion = \"0.4.34\"\n\n[dev-dependencies.pbkdf2]\nversion = \"0.12.2\"\ndefault-features = false\nfeatures = [\"hmac\"]\n\n[features]\nlivekit = [\"dep:livekit\", \"dep:futures-util\", \"dep:log\", \"dep:rustls\", \"dep:url\", \"tokio/rt\", \"tokio/time\", \"tokio/macros\"]\n\n[[test]]\nname = \"engine\"\npath = \"tests/engine/main.rs\"\nrequired-features = [\"livekit\"]\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-call\"\ndescription = \"The District AI call engine. The LiveKit implementation sits behind the optional `livekit` feature.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies.district-core]\npath = \"crates/district-core\"\n\n[dependencies.tokio]\nfeatures = [\"sync\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.futures-util]\noptional = true\nversion = \"0.3.34\"\ndefault-features = false\n\n[dependencies.livekit]\noptional = true\nversion = \"0.9.3\"\ndefault-features = false\nfeatures = [\"native\", \"rustls-tls-native-roots\"]\n\n[dependencies.rustls]\noptional = true\nversion = \"0.23.45\"\ndefault-features = false\nfeatures = [\"aws_lc_rs\", \"std\", \"tls12\"]\n\n[dependencies.url]\noptional = true\nversion = \"2.5.8\"\n\n[dependencies.log]\noptional = true\nversion = \"0.4.34\"\nfeatures = [\"max_level_warn\"]\n\n[dev-dependencies]\nserde_json = \"1.0.151\"\nbase64 = \"0.22.1\"\nhmac = \"0.12.1\"\nsha2 = \"0.10.9\"\n\n[dev-dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dev-dependencies.district-model]\npath = \"crates/district-model\"\n\n[dev-dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dev-dependencies.log]\nfeatures = [\"std\", \"max_level_warn\"]\nversion = \"0.4.34\"\n\n[dev-dependencies.pbkdf2]\nversion = \"0.12.2\"\ndefault-features = false\nfeatures = [\"hmac\"]\n\n[features]\nlivekit = [\"dep:livekit\", \"dep:futures-util\", \"dep:log\", \"dep:rustls\", \"dep:url\", \"tokio/rt\", \"tokio/time\", \"tokio/macros\"]\n\n[[test]]\nname = \"engine\"\npath = \"tests/engine/main.rs\"\nrequired-features = [\"livekit\"]\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-call",
         "dest-filename": "Cargo.toml"
     },
@@ -1050,12 +1102,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-core\" \"cargo/vendor/district-core\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-core\" \"cargo/vendor/district-core\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-core\"\ndescription = \"GTK-free application state for the District AI desktop apps: the session, routes, role capabilities, screen models and the effect runner.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nserde_json = \"1.0.151\"\nurl = \"2.5.8\"\n\n[dependencies.district-api]\npath = \"crates/district-api\"\n\n[dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dependencies.district-l10n]\npath = \"crates/district-l10n\"\n\n[dependencies.district-live]\npath = \"crates/district-live\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.jiff]\nversion = \"0.2.37\"\ndefault-features = false\nfeatures = [\"std\", \"tzdb-bundle-always\"]\n\n[dependencies.tokio]\nfeatures = [\"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.uuid]\nversion = \"1.26.1\"\ndefault-features = false\nfeatures = [\"std\", \"v4\"]\n\n[dev-dependencies]\nbase64 = \"0.22.1\"\nwiremock = \"0.6.5\"\n\n[dev-dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"test-util\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-core\"\ndescription = \"GTK-free application state for the District AI desktop apps: the session, routes, role capabilities, screen models and the effect runner.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nserde_json = \"1.0.151\"\nurl = \"2.5.8\"\n\n[dependencies.district-api]\npath = \"crates/district-api\"\n\n[dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dependencies.district-l10n]\npath = \"crates/district-l10n\"\n\n[dependencies.district-live]\npath = \"crates/district-live\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.jiff]\nversion = \"0.2.37\"\ndefault-features = false\nfeatures = [\"std\", \"tzdb-bundle-always\"]\n\n[dependencies.tokio]\nfeatures = [\"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.uuid]\nversion = \"1.26.1\"\ndefault-features = false\nfeatures = [\"std\", \"v4\"]\n\n[dev-dependencies]\nbase64 = \"0.22.1\"\nwiremock = \"0.6.5\"\n\n[dev-dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"rt-multi-thread\", \"test-util\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-core",
         "dest-filename": "Cargo.toml"
     },
@@ -1068,12 +1120,30 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-host\" \"cargo/vendor/district-host\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-crash\" \"cargo/vendor/district-crash\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-host\"\ndescription = \"The District AI desktop apps' files and sleep protocol, on any operating system: device id, refresh marker, settings file. GTK-free.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\ntoml = \"1.1.6\"\n\n[dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dependencies.district-core]\npath = \"crates/district-core\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dependencies.tokio]\nfeatures = [\"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.uuid]\nversion = \"1.26.1\"\ndefault-features = false\nfeatures = [\"std\", \"v4\"]\n\n[dev-dependencies]\ntempfile = \"3.27.0\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"sync\", \"time\", \"test-util\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-crash\"\ndescription = \"Opt-in crash reports for the District AI desktop apps: nothing is set up or sent without a DSN and the user's consent.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nserde_json = \"1.0.151\"\nthiserror = \"2.0.21\"\n\n[dependencies.sentry]\nversion = \"0.49.3\"\ndefault-features = false\nfeatures = [\"backtrace\", \"contexts\", \"debug-images\", \"reqwest\", \"rustls\"]\n\n[dev-dependencies]\nwiremock = \"0.6.5\"\n\n[dev-dependencies.object]\nversion = \"0.37.3\"\ndefault-features = false\nfeatures = [\"read_core\", \"elf\", \"pe\", \"std\"]\n\n[dev-dependencies.tokio]\nfeatures = [\"rt\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "dest": "cargo/vendor/district-crash",
+        "dest-filename": "Cargo.toml"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": null, \"files\": {}}",
+        "dest": "cargo/vendor/district-crash",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "shell",
+        "commands": [
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-host\" \"cargo/vendor/district-host\""
+        ]
+    },
+    {
+        "type": "inline",
+        "contents": "[package]\nname = \"district-host\"\ndescription = \"The District AI desktop apps' files and sleep protocol, on any operating system: device id, refresh marker, settings file. GTK-free.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\ntoml = \"1.1.6\"\n\n[dependencies.district-auth]\npath = \"crates/district-auth\"\n\n[dependencies.district-core]\npath = \"crates/district-core\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dependencies.tokio]\nfeatures = [\"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.uuid]\nversion = \"1.26.1\"\ndefault-features = false\nfeatures = [\"std\", \"v4\"]\n\n[dev-dependencies]\ntempfile = \"3.27.0\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\", \"rt\", \"sync\", \"time\", \"test-util\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-host",
         "dest-filename": "Cargo.toml"
     },
@@ -1086,12 +1156,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-l10n\" \"cargo/vendor/district-l10n\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-l10n\" \"cargo/vendor/district-l10n\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-l10n\"\ndescription = \"The District AI desktop apps' words in English and Canadian French: the locale, the generated string catalogs, the API error sentences, the wire value labels and the number, money, date and duration formats.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\n\n[dev-dependencies]\nserde_json = \"1.0.151\"\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-l10n\"\ndescription = \"The District AI desktop apps' words in English and Canadian French: the locale, the generated string catalogs, the API error sentences, the wire value labels and the number, money, date and duration formats.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\n\n[dev-dependencies]\nserde_json = \"1.0.151\"\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-l10n",
         "dest-filename": "Cargo.toml"
     },
@@ -1104,12 +1174,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-live\" \"cargo/vendor/district-live\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-live\" \"cargo/vendor/district-live\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-live\"\ndescription = \"The District AI live telemetry WebSocket client.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\ngetrandom = \"0.4.3\"\nrustls-platform-verifier = \"0.7.1\"\nserde_json = \"1.0.151\"\nthiserror = \"2.0.21\"\nurl = \"2.5.8\"\n\n[dependencies.district-api]\npath = \"crates/district-api\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.futures-util]\nversion = \"0.3.34\"\ndefault-features = false\n\n[dependencies.log]\nversion = \"0.4.34\"\nfeatures = [\"max_level_warn\"]\n\n[dependencies.rustls]\nversion = \"0.23.45\"\ndefault-features = false\nfeatures = [\"aws_lc_rs\", \"std\", \"tls12\"]\n\n[dependencies.tokio]\nfeatures = [\"macros\", \"net\", \"rt\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.tokio-rustls]\nversion = \"0.26.5\"\ndefault-features = false\nfeatures = [\"tls12\"]\n\n[dependencies.tokio-tungstenite]\nversion = \"0.30.0\"\ndefault-features = false\nfeatures = [\"handshake\"]\n\n[dev-dependencies]\nwiremock = \"0.6.5\"\n\n[dev-dependencies.tokio]\nfeatures = [\"io-util\", \"macros\", \"net\", \"rt\", \"rt-multi-thread\", \"sync\", \"test-util\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-live\"\ndescription = \"The District AI live telemetry WebSocket client.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\ngetrandom = \"0.4.3\"\nrustls-platform-verifier = \"0.7.1\"\nserde_json = \"1.0.151\"\nthiserror = \"2.0.21\"\nurl = \"2.5.8\"\n\n[dependencies.district-api]\npath = \"crates/district-api\"\n\n[dependencies.district-model]\npath = \"crates/district-model\"\n\n[dependencies.futures-util]\nversion = \"0.3.34\"\ndefault-features = false\n\n[dependencies.log]\nversion = \"0.4.34\"\nfeatures = [\"max_level_warn\"]\n\n[dependencies.rustls]\nversion = \"0.23.45\"\ndefault-features = false\nfeatures = [\"aws_lc_rs\", \"std\", \"tls12\"]\n\n[dependencies.tokio]\nfeatures = [\"macros\", \"net\", \"rt\", \"sync\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[dependencies.tokio-rustls]\nversion = \"0.26.5\"\ndefault-features = false\nfeatures = [\"tls12\"]\n\n[dependencies.tokio-tungstenite]\nversion = \"0.30.0\"\ndefault-features = false\nfeatures = [\"handshake\"]\n\n[dev-dependencies]\nwiremock = \"0.6.5\"\n\n[dev-dependencies.tokio]\nfeatures = [\"io-util\", \"macros\", \"net\", \"rt\", \"rt-multi-thread\", \"sync\", \"test-util\", \"time\"]\nversion = \"1.53.1\"\ndefault-features = false\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-live",
         "dest-filename": "Cargo.toml"
     },
@@ -1122,12 +1192,12 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-9d4dbc4/crates/district-model\" \"cargo/vendor/district-model\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-5b47542/crates/district-model\" \"cargo/vendor/district-model\""
         ]
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"district-model\"\ndescription = \"Serde data types for the District AI API and its live telemetry envelopes. No IO.\"\nversion = \"6.0.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nserde_json = \"1.0.151\"\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies]\nsha2 = \"0.10.9\"\n\n[dev-dependencies.district-model]\nfeatures = [\"strict-contracts\"]\npath = \"crates/district-model\"\n\n[dev-dependencies.syn]\nversion = \"3.0.6\"\nfeatures = [\"full\", \"visit\"]\n\n[features]\nstrict-contracts = []\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
+        "contents": "[package]\nname = \"district-model\"\ndescription = \"Serde data types for the District AI API and its live telemetry envelopes. No IO.\"\nversion = \"6.1.0\"\nedition = \"2024\"\nrust-version = \"1.92\"\nlicense = \"Apache-2.0\"\nrepository = \"https://github.com/distronode-corporation/district-core-rust\"\nauthors = [\"Distronode Corporation\"]\npublish = false\n\n[dependencies]\nserde_json = \"1.0.151\"\n\n[dependencies.serde]\nversion = \"1.0.229\"\nfeatures = [\"derive\"]\n\n[dev-dependencies]\nsha2 = \"0.10.9\"\n\n[dev-dependencies.district-model]\nfeatures = [\"strict-contracts\"]\npath = \"crates/district-model\"\n\n[dev-dependencies.syn]\nversion = \"3.0.6\"\nfeatures = [\"full\", \"visit\"]\n\n[features]\nstrict-contracts = []\n\n[lints.rust]\nunsafe_code = \"forbid\"\nmissing_docs = \"warn\"\n\n[lints.clippy]\ndbg_macro = \"warn\"\ntodo = \"warn\"\nunimplemented = \"warn\"\n",
         "dest": "cargo/vendor/district-model",
         "dest-filename": "Cargo.toml"
     },
@@ -1291,6 +1361,19 @@
         "type": "inline",
         "contents": "{\"package\": \"aedcfb3409746eddb02b9e19ebda1c3394f759a152e48ee875a0844d1b955484\", \"files\": {}}",
         "dest": "cargo/vendor/find-msvc-tools-0.1.14",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/findshlibs/findshlibs-0.10.2.crate",
+        "sha256": "40b9e59cd0f7e0806cca4be089683ecb6434e602038df21fe6bf6711b2f07f64",
+        "dest": "cargo/vendor/findshlibs-0.10.2"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"40b9e59cd0f7e0806cca4be089683ecb6434e602038df21fe6bf6711b2f07f64\", \"files\": {}}",
+        "dest": "cargo/vendor/findshlibs-0.10.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -1673,6 +1756,19 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/gimli/gimli-0.32.3.crate",
+        "sha256": "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7",
+        "dest": "cargo/vendor/gimli-0.32.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7\", \"files\": {}}",
+        "dest": "cargo/vendor/gimli-0.32.3",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/gio/gio-0.22.10.crate",
         "sha256": "4620fbafdf19dba814473e19f18e75290cb3338662f6ae35f0402affd3b2b699",
         "dest": "cargo/vendor/gio-0.22.10"
@@ -1941,6 +2037,19 @@
         "type": "inline",
         "contents": "{\"package\": \"6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e\", \"files\": {}}",
         "dest": "cargo/vendor/hmac-0.12.1",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/hostname/hostname-0.4.2.crate",
+        "sha256": "617aaa3557aef3810a6369d0a99fac8a080891b68bd9f9812a1eeda0c0730cbd",
+        "dest": "cargo/vendor/hostname-0.4.2"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"617aaa3557aef3810a6369d0a99fac8a080891b68bd9f9812a1eeda0c0730cbd\", \"files\": {}}",
+        "dest": "cargo/vendor/hostname-0.4.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -2830,6 +2939,19 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/miniz_oxide/miniz_oxide-0.8.9.crate",
+        "sha256": "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316",
+        "dest": "cargo/vendor/miniz_oxide-0.8.9"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316\", \"files\": {}}",
+        "dest": "cargo/vendor/miniz_oxide-0.8.9",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/miniz_oxide/miniz_oxide-0.9.1.crate",
         "sha256": "b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c",
         "dest": "cargo/vendor/miniz_oxide-0.9.1"
@@ -2929,6 +3051,19 @@
         "type": "inline",
         "contents": "{\"package\": \"73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495\", \"files\": {}}",
         "dest": "cargo/vendor/num-complex-0.4.6",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/num-conv/num-conv-0.2.2.crate",
+        "sha256": "521739c6d2bac4aa25192232afe6841231376b2b26d4d9fae5ecf8ca5772e441",
+        "dest": "cargo/vendor/num-conv-0.2.2"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"521739c6d2bac4aa25192232afe6841231376b2b26d4d9fae5ecf8ca5772e441\", \"files\": {}}",
+        "dest": "cargo/vendor/num-conv-0.2.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -3202,6 +3337,19 @@
         "type": "inline",
         "contents": "{\"package\": \"c92d4ddb4bd7b50d730c215ff871754d0da6b2178849f8a2a2ab69712d0c073b\", \"files\": {}}",
         "dest": "cargo/vendor/objc_id-0.1.1",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/object/object-0.37.3.crate",
+        "sha256": "ff76201f031d8863c38aa7f905eca4f53abbfa15f609db4277d44cd8938f33fe",
+        "dest": "cargo/vendor/object-0.37.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"ff76201f031d8863c38aa7f905eca4f53abbfa15f609db4277d44cd8938f33fe\", \"files\": {}}",
+        "dest": "cargo/vendor/object-0.37.3",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -3488,6 +3636,19 @@
         "type": "inline",
         "contents": "{\"package\": \"d83eb9bc6d8e5cf568e7a1101d60ee05e81ed50ea106026f3d18deeb046d7661\", \"files\": {}}",
         "dest": "cargo/vendor/potential_utf-0.1.6",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/powerfmt/powerfmt-0.2.1.crate",
+        "sha256": "4a6394b9e965e73d0a289ee54f589087e2c676aedf60885baf52c76b771e4958",
+        "dest": "cargo/vendor/powerfmt-0.2.1"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"4a6394b9e965e73d0a289ee54f589087e2c676aedf60885baf52c76b771e4958\", \"files\": {}}",
+        "dest": "cargo/vendor/powerfmt-0.2.1",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -3857,6 +4018,19 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/rustc-demangle/rustc-demangle-0.1.28.crate",
+        "sha256": "b74b56ffa8bb2830709a538c2cbcae9aa062db0d2a42563bfb09bdaae44020eb",
+        "dest": "cargo/vendor/rustc-demangle-0.1.28"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"b74b56ffa8bb2830709a538c2cbcae9aa062db0d2a42563bfb09bdaae44020eb\", \"files\": {}}",
+        "dest": "cargo/vendor/rustc-demangle-0.1.28",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/rustc-hash/rustc-hash-2.1.3.crate",
         "sha256": "6b1e7f9a428571be2dc5bc0505c13fb6bf936822b894ec87abf8a08a4e51742d",
         "dest": "cargo/vendor/rustc-hash-2.1.3"
@@ -4086,6 +4260,97 @@
         "type": "inline",
         "contents": "{\"package\": \"8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd\", \"files\": {}}",
         "dest": "cargo/vendor/semver-1.0.28",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/sentry/sentry-0.49.3.crate",
+        "sha256": "9fa951f4e644464ebfd2347a7ab03b0828c512d2448a76262cad2607b343dff4",
+        "dest": "cargo/vendor/sentry-0.49.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"9fa951f4e644464ebfd2347a7ab03b0828c512d2448a76262cad2607b343dff4\", \"files\": {}}",
+        "dest": "cargo/vendor/sentry-0.49.3",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/sentry-backtrace/sentry-backtrace-0.49.3.crate",
+        "sha256": "f4f27cf048aa63ccd5bc94c29989133eabb82e9c6bf7441b58e9d4a95837a105",
+        "dest": "cargo/vendor/sentry-backtrace-0.49.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"f4f27cf048aa63ccd5bc94c29989133eabb82e9c6bf7441b58e9d4a95837a105\", \"files\": {}}",
+        "dest": "cargo/vendor/sentry-backtrace-0.49.3",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/sentry-contexts/sentry-contexts-0.49.3.crate",
+        "sha256": "c5ed680585dbdacdf9859c2b4dc53358ff02bd256766882e22e343836db36b22",
+        "dest": "cargo/vendor/sentry-contexts-0.49.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"c5ed680585dbdacdf9859c2b4dc53358ff02bd256766882e22e343836db36b22\", \"files\": {}}",
+        "dest": "cargo/vendor/sentry-contexts-0.49.3",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/sentry-core/sentry-core-0.49.3.crate",
+        "sha256": "c3ed398494bb8fc412a11a182c1883a10ae147587b8f6314abd222d1d626f31b",
+        "dest": "cargo/vendor/sentry-core-0.49.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"c3ed398494bb8fc412a11a182c1883a10ae147587b8f6314abd222d1d626f31b\", \"files\": {}}",
+        "dest": "cargo/vendor/sentry-core-0.49.3",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/sentry-debug-images/sentry-debug-images-0.49.3.crate",
+        "sha256": "55854bb40681e84ffd2a69578ad4ef9bfaf5bf2bf1380a745578b591fa24af22",
+        "dest": "cargo/vendor/sentry-debug-images-0.49.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"55854bb40681e84ffd2a69578ad4ef9bfaf5bf2bf1380a745578b591fa24af22\", \"files\": {}}",
+        "dest": "cargo/vendor/sentry-debug-images-0.49.3",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/sentry-tracing/sentry-tracing-0.49.3.crate",
+        "sha256": "e7e7db1aefdf623f4e48e21ec9e4af535024187aeafb2a4cc7e29d035def5a13",
+        "dest": "cargo/vendor/sentry-tracing-0.49.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"e7e7db1aefdf623f4e48e21ec9e4af535024187aeafb2a4cc7e29d035def5a13\", \"files\": {}}",
+        "dest": "cargo/vendor/sentry-tracing-0.49.3",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/sentry-types/sentry-types-0.49.3.crate",
+        "sha256": "1c18bf7b159bdfc7c8f97816f476b4947a1937fb6bea9d38d3479e58631614ac",
+        "dest": "cargo/vendor/sentry-types-0.49.3"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"1c18bf7b159bdfc7c8f97816f476b4947a1937fb6bea9d38d3479e58631614ac\", \"files\": {}}",
+        "dest": "cargo/vendor/sentry-types-0.49.3",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -4585,6 +4850,45 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/time/time-0.3.55.crate",
+        "sha256": "cdb87b95ec50ddfa440816d227a17b2ccbdda963a316a727fda0fc4334f7d134",
+        "dest": "cargo/vendor/time-0.3.55"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"cdb87b95ec50ddfa440816d227a17b2ccbdda963a316a727fda0fc4334f7d134\", \"files\": {}}",
+        "dest": "cargo/vendor/time-0.3.55",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/time-core/time-core-0.1.9.crate",
+        "sha256": "9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109",
+        "dest": "cargo/vendor/time-core-0.1.9"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109\", \"files\": {}}",
+        "dest": "cargo/vendor/time-core-0.1.9",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/time-macros/time-macros-0.2.32.crate",
+        "sha256": "7e689342a48d2ea927c87ea50cabf8594854bf940e9310208848d680d668ed85",
+        "dest": "cargo/vendor/time-macros-0.2.32"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"7e689342a48d2ea927c87ea50cabf8594854bf940e9310208848d680d668ed85\", \"files\": {}}",
+        "dest": "cargo/vendor/time-macros-0.2.32",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/tinystr/tinystr-0.8.4.crate",
         "sha256": "b1e27c91459209c2986af3dcf603a5a74a4368754ce37414f59acc971167f643",
         "dest": "cargo/vendor/tinystr-0.8.4"
@@ -4858,6 +5162,19 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tracing-subscriber/tracing-subscriber-0.3.23.crate",
+        "sha256": "cb7f578e5945fb242538965c2d0b04418d38ec25c79d160cd279bf0731c8d319",
+        "dest": "cargo/vendor/tracing-subscriber-0.3.23"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"cb7f578e5945fb242538965c2d0b04418d38ec25c79d160cd279bf0731c8d319\", \"files\": {}}",
+        "dest": "cargo/vendor/tracing-subscriber-0.3.23",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/try-lock/try-lock-0.2.5.crate",
         "sha256": "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b",
         "dest": "cargo/vendor/try-lock-0.2.5"
@@ -4923,6 +5240,19 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/uname/uname-0.1.1.crate",
+        "sha256": "b72f89f0ca32e4db1c04e2a72f5345d59796d4866a1ee0609084569f73683dc8",
+        "dest": "cargo/vendor/uname-0.1.1"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"b72f89f0ca32e4db1c04e2a72f5345d59796d4866a1ee0609084569f73683dc8\", \"files\": {}}",
+        "dest": "cargo/vendor/uname-0.1.1",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/unicase/unicase-2.9.0.crate",
         "sha256": "dbc4bc3a9f746d862c45cb89d705aa10f187bb96c76001afab07a0d35ce60142",
         "dest": "cargo/vendor/unicase-2.9.0"
@@ -4975,6 +5305,32 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/ureq/ureq-3.5.0.crate",
+        "sha256": "cde93ff05758a36a851a398a772b0b79a82fbe3c186a46f2696baaeaf84c966b",
+        "dest": "cargo/vendor/ureq-3.5.0"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"cde93ff05758a36a851a398a772b0b79a82fbe3c186a46f2696baaeaf84c966b\", \"files\": {}}",
+        "dest": "cargo/vendor/ureq-3.5.0",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/ureq-proto/ureq-proto-0.6.5.crate",
+        "sha256": "841583fc36089d7d59419568ae157f43a5a03a2e5a81ba87c77d1596ef46e922",
+        "dest": "cargo/vendor/ureq-proto-0.6.5"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"841583fc36089d7d59419568ae157f43a5a03a2e5a81ba87c77d1596ef46e922\", \"files\": {}}",
+        "dest": "cargo/vendor/ureq-proto-0.6.5",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/url/url-2.5.8.crate",
         "sha256": "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed",
         "dest": "cargo/vendor/url-2.5.8"
@@ -4983,6 +5339,19 @@
         "type": "inline",
         "contents": "{\"package\": \"ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed\", \"files\": {}}",
         "dest": "cargo/vendor/url-2.5.8",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/utf8-zero/utf8-zero-0.8.1.crate",
+        "sha256": "b8c0a043c9540bae7c578c88f91dda8bd82e59ae27c21baca69c8b191aaf5a6e",
+        "dest": "cargo/vendor/utf8-zero-0.8.1"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"b8c0a043c9540bae7c578c88f91dda8bd82e59ae27c21baca69c8b191aaf5a6e\", \"files\": {}}",
+        "dest": "cargo/vendor/utf8-zero-0.8.1",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -5009,6 +5378,19 @@
         "type": "inline",
         "contents": "{\"package\": \"97277d36b9c3ace13e58fa6e753f8b0bbbf302a18dd193240d70f9e29681059a\", \"files\": {}}",
         "dest": "cargo/vendor/uuid-1.27.0",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/valuable/valuable-0.1.1.crate",
+        "sha256": "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65",
+        "dest": "cargo/vendor/valuable-0.1.1"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65\", \"files\": {}}",
+        "dest": "cargo/vendor/valuable-0.1.1",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -5191,6 +5573,19 @@
         "type": "inline",
         "contents": "{\"package\": \"58ec80e73fd8baf57bf0d9615554c75348bda990d6d5bbeab964dd068319fecb\", \"files\": {}}",
         "dest": "cargo/vendor/webpki-root-certs-1.0.10",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/webpki-roots/webpki-roots-1.0.11.crate",
+        "sha256": "f5f280bbb2b287bc8e7de7e3852945a0ff50d1bbcb5ed42b6c7a568c546df171",
+        "dest": "cargo/vendor/webpki-roots-1.0.11"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"f5f280bbb2b287bc8e7de7e3852945a0ff50d1bbcb5ed42b6c7a568c546df171\", \"files\": {}}",
+        "dest": "cargo/vendor/webpki-roots-1.0.11",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -5988,7 +6383,7 @@
     },
     {
         "type": "inline",
-        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/distronode-corporation/district-core-rust\"]\ngit = \"https://github.com/distronode-corporation/district-core-rust\"\nreplace-with = \"vendored-sources\"\ntag = \"v6.0.0\"\n",
+        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/distronode-corporation/district-core-rust\"]\ngit = \"https://github.com/distronode-corporation/district-core-rust\"\nreplace-with = \"vendored-sources\"\ntag = \"v6.1.0\"\n",
         "dest": "cargo",
         "dest-filename": "config"
     }

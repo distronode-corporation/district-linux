@@ -60,9 +60,12 @@
     <!-- Contacts' email addresses and phone numbers are shared with every member
          of the workspace, and replies can go out by email. -->
     <content_attribute id="social-contacts">intense</content_attribute>
-    <!-- Everything goes through the District AI service's online API. The app
-         sends no crash reports, analytics or diagnostics. -->
-    <content_attribute id="social-info">mild</content_attribute>
+    <!-- Everything goes through the District AI service's online API, and the
+         app can share diagnostic data that does not identify the user, which
+         is OARS's moderate: crash reports, sent only after the user says yes
+         (asked once, off by default), holding no computer name, user name or
+         IP address. The app sends no analytics. -->
+    <content_attribute id="social-info">moderate</content_attribute>
     <!-- Messages sent, calls placed and the AI features (a reply written by
          AI, a District HQ question, a persona audition, a knowledge document)
          are billed to the workspace's District AI account. -->
@@ -83,23 +86,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/call-log.png</image>
       <caption>@metainfo.screenshot_caption.call_log@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/inbox.png</image>
       <caption>@metainfo.screenshot_caption.inbox@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/call.png</image>
       <caption>@metainfo.screenshot_caption.call@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/contacts.png</image>
       <caption>@metainfo.screenshot_caption.contacts@</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.0.3/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/overview.png</image>
       <caption>@metainfo.screenshot_caption.overview@</caption>
     </screenshot>
   </screenshots>
@@ -110,6 +113,20 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="3.1.0" date="2026-10-25">
+      <description>
+        <p>@metainfo.release_3_1_0.p@</p>
+        <ul>
+          <li>@metainfo.release_3_1_0.li1@</li>
+          <li>@metainfo.release_3_1_0.li2@</li>
+          <li>@metainfo.release_3_1_0.li3@</li>
+          <li>@metainfo.release_3_1_0.li4@</li>
+          <li>@metainfo.release_3_1_0.li5@</li>
+          <li>@metainfo.release_3_1_0.li6@</li>
+          <li>@metainfo.release_3_1_0.li7@</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.0.3" date="2026-10-22">
       <description>
         <p>@metainfo.release_3_0_3.p@</p>

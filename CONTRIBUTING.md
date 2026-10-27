@@ -44,8 +44,9 @@ tag (see "District AI core for Rust" below): `district-model` (the data types),
 `district-api` (the HTTP client and the endpoint table), `district-auth`
 (sign-in), `district-live` (the live telemetry socket), `district-core` (the
 application state and the effect runner, with the traits the app implements),
-`district-host` (the files a desktop app keeps and the sleep protocol) and
-`district-call` (the call engine). So do the contract fixtures they are tested
+`district-host` (the files a desktop app keeps and the sleep protocol),
+`district-call` (the call engine) and `district-crash` (opt-in crash reports,
+the mechanism `src/crash.rs` drives; see "Crash reports" below). So do the contract fixtures they are tested
 against and the scripts that vendor them.
 
 Dependencies point one way: `district-app` sits on top, the core's
@@ -325,6 +326,54 @@ hand. Each keeps its package as the run's artifact for a week only while the
 licence gate (below) is open: an artifact of a public repository is a download
 anyone can take, so it is distribution, and a libwebrtc nobody has cleared must
 not reach one.
+
+## Crash reports
+
+Crash reports are off until the user says yes. The mechanism is the core's
+`district-crash`: nothing is set up, no panic handler is installed and nothing
+is sent unless it is handed both a DSN and the user's consent (its SECURITY.md,
+"Crash reports", says what a report holds). The app's side is
+`crates/district-app/src/crash.rs`:
+
+- The DSN is the build's: `LINUX_SENTRY_DSN` in the environment of the
+  `cargo build` that made the binary. deb.yml and flatpak.yml set it, from the
+  repository secret of that name, only when release.yml runs them for a `v` tag;
+  a build from source, a fork's build and every other CI run have none, and so
+  never send a report, never ask and show no switch. Never commit a DSN.
+- The answer is the file `crash-reports` (`granted` or `denied`) in
+  `~/.config/com.distronode.DistrictAI/`, beside `settings.toml`, which the
+  core rewrites whole from the preferences it knows. No file is no answer: the
+  first time the window shows, the app asks once, with "Don't send" first and
+  the default (closing the question answers it too), so a user upgrading from a
+  version that never asked is asked once as well. The account screen has the
+  switch, "Send crash reports".
+- At start the stored answer is handed to `district_crash::apply` before
+  anything else (`Denied` while there is none), and every change hands the new
+  one: a refusal at once, whether or not it can be written, and a yes only once
+  it is kept, so a yes that cannot be written puts the switch back off, as
+  "Start at login" does. The file is replaced whole (a new file renamed over
+  it), and a refusal that cannot be written that way is written over the old
+  file in place or else removes it, so what is on disk never says yes after
+  the user said no.
+- Reports name the release `com.distronode.DistrictAI@<version>+<build>`: the
+  version is `[workspace.package] version`, which `--version`, the About dialog
+  and the User-Agent name too, and the build is `DISTRICT_AI_BUILD` from the
+  build environment, which the packaging workflows set to the first twelve
+  characters of the commit (`local` without it). The app has no build number of
+  its own.
+- Both packages keep the binary's debug information out of the package and in a
+  separate file, matched by the build ID both carry: `scripts/build-deb.sh`
+  builds with line tables and splits them off with objcopy, and flatpak-builder
+  does the same for the Flatpak. deb.yml and flatpak.yml check the build IDs
+  match and keep the two files as artifacts (`debug-files-deb`,
+  `debug-files-flatpak`) while the licence gate is open, and release.yml's
+  `sentry` job uploads them to Sentry (organisation `distronode-corporation-eu`,
+  project `district-linux`, at `https://de.sentry.io`) with a pinned,
+  checksummed `sentry-cli` (`.github/actions/install-sentry-cli`), then creates
+  that release with its commits and finalizes it, after the GitHub release is
+  public. It needs `SENTRY_AUTH_TOKEN`, a secret of the `release` environment.
+  `LINUX_SENTRY_DSN` is a repository secret, because the package builds run in
+  no environment.
 
 ## Releases
 
@@ -609,7 +658,7 @@ why.
 The app is built on
 [District AI core for Rust](https://github.com/distronode-corporation/district-core-rust),
 which this workspace pins in Cargo.toml's `[workspace.dependencies]`: each of
-its seven crates by `git`, `tag` and the exact `version` the tag holds, all at
+its eight crates by `git`, `tag` and the exact `version` the tag holds, all at
 the same tag. Cargo.lock records the commit the tag named, and `--locked` holds
 every build to it. There is no `[patch]`: the pin is the tag and the lock file,
 nothing else. deny.toml's `[sources] allow-git` names the core's repository and
@@ -624,8 +673,8 @@ libwebrtc.
 
 To move to a new release of the core, in one pull request:
 
-1. Change `tag` and `version` on all seven lines in Cargo.toml.
-2. `cargo update -p district-model -p district-api -p district-auth -p district-live -p district-core -p district-host -p district-call`,
+1. Change `tag` and `version` on all eight lines in Cargo.toml.
+2. `cargo update -p district-model -p district-api -p district-auth -p district-live -p district-core -p district-host -p district-call -p district-crash`,
    which moves those crates in Cargo.lock, and other crates only where the new
    core's manifests require it.
 3. `scripts/flatpak-cargo-sources.sh`, for the Flatpak's sources.
@@ -635,7 +684,7 @@ To move to a new release of the core, in one pull request:
 
 A new major version of the core changes something the app calls or implements,
 so it comes with the app's side of that change. To try a change to the core
-before it is released, point the seven lines at a local checkout with `path`
+before it is released, point the eight lines at a local checkout with `path`
 in your own tree; never commit that, and CI refuses it.
 
 The contract fixtures the core is tested against (the server's recorded

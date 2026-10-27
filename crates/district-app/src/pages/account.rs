@@ -1,9 +1,13 @@
 //! The account: this build and this computer, whether the app starts at
-//! login, whether calls ring here, the devices signed in, signing out, and
+//! login, whether it sends crash reports, whether calls ring here, the devices signed in, signing out, and
 //! where deleting the account starts.
 //!
 //! "Start at login" is this computer's, not the core's: the application's
 //! `start-at-login` action holds it (see [`crate::background`]).
+//!
+//! "Send crash reports" is this computer's too: the application's
+//! `crash-reports` action holds it (see [`crate::crash`]), and a build that
+//! cannot send reports has no such action and shows no switch.
 //!
 //! "Ring on this computer" is shown once the core has read it, which a build
 //! without calls never does: there is nothing to ring there.
@@ -16,6 +20,7 @@ use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::background::START_AT_LOGIN_ACTION;
+use crate::crash::CRASH_REPORTS_ACTION;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::{Sends, on_activate};
@@ -33,6 +38,8 @@ mod imp {
         pub version_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub start_at_login_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        pub crash_reports_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         pub devices_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -100,6 +107,23 @@ mod imp {
                 }
             });
             let weak = page.downgrade();
+            self.crash_reports_row.connect_active_notify(move |row| {
+                let Some(page) = weak.upgrade() else {
+                    return;
+                };
+                let on = row.is_active();
+                if page.state_of(CRASH_REPORTS_ACTION) != Some(on) {
+                    row.activate_action(
+                        &format!("app.{CRASH_REPORTS_ACTION}"),
+                        Some(&on.to_variant()),
+                    )
+                    .ok();
+                    // What is in force, which a yes that could not be kept
+                    // leaves off.
+                    row.set_active(page.state_of(CRASH_REPORTS_ACTION).unwrap_or_default());
+                }
+            });
+            let weak = page.downgrade();
             self.ring_here_row.connect_active_notify(move |row| {
                 if let Some(page) = weak.upgrade() {
                     page.send(Event::SetRingOnThisComputer(row.is_active()));
@@ -129,10 +153,17 @@ impl AccountPage {
     /// Whether the app starts at login, as the application's action holds
     /// it; `None` before the page is in a window of the application.
     fn starts_at_login(&self) -> Option<bool> {
+        self.state_of(START_AT_LOGIN_ACTION)
+    }
+
+    /// The state of the application's boolean action `name`; `None` before
+    /// the page is in a window of the application, or when the application
+    /// has no such action.
+    fn state_of(&self, name: &str) -> Option<bool> {
         self.root()
             .and_downcast::<gtk::Window>()
             .and_then(|window| window.application())
-            .and_then(|app| app.action_state(START_AT_LOGIN_ACTION))
+            .and_then(|app| app.action_state(name))
             .and_then(|state| state.get::<bool>())
     }
 
@@ -155,6 +186,9 @@ impl AccountPage {
         if let Some(on) = self.starts_at_login() {
             imp.start_at_login_row.set_active(on);
         }
+        let sends = self.state_of(CRASH_REPORTS_ACTION);
+        imp.crash_reports_row.set_visible(sends.is_some());
+        imp.crash_reports_row.set_active(sends.unwrap_or_default());
         if let Some(account) = account {
             imp.version_row
                 .set_subtitle(&text::account_version(lang(), &account.app_version));
