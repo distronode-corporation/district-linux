@@ -142,7 +142,7 @@ impl Manager {
         who: String,
         why: String,
         mode: String,
-    ) -> zbus::fdo::Result<zbus::zvariant::OwnedFd> {
+    ) -> zbus::fdo::Result<zbus::OwnedFd> {
         let (ours, theirs) =
             UnixStream::pair().map_err(|error| zbus::fdo::Error::Failed(error.to_string()))?;
         self.inhibitors.lock().unwrap().push(Inhibitor {
@@ -162,11 +162,8 @@ impl Manager {
 /// Puts the stand-in on `bus` under logind's name.
 async fn serve(bus: &Bus, manager: &Manager) -> zbus::Connection {
     zbus::connection::Builder::address(bus.address.as_str())
-        .unwrap()
         .name(LOGIN1_SERVICE)
-        .unwrap()
         .serve_at(LOGIN1_PATH, manager.clone())
-        .unwrap()
         .build()
         .await
         .expect("the stand-in is on the bus")
@@ -174,7 +171,6 @@ async fn serve(bus: &Bus, manager: &Manager) -> zbus::Connection {
 
 async fn connect(bus: &Bus) -> zbus::Connection {
     zbus::connection::Builder::address(bus.address.as_str())
-        .unwrap()
         .build()
         .await
         .expect("connected to the private bus")
@@ -182,7 +178,7 @@ async fn connect(bus: &Bus) -> zbus::Connection {
 
 async fn announce<B>(logind: &zbus::Connection, body: &B)
 where
-    B: serde::Serialize + zbus::zvariant::DynamicType,
+    B: serde::Serialize + zbus::DynamicType,
 {
     logind
         .emit_signal(
