@@ -619,7 +619,14 @@ The history of how it was built is in the repository's commits.
 - Calls link this project's own build of LiveKit's libwebrtc, which leaves out the
   H.264 and H.265 codecs and FFmpeg (NOTICE lists what it contains).
 
-[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/distronode-corporation/district-linux/compare/v3.1.0...v3.2.0
+[3.1.0]: https://github.com/distronode-corporation/district-linux/compare/v3.0.3...v3.1.0
+[3.0.3]: https://github.com/distronode-corporation/district-linux/compare/v3.0.2...v3.0.3
+[3.0.2]: https://github.com/distronode-corporation/district-linux/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/distronode-corporation/district-linux/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/distronode-corporation/district-linux/compare/v2.2.0...v3.0.0
+[2.2.0]: https://github.com/distronode-corporation/district-linux/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/distronode-corporation/district-linux/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/distronode-corporation/district-linux/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/distronode-corporation/district-linux/compare/v0.1.0...v1.0.0
