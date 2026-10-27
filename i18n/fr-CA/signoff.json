@@ -1,11 +1,11 @@
 {
-  "signed_off_by": "ThinkPad manager session 78da7e6a (Opus 5.5), 2026-10-25: xhigh fr-CA review of every catalog change since v3.0.3 (the crash-report strings and copy reviewed 2026-10-25 and applied by Sean's decision on GitLab #2), plus the manager's review of the 3.1.0 release notes",
-  "release": "v3.1.0",
-  "commit": "c7de1378fd4d74e25e16b5eeaa811d363f38b46c",
+  "signed_off_by": "ThinkPad manager session 78da7e6a (Opus 5.5), 2026-10-27: reviewed the five 3.2.0 release-note entries (li3 reworded); the HQ voice strings are district-core-rust 7.0.0's reviewed catalog",
+  "release": "v3.2.0",
+  "commit": "6a8d192311987d9ff3baf27cc6aac08f84ccafb9",
   "catalogs": [
     {
       "path": "crates/district-app/l10n/linux.toml",
-      "sha256": "ae130f7539a686ebe7fcc220416a9f9ad19f91fe304496420a4f62da1565e36d"
+      "sha256": "47eff8b8de922b777e5d67ae2eda78bd151795d100af9a0928909b35b50d9c74"
     },
     {
       "path": "crates/district-app/l10n/scheduling.toml",

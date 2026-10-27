@@ -103,23 +103,23 @@
        committed picture and each committed picture to a link. -->
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/call-log.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.2.0/crates/district-app/data/screenshots/call-log.png</image>
       <caption>The call log, with each call's summary and transcript</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/inbox.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.2.0/crates/district-app/data/screenshots/inbox.png</image>
       <caption>Your customers' text messages and emails in one inbox</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/call.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.2.0/crates/district-app/data/screenshots/call.png</image>
       <caption>A call placed from the desktop, with mute and hang up always in reach</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/contacts.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.2.0/crates/district-app/data/screenshots/contacts.png</image>
       <caption>Your contacts, with each customer's details</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.1.0/crates/district-app/data/screenshots/overview.png</image>
+      <image>https://raw.githubusercontent.com/distronode-corporation/district-linux/v3.2.0/crates/district-app/data/screenshots/overview.png</image>
       <caption>The workspace at a glance, with its latest calls</caption>
     </screenshot>
   </screenshots>
@@ -130,6 +130,29 @@
        with the date of its CHANGELOG.md section. scripts/check-version.py
        holds all of that. -->
   <releases>
+    <release version="3.2.0" date="2026-10-27">
+      <description>
+        <p>
+          District HQ by voice: talk to District HQ, every change it proposes
+          waits for your confirmation, and a voice dock keeps the session's
+          controls on every other screen.
+        </p>
+        <ul>
+          <li>Start voice on District HQ first says where your voice is
+            processed and starts nothing until you accept; the session is
+            end-to-end encrypted, and both sides' words join the conversation as
+            they are spoken</li>
+          <li>A change asked for by voice is a card, applied only when you say
+            confirm or click Confirm, and cancelled the same ways</li>
+          <li>The session goes on when you leave District HQ: a voice dock below
+            every other screen holds the microphone, Stop voice and each change
+            waiting to be confirmed or cancelled, until you stop the session,
+            close the window or reach 30 minutes</li>
+          <li>Voice Studio: the time to the first word shown for an unsaved edit
+            matches the service's measurement again</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.1.0" date="2026-10-25">
       <description>
         <p>

@@ -727,7 +727,7 @@ fn devices() -> DeviceListResponse {
     devices
 }
 
-fn start() -> Smoke {
+fn start(locale: district_core::Locale) -> Smoke {
     let shots = std::env::var_os("DISTRICT_SMOKE_SHOTS").map(PathBuf::from);
     if let Some(dir) = &shots {
         fs::create_dir_all(dir).expect("the screenshot directory");
@@ -775,8 +775,9 @@ fn start() -> Smoke {
             calls_available: true,
             // As the app is built: no purchases in the app.
             in_app_purchases: false,
-            // English, as the app writes without the `fr-ca` feature.
-            locale: district_core::Locale::En,
+            // English, as the app writes without the `fr-ca` feature, but
+            // for the French run at 400 px (french_narrow).
+            locale,
         },
         device_name: DEVICE_NAME.to_owned(),
         effects: Rc::clone(&script) as Rc<dyn Effects>,
@@ -2489,6 +2490,334 @@ fn voice_packet(packet: serde_json::Value) -> MediaEvent {
     }
 }
 
+/// What the service answers when a voice session is asked for.
+fn hq_voice_credential() -> district_model::HqVoiceTokenResponse {
+    serde_json::from_value(serde_json::json!({
+        "success": true,
+        "token": "contract-livekit-hq-voice-jwt",
+        "url": "wss://media.example.com",
+        "roomName": "hq_ws-contract-test_00000000-0000-4000-8000-000000000000",
+        "processingRegion": "us",
+        "e2ee": {"key": "YFT+/ceW4bhgizPFpeX9E5a3PVZ9T07aWRQq4uwQwW0="},
+    }))
+    .expect("a voice credential")
+}
+
+/// A voice session joined, its agent listening, and two changes proposed.
+fn voice_session_with_two_cards(smoke: &Smoke) {
+    smoke.reply("RequestHqVoice", |ticket| Event::HqVoiceIssued {
+        ticket,
+        result: Ok(hq_voice_credential()),
+    });
+    let session = smoke.session();
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(
+        session,
+        MediaEvent::ParticipantJoined(Participant::new("agent-hq", None, true)),
+    );
+    smoke.media(session, MediaEvent::AgentState("listening".to_owned()));
+    smoke.media(session, voice_proposal("p-10"));
+    smoke.media(session, voice_proposal("p-11"));
+    assert_eq!(smoke.count("voice_card"), 2);
+}
+
+/// The labels on screen under `root` whose lines break inside a word: a line
+/// that starts on a letter right after a letter. Pango does that, with a
+/// hyphen, when a label may wrap at characters ("Distr-ict" in French beside
+/// the voice dock's buttons).
+fn broken_words(root: &gtk::Widget) -> Vec<String> {
+    descendants(root)
+        .into_iter()
+        .filter(WidgetExt::is_mapped)
+        .filter_map(|widget| widget.downcast::<gtk::Label>().ok())
+        .filter_map(|label| {
+            let layout = label.layout();
+            let text = layout.text().to_string();
+            let mut lines = layout.iter();
+            while lines.next_line() {
+                let start = usize::try_from(lines.index()).unwrap_or_default();
+                let before = text.get(..start).and_then(|head| head.chars().next_back());
+                let after = text.get(start..).and_then(|tail| tail.chars().next());
+                if before.is_some_and(char::is_alphanumeric)
+                    && after.is_some_and(char::is_alphanumeric)
+                {
+                    return Some(text);
+                }
+            }
+            None
+        })
+        .collect()
+}
+
+/// Whether `widget` lies wholly inside `within`, as laid out.
+fn inside(widget: &gtk::Widget, within: &gtk::Widget) -> bool {
+    let (Some(bounds), Some(outer)) =
+        (widget.compute_bounds(within), within.compute_bounds(within))
+    else {
+        return false;
+    };
+    bounds.y() >= -0.5
+        && bounds.x() >= -0.5
+        && bounds.y() + bounds.height() <= outer.height() + 0.5
+        && bounds.x() + bounds.width() <= outer.width() + 0.5
+}
+
+/// The least height the window's content asks for, which fits its window:
+/// libadwaita warns "AdwToastOverlay exceeds DistrictWindow height: requested
+/// N px" and draws the bottom of the window past its edge when it does not.
+fn fits_height(smoke: &Smoke) -> Result<(), String> {
+    let window = smoke.window();
+    let content = smoke.find("toasts");
+    let (least, ..) = content.measure(gtk::Orientation::Vertical, content.width());
+    if least <= window.height() {
+        Ok(())
+    } else {
+        Err(format!(
+            "the content needs {least} px, the window has {}",
+            window.height()
+        ))
+    }
+}
+
+/// Two changes left in the voice dock while a call is under way, in a window
+/// of 1000 by 700: the window still fits its content (the cards scroll,
+/// never adding to the least height of every page), the dock lies inside the
+/// window, and each card's Cancel and Confirm can be reached, the cards
+/// scrolled to the last.
+fn voice_dock_beside_a_call(smoke: &Smoke) {
+    smoke.activate("sidebar-hq");
+    smoke.forget();
+    smoke.click("voice_start");
+    voice_session_with_two_cards(smoke);
+    smoke.click("voice_stop");
+    smoke.forget();
+    assert_eq!(
+        smoke.count("voice_card"),
+        2,
+        "the changes outlive the session"
+    );
+    smoke.activate("sidebar-calls");
+    if smoke.pending("LoadCalls") {
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(call_page()),
+        });
+    }
+    smoke.forget();
+    smoke.click("dial_button");
+    smoke
+        .mapped("number_entry")
+        .downcast::<gtk::Entry>()
+        .unwrap()
+        .set_text("+1 212 555 0142");
+    smoke.pump();
+    smoke.click("call_button");
+    let dial = smoke.ticket("Dial");
+    smoke.answer(Event::Dialled {
+        ticket: dial,
+        result: Ok(fixture("district-dial.json")),
+    });
+    let call = smoke.session();
+    smoke.media(call, MediaEvent::Connecting);
+    smoke.media(call, MediaEvent::Connected);
+    smoke.media(
+        call,
+        MediaEvent::ParticipantJoined(Participant::new("sip_callee", None, false)),
+    );
+    smoke.media(call, MediaEvent::Microphone(MicrophoneState::On));
+    smoke.forget();
+    smoke.resize(1000, 700);
+    assert!(smoke.shown("call_strip") && smoke.shown("voice_dock"));
+    assert_eq!(smoke.count("voice_card"), 2);
+    let window = smoke.window();
+    assert_eq!(fits_height(smoke), Ok(()), "two cards and a call");
+    assert!(
+        inside(&smoke.mapped("voice_dock"), window.upcast_ref()),
+        "the dock lies inside the window"
+    );
+    let scroller = smoke.mapped("voice_dock_cards_scroller");
+    let buttons = |name: &str| -> Vec<gtk::Widget> {
+        descendants(&scroller)
+            .into_iter()
+            .filter(|widget| widget.is_mapped() && widget.widget_name() == name)
+            .collect()
+    };
+    for name in ["voice_card_cancel", "voice_card_confirm"] {
+        let first = buttons(name).into_iter().next().expect("the first card");
+        assert!(
+            inside(&first, &scroller),
+            "{name} of the first card is on screen"
+        );
+    }
+    smoke.scroll_to_end("voice_dock_cards_scroller");
+    for name in ["voice_card_cancel", "voice_card_confirm"] {
+        let last = buttons(name).into_iter().last().expect("the last card");
+        assert!(
+            inside(&last, &scroller),
+            "{name} of the last card scrolls into view"
+        );
+    }
+    smoke.shot("50a-voice-dock-two-cards-and-a-call");
+
+    // Hung up and the strip dismissed, the two changes cancelled.
+    WidgetExt::activate_action(&window, "win.hang-up", None).expect("the hang-up action");
+    smoke.pump();
+    smoke.forget();
+    smoke.click("call_dismiss");
+    // The dialler as `dialing` expects to find it: empty, behind the log.
+    smoke
+        .mapped("number_entry")
+        .downcast::<gtk::Entry>()
+        .unwrap()
+        .set_text("");
+    smoke.pump();
+    smoke.click("back_button");
+    smoke.resize(1024, 720);
+    for _ in 0..2 {
+        smoke.click("voice_card_cancel");
+        smoke.reply("CancelHqVoice", |ticket| Event::HqVoiceCancelled {
+            ticket,
+            result: Ok(district_model::HqProposalCancelResponse { success: true }),
+        });
+    }
+    assert!(!smoke.shown("voice_dock"), "nothing left to show");
+    smoke.forget();
+}
+
+/// French at 400 px: District HQ's residency statement, with the line for a
+/// workspace in Canada, and the voice dock with two cards, in the app's own
+/// French (po/fr.po compiled as the packages carry it) and the core's. Runs
+/// in a child of its own (main), because GTK reads the locale from the
+/// environment as it starts, and this workspace forbids the unsafe
+/// `std::env::set_var`. The English run checks the same screens.
+fn french_narrow() {
+    let catalog = std::env::temp_dir().join(format!("district-smoke-fr-{}", std::process::id()));
+    let messages = catalog.join("fr/LC_MESSAGES");
+    fs::create_dir_all(&messages).expect("a folder for the catalog");
+    let status = std::process::Command::new("msgfmt")
+        .arg("--check")
+        .arg("-o")
+        .arg(messages.join(format!("{}.mo", district_app::l10n::DOMAIN)))
+        .arg(concat!(env!("CARGO_MANIFEST_DIR"), "/po/fr.po"))
+        .status()
+        .expect("msgfmt (the gettext package) is installed");
+    assert!(status.success(), "msgfmt refused po/fr.po");
+    district_app::l10n::init_at(&catalog);
+    let smoke = start(district_core::Locale::FrCa);
+    assert_eq!(
+        district_app::l10n::gettext_locale(),
+        district_core::Locale::FrCa,
+        "the templates read the French catalog (fr_CA.UTF-8 generated?)"
+    );
+    if let Some(question) = smoke.top_question() {
+        question.close();
+        smoke.pump();
+    }
+    smoke.reply("RestoreSession", |ticket| Event::SessionRestored {
+        ticket,
+        result: Ok(claims()),
+    });
+    smoke.reply("ReadRingSetting", |ticket| Event::RingSettingRead {
+        ticket,
+        ring_here: false,
+    });
+    let mut list: serde_json::Value = fixture("district-workspace-list.json");
+    for workspace in list["workspaces"].as_array_mut().expect("workspaces") {
+        if workspace["id"] == AGENCY {
+            workspace["region"] = serde_json::json!("ca");
+        }
+    }
+    smoke.reply("LoadWorkspaces", |ticket| Event::WorkspacesLoaded {
+        ticket,
+        remembered: Some(AGENCY.to_owned()),
+        result: Ok(from_json(list)),
+    });
+    smoke.forget();
+    smoke.activate("sidebar-hq");
+    smoke.forget();
+    smoke.click("voice_start");
+    assert!(smoke.shown("voice_disclosure") && smoke.shown("voice_region_notice"));
+    assert!(
+        smoke.shows_text("Démarrer le mode vocal"),
+        "the core's French"
+    );
+    assert!(smoke.shows_text("Demander"), "the template's French");
+    smoke.resize(400, 760);
+    let split = smoke
+        .find("split_view")
+        .downcast::<adw::NavigationSplitView>()
+        .unwrap();
+    split.set_show_content(true);
+    smoke.pump();
+    assert!(smoke.shown("voice_accept"));
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "the residency statement in French"
+    );
+    assert_eq!(fits_height(&smoke), Ok(()));
+    smoke.shot("fr-46-hq-voice-disclosure-narrow");
+
+    smoke.click("voice_accept");
+    voice_session_with_two_cards(&smoke);
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "District HQ's cards in French"
+    );
+    split.set_show_content(false);
+    smoke.pump();
+    smoke.activate("sidebar-calls");
+    if smoke.pending("LoadCalls") {
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(call_page()),
+        });
+    }
+    smoke.forget();
+    assert!(smoke.shown("voice_dock") && smoke.shows_text("Mode vocal District HQ"));
+    assert_eq!(smoke.count("voice_card"), 2);
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "the voice dock in French"
+    );
+    assert_eq!(fits_height(&smoke), Ok(()), "the dock with two cards");
+    assert_eq!(
+        broken_words(&smoke.mapped("voice_dock")),
+        Vec::<String>::new(),
+        "the dock's words wrap between words"
+    );
+    // And never may: beside the voice buttons their room is narrow.
+    for name in ["voice_dock_heading", "voice_dock_line", "voice_line"] {
+        let label = smoke.find(name).downcast::<gtk::Label>().unwrap();
+        assert_eq!(label.wrap_mode(), gtk::pango::WrapMode::Word, "{name}");
+    }
+    smoke.shot("fr-50-voice-dock-narrow");
+    fs::remove_dir_all(&catalog).ok();
+    smoke.app.emit_by_name::<()>("shutdown", &[]);
+    println!("French at 400 px passed");
+}
+
+/// [`french_narrow`], in a child with a French desktop's environment.
+fn french_in_a_child() {
+    let output = std::process::Command::new(std::env::current_exe().expect("this test"))
+        .arg("french-narrow")
+        .env("LANG", "fr_CA.UTF-8")
+        .env("LANGUAGE", "fr_CA:fr")
+        .env_remove("LC_ALL")
+        .env_remove("LC_MESSAGES")
+        .output()
+        .expect("the French run starts");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        output.status.success(),
+        "the French run failed:\n{stdout}\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    print!("{stdout}");
+}
+
 /// A change proposed by voice, with the typed proposal's write.
 fn voice_proposal(id: &str) -> MediaEvent {
     voice_packet(serde_json::json!({
@@ -2539,16 +2868,7 @@ fn hq_voice(smoke: &Smoke) {
     assert!(smoke.shows_text("Connecting to District HQ."));
     assert!(smoke.shown("voice_stop") && !smoke.shown("voice_start"));
     assert!(smoke.focused("voice_stop"));
-    let credential: district_model::HqVoiceTokenResponse =
-        serde_json::from_value(serde_json::json!({
-            "success": true,
-            "token": "contract-livekit-hq-voice-jwt",
-            "url": "wss://media.example.com",
-            "roomName": "hq_ws-contract-test_00000000-0000-4000-8000-000000000000",
-            "processingRegion": "us",
-            "e2ee": {"key": "YFT+/ceW4bhgizPFpeX9E5a3PVZ9T07aWRQq4uwQwW0="},
-        }))
-        .expect("a voice credential");
+    let credential = hq_voice_credential();
     smoke.answer(Event::HqVoiceIssued {
         ticket: minted,
         result: Ok(credential.clone()),
@@ -10071,7 +10391,11 @@ fn client_members(smoke: &Smoke) {
 }
 
 fn main() {
-    let smoke = start();
+    if std::env::args().nth(1).as_deref() == Some("french-narrow") {
+        french_narrow();
+        return;
+    }
+    let smoke = start(district_core::Locale::En);
     crash_question(&smoke);
     restoring(&smoke);
     signing_in(&smoke);
@@ -10083,6 +10407,7 @@ fn main() {
     contacts_screens(&smoke);
     hq_screen(&smoke);
     hq_voice(&smoke);
+    voice_dock_beside_a_call(&smoke);
     analytics_screen(&smoke);
     numbers_screen(&smoke);
     billing_screen(&smoke);
@@ -10108,5 +10433,6 @@ fn main() {
     signing_out(&smoke);
     tray_quit(&smoke);
     quitting(&smoke);
+    french_in_a_child();
     println!("smoke test passed");
 }
