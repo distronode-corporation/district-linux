@@ -330,6 +330,12 @@ impl Smoke {
             .any(|label| label.label() == text)
     }
 
+    /// Whether the mapped widget named `name` holds the window's keyboard
+    /// focus.
+    fn focused(&self, name: &str) -> bool {
+        self.mapped(name).is_focus()
+    }
+
     /// The mapped widget named `name`.
     fn mapped(&self, name: &str) -> gtk::Widget {
         self.all(name)
@@ -2472,6 +2478,300 @@ fn hq_screen(smoke: &Smoke) {
         result: Ok(other),
     });
     assert!(smoke.shows_part("a change other than the one you confirmed"));
+    smoke.forget();
+}
+
+/// A packet the HQ voice agent sends on its topic, as JSON.
+fn voice_packet(packet: serde_json::Value) -> MediaEvent {
+    MediaEvent::AgentData {
+        topic: "hq.proposal".to_owned(),
+        payload: packet.to_string().into_bytes(),
+    }
+}
+
+/// A change proposed by voice, with the typed proposal's write.
+fn voice_proposal(id: &str) -> MediaEvent {
+    voice_packet(serde_json::json!({
+        "type": "HQ_PROPOSAL",
+        "proposalId": id,
+        "tool": "update_persona",
+        "args": {"greeting": "Good afternoon, thanks for calling Analytical Engines."},
+        "summary": "Update the greeting.",
+    }))
+}
+
+/// District HQ by voice: where the voice is processed, said before anything
+/// starts; the session joined, the agent's state, both sides' words; a change
+/// proposed by voice confirmed by click (lost once, then made), another
+/// cancelled, one resolved by voice; a narrow window; and the agent leaving.
+fn hq_voice(smoke: &Smoke) {
+    smoke.activate("sidebar-hq");
+    assert!(smoke.shown("voice_start") && !smoke.shown("voice_disclosure"));
+    assert!(
+        smoke.shows_text("Start voice"),
+        "the button says what it does, beside its icon"
+    );
+    // The keyboard goes with the session from stage to stage.
+    smoke.mapped("voice_start").grab_focus();
+    smoke.click("voice_start");
+    assert!(smoke.shown("voice_disclosure"));
+    assert!(
+        !smoke.shown("voice_start"),
+        "the statement's own Start voice is the one on screen"
+    );
+    assert!(smoke.focused("voice_accept"));
+    assert!(smoke.shows_part("Your voice is processed in the United States,"));
+    assert!(
+        !smoke.shown("voice_region_notice"),
+        "a United States workspace has no line of its own"
+    );
+    assert!(
+        !smoke.pending("RequestHqVoice"),
+        "nothing before the member accepts"
+    );
+    smoke.shot("46-hq-voice-disclosure");
+    smoke.click("voice_decline");
+    assert!(!smoke.shown("voice_disclosure"));
+    assert!(smoke.focused("voice_start"));
+    smoke.click("voice_start");
+    smoke.click("voice_accept");
+    let minted = smoke.ticket("RequestHqVoice");
+    assert!(smoke.shows_text("Connecting to District HQ."));
+    assert!(smoke.shown("voice_stop") && !smoke.shown("voice_start"));
+    assert!(smoke.focused("voice_stop"));
+    let credential: district_model::HqVoiceTokenResponse =
+        serde_json::from_value(serde_json::json!({
+            "success": true,
+            "token": "contract-livekit-hq-voice-jwt",
+            "url": "wss://media.example.com",
+            "roomName": "hq_ws-contract-test_00000000-0000-4000-8000-000000000000",
+            "processingRegion": "us",
+            "e2ee": {"key": "YFT+/ceW4bhgizPFpeX9E5a3PVZ9T07aWRQq4uwQwW0="},
+        }))
+        .expect("a voice credential");
+    smoke.answer(Event::HqVoiceIssued {
+        ticket: minted,
+        result: Ok(credential.clone()),
+    });
+    // The voice agent is told where the member is, as the web tells it.
+    let Effect::ReportHqVoiceScreen {
+        room_name, screen, ..
+    } = smoke.take("ReportHqVoiceScreen")
+    else {
+        unreachable!()
+    };
+    assert_eq!(
+        room_name,
+        "hq_ws-contract-test_00000000-0000-4000-8000-000000000000"
+    );
+    assert_eq!((screen.version, screen.page.as_str()), (1, "hq"));
+    let session = smoke.session();
+    smoke.media(session, MediaEvent::Connected);
+    assert!(smoke.shows_text("Waiting for District HQ to join."));
+    smoke.media(
+        session,
+        MediaEvent::ParticipantJoined(Participant::new("agent-hq", None, true)),
+    );
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    smoke.media(session, MediaEvent::AgentState("listening".to_owned()));
+    assert!(smoke.shows_text("Listening. Speak to District HQ."));
+    assert!(smoke.shown("voice_microphone"));
+    smoke.click("voice_microphone");
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(!enabled, "the button mutes a live microphone");
+
+    // Both sides' words, the member's growing until final.
+    let said = |speaker, id: &str, text: &str, is_final| {
+        MediaEvent::Speech(district_core::SpeechSegment {
+            segment_id: id.to_owned(),
+            speaker,
+            text: text.to_owned(),
+            is_final,
+        })
+    };
+    smoke.media(
+        session,
+        said(district_core::Speaker::Member, "m1", "Change the", false),
+    );
+    smoke.media(
+        session,
+        said(
+            district_core::Speaker::Member,
+            "m1",
+            "Change the greeting",
+            true,
+        ),
+    );
+    smoke.media(session, MediaEvent::AgentState("speaking".to_owned()));
+    smoke.media(
+        session,
+        said(
+            district_core::Speaker::Agent,
+            "a1",
+            "I've proposed it.",
+            false,
+        ),
+    );
+    assert!(smoke.shows_text("Change the greeting"));
+    assert!(smoke.shown("hq-spoken-question") && smoke.shown("hq-spoken-answer"));
+    assert!(smoke.shows_text("District HQ is speaking."));
+
+    // A change proposed by voice: a card, clicked Confirm, lost, made.
+    smoke.media(session, voice_proposal("p-1"));
+    smoke.media(session, voice_proposal("p-1"));
+    assert_eq!(smoke.count("voice_card"), 1, "a repeat is the same card");
+    assert!(smoke.shows_text("Update the greeting."));
+    assert!(!smoke.mapped("ask_button").has_css_class("suggested-action"));
+    smoke.shot("47-hq-voice-card");
+    smoke.click("voice_card_confirm");
+    let confirmed = smoke.ticket("ConfirmHqVoice");
+    assert!(
+        !smoke.sensitive("voice_card_confirm"),
+        "one click in flight"
+    );
+    smoke.answer(Event::HqVoiceConfirmed {
+        ticket: confirmed,
+        result: Err(server_error()),
+    });
+    assert!(
+        smoke.shown("voice_card"),
+        "a failed confirmation keeps its card"
+    );
+    assert!(smoke.shows_part("may have been made"));
+    smoke.click("voice_card_confirm");
+    smoke.reply("ConfirmHqVoice", |ticket| Event::HqVoiceConfirmed {
+        ticket,
+        result: Ok(fixture("district-hq-confirm.json")),
+    });
+    assert!(!smoke.shown("voice_card"));
+    assert!(smoke.shows_text("Done. The change is in place."));
+
+    // Another, cancelled by click; a third, confirmed by voice.
+    smoke.media(session, voice_proposal("p-2"));
+    smoke.click("voice_card_cancel");
+    assert!(smoke.shows_text("Cancelling the change."));
+    smoke.reply("CancelHqVoice", |ticket| Event::HqVoiceCancelled {
+        ticket,
+        result: Ok(district_model::HqProposalCancelResponse { success: true }),
+    });
+    assert!(smoke.shows_text("Cancelled. Nothing was changed."));
+    smoke.media(session, voice_proposal("p-3"));
+    smoke.media(session, voice_proposal("p-4"));
+    assert_eq!(smoke.count("voice_card"), 2);
+    smoke.media(
+        session,
+        voice_packet(serde_json::json!({
+            "type": "HQ_PROPOSAL_RESOLVED", "proposalId": "p-3",
+            "status": "applied", "via": "voice",
+        })),
+    );
+    assert_eq!(smoke.count("voice_card"), 1);
+
+    // The cards and the controls fit a narrow window.
+    smoke.resize(400, 760);
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "hq voice");
+    smoke.shot("48-hq-voice-narrow");
+    smoke.resize(1024, 720);
+
+    // The agent leaves: the session ends, the card stays to be clicked, and
+    // the keyboard is back on the voice button.
+    smoke.mapped("voice_stop").grab_focus();
+    smoke.media(
+        session,
+        MediaEvent::ParticipantLeft {
+            identity: "agent-hq".to_owned(),
+        },
+    );
+    assert!(smoke.pending("DisconnectMedia"));
+    assert!(smoke.shows_text("Voice session ended because District HQ left the session."));
+    assert!(smoke.shown("voice_card") && smoke.shown("voice_start"));
+    assert!(smoke.focused("voice_start"));
+    smoke.shot("49-hq-voice-ended");
+    smoke.click("voice_dismiss");
+    assert!(!smoke.shown("voice_line"));
+
+    // A session goes on from screen to screen: the voice dock holds its
+    // controls and its cards, and the agent hears of each page.
+    smoke.forget();
+    smoke.click("voice_start");
+    smoke.reply("RequestHqVoice", |ticket| Event::HqVoiceIssued {
+        ticket,
+        result: Ok(credential),
+    });
+    let session = smoke.session();
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(
+        session,
+        MediaEvent::ParticipantJoined(Participant::new("agent-hq", None, true)),
+    );
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    smoke.media(session, MediaEvent::AgentState("listening".to_owned()));
+    let reported = |smoke: &Smoke| {
+        let Effect::ReportHqVoiceScreen { screen, .. } = smoke.take("ReportHqVoiceScreen") else {
+            unreachable!()
+        };
+        (screen.version, screen.page)
+    };
+    assert_eq!(reported(smoke), (1, "hq".to_owned()));
+    assert!(
+        !smoke.shown("voice_dock"),
+        "District HQ has its own controls"
+    );
+    smoke.activate("sidebar-calls");
+    assert!(
+        !smoke.pending("DisconnectMedia"),
+        "the session goes on off District HQ"
+    );
+    assert_eq!(reported(smoke), (2, "calls".to_owned()));
+    assert!(smoke.shown("voice_dock") && smoke.shows_text("District HQ voice"));
+    assert!(smoke.shows_text("Listening. Speak to District HQ."));
+    assert_eq!(
+        smoke.count("voice_card"),
+        1,
+        "the change left waiting is in the dock"
+    );
+    assert!(smoke.shown("voice_dock_review"));
+    smoke.click("voice_dock_microphone");
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(!enabled, "the dock mutes a live microphone");
+    smoke.shot("50-hq-voice-dock");
+    // A card confirmed from the dock, the way back to District HQ, and back.
+    smoke.click("voice_card_confirm");
+    smoke.reply("ConfirmHqVoice", |ticket| Event::HqVoiceConfirmed {
+        ticket,
+        result: Ok(fixture("district-hq-confirm.json")),
+    });
+    assert_eq!(smoke.count("voice_card"), 0);
+    assert!(!smoke.shown("voice_dock_review"));
+    smoke.media(session, voice_proposal("p-5"));
+    smoke.click("voice_dock_review");
+    assert_eq!(reported(smoke), (3, "hq".to_owned()));
+    assert!(!smoke.shown("voice_dock") && smoke.shown("voice_card"));
+    smoke.activate("sidebar-calls");
+    assert_eq!(reported(smoke), (4, "calls".to_owned()));
+    // The narrow window keeps the dock inside it.
+    smoke.resize(400, 760);
+    assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "voice dock");
+    smoke.resize(1024, 720);
+    // Stop voice from another screen ends the session; the card stays.
+    smoke.mapped("voice_dock_stop").grab_focus();
+    smoke.click("voice_dock_stop");
+    assert!(smoke.pending("DisconnectMedia"));
+    assert!(!smoke.shown("voice_dock_stop") && smoke.shown("voice_card"));
+    assert!(
+        smoke.focused("voice_dock_review"),
+        "the keyboard stays in the dock"
+    );
+    smoke.click("voice_card_cancel");
+    smoke.reply("CancelHqVoice", |ticket| Event::HqVoiceCancelled {
+        ticket,
+        result: Ok(district_model::HqProposalCancelResponse { success: true }),
+    });
+    assert!(!smoke.shown("voice_dock"), "nothing left to show");
     smoke.forget();
 }
 
@@ -9782,6 +10082,7 @@ fn main() {
     calls_screens(&smoke);
     contacts_screens(&smoke);
     hq_screen(&smoke);
+    hq_voice(&smoke);
     analytics_screen(&smoke);
     numbers_screen(&smoke);
     billing_screen(&smoke);

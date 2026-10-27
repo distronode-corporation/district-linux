@@ -378,6 +378,9 @@
                         <child type="bottom">
                           <object class="DistrictCallBar" id="call_bar"/>
                         </child>
+                        <child type="bottom">
+                          <object class="DistrictVoiceDock" id="voice_dock"/>
+                        </child>
                       </object>
                     </property>
                   </object>

@@ -5,7 +5,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
 
-use district_core::{Effect, Event, Model, SessionState, SignedOut, SignedOutWhy};
+use district_core::{Effect, Event, HqEvent, Model, SessionState, SignedOut, SignedOutWhy};
 use district_crash::Consent;
 
 use crate::adw;
@@ -341,13 +341,21 @@ impl Controller {
 
     fn create_window(self: &Rc<Self>, app: &adw::Application) -> DistrictWindow {
         let window = DistrictWindow::new(app, self.sink.clone());
-        // Closed with a session open, the window goes and the app runs on.
+        // Closed with a session open, the window goes and the app runs on. An
+        // HQ voice session goes with the window: its controls are in the
+        // window, and nothing would put them back on screen. Minimised, the
+        // window keeps the session, as a browser tab in the background keeps
+        // the web dashboard's: one click on the taskbar shows the controls.
         let controller = Rc::downgrade(self);
         window.connect_close_request(move |_| {
-            if let Some(controller) = controller.upgrade()
-                && controller.hold.borrow().is_some()
-            {
-                controller.background.backgrounded();
+            if let Some(controller) = controller.upgrade() {
+                controller
+                    .events
+                    .try_send(Event::Hq(HqEvent::StopVoice))
+                    .ok();
+                if controller.hold.borrow().is_some() {
+                    controller.background.backgrounded();
+                }
             }
             glib::Propagation::Proceed
         });
