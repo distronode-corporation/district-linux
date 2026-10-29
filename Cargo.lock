@@ -2259,9 +2259,9 @@ dependencies = [
 
 [[package]]
 name = "livekit-signaling"
-version = "0.1.8"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e4c039320b98bc615890653143735c8f7f45789bca074dc97a6392ea04390a5"
+checksum = "52fb8712633820ca0d186fadd7ca76c373d1cb3b555d143d7fee232b2493794b"
 dependencies = [
  "base64 0.21.7",
  "device-info",

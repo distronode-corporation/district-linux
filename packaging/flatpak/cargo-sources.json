@@ -2783,14 +2783,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/livekit-signaling/livekit-signaling-0.1.8.crate",
-        "sha256": "8e4c039320b98bc615890653143735c8f7f45789bca074dc97a6392ea04390a5",
-        "dest": "cargo/vendor/livekit-signaling-0.1.8"
+        "url": "https://static.crates.io/crates/livekit-signaling/livekit-signaling-0.1.7.crate",
+        "sha256": "52fb8712633820ca0d186fadd7ca76c373d1cb3b555d143d7fee232b2493794b",
+        "dest": "cargo/vendor/livekit-signaling-0.1.7"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"8e4c039320b98bc615890653143735c8f7f45789bca074dc97a6392ea04390a5\", \"files\": {}}",
-        "dest": "cargo/vendor/livekit-signaling-0.1.8",
+        "contents": "{\"package\": \"52fb8712633820ca0d186fadd7ca76c373d1cb3b555d143d7fee232b2493794b\", \"files\": {}}",
+        "dest": "cargo/vendor/livekit-signaling-0.1.7",
         "dest-filename": ".cargo-checksum.json"
     },
     {
