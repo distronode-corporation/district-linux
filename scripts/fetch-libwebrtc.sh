@@ -34,13 +34,13 @@
 # Linux x86_64 only, the one target a release ships.
 set -euo pipefail
 
-WEBRTC_SYS_BUILD_VERSION="0.3.19"
-WEBRTC_TAG="webrtc-89d790b"
+WEBRTC_SYS_BUILD_VERSION="0.3.21"
+WEBRTC_TAG="webrtc-a545de4"
 # The release of this repository that holds the archive. The number after
 # "audio" counts builds for the same WEBRTC_TAG.
-RELEASE="libwebrtc-89d790b-audio-1"
+RELEASE="libwebrtc-a545de4-audio-1"
 ARCHIVE="webrtc-linux-x64-release.zip"
-SHA256="2355bc8c6cdaf9613c471da944ac901bb293f346dda5e94cdbe6249a36914317"
+SHA256="d5344123e42e7bdc6717d080e9af654d662c051fa7462c1134a7dc4b0cbce31e"
 URL="https://github.com/distronode-corporation/district-linux/releases/download/${RELEASE}/${ARCHIVE}"
 UNPACKED="linux-x64-release"
 

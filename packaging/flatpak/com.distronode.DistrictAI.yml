@@ -159,6 +159,6 @@ modules:
       # The pin in scripts/fetch-libwebrtc.sh. Moving it moves both, and
       # scripts/check-pins.py fails CI while they differ.
       - type: file
-        url: https://github.com/distronode-corporation/district-linux/releases/download/libwebrtc-89d790b-audio-1/webrtc-linux-x64-release.zip
-        sha256: 2355bc8c6cdaf9613c471da944ac901bb293f346dda5e94cdbe6249a36914317
+        url: https://github.com/distronode-corporation/district-linux/releases/download/libwebrtc-a545de4-audio-1/webrtc-linux-x64-release.zip
+        sha256: d5344123e42e7bdc6717d080e9af654d662c051fa7462c1134a7dc4b0cbce31e
         dest: libwebrtc
