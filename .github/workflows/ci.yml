@@ -87,7 +87,7 @@ jobs:
       # Caches are written from main only. A pull request still restores main's
       # cache, but does not spend time uploading one of its own that nothing else
       # would read.
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -191,7 +191,7 @@ jobs:
           rustup toolchain install "$MSRV" --profile minimal
           echo "RUSTUP_TOOLCHAIN=$MSRV" >> "$GITHUB_ENV"
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           key: msrv-${{ steps.msrv.outputs.msrv }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
@@ -362,6 +362,8 @@ jobs:
         with:
           fail-on-severity: moderate
           deny-licenses: GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SSPL-1.0, BUSL-1.1
+          # Swatinem/rust-cache is LGPL-3.0, but it is a CI action, never in a package.
+          allow-dependencies-licenses: pkg:githubactions/Swatinem/rust-cache
 
   # Static analysis of these workflows: template injection, over-broad token
   # permissions, credential persistence, cache poisoning, unpinned actions.
@@ -378,7 +380,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+      - uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
         with:
           version: 1.30.1
           advanced-security: false
