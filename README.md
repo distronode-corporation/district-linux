@@ -1,7 +1,14 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/distronode-logo-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset=".github/assets/distronode-logo-light.png">
+  <img alt="Distronode" src=".github/assets/distronode-logo-light.png" width="220">
+</picture>
+
 # District AI for Linux
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/distronode-corporation/district-linux/badge)](https://scorecard.dev/viewer/?uri=github.com/distronode-corporation/district-linux)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15874/badge)](https://www.bestpractices.dev/projects/15874)
+[![Latest release](https://img.shields.io/github/v/release/distronode-corporation/district-linux?label=release)](https://github.com/distronode-corporation/district-linux/releases/latest)
 
 A native GTK 4 and libadwaita desktop client for District AI, the AI voice
 receptionist from Distronode.
@@ -56,6 +63,11 @@ want the District AI apps to work without an account with us too. We have not wo
 what that looks like or whether it can work, and the answer depends on what people would
 use them with, so we are asking before we build anything:
 [tell us what you would connect them to](https://github.com/distronode-corporation/.github/discussions/1).
+
+<p>
+  <img alt="The inbox, with a text conversation open" src="crates/district-app/data/screenshots/inbox.png" width="49%">
+  <img alt="The overview, with the workspace's numbers and recent calls" src="crates/district-app/data/screenshots/overview.png" width="49%">
+</p>
 
 ![A call placed from the desktop, under way over the contact's details](crates/district-app/data/screenshots/call.png)
 
