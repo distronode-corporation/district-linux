@@ -377,9 +377,17 @@ impl DialerPage {
         let focus = gtk::EventControllerFocus::new();
         let weak = self.downgrade();
         focus.connect_leave(move |_| {
-            if let Some(page) = weak.upgrade() {
-                page.send(Event::Dialer(DialerEvent::CheckLength));
-            }
+            // Looked at once the keyboard has landed: the country button and
+            // its list are part of typing the number, so moving to them is not
+            // stopping.
+            let weak = weak.clone();
+            glib::idle_add_local_once(move || {
+                if let Some(page) = weak.upgrade()
+                    && !page.focus_in_country()
+                {
+                    page.send(Event::Dialer(DialerEvent::CheckLength));
+                }
+            });
         });
         imp.number_entry.add_controller(focus);
         // A switched-off button takes no click, so its parent watches for one
@@ -427,11 +435,11 @@ impl DialerPage {
             }
         });
         let weak = self.downgrade();
-        imp.country_search.connect_activate(move |search| {
+        imp.country_search.connect_activate(move |_| {
             if let Some(page) = weak.upgrade()
-                && let Some(iso) = search_countries(&search.text(), lang()).first()
+                && let Some(iso) = page.first_country_row()
             {
-                page.pick(iso);
+                page.pick(&iso);
             }
         });
         let weak = self.downgrade();
@@ -442,6 +450,30 @@ impl DialerPage {
                 page.pick(iso);
             }
         });
+    }
+
+    /// The first country the list shows (a suggested one when there is no
+    /// search), which Enter in the search picks.
+    fn first_country_row(&self) -> Option<String> {
+        let mut child = self.imp().country_list.first_child();
+        while let Some(row) = child {
+            if let Some(iso) = row.widget_name().strip_prefix("country-") {
+                return Some(iso.to_owned());
+            }
+            child = row.next_sibling();
+        }
+        None
+    }
+
+    /// Whether the keyboard is on the country button or in its list.
+    fn focus_in_country(&self) -> bool {
+        let button = self.imp().country_button.get();
+        self.root()
+            .and_then(|root| root.focus())
+            .is_some_and(|focus| {
+                focus == *button.upcast_ref::<gtk::Widget>() || focus.is_ancestor(&button)
+            })
+            || self.imp().country_popover.is_visible()
     }
 
     /// The list for `query`: with none, "Suggested" (the home country, the one
