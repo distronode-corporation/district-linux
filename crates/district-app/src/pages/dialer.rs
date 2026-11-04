@@ -435,10 +435,14 @@ impl DialerPage {
             }
         });
         let weak = self.downgrade();
-        imp.country_search.connect_activate(move |_| {
-            if let Some(page) = weak.upgrade()
-                && let Some(iso) = page.first_country_row()
-            {
+        imp.country_search.connect_activate(move |search| {
+            let Some(page) = weak.upgrade() else {
+                return;
+            };
+            // The list follows the search after a short pause, so Enter
+            // pressed straight after a key fills it first.
+            page.fill_country_list(&search.text());
+            if let Some(iso) = page.first_country_row() {
                 page.pick(&iso);
             }
         });
