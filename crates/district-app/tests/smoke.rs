@@ -7370,12 +7370,31 @@ fn dialing(smoke: &Smoke) {
         "typing goes straight into the box"
     );
     // The workspace's numbers are read for its home country: two in
-    // Toronto and a toll-free one, so the button opens on Canada.
+    // Toronto and a toll-free one, so a dialler never used in this workspace
+    // opens on Canada. One used before keeps the country it was left on
+    // (an earlier scene dialled a number in the United States), so Canada is
+    // picked from the list then.
     if smoke.pending("LoadOwnedNumbers") {
         smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
             ticket,
             result: Ok(fixture("district-provider-numbers.json")),
         });
+    }
+    if smoke.label("country_button_label") != "\u{1f1e8}\u{1f1e6} +1" {
+        smoke
+            .mapped("country_button")
+            .downcast::<gtk::MenuButton>()
+            .unwrap()
+            .popup();
+        smoke.pump();
+        smoke
+            .mapped("country-CA")
+            .downcast::<gtk::ListBoxRow>()
+            .unwrap()
+            .emit_activate();
+        smoke.pump();
+        entry.grab_focus();
+        smoke.pump();
     }
     assert_eq!(smoke.label("country_button_label"), "\u{1f1e8}\u{1f1e6} +1");
     assert_eq!(
