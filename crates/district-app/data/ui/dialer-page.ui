@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The dialler: the number as it reads, the box it is typed or pasted into,
-     a keypad, and Call. src/pages/dialer.rs fills it and adds the keypad's
-     keys. -->
+<!-- The dialler: the country button and its searchable list, the box the
+     number is typed or pasted into, the line naming where it rings, a keypad,
+     and Call. src/pages/dialer.rs fills it, adds the keypad's keys and the
+     list's rows. -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="Adw" version="1.5"/>
@@ -22,31 +23,81 @@
                 <property name="margin-bottom">24</property>
                 <property name="valign">center</property>
                 <child>
-                  <object class="GtkLabel" id="number_label">
-                    <property name="wrap">True</property>
-                    <property name="wrap-mode">char</property>
-                    <property name="justify">center</property>
-                    <property name="use-markup">False</property>
-                    <property name="selectable">True</property>
-                    <style>
-                      <class name="title-1"/>
-                      <class name="numeric"/>
-                      <class name="dial-display"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
                   <object class="GtkBox">
                     <property name="orientation">vertical</property>
                     <property name="spacing">6</property>
                     <child>
-                      <object class="GtkEntry" id="number_entry">
-                        <property name="input-purpose">phone</property>
-                        <property name="xalign">0.5</property>
-                        <property name="placeholder-text" translatable="yes" context="dialer_page.type_paste_number">Type or paste a number</property>
-                        <accessibility>
-                          <property name="label" translatable="yes" context="dialer_page.number_call">Number to call</property>
-                        </accessibility>
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkMenuButton" id="country_button">
+                            <property name="always-show-arrow">True</property>
+                            <property name="child">
+                              <object class="GtkLabel" id="country_button_label">
+                                <property name="use-markup">False</property>
+                                <style>
+                                  <class name="numeric"/>
+                                </style>
+                              </object>
+                            </property>
+                            <property name="popover">
+                              <object class="GtkPopover" id="country_popover">
+                                <property name="child">
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">6</property>
+                                    <property name="width-request">300</property>
+                                    <child>
+                                      <object class="GtkSearchEntry" id="country_search"/>
+                                    </child>
+                                    <child>
+                                      <object class="GtkScrolledWindow">
+                                        <property name="hscrollbar-policy">never</property>
+                                        <property name="min-content-height">320</property>
+                                        <property name="propagate-natural-height">True</property>
+                                        <property name="max-content-height">420</property>
+                                        <property name="child">
+                                          <object class="GtkListBox" id="country_list">
+                                            <property name="selection-mode">none</property>
+                                            <style>
+                                              <class name="navigation-sidebar"/>
+                                            </style>
+                                          </object>
+                                        </property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="number_entry">
+                            <property name="hexpand">True</property>
+                            <property name="input-purpose">phone</property>
+                            <property name="placeholder-text" translatable="yes" context="dialer_page.type_paste_number">Type or paste a number</property>
+                            <style>
+                              <class name="numeric"/>
+                              <class name="dial-entry"/>
+                            </style>
+                            <accessibility>
+                              <property name="label" translatable="yes" context="dialer_page.number_call">Number to call</property>
+                            </accessibility>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="dial_destination">
+                        <property name="wrap">True</property>
+                        <property name="justify">center</property>
+                        <property name="use-markup">False</property>
+                        <property name="selectable">True</property>
+                        <style>
+                          <class name="numeric"/>
+                          <class name="dial-destination"/>
+                        </style>
                       </object>
                     </child>
                     <child>
@@ -56,7 +107,6 @@
                         <property name="use-markup">False</property>
                         <style>
                           <class name="caption"/>
-                          <class name="dim-label"/>
                         </style>
                       </object>
                     </child>

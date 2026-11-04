@@ -13,6 +13,19 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+### Changed
+
+- The dialler is country-aware (dialler design A, the core's rules): a flag and
+  calling-code button in front of the number opens a searchable country list
+  (Suggested first: the workspace's own country, the one chosen, Canada and the United
+  States). The number is typed the local way and formatted as it is typed; a pasted `+`
+  number moves the button and the box keeps the local form. Before Call a line reads
+  "Rings <country> · <international number>", and that E.164 number is what is sent.
+  A wrong length keeps Call off and is said once the box loses the keyboard, on Enter,
+  or when the switched-off Call button is pressed. The workspace's home country comes
+  from its own numbers. Needs district-core-rust's dialler (pinned to its pull request's
+  branch until that is released).
+
 ## [3.2.0] - 2026-10-27
 
 District HQ by voice: talk to District HQ in a build with calls, with every change it

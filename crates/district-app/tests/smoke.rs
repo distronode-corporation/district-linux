@@ -7369,22 +7369,45 @@ fn dialing(smoke: &Smoke) {
         entry.state_flags().contains(gtk::StateFlags::FOCUS_WITHIN),
         "typing goes straight into the box"
     );
-    assert_eq!(smoke.label("number_label"), "\u{a0}", "a line kept for it");
+    // The workspace's numbers are read for its home country: two in
+    // Toronto and a toll-free one, so the button opens on Canada.
+    if smoke.pending("LoadOwnedNumbers") {
+        smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+            ticket,
+            result: Ok(fixture("district-provider-numbers.json")),
+        });
+    }
+    assert_eq!(smoke.label("country_button_label"), "\u{1f1e8}\u{1f1e6} +1");
+    assert_eq!(
+        smoke.label("dial_destination"),
+        "\u{a0}",
+        "a line kept for it"
+    );
+    assert_eq!(entry.placeholder_text().as_deref(), Some("(416) 555-0199"));
     assert!(!smoke.sensitive("call_button"), "nothing to call yet");
-    assert!(smoke.shows_text(DialerScreen::HINT));
+    assert!(smoke.shows_text(
+        "Type the number as you would dial it locally (Canada), or start with + and its \
+         country code."
+    ));
     assert!(smoke.shows_text(DialerScreen::MICROPHONE_NOTE));
     assert!(!smoke.shown("dial_busy_note"));
     assert!(!smoke.shown("call_strip"), "no call, no strip");
     smoke.shot("142-dialer");
 
-    // The keypad types at the cursor, and its last key deletes.
-    for key in ["+", "1", "2", "1", "2", "5"] {
+    // The keypad types at the cursor, formatted as it goes, and its last key
+    // deletes. A + and its code stay until a digit follows; 212 moves the
+    // button to the United States.
+    for key in ["+", "1"] {
         smoke.click(&format!("keypad-{key}"));
     }
-    assert_eq!(smoke.entry_text("number_entry"), "+12125");
-    assert_eq!(smoke.label("number_label"), "+121 25");
+    assert_eq!(smoke.entry_text("number_entry"), "+1");
+    for key in ["2", "1", "2", "5"] {
+        smoke.click(&format!("keypad-{key}"));
+    }
+    assert_eq!(smoke.entry_text("number_entry"), "(212) 5");
+    assert_eq!(smoke.label("country_button_label"), "\u{1f1fa}\u{1f1f8} +1");
     smoke.click("backspace_button");
-    assert_eq!(smoke.entry_text("number_entry"), "+1212");
+    assert_eq!(smoke.entry_text("number_entry"), "212");
     assert!(!smoke.sensitive("call_button"), "too few digits");
 
     // A selection is deleted whole.
@@ -7392,7 +7415,66 @@ fn dialing(smoke: &Smoke) {
     smoke.click("backspace_button");
     assert_eq!(smoke.entry_text("number_entry"), "");
 
-    // A paste lands in the box as it was copied, and reads grouped above it.
+    // The country list: Suggested first, then every country; a search ranks
+    // its matches, and a row picks its country.
+    smoke
+        .mapped("country_button")
+        .downcast::<gtk::MenuButton>()
+        .unwrap()
+        .popup();
+    smoke.pump();
+    assert!(smoke.shows_text("Suggested") && smoke.shows_text("All countries"));
+    smoke.shot("142a-dialer-countries");
+    let search = smoke
+        .mapped("country_search")
+        .downcast::<gtk::SearchEntry>()
+        .unwrap();
+    search.set_text("germ");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !smoke.shown("country-DE") || smoke.shown("country-CA") {
+        assert!(Instant::now() < deadline, "the search never narrowed");
+        smoke.pump();
+    }
+    smoke.shot("142b-dialer-countries-search");
+    search.set_text("");
+    smoke.pump();
+    smoke
+        .mapped("country-CA")
+        .downcast::<gtk::ListBoxRow>()
+        .unwrap()
+        .emit_activate();
+    smoke.pump();
+    assert_eq!(smoke.label("country_button_label"), "\u{1f1e8}\u{1f1e6} +1");
+
+    // The billed call: +41 in front of a Canadian area code is
+    // Switzerland's code. The button moves there and Call stays off, with
+    // nothing said while typing; once the box loses the keyboard, the length
+    // is said, and the next key clears it.
+    entry.set_text(&format!("+{}{}", "41", "65550123"));
+    smoke.pump();
+    assert_eq!(
+        smoke.label("country_button_label"),
+        "\u{1f1e8}\u{1f1ed} +41"
+    );
+    assert!(!smoke.sensitive("call_button"), "not a whole Swiss number");
+    let wrong = "That is the wrong number of digits for a number in the country it rings. \
+                 Check it before you call.";
+    assert!(!smoke.shows_text(wrong), "nothing said while typing");
+    smoke.mapped("country_button").grab_focus();
+    smoke.pump();
+    assert!(
+        smoke.shows_text(wrong),
+        "said once the box lost the keyboard"
+    );
+    smoke.shot("142c-dialer-wrong-length");
+    entry.grab_focus();
+    entry.select_region(0, -1);
+    smoke.click("backspace_button");
+    assert!(!smoke.shows_text(wrong), "the next edit clears it");
+    smoke.pump();
+
+    // A paste of a + number moves the button, and the box keeps the local
+    // form; the line before Call names the country and the whole number.
     let typed = "+1 (212) 555-0142";
     entry.clipboard().set_text(typed);
     let text = descendants(entry.upcast_ref())
@@ -7402,7 +7484,7 @@ fn dialing(smoke: &Smoke) {
     text.grab_focus();
     text.emit_by_name::<()>("paste-clipboard", &[]);
     let deadline = Instant::now() + Duration::from_secs(10);
-    while smoke.entry_text("number_entry") != typed {
+    while smoke.entry_text("number_entry") != "(212) 555-0142" {
         assert!(
             Instant::now() < deadline,
             "the paste never landed: {:?}",
@@ -7410,11 +7492,15 @@ fn dialing(smoke: &Smoke) {
         );
         smoke.pump();
     }
-    assert_eq!(smoke.label("number_label"), "+1 212 555 0142");
+    assert_eq!(
+        smoke.label("dial_destination"),
+        "Rings United States \u{b7} +1 212 555 0142"
+    );
     assert!(smoke.sensitive("call_button"));
     smoke.shot("143-dialer-typed");
 
-    // Placing it with Enter: the number as typed, and the strip at once.
+    // Placing it with Enter: the number the line showed, and the strip at
+    // once.
     entry.emit_activate();
     smoke.pump();
     let Effect::Dial {
@@ -7425,7 +7511,10 @@ fn dialing(smoke: &Smoke) {
     else {
         unreachable!()
     };
-    assert_eq!((workspace_id.as_str(), to.as_str()), (AGENCY, typed));
+    assert_eq!(
+        (workspace_id.as_str(), to.as_str()),
+        (AGENCY, "+12125550142")
+    );
     assert!(smoke.shown("call_strip"));
     assert_eq!(smoke.label("call_title"), "+1 212 555 0142");
     assert_eq!(smoke.label("call_status"), ActiveCall::DIALING);
