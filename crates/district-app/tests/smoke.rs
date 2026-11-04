@@ -938,10 +938,7 @@ fn signing_in(smoke: &Smoke) {
     let Effect::CompleteSignIn { ticket, callback } = smoke.take("CompleteSignIn") else {
         unreachable!()
     };
-    assert_eq!(
-        callback.replace("/?", "?"),
-        CALLBACK,
-        "handed to the core as it arrived"
+    assert_eq!(callback, CALLBACK, "handed to the core as it arrived");
     assert!(
         !smoke.pending("CompleteSignIn"),
         "the file was not a sign-in"
@@ -7464,7 +7461,7 @@ fn dialing(smoke: &Smoke) {
                  Check it before you call.";
     assert!(!smoke.shows_text(wrong), "nothing said while typing");
     // The country button is part of typing the number, so the keyboard
-    // moving there says nothing; moving anywhere else does.
+    // moving there says nothing; leaving the box for anything else does.
     smoke.mapped("country_button").grab_focus();
     smoke.pump();
     assert!(
@@ -10501,7 +10498,6 @@ fn main() {
     crash_question(&smoke);
     restoring(&smoke);
     signing_in(&smoke);
-    if std::env::var_os("LOCAL_ONLY_DIALER").is_some() {
     overview_page(&smoke);
     account_and_devices(&smoke);
     inbox_and_thread(&smoke);
