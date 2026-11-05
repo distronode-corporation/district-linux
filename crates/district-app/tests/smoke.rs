@@ -1496,6 +1496,10 @@ fn app_parity(smoke: &Smoke) {
     );
     assert!(!smoke.mapped("send_template_button").is_sensitive());
     pick_nth(smoke, "template_picker", 1);
+    // Back to the placeholder: the core keeps the template, and so does the
+    // picker, without choosing it again.
+    pick_nth(smoke, "template_picker", 0);
+    assert_eq!(drop_down(smoke, "template_picker").selected(), 1);
     assert_eq!(smoke.count("template-variable"), 2);
     assert!(smoke.shows_text("Fill in this variable"));
     assert!(smoke.shows_text("Hi {{1}}, this is a reminder of your appointment on {{2}}."));
@@ -1504,8 +1508,23 @@ fn app_parity(smoke: &Smoke) {
         .into_iter()
         .filter_map(|widget| widget.downcast::<gtk::Entry>().ok())
         .collect();
-    fields[0].set_text("Ada");
+    // Typed faster than the model reads it: each change goes on its way
+    // before the one before it has come back, and none is written over.
+    let changes = Rc::new(std::cell::Cell::new(0));
+    let counted = Rc::clone(&changes);
+    let counter = fields[0].connect_changed(move |_| counted.set(counted.get() + 1));
+    for typed in ["A", "Ad", "Ada"] {
+        fields[0].set_text(typed);
+    }
+    let typed = changes.get();
     smoke.pump();
+    assert_eq!(fields[0].text(), "Ada");
+    assert_eq!(
+        changes.get(),
+        typed,
+        "the model's older values were never written back over the typing"
+    );
+    fields[0].disconnect(counter);
     assert!(
         !smoke.mapped("send_template_button").is_sensitive(),
         "every variable first"

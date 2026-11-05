@@ -421,6 +421,15 @@ mod imp {
         pub templates: RefCell<Vec<(String, String)>>,
         /// One field per variable of the chosen template, as last built.
         pub variables: RefCell<Vec<(gtk::Entry, gtk::Label)>>,
+        /// Each variable's text against the model's, as the composer's: a
+        /// value this field sent is only acknowledged when it comes back, so
+        /// typing on ahead of the model is never written over.
+        pub variable_echoes: RefCell<Vec<Echo>>,
+        /// The template the variable fields were built for, by id.
+        pub variables_for: RefCell<Option<String>>,
+        /// The template picker's choice as the core last had it: the
+        /// placeholder (0) until a template is chosen.
+        pub template_selected: Cell<u32>,
     }
 
     #[glib::object_subclass]
@@ -601,8 +610,25 @@ impl ThreadView {
             if imp.choosing.get() {
                 return;
             }
-            // The first choice is the placeholder, before the templates.
-            let chosen = usize::try_from(picker.selected())
+            // The first choice is the placeholder, before the templates. The
+            // core has no "no template" once one is chosen, so going back to
+            // the placeholder puts the chosen template back, on the next turn
+            // of the main loop (not while the drop-down is still choosing).
+            let selected = picker.selected();
+            if selected == 0 {
+                let chosen = imp.template_selected.get();
+                if chosen != 0 {
+                    let weak = view.downgrade();
+                    glib::idle_add_local_once(move || {
+                        if let Some(view) = weak.upgrade() {
+                            let picker = view.imp().template_picker.get();
+                            view.set_choices(&picker, None, chosen);
+                        }
+                    });
+                }
+                return;
+            }
+            let chosen = usize::try_from(selected)
                 .ok()
                 .and_then(|index| index.checked_sub(1))
                 .and_then(|index| imp.templates.borrow().get(index).cloned());
@@ -923,6 +949,8 @@ impl ThreadView {
         if changed {
             imp.templates.replace(templates);
         }
+        imp.template_selected
+            .set(u32::try_from(selected).unwrap_or(0));
         self.set_choices(
             &imp.template_picker,
             changed.then_some(labels.as_slice()),
@@ -947,13 +975,14 @@ impl ThreadView {
     }
 
     /// One field per `{{n}}` of the chosen template, built again only when
-    /// their number changes, so typing keeps its place.
+    /// another template is chosen, so typing keeps its place.
     fn draw_variables(&self, whatsapp: &WhatsAppComposer) {
         let imp = self.imp();
-        let count = whatsapp
-            .template()
-            .map_or(0, |template| template.variable_count);
-        if imp.variables.borrow().len() != count {
+        let template = whatsapp.template();
+        let count = template.map_or(0, |template| template.variable_count);
+        let id = template.map(|template| template.id.clone());
+        if *imp.variables_for.borrow() != id {
+            imp.variables_for.replace(id);
             clear_box(&imp.variables_box);
             let mut fields = Vec::with_capacity(count);
             for index in 0..count {
@@ -968,12 +997,17 @@ impl ThreadView {
                     let Some(view) = weak.upgrade() else {
                         return;
                     };
-                    if view.imp().choosing.get() {
+                    let imp = view.imp();
+                    if imp.choosing.get() {
                         return;
+                    }
+                    let text = entry.text();
+                    if let Some(echo) = imp.variable_echoes.borrow_mut().get_mut(index) {
+                        echo.typed(&text);
                     }
                     view.send(Event::Thread(ThreadEvent::TemplateVariable(
                         index,
-                        entry.text().into(),
+                        text.into(),
                     )));
                 });
                 let required = gtk::Label::builder()
@@ -999,12 +1033,22 @@ impl ThreadView {
                 fields.push((entry, required));
             }
             imp.variables.replace(fields);
+            imp.variable_echoes
+                .replace((0..count).map(|_| Echo::default()).collect());
         }
         imp.variables_box.set_visible(count > 0);
         imp.choosing.set(true);
         for (index, (entry, required)) in imp.variables.borrow().iter().enumerate() {
             let value = whatsapp.variables.get(index).cloned().unwrap_or_default();
-            if entry.text() != value {
+            let shown = entry.text();
+            // Only a value the field did not send is written: one it sent is
+            // acknowledged, and what was typed since stays.
+            let write = imp
+                .variable_echoes
+                .borrow_mut()
+                .get_mut(index)
+                .is_some_and(|echo| echo.write(&value, &shown));
+            if write {
                 entry.set_text(&value);
             }
             entry.set_sensitive(!whatsapp.sending);
@@ -1078,6 +1122,8 @@ impl ThreadView {
         let imp = self.imp();
         imp.picking.close();
         imp.thread_key.replace(None);
+        // Another thread's template fields start afresh.
+        imp.variables_for.replace(None);
     }
 }
 
