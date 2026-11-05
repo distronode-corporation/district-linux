@@ -23,8 +23,8 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   "Rings <country> · <international number>", and that E.164 number is what is sent.
   A wrong length keeps Call off and is said once the box loses the keyboard, on Enter,
   or when the switched-off Call button is pressed. The workspace's home country comes
-  from its own numbers. Needs district-core-rust's dialler (pinned to its pull request's
-  branch until that is released).
+  from its own numbers. The core is district-core-rust 8.0.0 (up from 7.0.1), the
+  release that carries the dialler.
 
 ## [3.2.0] - 2026-10-27
 

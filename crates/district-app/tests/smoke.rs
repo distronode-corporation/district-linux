@@ -775,6 +775,8 @@ fn start(locale: district_core::Locale) -> Smoke {
             calls_available: true,
             // As the app is built: no purchases in the app.
             in_app_purchases: false,
+            // As the app is built: no Messenger or Instagram threads yet.
+            meta_channels: district_app::META_CHANNELS,
             // English, as the app writes without the `fr-ca` feature, but
             // for the French run at 400 px (french_narrow).
             locale,
@@ -9275,7 +9277,7 @@ fn voice_studio_section(smoke: &Smoke) {
     // The brain away from the region: summed, at least, in the read's words,
     // and the residency saying which leg leaves.
     smoke.activate("leg-llm");
-    choose(smoke, &combo(smoke, "location_row", 0), "EU (europe-west4)");
+    choose(smoke, &combo(smoke, "location_row", 0), "EU (europe-west3)");
     assert!(smoke.shows_text("At least 520\u{a0}ms"));
     assert!(smoke.shows_text(&labels.meter_partial));
     assert!(smoke.shows_text(&labels.leaves_region));
