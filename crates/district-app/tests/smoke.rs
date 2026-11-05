@@ -64,11 +64,11 @@ use district_model::{
     HqPromptResponse, KnowledgeListResponse, KnowledgeModeResponse, MarkReadResponse,
     MeetingSummary, MessageSearchHit, MessageSearchResponse, MessageThreadResponse,
     MessagingResponse, NativeDevice, NumberSearchResponse, OverviewResponse, OwnedNumbersResponse,
-    PersonaOptionsResponse, RoomTokenResponse, SchedulingEnableResponse, SchedulingStatusResponse,
-    SendMessageResponse, SupportRequestsResponse, TelemetryEnvelope, TimelineResponse,
-    UnreadCountResponse, UsageHistoryResponse, VoiceStudioResponse, WorkflowListResponse,
-    WorkflowRun, WorkflowRunsResponse, WorkspaceBillingResponse, WorkspaceConfigResponse,
-    WorkspaceListResponse,
+    PersonaOptionsResponse, ReplyOption, RoomTokenResponse, SchedulingEnableResponse,
+    SchedulingStatusResponse, SendMessageResponse, SupportRequestsResponse, TelemetryEnvelope,
+    TimelineResponse, UnreadCountResponse, UsageHistoryResponse, VoiceStudioResponse,
+    WorkflowListResponse, WorkflowRun, WorkflowRunsResponse, WorkspaceBillingResponse,
+    WorkspaceConfigResponse, WorkspaceListResponse,
 };
 use gtk::{gdk, gio, glib};
 use gtk4 as gtk;
@@ -775,6 +775,9 @@ fn start(locale: district_core::Locale) -> Smoke {
             calls_available: true,
             // As the app is built: no purchases in the app.
             in_app_purchases: false,
+            // As the app is built: Messenger and Instagram threads listed and
+            // answered.
+            meta_channels: district_app::META_CHANNELS,
             // English, as the app writes without the `fr-ca` feature, but
             // for the French run at 400 px (french_narrow).
             locale,
@@ -1243,11 +1246,303 @@ fn account_and_devices(smoke: &Smoke) {
 }
 
 /// The inbox's threads, read as the service reads them all, so the list says
-/// it may be short.
+/// it may be short. The app asks with `metaChannels=1`, so each thread carries
+/// its ways to reply: here the one the fixture's row offers, so a reply goes
+/// by text message as it always has in this walk (the parity walk has the
+/// service's own reply options).
 fn conversations() -> ConversationsResponse {
     let mut list: ConversationsResponse = fixture("district-conversations.json");
     list.scanned = list.scan_limit;
+    for thread in &mut list.conversations {
+        thread.reply_options = thread
+            .reply_target()
+            .into_iter()
+            .map(|target| ReplyOption {
+                channel: target.channel.to_owned(),
+                to: target.to,
+            })
+            .collect();
+    }
     list
+}
+
+/// The inbox as the service answers the app, which asks with `metaChannels=1`
+/// and `assignments=1`: the reply options fixture's threads (WhatsApp,
+/// Messenger, Instagram, and the contact's email, text and WhatsApp), each
+/// with its owner from the assignee fixture, the contact's thread first. As
+/// District AI for Windows's walk reads them.
+fn parity_conversations() -> ConversationsResponse {
+    let mut list: serde_json::Value = fixture("district-conversations-reply-options.json");
+    let owners: serde_json::Value = fixture("district-conversations-assignee.json");
+    let owner_of = |key: &serde_json::Value| {
+        owners["conversations"]
+            .as_array()
+            .and_then(|rows| rows.iter().find(|row| row["threadKey"] == *key))
+            .map_or(serde_json::Value::Null, |row| row["assigneeEmail"].clone())
+    };
+    let rows = list["conversations"]
+        .as_array_mut()
+        .expect("the fixture's threads");
+    for row in rows.iter_mut() {
+        row["assigneeEmail"] = owner_of(&row["threadKey"]);
+        row["assignedToMe"] = serde_json::json!(false);
+    }
+    rows.sort_by_key(|row| row["threadKey"] != "contact:contact_contract_1");
+    serde_json::from_value(list).expect("the threads decode")
+}
+
+/// The picker named `name` on screen.
+fn drop_down(smoke: &Smoke, name: &str) -> gtk::DropDown {
+    smoke
+        .mapped(name)
+        .downcast::<gtk::DropDown>()
+        .expect("a drop-down")
+}
+
+/// The choices of the picker named `name`, as they read.
+fn drop_down_choices(smoke: &Smoke, name: &str) -> Vec<String> {
+    let model = drop_down(smoke, name)
+        .model()
+        .expect("the picker's choices");
+    (0..model.n_items())
+        .filter_map(|index| model.item(index))
+        .filter_map(|item| item.downcast::<gtk::StringObject>().ok())
+        .map(|item| item.string().to_string())
+        .collect()
+}
+
+/// Chooses the `index`th choice of the picker named `name`, as a person does.
+fn pick_nth(smoke: &Smoke, name: &str, index: u32) {
+    drop_down(smoke, name).set_selected(index);
+    smoke.pump();
+}
+
+/// App parity (1), (2), (3) and (5), as District AI for Windows has them: the
+/// Messenger and Instagram threads and each thread's owner in the list; in a
+/// thread, the reply channels the service names, images held on a channel
+/// that cannot carry them, the owner given and refused, and WhatsApp's closed
+/// window offering its approved template, filled and sent.
+fn app_parity(smoke: &Smoke) {
+    smoke.activate("sidebar-calls");
+    smoke.forget();
+    smoke.activate("sidebar-inbox");
+    let tk = smoke.ticket("LoadConversations");
+    smoke.answer(Event::ConversationsLoaded {
+        ticket: tk,
+        result: Ok(parity_conversations()),
+    });
+    if smoke.pending("LoadDraftKeys") {
+        let tk = smoke.ticket("LoadDraftKeys");
+        smoke.answer(Event::DraftKeysLoaded {
+            ticket: tk,
+            result: Ok(serde_json::from_value(serde_json::json!({
+                "success": true,
+                "drafts": []
+            }))
+            .expect("no saved replies")),
+        });
+    }
+    assert_eq!(smoke.count("conversation-row"), 5);
+    assert_eq!(smoke.count("channel-chip"), 2, "Messenger and Instagram");
+    assert!(smoke.shows_text("Messenger"));
+    assert!(smoke.shows_text("Instagram"));
+    assert_eq!(smoke.count("assignee-line"), 1, "one thread has an owner");
+    assert!(smoke.shows_text("Assigned to contract@example.com"));
+    smoke.shot("17a-inbox-channels-owners");
+    smoke.forget();
+
+    // The contact's thread: three ways to reply, email first, and its owner.
+    smoke.activate_nth("conversation-row", 0);
+    let timeline = smoke.ticket("LoadTimeline");
+    let members = smoke.ticket("LoadMembers");
+    assert!(
+        !smoke.pending("LoadWhatsAppWindow"),
+        "the window matters on WhatsApp only"
+    );
+    smoke.answer(Event::TimelineLoaded {
+        ticket: timeline,
+        result: Ok(fixture("district-timeline-meta.json")),
+    });
+    assert!(smoke.shown("assign_picker"));
+    assert!(
+        !smoke.mapped("assign_picker").is_sensitive(),
+        "not until the members are read"
+    );
+    smoke.answer(Event::MembersLoaded {
+        ticket: members,
+        result: Ok(fixture("district-members.json")),
+    });
+    smoke.forget();
+    assert!(smoke.shown("channel_row"));
+    assert_eq!(
+        drop_down_choices(smoke, "channel_picker"),
+        [
+            "Email to ada@example.com",
+            "Text message to +1 416 555 0142",
+            "WhatsApp \u{b7} +1 416 555 0142",
+        ]
+    );
+    assert_eq!(drop_down(smoke, "channel_picker").selected(), 0);
+    assert!(smoke.shows_text("Email to ada@example.com"));
+    assert!(!smoke.shown("attach_button"), "images go by text only");
+    // The owner picker: nobody, the Agency and Client members (never the
+    // Viewer), and the owner, who is not among them.
+    assert!(smoke.mapped("assign_picker").is_sensitive());
+    assert_eq!(
+        drop_down_choices(smoke, "assign_picker"),
+        [
+            "Unassigned",
+            "founder@example.com",
+            "operator@example.com",
+            "contract@example.com",
+        ]
+    );
+    assert_eq!(drop_down(smoke, "assign_picker").selected(), 3);
+    assert!(!smoke.shown("assign_line"), "the picker says it");
+    smoke.shot("19a-thread-channels-owner");
+
+    // Giving the thread away: one change at a time, a failure said beside the
+    // picker and put away, and the change made.
+    pick_nth(smoke, "assign_picker", 2);
+    let assign = smoke.take("AssignConversation");
+    assert!(
+        format!("{assign:?}").contains("operator@example.com"),
+        "{assign:?}"
+    );
+    assert!(
+        !smoke.mapped("assign_picker").is_sensitive(),
+        "one change at a time"
+    );
+    assert!(smoke.shown("assign_spinner"));
+    smoke.answer(Event::ConversationAssigned {
+        ticket: ticket(&assign),
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("assign_failure_box"));
+    assert_eq!(
+        drop_down(smoke, "assign_picker").selected(),
+        3,
+        "the owner is still the owner"
+    );
+    assert!(
+        !smoke.pending("AssignConversation"),
+        "drawing sends nothing"
+    );
+    smoke.shot("19b-thread-assign-failed");
+    smoke.click("assign_failure_dismiss");
+    assert!(!smoke.shown("assign_failure_box"));
+    pick_nth(smoke, "assign_picker", 0);
+    let assign = smoke.take("AssignConversation");
+    assert!(
+        format!("{assign:?}").contains("assignee_email: None"),
+        "{assign:?}"
+    );
+    smoke.answer(Event::ConversationAssigned {
+        ticket: ticket(&assign),
+        result: Ok(fixture("district-conversation-unassign.json")),
+    });
+    assert!(
+        !smoke.pending("AssignConversation"),
+        "drawing sends nothing"
+    );
+    assert_eq!(drop_down(smoke, "assign_picker").selected(), 0);
+    smoke.forget();
+
+    // By text message an image can go; on email it is held, and Send waits.
+    pick_nth(smoke, "channel_picker", 1);
+    assert!(smoke.shows_text("Text message to +1 416 555 0142"));
+    assert!(smoke.shown("attach_button"));
+    smoke.text_view("text").set_text("Here is the photo.");
+    smoke.pump();
+    attaching(smoke);
+    smoke.forget();
+    pick_nth(smoke, "channel_picker", 0);
+    assert!(smoke.shown("attachments_note"));
+    assert!(smoke.shows_text(
+        "Attachments can only go by text message. Remove them to send on this channel."
+    ));
+    assert!(!smoke.mapped("send_button").is_sensitive());
+    smoke.shot("19c-thread-attachments-held");
+    smoke.click("remove-attachment");
+    assert!(!smoke.shown("attachments_note"));
+    assert!(smoke.mapped("send_button").is_sensitive());
+    smoke.forget();
+
+    // WhatsApp: the window is read, it has closed, and the box becomes the
+    // approved templates.
+    pick_nth(smoke, "channel_picker", 2);
+    let window = smoke.ticket("LoadWhatsAppWindow");
+    smoke.answer(Event::WhatsAppWindowLoaded {
+        ticket: window,
+        result: Ok(fixture("district-whatsapp-window-closed.json")),
+    });
+    assert!(smoke.shows_text("Window closed: WhatsApp only allows a template now"));
+    assert!(!smoke.shown("text_row"), "no free text once it has closed");
+    assert!(!smoke.shown("draft_row"));
+    assert!(smoke.shows_text("Loading templates"));
+    smoke.shot("19d-thread-whatsapp-loading");
+    let templates = smoke.ticket("LoadWhatsAppTemplates");
+    smoke.answer(Event::WhatsAppTemplatesLoaded {
+        ticket: templates,
+        result: Ok(fixture("district-whatsapp-templates.json")),
+    });
+    assert_eq!(
+        drop_down_choices(smoke, "template_picker"),
+        [
+            "Choose an approved template",
+            "appointment_reminder (en_US)"
+        ],
+        "only the approved one, with numbered variables"
+    );
+    assert!(!smoke.mapped("send_template_button").is_sensitive());
+    pick_nth(smoke, "template_picker", 1);
+    assert_eq!(smoke.count("template-variable"), 2);
+    assert!(smoke.shows_text("Fill in this variable"));
+    assert!(smoke.shows_text("Hi {{1}}, this is a reminder of your appointment on {{2}}."));
+    let fields: Vec<gtk::Entry> = smoke
+        .all("template-variable")
+        .into_iter()
+        .filter_map(|widget| widget.downcast::<gtk::Entry>().ok())
+        .collect();
+    fields[0].set_text("Ada");
+    smoke.pump();
+    assert!(
+        !smoke.mapped("send_template_button").is_sensitive(),
+        "every variable first"
+    );
+    fields[1].set_text("Thursday");
+    smoke.pump();
+    assert!(smoke.shows_text("Hi Ada, this is a reminder of your appointment on Thursday."));
+    assert!(!smoke.shows_text("Fill in this variable"));
+    assert!(smoke.mapped("send_template_button").is_sensitive());
+    smoke.shot("19e-thread-whatsapp-template");
+    smoke.click("send_template_button");
+    let send = smoke.take("SendMessage");
+    let sent = format!("{send:?}");
+    assert!(sent.contains("wa_tpl_reminder"), "{sent}");
+    assert!(sent.contains("Thursday"), "{sent}");
+    assert!(
+        !smoke.mapped("send_template_button").is_sensitive(),
+        "one at a time"
+    );
+    smoke.answer(Event::MessageSent {
+        ticket: ticket(&send),
+        result: Ok(fixture("district-message-send-whatsapp-template.json")),
+    });
+    smoke.forget();
+
+    // A Messenger thread: one way to reply, so no chooser, and the channel
+    // under its title.
+    smoke.activate_nth("conversation-row", 2);
+    let timeline = smoke.ticket("LoadTimeline");
+    smoke.answer(Event::TimelineLoaded {
+        ticket: timeline,
+        result: Ok(fixture("district-timeline-meta.json")),
+    });
+    assert!(!smoke.shown("channel_row"), "one way to reply");
+    assert!(smoke.shown("text_row"));
+    smoke.shot("19f-thread-messenger");
+    smoke.forget();
 }
 
 /// Two matches for a search, as many as the service returns, so older ones
@@ -8139,6 +8434,14 @@ fn viewer_workspace(smoke: &Smoke) {
     });
     assert!(smoke.shown("read_only_label"));
     assert!(!smoke.shown("send_button"));
+    // A viewer sees who owns the thread, and no picker to change it.
+    assert!(
+        !smoke.pending("LoadMembers"),
+        "a viewer gives no thread away"
+    );
+    assert!(smoke.shown("assign_line"));
+    assert!(!smoke.shown("assign_picker"));
+    assert!(smoke.shows_text("Unassigned"));
     smoke.shot("36-thread-viewer");
 
     // No dialler: it is not offered, and cannot be opened.
@@ -9157,7 +9460,7 @@ fn voice_studio_section(smoke: &Smoke) {
     // The brain away from the region: summed, at least, in the read's words,
     // and the residency saying which leg leaves.
     smoke.activate("leg-llm");
-    choose(smoke, &combo(smoke, "location_row", 0), "EU (europe-west4)");
+    choose(smoke, &combo(smoke, "location_row", 0), "EU (europe-west3)");
     assert!(smoke.shows_text("At least 520\u{a0}ms"));
     assert!(smoke.shows_text(&labels.meter_partial));
     assert!(smoke.shows_text(&labels.leaves_region));
@@ -10402,6 +10705,7 @@ fn main() {
     overview_page(&smoke);
     account_and_devices(&smoke);
     inbox_and_thread(&smoke);
+    app_parity(&smoke);
     composing(&smoke);
     calls_screens(&smoke);
     contacts_screens(&smoke);

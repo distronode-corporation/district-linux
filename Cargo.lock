@@ -766,7 +766,7 @@ dependencies = [
 [[package]]
 name = "district-api"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "district-l10n",
  "district-model",
@@ -806,7 +806,7 @@ dependencies = [
 [[package]]
 name = "district-auth"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "base64 0.22.1",
  "district-api",
@@ -825,7 +825,7 @@ dependencies = [
 [[package]]
 name = "district-call"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "district-core",
  "district-model",
@@ -840,7 +840,7 @@ dependencies = [
 [[package]]
 name = "district-core"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "district-api",
  "district-auth",
@@ -857,7 +857,7 @@ dependencies = [
 [[package]]
 name = "district-crash"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "sentry",
  "serde_json",
@@ -885,7 +885,7 @@ dependencies = [
 [[package]]
 name = "district-host"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "district-auth",
  "district-core",
@@ -899,12 +899,12 @@ dependencies = [
 [[package]]
 name = "district-l10n"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 
 [[package]]
 name = "district-live"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "district-api",
  "district-model",
@@ -924,7 +924,7 @@ dependencies = [
 [[package]]
 name = "district-model"
 version = "7.0.1"
-source = "git+https://github.com/distronode-corporation/district-core-rust?tag=v7.0.1#bcc4979de1322aae4a4f6be779f9b2a358a2d3f3"
+source = "git+https://github.com/distronode-corporation/district-core-rust?branch=feat%2Fapp-parity-desktop#11dd175f37bca9bd9b1212427c25bc1649728688"
 dependencies = [
  "serde",
  "serde_json",

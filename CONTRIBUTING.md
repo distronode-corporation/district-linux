@@ -441,7 +441,9 @@ that builds the real window against a scripted stand-in for the effect runner
 and drives it the way a person would: signing in (with the browser's answer
 arriving through the desktop), the overview, the inbox (search, a thread, its
 older messages, the composer with Enter to send, a reply written on request and
-an image picked through the file chooser), the call log and a call's transcript,
+an image picked through the file chooser; Messenger and Instagram threads, each
+thread's owner given and refused, the reply channels, and a closed WhatsApp
+window's template filled and sent), the call log and a call's transcript,
 contacts (adding, editing, research, blocking, deleting, each question) and the
 blocked callers, District HQ (a question, an answer in Markdown and its links, a
 change proposed, dismissed and confirmed), analytics and its charts, the phone

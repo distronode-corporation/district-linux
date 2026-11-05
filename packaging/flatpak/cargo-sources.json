@@ -2,8 +2,8 @@
     {
         "type": "git",
         "url": "https://github.com/distronode-corporation/district-core-rust",
-        "commit": "bcc4979de1322aae4a4f6be779f9b2a358a2d3f3",
-        "dest": "flatpak-cargo/git/district-core-rust-bcc4979"
+        "commit": "11dd175f37bca9bd9b1212427c25bc1649728688",
+        "dest": "flatpak-cargo/git/district-core-rust-11dd175"
     },
     {
         "type": "archive",
@@ -1061,7 +1061,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-api\" \"cargo/vendor/district-api\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-api\" \"cargo/vendor/district-api\""
         ]
     },
     {
@@ -1079,7 +1079,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-auth\" \"cargo/vendor/district-auth\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-auth\" \"cargo/vendor/district-auth\""
         ]
     },
     {
@@ -1097,7 +1097,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-call\" \"cargo/vendor/district-call\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-call\" \"cargo/vendor/district-call\""
         ]
     },
     {
@@ -1115,7 +1115,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-core\" \"cargo/vendor/district-core\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-core\" \"cargo/vendor/district-core\""
         ]
     },
     {
@@ -1133,7 +1133,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-crash\" \"cargo/vendor/district-crash\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-crash\" \"cargo/vendor/district-crash\""
         ]
     },
     {
@@ -1151,7 +1151,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-host\" \"cargo/vendor/district-host\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-host\" \"cargo/vendor/district-host\""
         ]
     },
     {
@@ -1169,7 +1169,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-l10n\" \"cargo/vendor/district-l10n\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-l10n\" \"cargo/vendor/district-l10n\""
         ]
     },
     {
@@ -1187,7 +1187,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-live\" \"cargo/vendor/district-live\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-live\" \"cargo/vendor/district-live\""
         ]
     },
     {
@@ -1205,7 +1205,7 @@
     {
         "type": "shell",
         "commands": [
-            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-bcc4979/crates/district-model\" \"cargo/vendor/district-model\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/district-core-rust-11dd175/crates/district-model\" \"cargo/vendor/district-model\""
         ]
     },
     {
@@ -6409,7 +6409,7 @@
     },
     {
         "type": "inline",
-        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/distronode-corporation/district-core-rust\"]\ngit = \"https://github.com/distronode-corporation/district-core-rust\"\nreplace-with = \"vendored-sources\"\ntag = \"v7.0.1\"\n",
+        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/distronode-corporation/district-core-rust\"]\ngit = \"https://github.com/distronode-corporation/district-core-rust\"\nreplace-with = \"vendored-sources\"\nbranch = \"feat/app-parity-desktop\"\n",
         "dest": "cargo",
         "dest-filename": "config"
     }

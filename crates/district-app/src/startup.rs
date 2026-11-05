@@ -121,6 +121,7 @@ fn launch() -> Result<glib::ExitCode, String> {
         let presence = DesktopPresence::new(
             Arc::new(client().map_err(config_error)?),
             api_config.client.platform,
+            crate::META_CHANNELS,
         );
         // The live updates' credential states its expiry by the service's
         // clock, so it is compared with the service's time as the sign-in has
@@ -168,6 +169,9 @@ fn launch() -> Result<glib::ExitCode, String> {
         // This app does not sign up or buy in the app: billing stays read only,
         // and the core's purchase events and effects never happen here.
         in_app_purchases: false,
+        // Messenger and Instagram threads are listed and answered here, and
+        // the presence above declares it (`META_CHANNELS`).
+        meta_channels: crate::META_CHANNELS,
         locale,
     };
     let app = application(Parts {

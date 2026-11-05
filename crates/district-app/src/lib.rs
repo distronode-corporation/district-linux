@@ -61,6 +61,13 @@ pub use crash::{
 pub use effects::{Effects, RunEffect, RuntimeEffects};
 pub use startup::run;
 
+/// Whether District AI for Linux lists and answers Messenger and Instagram
+/// threads (app parity 1 and 2): the core's `CoreConfig::meta_channels`, and
+/// what the presence declares when it registers this desktop
+/// (`capabilities: ["metaChannels"]`), so the service sends those messages to
+/// it too. One decision: both read this.
+pub const META_CHANNELS: bool = true;
+
 /// The app's exit status.
 pub use gtk::glib::ExitCode;
 
@@ -86,6 +93,7 @@ pub(crate) mod testing {
             app_version: "0.1.0".to_owned(),
             calls_available: false,
             in_app_purchases: false,
+            meta_channels: crate::META_CHANNELS,
             locale: district_core::Locale::En,
         }
     }
