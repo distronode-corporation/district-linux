@@ -751,6 +751,7 @@ fn start() -> Store {
             // plays the call engine.
             calls_available: true,
             in_app_purchases: false,
+            meta_channels: district_app::META_CHANNELS,
             locale: district_core::Locale::En,
         },
         device_name: "Linux".to_owned(),
