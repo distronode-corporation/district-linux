@@ -38,10 +38,8 @@ templates once the customer-service window has closed.
 
 ### Changed
 
-- The core is pinned to district-core-rust's `feat/app-parity-desktop` branch
-  (district-core-rust#65, version 7.0.1) until it is released, as 8.0.0. Until then
-  `scripts/check-pins.py` and the Flatpak's cargo sources name a branch, not a tag; the
-  pin moves to the release's tag before this is merged.
+- The core is district-core-rust 8.0.0 (up from 7.0.1), the release that carries the
+  reply channels, Messenger and Instagram, thread owners and WhatsApp templates.
 
 ## [3.2.0] - 2026-10-27
 
