@@ -59,6 +59,11 @@ impl Echo {
         value != shown
     }
 
+    /// Whether every text the field sent has come back from the model.
+    pub(crate) fn settled(&self) -> bool {
+        self.pending.is_empty()
+    }
+
     /// Starts again, for a field that now shows something else (another
     /// thread, a form opened afresh).
     pub(crate) fn reset(&mut self) {

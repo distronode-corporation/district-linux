@@ -174,9 +174,21 @@ row.unread .conversation-title {
   color: @warning_color;
 }
 
-/* The dialler. */
-.dial-display {
+/* The dialler: the number in its box, and the line naming the country it
+   rings, which keeps its height so the keypad does not move under the first
+   key pressed. */
+.dial-entry {
+  font-size: 15pt;
   min-height: 42px;
+}
+
+.dial-destination {
+  min-height: 24px;
+  font-weight: 600;
+}
+
+.country-row-code {
+  font-feature-settings: "tnum";
 }
 
 .keypad-key {
