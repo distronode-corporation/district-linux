@@ -121,6 +121,10 @@ pub(crate) struct Shown<'a> {
     /// The call's lines heard so far, speaker and words, while in its room;
     /// `None` out of it.
     pub(crate) lines: Option<Vec<(&'a str, &'a str)>>,
+    /// What stands in for the lines before anyone has spoken: "while you
+    /// listen" only while listening; on the call, the transcript's own
+    /// neutral line.
+    pub(crate) waiting: &'static str,
     /// The note to the receptionist, while the call is in progress.
     pub(crate) whisper: Option<WhisperShown<'a>>,
     /// Whether the takeover question is on screen.
@@ -213,6 +217,11 @@ pub(crate) fn shown(signed_in: &SignedIn) -> Option<Shown<'_>> {
                 .map(|line| (Supervision::speaker_label(line), line.text.as_str()))
                 .collect()
         }),
+        waiting: if on_call {
+            core_text::transcript_waiting(lang())
+        } else {
+            core_text::supervise_transcript_waiting(lang())
+        },
         whisper: controls.live.then(|| WhisperShown {
             placeholder: signed_in.whisper_placeholder(),
             editable: controls.can_supervise && receptionist && !on_call,
@@ -223,8 +232,11 @@ pub(crate) fn shown(signed_in: &SignedIn) -> Option<Shown<'_>> {
             },
             sending: whisper.is_sending(),
             failure: whisper.failure.as_ref().map(failure_text),
+            // On the call there is no note to send: what became of the last
+            // one is put away with the field, as iOS and the Mac do.
             outcome: whisper
                 .outcome_line()
+                .filter(|_| !on_call)
                 .zip(whisper.outcome.as_ref())
                 .map(|(line, outcome)| (line, outcome.first_words.as_str())),
         }),
@@ -410,7 +422,9 @@ impl SuperviseCard {
         whisper_row.append(&whisper);
         whisper_row.append(&whisper_spinner);
         whisper_row.append(&whisper_send);
-        // Why no note can be sent, in full: as a placeholder it was cut off.
+        // The example, or why no note can be sent, as a line that wraps: as
+        // the field's placeholder it was cut off, the French example most
+        // of all, whatever room the field had.
         let whisper_reason = plain_label("", &["dim-label"]);
         whisper_reason.set_widget_name("supervise_whisper_reason");
         let whisper_failure = plain_label("", &["error"]);
@@ -425,8 +439,8 @@ impl SuperviseCard {
             .name("supervise_whisper_box")
             .build();
         whisper_box.append(&whisper_title);
-        whisper_box.append(&whisper_row);
         whisper_box.append(&whisper_reason);
+        whisper_box.append(&whisper_row);
         whisper_box.append(&whisper_failure);
         whisper_box.append(&whisper_outcome);
         whisper_box.append(&whisper_words);
@@ -537,6 +551,7 @@ impl SuperviseCard {
             button.set_sensitive(control.works);
         }
         self.draw_microphone(shown.microphone);
+        self.waiting.set_label(shown.waiting);
         self.draw_lines(shown.lines.as_deref());
         self.draw_whisper(signed_in, shown.whisper.as_ref());
         self.ask(view, shown.confirming);
@@ -615,13 +630,11 @@ impl SuperviseCard {
             self.drawn_call.replace(call);
         }
         self.whisper_echo.draw_text(&self.whisper, whisper.draft);
-        self.whisper.set_placeholder_text(Some(whisper.placeholder));
+        self.whisper
+            .update_property(&[gtk::accessible::Property::Description(whisper.placeholder)]);
         self.whisper.set_sensitive(whisper.editable);
         self.whisper_row.set_visible(whisper.editable);
-        draw_line(
-            &self.whisper_reason,
-            (!whisper.editable).then_some(whisper.placeholder),
-        );
+        draw_line(&self.whisper_reason, Some(whisper.placeholder));
         self.whisper_send.set_sensitive(whisper.send.works);
         draw_spinner(&self.whisper_spinner, whisper.sending);
         draw_line(&self.whisper_failure, whisper.failure.as_deref());
@@ -869,6 +882,70 @@ mod tests {
         assert!(unavailable.hand_back.shown && unavailable.hand_back.works);
         let whisper = unavailable.whisper.expect("the note field");
         assert!(!whisper.editable, "no note while on the call");
+        assert_eq!(
+            whisper.placeholder,
+            "Hand the call back to your receptionist to send a note"
+        );
+    }
+
+    /// Listening, a note's receipt in, then taken over: on the call, the
+    /// room joined with the microphone.
+    fn on_the_call_with_a_receipt() -> Model {
+        let (mut model, _) = listening();
+        let mut envelope: TelemetryEnvelope = fixture("telemetry-event-whisper-applied.json");
+        envelope.workspace_id = "ws-contract-active".to_owned();
+        envelope.call_id = LIVE.to_owned();
+        model.update(Event::Live(WorkspaceUpdate {
+            workspace_id: "ws-contract-active".to_owned(),
+            update: LiveUpdate::Event(envelope),
+        }));
+        model.update(Event::Supervise(SuperviseEvent::TakeOver));
+        let effects = model.update(Event::Supervise(SuperviseEvent::ConfirmTakeOver));
+        let ticket = ticket_of(&effects, "RequestCallTakeover");
+        let grant: CallTakeoverResponse = fixture("district-call-takeover.json");
+        let effects = model.update(Event::CallTakeoverIssued {
+            ticket,
+            result: Ok(grant),
+        });
+        let session = ticket_of(&effects, "ConnectMedia");
+        model.update(media(session, MediaEvent::Connected));
+        model
+    }
+
+    #[test]
+    fn on_the_call_the_lines_wait_neutrally_not_for_listening() {
+        let (model, _) = listening();
+        assert_eq!(
+            card(&model).waiting,
+            "What is said shows up here while you listen."
+        );
+        let model = on_the_call_with_a_receipt();
+        let on = card(&model);
+        assert_eq!(on.lines, Some(Vec::new()), "the lines, as when listening");
+        assert_eq!(on.waiting, "Nothing has been said yet.");
+        district_core::l10n::with_locale(crate::l10n::Locale::FrCa, || {
+            assert_eq!(card(&model).waiting, "Rien n'a encore été dit.");
+        });
+    }
+
+    #[test]
+    fn on_the_call_the_last_notes_receipt_is_put_away() {
+        let (mut model, _) = listening();
+        let mut envelope: TelemetryEnvelope = fixture("telemetry-event-whisper-applied.json");
+        envelope.workspace_id = "ws-contract-active".to_owned();
+        envelope.call_id = LIVE.to_owned();
+        model.update(Event::Live(WorkspaceUpdate {
+            workspace_id: "ws-contract-active".to_owned(),
+            update: LiveUpdate::Event(envelope),
+        }));
+        assert!(
+            card(&model).whisper.unwrap().outcome.is_some(),
+            "listening, it shows"
+        );
+        let model = on_the_call_with_a_receipt();
+        let whisper = card(&model).whisper.expect("the note's place");
+        assert_eq!(whisper.outcome, None, "on the call, only the hint");
+        assert!(!whisper.editable);
         assert_eq!(
             whisper.placeholder,
             "Hand the call back to your receptionist to send a note"
