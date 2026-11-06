@@ -24,7 +24,7 @@ backported.
 
 | Version | Supported |
 | --- | --- |
-| 3.2.x (the current release, [3.2.0](https://github.com/distronode-corporation/district-linux/releases/latest)) | Yes |
+| 3.3.x (the current release, [3.3.0](https://github.com/distronode-corporation/district-linux/releases/latest)) | Yes |
 | Anything older | No |
 
 ## Security model

@@ -780,7 +780,7 @@ dependencies = [
 
 [[package]]
 name = "district-app"
-version = "3.2.0"
+version = "3.3.0"
 dependencies = [
  "ashpd",
  "async-channel",
@@ -866,7 +866,7 @@ dependencies = [
 
 [[package]]
 name = "district-desktop"
-version = "3.2.0"
+version = "3.3.0"
 dependencies = [
  "district-auth",
  "district-core",
