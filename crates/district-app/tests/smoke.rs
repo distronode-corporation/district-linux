@@ -1550,17 +1550,159 @@ fn app_parity(smoke: &Smoke) {
     });
     smoke.forget();
 
+    meta_window(smoke);
+}
+
+/// Whether Send and "Draft reply" work, in that order.
+fn send_and_draft(smoke: &Smoke) -> (bool, bool) {
+    (
+        smoke.mapped("send_button").is_sensitive(),
+        smoke.mapped("draft_button").is_sensitive(),
+    )
+}
+
+/// The Messenger and Instagram reply window, as the web Inbox shows it. Read
+/// as the thread opens, for the customer; while it is read nothing is
+/// blocked. Open, nothing is said. In the human agent window a badge says so,
+/// a person may send and the model may not write the reply. Closed, a warning
+/// over the box, which stays, and neither Send nor the model's reply works. A
+/// read answered after its thread was left paints nothing on the next one,
+/// and a reply refused because the window closed closes it.
+fn meta_window(smoke: &Smoke) {
     // A Messenger thread: one way to reply, so no chooser, and the channel
     // under its title.
     smoke.activate_nth("conversation-row", 2);
     let timeline = smoke.ticket("LoadTimeline");
+    let read = smoke.take("LoadMetaWindow");
+    let asked = format!("{read:?}");
+    assert!(asked.contains(AGENCY), "{asked}");
+    assert!(asked.contains("\"messenger\""), "{asked}");
+    assert!(asked.contains("fb:5550101"), "{asked}");
     smoke.answer(Event::TimelineLoaded {
         ticket: timeline,
         result: Ok(fixture("district-timeline-meta.json")),
     });
     assert!(!smoke.shown("channel_row"), "one way to reply");
     assert!(smoke.shown("text_row"));
+    smoke.text_view("text").set_text("Thanks, we are on it.");
+    smoke.pump();
+    assert!(!smoke.shown("meta_badge"));
+    assert!(!smoke.shown("window_closed_label"));
+    assert_eq!(
+        send_and_draft(smoke),
+        (true, true),
+        "being read, nothing waits"
+    );
+
+    smoke.answer(Event::MetaWindowLoaded {
+        ticket: ticket(&read),
+        result: Ok(fixture("district-meta-window.json")),
+    });
+    assert!(!smoke.shown("meta_badge"), "open: nothing to say");
+    assert!(!smoke.shown("window_closed_label"));
+    assert_eq!(send_and_draft(smoke), (true, true));
     smoke.shot("19f-thread-messenger");
+    smoke.forget();
+
+    // The Instagram thread, left while its window is still being read for
+    // the Messenger thread again: the Instagram read, answered late and
+    // closed, lands nowhere.
+    smoke.activate_nth("conversation-row", 3);
+    let stale = smoke.take("LoadMetaWindow");
+    let asked = format!("{stale:?}");
+    assert!(asked.contains("\"instagram\""), "{asked}");
+    assert!(asked.contains("ig:5550102"), "{asked}");
+    smoke.forget();
+    smoke.activate_nth("conversation-row", 2);
+    let timeline = smoke.ticket("LoadTimeline");
+    let read = smoke.take("LoadMetaWindow");
+    smoke.answer(Event::TimelineLoaded {
+        ticket: timeline,
+        result: Ok(fixture("district-timeline-meta.json")),
+    });
+    smoke.text_view("text").set_text("Thanks, we are on it.");
+    smoke.pump();
+    smoke.answer(Event::MetaWindowLoaded {
+        ticket: ticket(&stale),
+        result: Ok(fixture("district-meta-window-closed.json")),
+    });
+    assert!(
+        !smoke.shown("window_closed_label"),
+        "another thread's window is not this one's"
+    );
+    assert_eq!(send_and_draft(smoke), (true, true));
+
+    // The human agent window: a person may reply, the model may not.
+    smoke.answer(Event::MetaWindowLoaded {
+        ticket: ticket(&read),
+        result: Ok(fixture("district-meta-window-human-agent.json")),
+    });
+    assert!(smoke.shown("meta_badge"));
+    assert_eq!(
+        smoke.label("meta_badge"),
+        "Human agent reply (7-day window)"
+    );
+    assert!(!smoke.shown("window_closed_label"));
+    assert!(smoke.shown("draft_row"));
+    assert_eq!(send_and_draft(smoke), (true, false));
+    smoke.shot("19g-thread-messenger-human-agent");
+
+    // Sent, and refused: the window closed meanwhile. It is closed here too.
+    smoke.forget();
+    smoke.click("send_button");
+    let send = smoke.take("SendMessage");
+    smoke.answer(Event::MessageSent {
+        ticket: ticket(&send),
+        result: Err(ApiError::Envelope {
+            status: 409,
+            code: "messenger_window_closed".to_owned(),
+            detail: ErrorDetail {
+                message: Some(
+                    "The Messenger or Instagram reply window with this contact is closed."
+                        .to_owned(),
+                ),
+                code: Some("messenger_window_closed".to_owned()),
+                ..ErrorDetail::default()
+            },
+        }),
+    });
+    assert!(smoke.shown("window_closed_label"));
+    assert!(!smoke.shown("meta_badge"));
+    assert!(!send_and_draft(smoke).0);
+    assert!(smoke.shown("failure_box"), "the refusal, said");
+    smoke.click("failure_dismiss");
+    smoke.forget();
+
+    // The Instagram thread, closed as read: the warning over the box, which
+    // stays with what was typed, and nothing can go.
+    smoke.activate_nth("conversation-row", 3);
+    let timeline = smoke.ticket("LoadTimeline");
+    let read = smoke.take("LoadMetaWindow");
+    smoke.answer(Event::TimelineLoaded {
+        ticket: timeline,
+        result: Ok(fixture("district-timeline-meta.json")),
+    });
+    smoke.text_view("text").set_text("Thanks, we are on it.");
+    smoke.pump();
+    smoke.answer(Event::MetaWindowLoaded {
+        ticket: ticket(&read),
+        result: Ok(fixture("district-meta-window-closed.json")),
+    });
+    assert!(smoke.shown("window_closed_label"));
+    assert!(smoke.shows_text(
+        "Reply window closed: Messenger and Instagram allow a reply only within 24 hours of \
+         the customer's last message (7 days for a human agent reply, when it is turned on). \
+         You can reply once they write again."
+    ));
+    assert!(!smoke.shown("meta_badge"));
+    assert!(smoke.shown("text_row"), "the box stays, as on the web");
+    assert!(!smoke.shown("template_box"), "no templates on Instagram");
+    assert_eq!(smoke.buffer_text("text"), "Thanks, we are on it.");
+    assert_eq!(send_and_draft(smoke), (false, false));
+    smoke.forget();
+    assert!(smoke.press("text", gdk::Key::Return, gdk::ModifierType::empty()));
+    assert!(!smoke.pending("SendMessage"), "Enter sends nothing either");
+    smoke.shot("19h-thread-instagram-closed");
     smoke.forget();
 }
 
@@ -3318,6 +3460,10 @@ fn hq_voice(smoke: &Smoke) {
             identity: "agent-hq".to_owned(),
         },
     );
+    // Not at once: a connection being rebuilt reports the agent as gone too,
+    // so the core waits out its grace window first (core 9.0.0).
+    assert!(!smoke.pending("DisconnectMedia"));
+    smoke.wait_over(district_core::EMPTY_ROOM_GRACE);
     assert!(smoke.pending("DisconnectMedia"));
     assert!(smoke.shows_text("Voice session ended because District HQ left the session."));
     assert!(smoke.shown("voice_card") && smoke.shown("voice_start"));
@@ -8503,6 +8649,21 @@ fn sleeping(smoke: &Smoke) {
 /// Another workspace, where the member is a viewer: read only, and the help
 /// desk and support are not offered.
 fn viewer_workspace(smoke: &Smoke) {
+    // A Messenger thread whose window is still being read as the workspace
+    // changes: the answer, closed, lands later on nothing.
+    smoke.activate("sidebar-calls");
+    smoke.forget();
+    smoke.activate("sidebar-inbox");
+    let tk = smoke.ticket("LoadConversations");
+    smoke.answer(Event::ConversationsLoaded {
+        ticket: tk,
+        result: Ok(parity_conversations()),
+    });
+    smoke.activate_nth("conversation-row", 2);
+    let read = smoke.take("LoadMetaWindow");
+    assert!(format!("{read:?}").contains(AGENCY));
+    let stale = ticket(&read);
+
     smoke.activate("sidebar-overview");
     smoke.script.pending.borrow_mut().clear();
     let dropdown = smoke
@@ -8579,6 +8740,18 @@ fn viewer_workspace(smoke: &Smoke) {
     assert!(smoke.shown("assign_line"));
     assert!(!smoke.shown("assign_picker"));
     assert!(smoke.shows_text("Unassigned"));
+    // The other workspace's window read, answered now, paints nothing here.
+    smoke.answer(Event::MetaWindowLoaded {
+        ticket: stale,
+        result: Ok(fixture("district-meta-window-closed.json")),
+    });
+    let closed = smoke
+        .find("window_closed_label")
+        .downcast::<gtk::Label>()
+        .expect("a label");
+    assert!(!closed.is_visible(), "{}", closed.label());
+    assert!(!smoke.find("meta_badge").is_visible());
+    assert!(smoke.shown("read_only_label"));
     smoke.shot("36-thread-viewer");
 
     // No dialler: it is not offered, and cannot be opened.
