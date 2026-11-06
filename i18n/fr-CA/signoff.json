@@ -1,11 +1,11 @@
 {
-  "signed_off_by": "PROVISIONAL, prepared 2026-11-06 for v3.3.0 and to be renewed before the tag. Signed off by Sean on 2026-11-06 and applied: the six 3.3.0 release-note entries in linux.toml (metainfo.release_3_3_0.p, li1 to li5), as written. scheduling.toml is as signed off for v3.2.0; the inbox parity and dialler strings the app shows are district-core-rust's own reviewed catalog. Open: the live supervise change (one new linux.toml key, calls_page.live_calls, with the web's reviewed French), the reply-window change and the core 9.0.0 repin. Renewed once those merge, with `commit` on the main commit the catalogs are read at (this one is the release branch's review commit).",
+  "signed_off_by": "Sean Dean, 2026-11-06",
   "release": "v3.3.0",
-  "commit": "744e63cbf03c27f8417159715ff882ef81262f46",
+  "commit": "917197df2888d389434e88d6469d0a824dd4aa3a",
   "catalogs": [
     {
       "path": "crates/district-app/l10n/linux.toml",
-      "sha256": "ffbe21e9f5f54acf56a6469dbf892da32ee89baeab1fa058eafdf593767c6494"
+      "sha256": "336b8ff1b76b6547246ea9b3f9b977f09feb09d5c7239a63f73fe34da9f4411f"
     },
     {
       "path": "crates/district-app/l10n/scheduling.toml",
