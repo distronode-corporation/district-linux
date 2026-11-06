@@ -6,7 +6,7 @@ use std::cell::{OnceCell, RefCell};
 
 use district_core::l10n::WireCategory;
 use district_core::{
-    CallDetailScreen, CallView as CallRead, Capabilities, Event, ReportTarget, TranscriptView,
+    CallDetailScreen, CallView as CallRead, Event, ReportTarget, SignedIn, TranscriptView,
     call_duration_label,
 };
 use district_model::{CallAnalysis, CallSummary, PhoneIntel};
@@ -21,6 +21,7 @@ use crate::pages::shared::{
     add_value_row, clear_group, draw_line, failure_text, long_time, now, placeholder_text,
     wire_text,
 };
+use crate::pages::supervise::SuperviseCard;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -173,6 +174,8 @@ mod imp {
         #[template_child]
         pub refresh_failure: TemplateChild<gtk::Label>,
         #[template_child]
+        pub supervise_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
         pub summary_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
         pub summary: TemplateChild<gtk::Label>,
@@ -193,6 +196,8 @@ mod imp {
         #[template_child]
         pub transcript_note: TemplateChild<gtk::Label>,
         pub sink: OnceCell<EventSink>,
+        /// Listening in, the note and taking over, while the call is live.
+        pub supervise: OnceCell<SuperviseCard>,
         /// The call the rows were last built from.
         pub drawn: RefCell<Option<CallSummary>>,
         /// What the Report button reports, and how it is offered.
@@ -221,6 +226,8 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             on_click(&self.retry_button, &*self.obj(), || Event::Refresh);
+            let card = SuperviseCard::new(&self.obj(), self.supervise_group.get());
+            self.supervise.set(card).ok();
             let view = self.obj().downgrade();
             self.report_button.connect_clicked(move |button| {
                 let Some(view) = view.upgrade() else {
@@ -257,9 +264,20 @@ impl CallView {
         self.imp().sink.set(sink).ok();
     }
 
-    /// Draws `screen` for a member with `capabilities`.
-    pub(crate) fn update(&self, screen: &CallDetailScreen, capabilities: &Capabilities) {
+    /// The call's screen was left: nothing of it stays over the window.
+    pub(crate) fn leave(&self) {
+        if let Some(card) = self.imp().supervise.get() {
+            card.leave();
+        }
+    }
+
+    /// Draws `screen`, the call open in `signed_in`.
+    pub(crate) fn update(&self, screen: &CallDetailScreen, signed_in: &SignedIn) {
         let imp = self.imp();
+        let capabilities = &signed_in.capabilities();
+        if let Some(card) = imp.supervise.get() {
+            card.update(self, signed_in);
+        }
         imp.loading_spinner
             .set_spinning(screen.call == CallRead::Loading);
         match &screen.call {

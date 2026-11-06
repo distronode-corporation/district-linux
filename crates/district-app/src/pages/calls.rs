@@ -1,6 +1,12 @@
 //! The call log beside the open call. The next page is read as the list nears
 //! its end; in a narrow window one pane shows at a time. "Place a call" opens
 //! the dialler, for a role the core lets dial, in a build that can.
+//!
+//! Above the log, the Live calls list holds the calls in progress, as the
+//! web dashboard's Live calls page does. Each opens to the call's screen,
+//! where it can be listened to, sent a note and taken over. It is read from
+//! the log as the core last read it, which a call starting, changing or
+//! ending reads again; nothing is asked of the service for it.
 
 use std::borrow::Cow;
 use std::cell::{Cell, OnceCell};
@@ -41,6 +47,18 @@ pub(crate) fn call_title(call: &CallSummary) -> String {
         Some(label) => label.to_owned(),
         None => format_phone_number(&call.number),
     }
+}
+
+/// The status of a call under way, as the service names it.
+const IN_PROGRESS: &str = "in-progress";
+
+/// The calls of `calls` in progress, in the log's order: the Live calls list.
+pub(crate) fn live_calls(calls: &[CallSummary]) -> Vec<CallSummary> {
+    calls
+        .iter()
+        .filter(|call| call.status == IN_PROGRESS)
+        .cloned()
+        .collect()
 }
 
 /// What the list pane shows.
@@ -147,6 +165,10 @@ mod imp {
         #[template_child]
         pub list_scroller: TemplateChild<gtk::ScrolledWindow>,
         #[template_child]
+        pub live_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub live_list: TemplateChild<gtk::ListBox>,
+        #[template_child]
         pub refresh_failure: TemplateChild<gtk::Label>,
         #[template_child]
         pub call_list: TemplateChild<gtk::ListBox>,
@@ -163,6 +185,8 @@ mod imp {
         pub sink: OnceCell<EventSink>,
         /// The calls the list was last built from, and each row's call id.
         pub rows: PagedRows<CallSummary>,
+        /// The same for the Live calls list.
+        pub live_rows: PagedRows<CallSummary>,
         pub end: OnceCell<EndWatch>,
         /// Whether a call is open, as last drawn.
         pub open: Cell<bool>,
@@ -208,6 +232,14 @@ mod imp {
                     page.send(Event::Navigate(Route::CallDetail { call_id }));
                 }
             });
+            let weak = page.downgrade();
+            self.live_list.connect_row_activated(move |_, row| {
+                if let Some(page) = weak.upgrade()
+                    && let Some(call_id) = page.imp().live_rows.ids().key_of(row)
+                {
+                    page.send(Event::Navigate(Route::CallDetail { call_id }));
+                }
+            });
             back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }
     }
@@ -234,6 +266,11 @@ impl CallsPage {
     pub(crate) fn set_sink(&self, sink: EventSink) {
         self.imp().call_view.set_sink(sink.clone());
         self.imp().sink.set(sink).ok();
+    }
+
+    /// The page was left: the open call's question goes with it.
+    pub(crate) fn leave(&self) {
+        self.imp().call_view.leave();
     }
 
     /// The list and call panes.
@@ -265,13 +302,17 @@ impl CallsPage {
         let open = signed_in.call.as_ref();
         let selected = open.map(|screen| &screen.call_id);
         imp.rows.ids().select(&imp.call_list, selected);
+        imp.live_rows.ids().select(&imp.live_list, selected);
         imp.open.set(open.is_some());
         match open {
             Some(screen) => {
                 imp.detail_stack.set_visible_child_name("call");
-                imp.call_view.update(screen, &signed_in.capabilities());
+                imp.call_view.update(screen, signed_in);
             }
-            None => imp.detail_stack.set_visible_child_name("none"),
+            None => {
+                imp.detail_stack.set_visible_child_name("none");
+                imp.call_view.leave();
+            }
         }
         imp.split_view.set_show_content(open.is_some());
         if let Some(end) = imp.end.get() {
@@ -291,6 +332,13 @@ impl CallsPage {
         let now = now();
         imp.rows.draw(&imp.call_list, &rows.calls, |call| {
             (call_row(call, now.as_ref()).upcast(), call.id.clone())
+        });
+        let live = live_calls(&rows.calls);
+        imp.live_box.set_visible(!live.is_empty());
+        imp.live_rows.draw(&imp.live_list, &live, |call| {
+            let row = call_row(call, now.as_ref());
+            row.set_widget_name("live-call-row");
+            (row.upcast(), call.id.clone())
         });
         more
     }
@@ -322,6 +370,17 @@ mod tests {
             assert_eq!(call_title(&unknown), "Inconnu");
             assert_eq!(call_title(&calls[0]), "Contract Test Caller");
         });
+    }
+
+    #[test]
+    fn the_live_list_holds_the_calls_in_progress_in_the_logs_order() {
+        let mut calls: Vec<CallSummary> = fixture("district-calls.json");
+        assert_eq!(live_calls(&calls), Vec::new(), "every one has ended");
+        calls[1].status = "in-progress".to_owned();
+        calls[3].status = "in-progress".to_owned();
+        calls[4].status = "ringing".to_owned();
+        let live: Vec<String> = live_calls(&calls).into_iter().map(|call| call.id).collect();
+        assert_eq!(live, [calls[1].id.clone(), calls[3].id.clone()]);
     }
 
     #[test]

@@ -10830,9 +10830,773 @@ fn client_members(smoke: &Smoke) {
     smoke.forget();
 }
 
+/// Two calls in progress, the receptionist on each.
+const LIVE_CALL: &str = "call-live-1";
+const LIVE_CALL_2: &str = "call-live-2";
+
+/// The call `id` as the service reads it, with `status`, its receptionist on
+/// it.
+fn live_call(id: &str, status: &str) -> CallSummary {
+    let detail: CallDetailResponse = fixture("district-call-detail.json");
+    CallSummary {
+        id: id.to_owned(),
+        status: status.to_owned(),
+        ..detail.call.expect("a call in the fixture")
+    }
+}
+
+/// The log with the two calls in progress first.
+fn live_log() -> Vec<CallSummary> {
+    let mut log = vec![
+        live_call(LIVE_CALL, "in-progress"),
+        live_call(LIVE_CALL_2, "in-progress"),
+    ];
+    log.extend(fixture::<Vec<CallSummary>>("district-calls.json"));
+    log
+}
+
+/// A live update of `event_type` for the call `call_id` in `workspace_id`.
+fn call_event(workspace_id: &str, call_id: &str, event_type: &str) -> Event {
+    let envelope: TelemetryEnvelope = from_json(serde_json::json!({
+        "workspaceId": workspace_id,
+        "callId": call_id,
+        "eventType": event_type,
+        "data": {},
+        "timestamp": "2026-11-06T10:00:00.000Z",
+    }));
+    Event::Live(WorkspaceUpdate {
+        workspace_id: workspace_id.to_owned(),
+        update: LiveUpdate::Event(envelope),
+    })
+}
+
+/// Signed in to the agency workspace, on the call log with two calls in
+/// progress.
+fn on_live_calls(smoke: &Smoke) {
+    if let Some(question) = smoke.top_question() {
+        question.close();
+        smoke.pump();
+    }
+    smoke.reply("RestoreSession", |ticket| Event::SessionRestored {
+        ticket,
+        result: Ok(claims()),
+    });
+    smoke.reply("ReadRingSetting", |ticket| Event::RingSettingRead {
+        ticket,
+        ring_here: false,
+    });
+    let list: WorkspaceListResponse = fixture("district-workspace-list.json");
+    smoke.reply("LoadWorkspaces", |ticket| Event::WorkspacesLoaded {
+        ticket,
+        remembered: Some(AGENCY.to_owned()),
+        result: Ok(list),
+    });
+    smoke.forget();
+    smoke.activate("sidebar-calls");
+    smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+        ticket,
+        result: Ok(live_log()),
+    });
+    smoke.forget();
+}
+
+/// Answers the read of the call just opened: `id`, read as `status`.
+fn read_call(smoke: &Smoke, id: &str, status: &str) {
+    smoke.reply("LoadCall {", |ticket| Event::CallLoaded {
+        ticket,
+        result: Ok(CallDetailResponse {
+            success: true,
+            call: Some(live_call(id, status)),
+        }),
+    });
+    if smoke.pending("LoadTranscript") {
+        smoke.reply("LoadTranscript", |ticket| Event::TranscriptLoaded {
+            ticket,
+            result: Ok(CallTranscriptResponse {
+                success: true,
+                transcript: String::new(),
+            }),
+        });
+    }
+}
+
+/// Opens the call `id`, in progress, as a click on its row does.
+fn open_live_call(smoke: &Smoke, id: &str) {
+    smoke.answer(Event::Navigate(Route::CallDetail {
+        call_id: id.to_owned(),
+    }));
+    read_call(smoke, id, "in-progress");
+    assert!(smoke.shown("supervise_listen"), "{id} offers Listen");
+}
+
+/// Listens in: the credential asked for and answered, the room joined. Says
+/// "You are listening" only once the engine reports the room joined.
+fn listen(smoke: &Smoke) -> Ticket {
+    smoke.click("supervise_listen");
+    let ticket = smoke.ticket("RequestCallMonitor");
+    assert!(smoke.shows_text("Connecting you to the call."));
+    assert!(smoke.shown("supervise_stop_listening") && !smoke.shown("supervise_listen"));
+    smoke.answer(Event::CallMonitorIssued {
+        ticket,
+        result: Ok(fixture("district-call-monitor-token.json")),
+    });
+    let Effect::ConnectMedia {
+        session,
+        microphone,
+        ..
+    } = smoke.take("ConnectMedia")
+    else {
+        unreachable!()
+    };
+    assert!(!microphone, "a listener never opens the microphone");
+    assert!(
+        !smoke.shows_text("You are listening"),
+        "not before the room is joined"
+    );
+    smoke.media(session, MediaEvent::Connected);
+    assert!(smoke.shows_text("You are listening"));
+    session
+}
+
+/// Asks to take the call over and confirms, as a person does: the question
+/// first, nothing asked for until it is answered. The request's ticket.
+fn confirm_take_over(smoke: &Smoke) -> Ticket {
+    smoke.click("supervise_take_over");
+    assert!(
+        !smoke.pending("RequestCallTakeover"),
+        "nothing before the question is answered"
+    );
+    assert!(smoke.top_question().is_some(), "the question is asked");
+    smoke.respond("confirm");
+    assert!(smoke.top_question().is_none(), "and goes once answered");
+    smoke.ticket("RequestCallTakeover")
+}
+
+/// Whether a session is pending to be joined with the microphone, or at all.
+fn joins(smoke: &Smoke) -> bool {
+    smoke.pending("ConnectMedia")
+}
+
+/// The session the pending `DisconnectMedia` leaves, taken off the list.
+fn left(smoke: &Smoke) -> Ticket {
+    let Effect::DisconnectMedia { session } = smoke.take("DisconnectMedia") else {
+        unreachable!()
+    };
+    session
+}
+
+/// The button named `name`'s icon.
+fn icon_of(smoke: &Smoke, name: &str) -> String {
+    smoke
+        .mapped(name)
+        .downcast::<gtk::Button>()
+        .expect("a button")
+        .icon_name()
+        .map(|icon| icon.to_string())
+        .unwrap_or_default()
+}
+
+/// Closes the window, as its close button does, and opens it again from
+/// the launcher once `meanwhile` has run with no window.
+fn with_window_closed(smoke: &Smoke, meanwhile: impl FnOnce()) {
+    smoke.window().close();
+    smoke.pump();
+    assert!(smoke.app.active_window().is_none(), "the window is gone");
+    meanwhile();
+    smoke.app.activate();
+    smoke.pump();
+    assert!(smoke.shown("sidebar-calls"), "a window again");
+}
+
+/// The Live calls list, a card, listening, a note, a takeover with the
+/// microphone as the engine reports it, a hand back, and a 400 px window.
+fn supervise_card(smoke: &Smoke) {
+    assert!(smoke.shown("live_box") && smoke.shows_text("Live calls"));
+    assert_eq!(smoke.count("live-call-row"), 2, "the calls in progress");
+    assert_eq!(smoke.count("call-row"), 7, "and the whole log below");
+    smoke.shot("supervise-01-live-calls");
+    smoke.activate_nth("live-call-row", 0);
+    read_call(smoke, LIVE_CALL, "in-progress");
+    assert!(smoke.shown("supervise_listen") && smoke.shown("supervise_take_over"));
+    assert!(!smoke.shown("supervise_hand_back") && !smoke.shown("supervise_microphone"));
+    assert!(smoke.shows_text("Hear the call as it happens. The caller does not hear you."));
+    smoke.shot("supervise-02-card");
+
+    let listener = listen(smoke);
+    assert!(smoke.shows_text("What is said shows up here while you listen."));
+    let said = |role: &str, speaker: &str, text: &str| MediaEvent::AgentData {
+        topic: String::new(),
+        payload: serde_json::to_vec(&serde_json::json!({
+            "type": "TRANSCRIPT_CHUNK",
+            "role": role,
+            "speaker": speaker,
+            "text": text,
+        }))
+        .expect("a packet"),
+    };
+    smoke.media(
+        listener,
+        said("user", "Caller", "I would like to move my appointment."),
+    );
+    smoke.media(
+        listener,
+        said("assistant", "Ava", "Of course. Which day suits you?"),
+    );
+    assert_eq!(smoke.count("supervise-line"), 2);
+    assert!(smoke.shows_text("Of course. Which day suits you?"));
+    assert!(smoke.shows_text("I would like to move my appointment.") && smoke.shows_text("Ava"));
+    // A connection being resumed is not listening, and says so.
+    smoke.media(listener, MediaEvent::Reconnecting);
+    assert!(!smoke.shows_text("You are listening"));
+    assert!(smoke.shows_text(MediaSession::RECONNECTING));
+    smoke.media(listener, MediaEvent::Connected);
+    assert!(smoke.shows_text("You are listening"));
+    smoke.shot("supervise-03-listening");
+
+    // A note: sent once, the field cleared when it is delivered, and what
+    // the receptionist did with it.
+    smoke.type_into("supervise_whisper", "Offer Thursday morning");
+    smoke.click("supervise_whisper_send");
+    let Effect::SendCallWhisper { ticket, text, .. } = smoke.take("SendCallWhisper") else {
+        unreachable!()
+    };
+    assert_eq!(text, "Offer Thursday morning");
+    assert!(!smoke.sensitive("supervise_whisper_send"), "one at a time");
+    smoke.answer(Event::CallWhispered {
+        ticket,
+        result: Ok(fixture("district-call-whisper.json")),
+    });
+    assert_eq!(smoke.entry_text("supervise_whisper"), "");
+    let mut receipt: TelemetryEnvelope = fixture("telemetry-event-whisper-applied.json");
+    receipt.workspace_id = AGENCY.to_owned();
+    receipt.call_id = LIVE_CALL.to_owned();
+    smoke.answer(Event::Live(WorkspaceUpdate {
+        workspace_id: AGENCY.to_owned(),
+        update: LiveUpdate::Event(receipt),
+    }));
+    assert!(smoke.shows_text("Your receptionist used your note."));
+
+    // The takeover: the listening room left once the grant lands, and "on
+    // the call" only once the room is joined with the microphone.
+    let ticket = confirm_take_over(smoke);
+    assert!(smoke.shows_text("Taking over the call."));
+    assert!(!smoke.shows_text("You are listening"));
+    smoke.answer(Event::CallTakeoverIssued {
+        ticket,
+        result: Ok(fixture("district-call-takeover.json")),
+    });
+    assert_eq!(left(smoke), listener);
+    let Effect::ConnectMedia {
+        session,
+        microphone,
+        ..
+    } = smoke.take("ConnectMedia")
+    else {
+        unreachable!()
+    };
+    assert!(microphone, "a takeover joins with the microphone");
+    assert!(
+        !smoke.shows_text("You are on the call"),
+        "not before the room"
+    );
+    smoke.media(session, MediaEvent::Connected);
+    assert!(smoke.shows_text("You are on the call"));
+    assert!(smoke.shown("supervise_hand_back") && !smoke.shown("supervise_take_over"));
+    assert!(
+        !smoke.shown("supervise_whisper"),
+        "no note while on the call"
+    );
+    assert!(smoke.shows_text("Hand the call back to your receptionist to send a note"));
+    assert_eq!(
+        smoke.parts_shown("You are on the call"),
+        1,
+        "said once, as the heading"
+    );
+    // The microphone is what the engine last said, never the last click.
+    assert_eq!(
+        icon_of(smoke, "supervise_microphone"),
+        "microphone-disabled-symbolic",
+        "not live until the engine says so"
+    );
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    assert_eq!(
+        icon_of(smoke, "supervise_microphone"),
+        "audio-input-microphone-symbolic"
+    );
+    smoke.click("supervise_microphone");
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(!enabled, "the button mutes a live microphone");
+    assert_eq!(
+        icon_of(smoke, "supervise_microphone"),
+        "audio-input-microphone-symbolic",
+        "still live until the engine says it is not"
+    );
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::Off));
+    assert_eq!(
+        icon_of(smoke, "supervise_microphone"),
+        "microphone-disabled-symbolic"
+    );
+    smoke.click("supervise_microphone");
+    let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+        unreachable!()
+    };
+    assert!(enabled);
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    smoke.shot("supervise-04-on-the-call");
+    smoke.resize(400, 800);
+    let split = smoke
+        .find("split_view")
+        .downcast::<adw::NavigationSplitView>()
+        .unwrap();
+    split.set_show_content(true);
+    smoke.pump();
+    assert!(smoke.shown("supervise_hand_back"));
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "the card at 400 px"
+    );
+    smoke.shot("supervise-05-on-the-call-narrow");
+    smoke.resize(1024, 720);
+
+    // Handing back leaves the room; a late report of that session changes
+    // nothing on the next.
+    smoke.click("supervise_hand_back");
+    assert_eq!(left(smoke), session);
+    assert!(smoke.shown("supervise_listen"));
+    let again = listen(smoke);
+    smoke.media(
+        session,
+        MediaEvent::Disconnected(DisconnectReason::ConnectionLost),
+    );
+    assert!(
+        smoke.shows_text("You are listening"),
+        "a report of the session handed back is not this one's"
+    );
+    smoke.click("supervise_stop_listening");
+    assert_eq!(left(smoke), again);
+    smoke.forget();
+}
+
+/// The takeover question is asked over a live call; the call read again as
+/// over closes it, and nothing is asked for.
+fn supervise_question_outlived(smoke: &Smoke) {
+    smoke.click("supervise_take_over");
+    assert!(smoke.top_question().is_some());
+    smoke.shot("supervise-06-take-over-question");
+    smoke.answer(Event::Refresh);
+    read_call(smoke, LIVE_CALL, "completed");
+    assert!(
+        smoke.top_question().is_none(),
+        "a question about a call that ended is closed"
+    );
+    assert!(!smoke.shown("supervise_listen") && !smoke.shown("supervise_take_over"));
+    assert!(!smoke.pending("RequestCallTakeover"));
+    // An ended call is not live again; the next step starts on a live one.
+    smoke.answer(Event::Back);
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+}
+
+/// The takeover question goes with the call's screen: Back to the log, or
+/// another page chosen (Seer, PR #90).
+fn supervise_question_left_with_the_screen(smoke: &Smoke) {
+    smoke.click("supervise_take_over");
+    assert!(smoke.top_question().is_some());
+    smoke.answer(Event::Back);
+    assert!(smoke.top_question().is_none(), "Back to the log closes it");
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+    smoke.click("supervise_take_over");
+    assert!(smoke.top_question().is_some());
+    smoke.activate("sidebar-inbox");
+    assert!(smoke.top_question().is_none(), "another page closes it");
+    smoke.forget();
+    smoke.activate("sidebar-calls");
+    if smoke.pending("LoadCalls") {
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(live_log()),
+        });
+    }
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+}
+
+/// A listen asked for, and the window closed before the credential lands:
+/// it joins nothing, and the window comes back to the log.
+fn supervise_window_closed_mid_listen(smoke: &Smoke) {
+    smoke.click("supervise_listen");
+    let ticket = smoke.ticket("RequestCallMonitor");
+    with_window_closed(smoke, || {
+        smoke.answer(Event::CallMonitorIssued {
+            ticket,
+            result: Ok(fixture("district-call-monitor-token.json")),
+        });
+        assert!(
+            !joins(smoke),
+            "a credential answered after the window closed joins nothing"
+        );
+    });
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+}
+
+/// A takeover granted while listening, the grant already waiting when the
+/// window closes: the window's close is handled first, so the grant joins
+/// nothing and the listening room is left.
+fn supervise_window_closed_with_the_grant_waiting(smoke: &Smoke) {
+    let listener = listen(smoke);
+    let ticket = confirm_take_over(smoke);
+    smoke
+        .events
+        .try_send(Event::CallTakeoverIssued {
+            ticket,
+            result: Ok(fixture("district-call-takeover.json")),
+        })
+        .expect("the app is reading");
+    with_window_closed(smoke, || {
+        assert!(
+            !joins(smoke),
+            "the grant found the call screen gone: no microphone"
+        );
+        assert_eq!(left(smoke), listener);
+    });
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+}
+
+/// On the call, the microphone live, and the window closed: the room is left.
+fn supervise_window_closed_on_the_call(smoke: &Smoke) {
+    let ticket = confirm_take_over(smoke);
+    smoke.answer(Event::CallTakeoverIssued {
+        ticket,
+        result: Ok(fixture("district-call-takeover.json")),
+    });
+    let session = smoke.session();
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+    assert!(smoke.shows_text("You are on the call"));
+    with_window_closed(smoke, || {
+        assert_eq!(left(smoke), session, "the microphone goes with the window");
+    });
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+}
+
+/// The listening room ends (the caller hung up) while a takeover is asked
+/// for: the grant that lands after it joins nothing (Android #117's bug).
+fn supervise_room_ended_mid_takeover(smoke: &Smoke) {
+    let listener = listen(smoke);
+    let ticket = confirm_take_over(smoke);
+    smoke.media(
+        listener,
+        MediaEvent::Disconnected(DisconnectReason::RoomEnded),
+    );
+    assert!(smoke.shows_text("The call has ended."));
+    smoke.answer(Event::CallTakeoverIssued {
+        ticket,
+        result: Ok(fixture("district-call-takeover.json")),
+    });
+    assert!(!joins(smoke), "no room, no microphone");
+    assert!(!smoke.shown("supervise_hand_back"));
+    smoke.shot("supervise-07-call-ended");
+    smoke.click("supervise_dismiss");
+    assert!(!smoke.shows_text("The call has ended."));
+    smoke.forget();
+}
+
+/// A listen asked for, and the call read again as over before the
+/// credential lands: the session ends as the call's end, and joins nothing.
+fn supervise_call_ended_mid_listen(smoke: &Smoke) {
+    smoke.click("supervise_listen");
+    let ticket = smoke.ticket("RequestCallMonitor");
+    smoke.answer(call_event(AGENCY, LIVE_CALL, "call_ended"));
+    read_call(smoke, LIVE_CALL, "completed");
+    assert!(smoke.shows_text("The call has ended."));
+    assert!(
+        !smoke.shown("supervise_listen"),
+        "no Listen on an ended call"
+    );
+    smoke.answer(Event::CallMonitorIssued {
+        ticket,
+        result: Ok(fixture("district-call-monitor-token.json")),
+    });
+    assert!(!joins(smoke));
+    // The log read again: the call is no longer live.
+    if smoke.pending("LoadCalls") {
+        let mut log = live_log();
+        log[0].status = "completed".to_owned();
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(log),
+        });
+    }
+    assert_eq!(smoke.count("live-call-row"), 1, "one call is still live");
+    smoke.forget();
+}
+
+/// A takeover asked for, and the call's screen left for another page before
+/// the grant lands: it joins nothing.
+fn supervise_page_left_mid_takeover(smoke: &Smoke) {
+    let ticket = confirm_take_over(smoke);
+    smoke.activate("sidebar-inbox");
+    smoke.forget();
+    smoke.answer(Event::CallTakeoverIssued {
+        ticket,
+        result: Ok(fixture("district-call-takeover.json")),
+    });
+    assert!(!joins(smoke), "the screen left, the grant joins nothing");
+    smoke.activate("sidebar-calls");
+    if smoke.pending("LoadCalls") {
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(live_log()),
+        });
+    }
+    smoke.forget();
+}
+
+/// A note on its way, and another call opened before its answer: the answer
+/// says nothing on the other call.
+fn supervise_note_answered_on_another_call(smoke: &Smoke) {
+    smoke.type_into("supervise_whisper", "Offer the morning");
+    smoke.click("supervise_whisper_send");
+    let ticket = smoke.ticket("SendCallWhisper");
+    open_live_call(smoke, LIVE_CALL_2);
+    smoke.answer(Event::CallWhispered {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(
+        !smoke.shown("supervise_whisper_failure"),
+        "another call's note says nothing here"
+    );
+    assert_eq!(smoke.entry_text("supervise_whisper"), "");
+    smoke.forget();
+}
+
+/// Listening, with a read of the log on its way, and another workspace
+/// chosen: the room is left, the old workspace's list is not the new one's,
+/// and a viewer may listen but neither send a note nor take over.
+fn supervise_workspace_switched(smoke: &Smoke) {
+    let listener = listen(smoke);
+    smoke.answer(call_event(AGENCY, "call-live-3", "call_started"));
+    let Effect::LoadCalls {
+        ticket: stale,
+        workspace_id,
+        ..
+    } = smoke.take("LoadCalls")
+    else {
+        unreachable!()
+    };
+    assert_eq!(workspace_id, AGENCY);
+    smoke.forget();
+    let dropdown = smoke
+        .find("workspace_dropdown")
+        .downcast::<gtk::DropDown>()
+        .unwrap();
+    dropdown.set_selected(1);
+    smoke.pump();
+    assert_eq!(left(smoke), listener, "the room goes with the workspace");
+    let Effect::LoadCalls {
+        ticket,
+        workspace_id,
+        ..
+    } = smoke.take("LoadCalls")
+    else {
+        unreachable!()
+    };
+    assert_eq!(workspace_id, VIEWER);
+    let mut agency = live_log();
+    agency.insert(0, live_call("call-live-3", "in-progress"));
+    smoke.answer(Event::CallsLoaded {
+        ticket: stale,
+        result: Ok(agency),
+    });
+    assert_eq!(
+        smoke.count("live-call-row"),
+        0,
+        "the agency's list, answered after the switch, is not the viewer's"
+    );
+    let mut viewer: Vec<CallSummary> = fixture("district-calls.json");
+    viewer.insert(0, live_call("call-live-9", "in-progress"));
+    smoke.answer(Event::CallsLoaded {
+        ticket,
+        result: Ok(viewer),
+    });
+    assert_eq!(smoke.count("live-call-row"), 1);
+    smoke.forget();
+    open_live_call(smoke, "call-live-9");
+    assert!(
+        !smoke.shown("supervise_take_over"),
+        "a viewer cannot take over"
+    );
+    assert!(!smoke.shown("supervise_whisper"), "no field to type into");
+    assert!(smoke.shows_text("Viewers cannot send notes"), "but why");
+    smoke.shot("supervise-08-viewer");
+    smoke.forget();
+    dropdown.set_selected(0);
+    smoke.pump();
+    smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+        ticket,
+        result: Ok(live_log()),
+    });
+    smoke.forget();
+}
+
+/// A call whose id the supervise routes could read as another kind of room
+/// (any `_`) offers nothing.
+fn supervise_refused_id(smoke: &Smoke) {
+    smoke.answer(Event::Navigate(Route::CallDetail {
+        call_id: "call_live_4".to_owned(),
+    }));
+    read_call(smoke, "call_live_4", "in-progress");
+    assert!(smoke.shown("call_view"));
+    assert!(!smoke.shown("supervise_listen") && !smoke.shown("supervise_take_over"));
+    assert!(!smoke.shown("supervise_whisper"));
+    smoke.forget();
+}
+
+/// Supervising, run in a child of its own for each way it can end: `walk`
+/// for everything a signed-in window does, then signing out, the service
+/// ending the session, and quitting, each with something on its way.
+fn supervising(case: &str) {
+    let smoke = start(district_core::Locale::En);
+    on_live_calls(&smoke);
+    match case {
+        "walk" => {
+            supervise_card(&smoke);
+            supervise_question_outlived(&smoke);
+            supervise_question_left_with_the_screen(&smoke);
+            supervise_window_closed_mid_listen(&smoke);
+            supervise_window_closed_with_the_grant_waiting(&smoke);
+            supervise_window_closed_on_the_call(&smoke);
+            supervise_room_ended_mid_takeover(&smoke);
+            supervise_page_left_mid_takeover(&smoke);
+            open_live_call(&smoke, LIVE_CALL);
+            supervise_note_answered_on_another_call(&smoke);
+            supervise_workspace_switched(&smoke);
+            open_live_call(&smoke, LIVE_CALL);
+            supervise_call_ended_mid_listen(&smoke);
+            supervise_refused_id(&smoke);
+        }
+        "sign-out" => {
+            // Listening, a takeover on its way and a read of the log too.
+            open_live_call(&smoke, LIVE_CALL);
+            let listener = listen(&smoke);
+            let ticket = confirm_take_over(&smoke);
+            smoke.answer(call_event(AGENCY, "call-live-3", "call_started"));
+            let log = smoke.ticket("LoadCalls");
+            smoke.answer(Event::SignOut);
+            assert_eq!(left(&smoke), listener, "signing out leaves the room");
+            smoke.answer(Event::CallTakeoverIssued {
+                ticket,
+                result: Ok(fixture("district-call-takeover.json")),
+            });
+            smoke.answer(Event::CallsLoaded {
+                ticket: log,
+                result: Ok(live_log()),
+            });
+            assert!(!joins(&smoke), "the grant joins nothing once signed out");
+            let Effect::SignOut { ticket } = smoke.take("SignOut") else {
+                unreachable!()
+            };
+            smoke.answer(Event::SignOutFinished {
+                ticket,
+                report: SignOutReport {
+                    presence_unregistered: true,
+                    revoke: RevokeStatus::Revoked,
+                    cleared: Ok(()),
+                },
+            });
+            assert_eq!(smoke.status_title("status"), "You are signed out.");
+            assert!(!smoke.shown("live-call-row"));
+        }
+        "session-ended" => {
+            // On the call, the microphone live, and the service ends the
+            // session when the call is read again.
+            open_live_call(&smoke, LIVE_CALL);
+            let ticket = confirm_take_over(&smoke);
+            smoke.answer(Event::CallTakeoverIssued {
+                ticket,
+                result: Ok(fixture("district-call-takeover.json")),
+            });
+            let session = smoke.session();
+            smoke.media(session, MediaEvent::Connected);
+            smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+            smoke.forget();
+            smoke.answer(Event::Refresh);
+            smoke.reply("LoadCall {", |ticket| Event::CallLoaded {
+                ticket,
+                result: Err(ApiError::Unauthorized(
+                    district_api::UnauthorizedReason::SessionEnded,
+                )),
+            });
+            assert_eq!(
+                left(&smoke),
+                session,
+                "the microphone goes with the session"
+            );
+            assert!(!smoke.shown("supervise_hand_back"));
+            assert!(smoke.shown("sign_in_button"));
+        }
+        "quit" => {
+            // On the call, the microphone live, and the app quits.
+            open_live_call(&smoke, LIVE_CALL);
+            let ticket = confirm_take_over(&smoke);
+            smoke.answer(Event::CallTakeoverIssued {
+                ticket,
+                result: Ok(fixture("district-call-takeover.json")),
+            });
+            let session = smoke.session();
+            smoke.media(session, MediaEvent::Connected);
+            smoke.media(session, MediaEvent::Microphone(MicrophoneState::On));
+            smoke.app.emit_by_name::<()>("shutdown", &[]);
+            assert!(
+                smoke
+                    .script
+                    .finished
+                    .borrow()
+                    .contains(&Effect::DisconnectMedia { session }),
+                "quitting leaves the room: {:?}",
+                smoke.script.finished.borrow()
+            );
+            println!("supervise {case} passed");
+            return;
+        }
+        other => panic!("no supervise case {other}"),
+    }
+    smoke.app.emit_by_name::<()>("shutdown", &[]);
+    println!("supervise {case} passed");
+}
+
+/// [`supervising`], each case in a child of its own.
+fn supervising_in_children() {
+    for case in ["walk", "sign-out", "session-ended", "quit"] {
+        let output = std::process::Command::new(std::env::current_exe().expect("this test"))
+            .args(["supervise", case])
+            .output()
+            .expect("the supervise run starts");
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            output.status.success(),
+            "the supervise {case} run failed:\n{stdout}\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        print!("{stdout}");
+    }
+}
+
 fn main() {
     if std::env::args().nth(1).as_deref() == Some("french-narrow") {
         french_narrow();
+        return;
+    }
+    if std::env::args().nth(1).as_deref() == Some("supervise") {
+        supervising(&std::env::args().nth(2).unwrap_or_default());
         return;
     }
     let smoke = start(district_core::Locale::En);
@@ -10875,5 +11639,6 @@ fn main() {
     tray_quit(&smoke);
     quitting(&smoke);
     french_in_a_child();
+    supervising_in_children();
     println!("smoke test passed");
 }

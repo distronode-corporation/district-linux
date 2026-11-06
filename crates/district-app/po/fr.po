@@ -603,6 +603,12 @@ msgid "Choose a call to see its summary and transcript."
 msgstr "Choisissez un appel pour voir son résumé et sa transcription."
 
 #. screen: calls_page; ctx: title; tier: T3
+#. In calls-page.ui: the heading of the calls in progress above the call log, and that list's accessible name. Each opens to the call's supervise controls. The web dashboard's Live calls page and its menu entry, verbatim in both languages.
+msgctxt "calls_page.live_calls"
+msgid "Live calls"
+msgstr "Appels en cours"
+
+#. screen: calls_page; ctx: title; tier: T3
 #. In calls-page.ui.
 msgctxt "calls_page.no_call_open"
 msgid "No call open"
