@@ -11112,6 +11112,15 @@ fn supervise_card(smoke: &Smoke) {
         1,
         "said once, as the heading"
     );
+    assert!(
+        !smoke.shows_text("What is said shows up here while you listen."),
+        "on the call, nobody is only listening"
+    );
+    assert!(smoke.shows_text("Nothing has been said yet."));
+    assert!(
+        !smoke.shows_text("Your receptionist used your note."),
+        "the last note's receipt is put away on the call"
+    );
     // The microphone is what the engine last said, never the last click.
     assert_eq!(
         icon_of(smoke, "supervise_microphone"),
