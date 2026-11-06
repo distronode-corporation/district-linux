@@ -264,6 +264,13 @@ impl CallView {
         self.imp().sink.set(sink).ok();
     }
 
+    /// The call's screen was left: nothing of it stays over the window.
+    pub(crate) fn leave(&self) {
+        if let Some(card) = self.imp().supervise.get() {
+            card.leave();
+        }
+    }
+
     /// Draws `screen`, the call open in `signed_in`.
     pub(crate) fn update(&self, screen: &CallDetailScreen, signed_in: &SignedIn) {
         let imp = self.imp();

@@ -456,6 +456,9 @@ impl DistrictWindow {
         if !showing(|route| matches!(route, Route::SchedulingAdmin(_))) {
             imp.scheduling_admin_page.leave();
         }
+        if !showing(|route| matches!(route, Route::CallDetail { .. })) {
+            imp.calls_page.leave();
+        }
     }
 
     fn draw_workspaces(&self, state: &WorkspacesState) {

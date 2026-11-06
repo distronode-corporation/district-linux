@@ -268,6 +268,11 @@ impl CallsPage {
         self.imp().sink.set(sink).ok();
     }
 
+    /// The page was left: the open call's question goes with it.
+    pub(crate) fn leave(&self) {
+        self.imp().call_view.leave();
+    }
+
     /// The list and call panes.
     pub(crate) fn split_view(&self) -> adw::NavigationSplitView {
         self.imp().split_view.get()
@@ -304,7 +309,10 @@ impl CallsPage {
                 imp.detail_stack.set_visible_child_name("call");
                 imp.call_view.update(screen, signed_in);
             }
-            None => imp.detail_stack.set_visible_child_name("none"),
+            None => {
+                imp.detail_stack.set_visible_child_name("none");
+                imp.call_view.leave();
+            }
         }
         imp.split_view.set_show_content(open.is_some());
         if let Some(end) = imp.end.get() {

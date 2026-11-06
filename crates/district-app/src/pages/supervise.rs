@@ -543,6 +543,12 @@ impl SuperviseCard {
         self.announce(view, signed_in, &shown);
     }
 
+    /// The call's screen was left: its question goes with it (Seer, PR #90).
+    pub(crate) fn leave(&self) {
+        self.question.close();
+        self.announced.set(None);
+    }
+
     /// The microphone button: the engine's last word on the microphone.
     fn draw_microphone(&self, microphone: Option<MicrophoneState>) {
         self.microphone.set_visible(microphone.is_some());

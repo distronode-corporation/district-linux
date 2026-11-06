@@ -11200,6 +11200,31 @@ fn supervise_question_outlived(smoke: &Smoke) {
     open_live_call(smoke, LIVE_CALL);
 }
 
+/// The takeover question goes with the call's screen: Back to the log, or
+/// another page chosen (Seer, PR #90).
+fn supervise_question_left_with_the_screen(smoke: &Smoke) {
+    smoke.click("supervise_take_over");
+    assert!(smoke.top_question().is_some());
+    smoke.answer(Event::Back);
+    assert!(smoke.top_question().is_none(), "Back to the log closes it");
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+    smoke.click("supervise_take_over");
+    assert!(smoke.top_question().is_some());
+    smoke.activate("sidebar-inbox");
+    assert!(smoke.top_question().is_none(), "another page closes it");
+    smoke.forget();
+    smoke.activate("sidebar-calls");
+    if smoke.pending("LoadCalls") {
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(live_log()),
+        });
+    }
+    smoke.forget();
+    open_live_call(smoke, LIVE_CALL);
+}
+
 /// A listen asked for, and the window closed before the credential lands:
 /// it joins nothing, and the window comes back to the log.
 fn supervise_window_closed_mid_listen(smoke: &Smoke) {
@@ -11445,6 +11470,7 @@ fn supervising(case: &str) {
         "walk" => {
             supervise_card(&smoke);
             supervise_question_outlived(&smoke);
+            supervise_question_left_with_the_screen(&smoke);
             supervise_window_closed_mid_listen(&smoke);
             supervise_window_closed_with_the_grant_waiting(&smoke);
             supervise_window_closed_on_the_call(&smoke);
