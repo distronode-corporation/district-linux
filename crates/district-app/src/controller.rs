@@ -19,6 +19,7 @@ use crate::gtk::{self, gdk, gio, glib};
 use crate::guard;
 use crate::l10n::{lang, text};
 use crate::notifications::{self, BUTTON_ACTION, OPEN_ACTION};
+use crate::pages;
 use crate::sink::EventSink;
 use crate::style::Brand;
 use crate::window::{
@@ -353,6 +354,15 @@ impl Controller {
                     .events
                     .try_send(Event::Hq(HqEvent::StopVoice))
                     .ok();
+                // Supervising a call goes too, by leaving its screen, which is
+                // what ends it in every phase. At once rather than in turn: a
+                // takeover's grant already waiting in the channel would
+                // otherwise be handled first and join the call with the
+                // microphone live, with no window to stop it from.
+                let supervising = pages::supervising(&controller.model.borrow());
+                if supervising {
+                    controller.update(Event::Back);
+                }
                 if controller.hold.borrow().is_some() {
                     controller.background.backgrounded();
                 }

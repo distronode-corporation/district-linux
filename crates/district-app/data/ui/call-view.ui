@@ -104,6 +104,14 @@
                   </object>
                 </child>
                 <child>
+                  <!-- Supervising the call while it is in progress: listening,
+                       the note to the receptionist and taking it over. Hidden
+                       for any other call; src/pages/supervise.rs fills it. -->
+                  <object class="AdwPreferencesGroup" id="supervise_group">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
                   <object class="AdwPreferencesGroup" id="summary_group">
                     <property name="title" translatable="yes" context="call_view.summary">Summary</property>
                     <property name="header-suffix">
