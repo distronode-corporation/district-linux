@@ -13,12 +13,35 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
-App parity (1), (2), (3) and (5) on Linux, as District AI for Windows has them: reply
-channels, Messenger and Instagram conversations, conversation owners, and WhatsApp's
-templates once the customer-service window has closed.
+## [3.3.0] - 2026-11-06
+
+The web Inbox's channels on Linux: Messenger and Instagram conversations, a reply channel
+chooser, conversation owners, WhatsApp templates once the customer-service window has
+closed, and the Messenger and Instagram reply window. Live supervise lets you listen in on
+a call under way, send your receptionist a note, or take the call over. The dialler knows
+the country it rings, and calls no longer drop when the connection is rebuilt. It runs on
+district-core-rust 9.0.0.
 
 ### Added
 
+- Live supervise. The calls in progress are listed above the call log, under Live calls,
+  as on the web's Live calls page, and each opens to its call screen, which carries the
+  supervise card: Listen and Stop listening, a note to the receptionist with what it did
+  with it, Take over (asked first) and Hand back, the call's lines while you are in its
+  room, and a microphone button that shows the microphone as the call engine last
+  reported it. "You are listening" and "You are on the call" are said only once the room
+  is joined, and a notice (reconnecting, the microphone unavailable) replaces them while
+  there is one. A screen reader hears listening start, the microphone go live, the end,
+  and a note's receipt. Closing the window ends supervision, since the app runs on in the
+  background with no window to stop the microphone from.
+- The Messenger and Instagram reply window in a conversation, as the web Inbox shows it.
+  Between 24 hours and 7 days after the customer's last message, where the page or
+  account allows a human agent reply, a "Human agent reply (7-day window)" badge sits
+  over the composer: you may still reply, but "Draft reply" is off. Once the window has
+  closed, a warning says so over the composer, which keeps what you typed, and Send and
+  "Draft reply" are off until the customer writes again; a reply the service refuses
+  because the window closed closes it too. While the window is being read, or when it
+  cannot be read, nothing is blocked. No countdown is shown.
 - Messenger and Instagram conversations in the Inbox, each labelled by its channel, and
   each conversation's owner under its row ("Assigned to ..."). The app reads the inbox
   with the core's `meta_channels` on, and its presence declares
@@ -35,14 +58,6 @@ templates once the customer-service window has closed.
 - On WhatsApp, a closed customer-service window turns the composer into a template picker:
   the approved templates, a field per variable, the filled preview as the service will
   store it, and Send template. Every word on these screens is the core's.
-- The Messenger and Instagram reply window in a conversation, as the web Inbox shows it.
-  Between 24 hours and 7 days after the customer's last message, where the page or
-  account allows a human agent reply, a "Human agent reply (7-day window)" badge sits
-  over the composer: you may still reply, but "Draft reply" is off. Once the window has
-  closed, a warning says so over the composer, which keeps what you typed, and Send and
-  "Draft reply" are off until the customer writes again; a reply the service refuses
-  because the window closed closes it too. While the window is being read, or when it
-  cannot be read, nothing is blocked. No countdown is shown.
 
 ### Changed
 
@@ -56,15 +71,18 @@ templates once the customer-service window has closed.
   or when the switched-off Call button is pressed. The workspace's home country comes
   from its own numbers.
 - The core is district-core-rust 9.0.0 (up from 7.0.1): 8.0.0 carries the dialler, the
-  reply channels, Messenger and Instagram, thread owners and WhatsApp templates, and
-  9.0.0 the Messenger and Instagram reply window.
+  reply channels, Messenger and Instagram, thread owners, WhatsApp templates and live
+  supervise, and 9.0.0 the Messenger and Instagram reply window and the call fixes below.
 
 ### Fixed
 
-- A placed call or an HQ voice session no longer ends when the connection is rebuilt
-  (core 9.0.0). The media library reports everyone as having left while it reconnects;
-  the far end or the HQ voice agent leaving now ends the call or the session only once a
-  2-second grace window is over with them still gone and the connection up.
+- Calls no longer drop when the connection is rebuilt. When the network falls back to a
+  full reconnection, the call library briefly reports everyone else in the room as
+  having left; a call you placed took that as the other side hanging up, and ended it,
+  and District HQ by voice took it as the assistant leaving. Both now wait for the
+  connection to come back, then look at who is there.
+- A call hung up while it was still joining no longer leaves its room joined with the
+  microphone on.
 
 ## [3.2.0] - 2026-10-27
 
@@ -672,7 +690,8 @@ The history of how it was built is in the repository's commits.
 - Calls link this project's own build of LiveKit's libwebrtc, which leaves out the
   H.264 and H.265 codecs and FFmpeg (NOTICE lists what it contains).
 
-[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/distronode-corporation/district-linux/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/distronode-corporation/district-linux/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/distronode-corporation/district-linux/compare/v3.0.3...v3.1.0
 [3.0.3]: https://github.com/distronode-corporation/district-linux/compare/v3.0.2...v3.0.3

@@ -3869,6 +3869,60 @@ pub fn metainfo_release_3_2_0_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_3_0.li1`
+#[must_use]
+pub fn metainfo_release_3_3_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Messenger and Instagram conversations in the Inbox, a reply channel chooser (text message, email, WhatsApp, Messenger, Instagram), and each conversation's owner, with a picker to assign it",
+        Locale::FrCa => "Les conversations Messenger et Instagram dans la boîte de réception, le choix du canal de réponse (texto, courriel, WhatsApp, Messenger, Instagram), et la personne assignée à chaque conversation, avec un sélecteur pour l'assigner",
+    }
+}
+
+/// `metainfo.release_3_3_0.li2`
+#[must_use]
+pub fn metainfo_release_3_3_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "On WhatsApp, an approved template once the 24-hour window has closed; on Messenger and Instagram, the reply window, as on the web Inbox",
+        Locale::FrCa => "Sur WhatsApp, un modèle approuvé une fois la fenêtre de 24 heures fermée; sur Messenger et Instagram, la fenêtre de réponse, comme dans la boîte de réception Web",
+    }
+}
+
+/// `metainfo.release_3_3_0.li3`
+#[must_use]
+pub fn metainfo_release_3_3_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Live calls above the call log: listen in on a call under way, send your receptionist a note, or take the call over and hand it back",
+        Locale::FrCa => "Appels en cours au-dessus du journal des appels\u{00A0}: vous pouvez écouter un appel en direct, souffler une consigne à votre réceptionniste, ou prendre l'appel et le lui redonner",
+    }
+}
+
+/// `metainfo.release_3_3_0.li4`
+#[must_use]
+pub fn metainfo_release_3_3_0_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The dialler has a country button with a searchable list, and says which country a number rings before you call",
+        Locale::FrCa => "Le clavier a un bouton de pays et une liste où chercher, et indique le pays de destination d'un numéro avant que vous appeliez",
+    }
+}
+
+/// `metainfo.release_3_3_0.li5`
+#[must_use]
+pub fn metainfo_release_3_3_0_li5(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Calls no longer drop when the connection is rebuilt",
+        Locale::FrCa => "Les appels ne sont plus coupés quand la connexion est rétablie",
+    }
+}
+
+/// `metainfo.release_3_3_0.p`
+#[must_use]
+pub fn metainfo_release_3_3_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "The web Inbox's channels and live supervise: reply by Messenger, Instagram or WhatsApp, assign conversations, and listen in on a call, send your receptionist a note or take the call over.",
+        Locale::FrCa => "Les canaux de la boîte de réception Web et la supervision en direct\u{00A0}: répondez par Messenger, Instagram ou WhatsApp, assignez les conversations, et vous pouvez écouter un appel, souffler une consigne à votre réceptionniste ou prendre l'appel.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {

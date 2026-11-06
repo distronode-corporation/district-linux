@@ -20,8 +20,19 @@ name: Flatpak
 # THIRD-PARTY-LICENSES.txt is written from).
 # Minutes are metered while the repository is private, and a build with
 # calls is long, so it is one job and never runs on a push to main.
+#
+# `correlation` only names the run, so the release train can find the exact run it dispatched
+# (GitHub's dispatch API returns no run id). No step reads it. Empty, a dispatch is named
+# "Flatpak" and a pull request's run keeps the pull request's title, as before; a run
+# release.yml calls is part of release.yml's run and takes its name.
+run-name: ${{ inputs.correlation && format('{0} [{1}]', github.workflow, inputs.correlation) || github.event.pull_request.title || github.workflow }}
 on:
   workflow_dispatch:
+    inputs:
+      correlation:
+        description: Set by the release train to find this exact run (manifest, lane, step, time). Leave empty.
+        type: string
+        default: ""
   workflow_call:
     secrets:
       # Where a release's crash reports go. Not a credential (the binary

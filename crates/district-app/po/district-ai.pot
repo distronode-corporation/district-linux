@@ -2423,6 +2423,42 @@ msgctxt "metainfo.release_3_2_0.p"
 msgid "District HQ by voice: talk to District HQ, every change it proposes waits for your confirmation, and a voice dock keeps the session's controls on every other screen."
 msgstr ""
 
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.3.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_3_0.li1"
+msgid "Messenger and Instagram conversations in the Inbox, a reply channel chooser (text message, email, WhatsApp, Messenger, Instagram), and each conversation's owner, with a picker to assign it"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.3.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_3_0.li2"
+msgid "On WhatsApp, an approved template once the 24-hour window has closed; on Messenger and Instagram, the reply window, as on the web Inbox"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.3.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_3_0.li3"
+msgid "Live calls above the call log: listen in on a call under way, send your receptionist a note, or take the call over and hand it back"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.3.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_3_0.li4"
+msgid "The dialler has a country button with a searchable list, and says which country a number rings before you call"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.3.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_3_0.li5"
+msgid "Calls no longer drop when the connection is rebuilt"
+msgstr ""
+
+#. screen: metainfo; ctx: body; tier: T3
+#. The 3.3.0 release's notes in the AppStream metadata, as software centres show them.
+msgctxt "metainfo.release_3_3_0.p"
+msgid "The web Inbox's channels and live supervise: reply by Messenger, Instagram or WhatsApp, assign conversations, and listen in on a call, send your receptionist a note or take the call over."
+msgstr ""
+
 #. screen: metainfo; ctx: label; tier: T3
 #. A screenshot's caption in the AppStream metadata.
 msgctxt "metainfo.screenshot_caption.call"
