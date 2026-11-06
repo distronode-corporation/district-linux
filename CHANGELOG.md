@@ -35,6 +35,14 @@ templates once the customer-service window has closed.
 - On WhatsApp, a closed customer-service window turns the composer into a template picker:
   the approved templates, a field per variable, the filled preview as the service will
   store it, and Send template. Every word on these screens is the core's.
+- The Messenger and Instagram reply window in a conversation, as the web Inbox shows it.
+  Between 24 hours and 7 days after the customer's last message, where the page or
+  account allows a human agent reply, a "Human agent reply (7-day window)" badge sits
+  over the composer: you may still reply, but "Draft reply" is off. Once the window has
+  closed, a warning says so over the composer, which keeps what you typed, and Send and
+  "Draft reply" are off until the customer writes again; a reply the service refuses
+  because the window closed closes it too. While the window is being read, or when it
+  cannot be read, nothing is blocked. No countdown is shown.
 
 ### Changed
 
@@ -47,9 +55,9 @@ templates once the customer-service window has closed.
   A wrong length keeps Call off and is said once the box loses the keyboard, on Enter,
   or when the switched-off Call button is pressed. The workspace's home country comes
   from its own numbers.
-- The core is district-core-rust 8.0.0 (up from 7.0.1), the release that carries the
-  dialler, the reply channels, Messenger and Instagram, thread owners and WhatsApp
-  templates.
+- The core is district-core-rust 9.0.0 (up from 7.0.1): 8.0.0 carries the dialler, the
+  reply channels, Messenger and Instagram, thread owners and WhatsApp templates, and
+  9.0.0 the Messenger and Instagram reply window.
 
 ## [3.2.0] - 2026-10-27
 

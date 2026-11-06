@@ -45,13 +45,17 @@ publish = false
 # The core also sets `log`'s `max_level_warn` (district-live and district-call
 # do), which compiles every log line below warn out of the whole build, this
 # workspace's crates included; the core's SECURITY.md says why.
-district-model = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
-district-api = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
-district-auth = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
-district-live = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
-district-core = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
-district-host = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
-district-call = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
+#
+# For now at an exact commit of the core's 9.0.0 pull request (the Messenger and
+# Instagram reply window), not a tag: the pin moves to tag v9.0.0 once the tag
+# exists, before this merges, and check-pins.py fails until it does.
+district-model = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
+district-api = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
+district-auth = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
+district-live = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
+district-core = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
+district-host = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
+district-call = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
 # This workspace's own crate besides the app. Path only: it is not published, so
 # there is no registry version to keep in step (deny.toml's `allow-wildcard-paths`
 # relies on `publish = false` above).
@@ -60,7 +64,7 @@ district-desktop = { path = "crates/district-desktop" }
 # crash reports (district-app's src/crash.rs, and "Crash reports" in
 # CONTRIBUTING.md). Its own crate in the core, so an app that does not offer
 # crash reports builds no Sentry code; here only the app depends on it.
-district-crash = { git = "https://github.com/distronode-corporation/district-core-rust", tag = "v8.0.0", version = "=8.0.0" }
+district-crash = { git = "https://github.com/distronode-corporation/district-core-rust", rev = "256f710b7c2d2c6dc90b887ed3863126999415ed", version = "=9.0.0" }
 
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"

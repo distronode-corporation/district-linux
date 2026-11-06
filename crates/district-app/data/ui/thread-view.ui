@@ -341,6 +341,19 @@
                           </object>
                         </child>
                         <child>
+                          <object class="GtkLabel" id="meta_badge">
+                            <property name="visible">False</property>
+                            <property name="halign">start</property>
+                            <property name="xalign">0</property>
+                            <property name="wrap">True</property>
+                            <property name="use-markup">False</property>
+                            <style>
+                              <class name="channel-chip"/>
+                              <class name="caption"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
                           <object class="GtkLabel" id="window_closed_label">
                             <property name="visible">False</property>
                             <property name="xalign">0</property>
