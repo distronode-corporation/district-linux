@@ -422,7 +422,9 @@ impl SuperviseCard {
         whisper_row.append(&whisper);
         whisper_row.append(&whisper_spinner);
         whisper_row.append(&whisper_send);
-        // Why no note can be sent, in full: as a placeholder it was cut off.
+        // The example, or why no note can be sent, as a line that wraps: as
+        // the field's placeholder it was cut off, the French example most
+        // of all, whatever room the field had.
         let whisper_reason = plain_label("", &["dim-label"]);
         whisper_reason.set_widget_name("supervise_whisper_reason");
         let whisper_failure = plain_label("", &["error"]);
@@ -437,8 +439,8 @@ impl SuperviseCard {
             .name("supervise_whisper_box")
             .build();
         whisper_box.append(&whisper_title);
-        whisper_box.append(&whisper_row);
         whisper_box.append(&whisper_reason);
+        whisper_box.append(&whisper_row);
         whisper_box.append(&whisper_failure);
         whisper_box.append(&whisper_outcome);
         whisper_box.append(&whisper_words);
@@ -628,13 +630,11 @@ impl SuperviseCard {
             self.drawn_call.replace(call);
         }
         self.whisper_echo.draw_text(&self.whisper, whisper.draft);
-        self.whisper.set_placeholder_text(Some(whisper.placeholder));
+        self.whisper
+            .update_property(&[gtk::accessible::Property::Description(whisper.placeholder)]);
         self.whisper.set_sensitive(whisper.editable);
         self.whisper_row.set_visible(whisper.editable);
-        draw_line(
-            &self.whisper_reason,
-            (!whisper.editable).then_some(whisper.placeholder),
-        );
+        draw_line(&self.whisper_reason, Some(whisper.placeholder));
         self.whisper_send.set_sensitive(whisper.send.works);
         draw_spinner(&self.whisper_spinner, whisper.sending);
         draw_line(&self.whisper_failure, whisper.failure.as_deref());

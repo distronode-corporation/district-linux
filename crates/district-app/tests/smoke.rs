@@ -11021,6 +11021,20 @@ fn supervise_card(smoke: &Smoke) {
     assert!(!smoke.shown("supervise_hand_back") && !smoke.shown("supervise_microphone"));
     assert!(smoke.shows_text("Hear the call as it happens. The caller does not hear you."));
     smoke.shot("supervise-02-card");
+    // The note's example is a line that wraps, never a placeholder the
+    // field cuts off (the French one was, beside Send).
+    let example = "For example: Offer a 10% discount to book today.";
+    assert!(smoke.shows_text(example));
+    let field = smoke
+        .mapped("supervise_whisper")
+        .downcast::<gtk::Entry>()
+        .unwrap();
+    assert_eq!(field.placeholder_text(), None, "no example to cut off");
+    let hint = smoke
+        .mapped("supervise_whisper_reason")
+        .downcast::<gtk::Label>()
+        .unwrap();
+    assert!(hint.wraps(), "the example wraps");
 
     let listener = listen(smoke);
     assert!(smoke.shows_text("What is said shows up here while you listen."));
