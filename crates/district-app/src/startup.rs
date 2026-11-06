@@ -169,7 +169,8 @@ fn launch() -> Result<glib::ExitCode, String> {
         // This app does not sign up or buy in the app: billing stays read only,
         // and the core's purchase events and effects never happen here.
         in_app_purchases: false,
-        // No Messenger or Instagram threads here yet (`META_CHANNELS`).
+        // Messenger and Instagram threads are listed and answered here, and
+        // the presence above declares it (`META_CHANNELS`).
         meta_channels: crate::META_CHANNELS,
         locale,
     };

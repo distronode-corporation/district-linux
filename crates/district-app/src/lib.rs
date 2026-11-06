@@ -62,11 +62,11 @@ pub use effects::{Effects, RunEffect, RuntimeEffects};
 pub use startup::run;
 
 /// Whether District AI for Linux lists and answers Messenger and Instagram
-/// threads: the core's `CoreConfig::meta_channels`, and what the presence
-/// declares when it registers this desktop. Not yet: without it the core keeps
-/// the inbox as it was, the service leaves those messages out, and a reply goes
-/// by text or email. One decision: both read this.
-pub const META_CHANNELS: bool = false;
+/// threads (app parity 1 and 2): the core's `CoreConfig::meta_channels`, and
+/// what the presence declares when it registers this desktop
+/// (`capabilities: ["metaChannels"]`), so the service sends those messages to
+/// it too. One decision: both read this.
+pub const META_CHANNELS: bool = true;
 
 /// The app's exit status.
 pub use gtk::glib::ExitCode;

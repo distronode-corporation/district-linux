@@ -530,12 +530,20 @@ fn conversation(
             "createdAt": ago(minutes_ago)
         },
         "unreadCount": unread,
-        "totalMessages": 6
+        "totalMessages": 6,
+        // As the service answers an app that asks with `metaChannels=1` and
+        // `assignments=1`: each way to reply, and nobody owning the thread.
+        "replyOptions": [{"channel": "sms", "to": number}],
+        "assigneeEmail": null,
+        "assignedToMe": false
     })
 }
 
+/// The business's two members a thread can be given to.
+const MEMBERS: [&str; 2] = ["maria.alvarez@example.com", "tom.becker@example.com"];
+
 fn conversations() -> Value {
-    json!({
+    let mut list = json!({
         "success": true,
         "conversations": [
             conversation(
@@ -587,7 +595,10 @@ fn conversations() -> Value {
         ],
         "scanned": 38,
         "scanLimit": 500
-    })
+    });
+    // Rosa's thread is Maria's.
+    list["conversations"][0]["assigneeEmail"] = json!(MEMBERS[0]);
+    list
 }
 
 /// Rosa's thread, oldest first: her call, the receptionist's text after it,
@@ -871,6 +882,17 @@ fn inbox_scene(store: &Store) {
     store.reply("MarkRead", |ticket| Event::MarkedRead {
         ticket,
         result: Ok(from(json!({"success": true, "marked": 1}))),
+    });
+    // The owner picker's members.
+    store.reply("LoadMembers", |ticket| Event::MembersLoaded {
+        ticket,
+        result: Ok(from(json!({
+            "success": true,
+            "members": [
+                {"email": MEMBERS[0], "role": "agency", "createdAt": ago(90_000)},
+                {"email": MEMBERS[1], "role": "client", "createdAt": ago(80_000)}
+            ]
+        }))),
     });
     if store.pending("LoadUnreadCount") {
         store.reply("LoadUnreadCount", |ticket| Event::UnreadCountLoaded {

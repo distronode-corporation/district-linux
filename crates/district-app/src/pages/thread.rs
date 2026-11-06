@@ -1,25 +1,37 @@
-//! One thread: its history with older messages on request, and the composer.
+//! One thread: its owner, its history with older messages on request, and the
+//! composer.
 //!
 //! Enter sends and Shift+Enter starts a new line; Send works only when the
 //! core says it can (never while a message or an image is on its way). The
 //! reply written by a model is asked for only by its own, labelled button,
 //! because each one is billed. An image is picked through the desktop's file
 //! chooser and read here; the core checks it and uploads it.
+//!
+//! App parity (1), (2), (3) and (5), as District AI for Windows has them: the
+//! reply channel chooser (text message, email, WhatsApp, Messenger,
+//! Instagram), the owner picker in the header, and, on WhatsApp once the
+//! customer-service window has closed, the approved templates in place of free
+//! text. Every word on them is the core's (`core_text`), and every decision
+//! (what is offered, when each control works) is the core's too.
 
 use std::cell::{Cell, OnceCell, RefCell};
 
 use district_core::l10n::WireCategory;
 use district_core::{
-    Capabilities, Composer, Event, ReportTarget, ThreadEvent, ThreadEvents, ThreadHistory,
-    ThreadScreen, format_call_duration, format_duration, format_phone_number,
+    AssigneeList, Capabilities, Composer, Event, ReportTarget, TemplateList, ThreadAssignment,
+    ThreadEvent, ThreadEvents, ThreadHistory, ThreadScreen, WhatsAppComposer, WhatsAppWindowState,
+    format_call_duration, format_duration, format_phone_number, reply_channel_label,
 };
-use district_model::{CHANNEL_SMS, ReplyTarget, TimelineEvent};
+use district_model::{
+    CHANNEL_EMAIL, CHANNEL_INSTAGRAM, CHANNEL_MESSENGER, CHANNEL_SMS, CHANNEL_WHATSAPP,
+    ReplyTarget, TimelineEvent,
+};
 
 use crate::adw;
 use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, gdk, glib};
-use crate::l10n::{Locale, lang, text};
+use crate::l10n::{Locale, core_text, lang, text};
 use crate::pages::report::{self, Offer};
 use crate::pages::shared::{
     Echo, FilePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
@@ -76,13 +88,16 @@ pub(crate) fn delivery(event: &TimelineEvent) -> Option<String> {
 
 /// The channel a message went by, as a person names it.
 ///
-/// The server writes four: `sms`, `email`, `whatsapp`, and `voicemail` for a
-/// message the voice agent took on a call. Anything else reads as a text
-/// message, as `sms` does.
+/// The server writes `sms`, `email`, `whatsapp`, `messenger`, `instagram`, and
+/// `voicemail` for a message the voice agent took on a call. Anything else
+/// reads as a text message, as `sms` does.
 pub(crate) fn channel(event_type: &str) -> &'static str {
     match event_type {
         "email" => text::thread_email(lang()),
         "whatsapp" => text::thread_whatsapp(lang()),
+        CHANNEL_MESSENGER | CHANNEL_INSTAGRAM => {
+            reply_channel_label(event_type).unwrap_or_default()
+        }
         "voicemail" => text::thread_voicemail(lang()),
         _ => text::common_text_message(lang()),
     }
@@ -116,14 +131,78 @@ pub(crate) fn call_line(event: &TimelineEvent) -> String {
 }
 
 /// What the line under a thread's title says: how a reply goes, and where.
+/// It is also each choice of the reply channel chooser.
+///
+/// A text message and an email name the number or address. WhatsApp names
+/// the channel and the number, in the core's word for it. Messenger and
+/// Instagram name the channel only: their address is the customer's `fb:` or
+/// `ig:` id, which means nothing to a person.
 pub(crate) fn reply_line(target: Option<&ReplyTarget>) -> String {
-    match target {
-        Some(target) if target.channel == CHANNEL_SMS => {
-            text::thread_reply_by_text(lang(), &format_phone_number(&target.to))
-        }
-        Some(target) => text::thread_reply_by_email(lang(), &target.to),
-        None => String::new(),
+    let Some(target) = target else {
+        return String::new();
+    };
+    let label = reply_channel_label(target.channel).unwrap_or(target.channel);
+    match target.channel {
+        CHANNEL_SMS => text::thread_reply_by_text(lang(), &format_phone_number(&target.to)),
+        CHANNEL_EMAIL => text::thread_reply_by_email(lang(), &target.to),
+        CHANNEL_WHATSAPP => format!("{label} \u{b7} {}", format_phone_number(&target.to)),
+        _ => label.to_owned(),
     }
+}
+
+/// The owner picker's choices, in its order: nobody ("Unassigned") first,
+/// then the members the core offers, each by their address.
+pub(crate) fn assignee_choices(assignment: &ThreadAssignment) -> Vec<(Option<String>, String)> {
+    let mut choices = vec![(None, core_text::thread_unassigned(lang()).to_owned())];
+    choices.extend(
+        assignment
+            .options()
+            .into_iter()
+            .map(|email| (Some(email.clone()), email)),
+    );
+    choices
+}
+
+/// Who owns the thread, in one line, for a member who sees it without the
+/// picker: "Assigned to ada@example.com", or "Unassigned".
+pub(crate) fn assignment_line(assignment: &ThreadAssignment) -> String {
+    assignment.assignee.as_deref().map_or_else(
+        || core_text::thread_unassigned(lang()).to_owned(),
+        |email| core_text::inbox_assigned_to(lang(), email),
+    )
+}
+
+/// What the template picker shows: a sentence in its place (loading, none
+/// approved, or a failed read), or the approved templates by id and label.
+pub(crate) fn template_choices(
+    whatsapp: &WhatsAppComposer,
+) -> (Option<&'static str>, Vec<(String, String)>) {
+    match &whatsapp.templates {
+        TemplateList::NotLoaded | TemplateList::Loading => (
+            Some(core_text::thread_templates_loading(lang())),
+            Vec::new(),
+        ),
+        TemplateList::Failed(_) => (Some(core_text::thread_templates_failed(lang())), Vec::new()),
+        TemplateList::Ready(templates) if templates.is_empty() => {
+            (Some(core_text::thread_templates_none(lang())), Vec::new())
+        }
+        TemplateList::Ready(templates) => (
+            None,
+            templates
+                .iter()
+                .map(|template| (template.id.clone(), template.label()))
+                .collect(),
+        ),
+    }
+}
+
+/// The WhatsApp side of the composer, when the window has closed: free text
+/// is not offered then, only a template.
+pub(crate) fn window_closed(screen: &ThreadScreen) -> Option<&WhatsAppComposer> {
+    screen
+        .whatsapp
+        .as_ref()
+        .filter(|whatsapp| whatsapp.window == WhatsAppWindowState::Closed)
 }
 
 /// How many images a message carries, in words.
@@ -213,6 +292,22 @@ mod imp {
         #[template_child]
         pub subtitle: TemplateChild<gtk::Label>,
         #[template_child]
+        pub assign_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub assign_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub assign_picker: TemplateChild<gtk::DropDown>,
+        #[template_child]
+        pub assign_line: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub assign_spinner: TemplateChild<gtk::Spinner>,
+        #[template_child]
+        pub assign_failure_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub assign_failure: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub assign_failure_dismiss: TemplateChild<gtk::Button>,
+        #[template_child]
         pub refresh_failure: TemplateChild<gtk::Label>,
         #[template_child]
         pub scroller: TemplateChild<gtk::ScrolledWindow>,
@@ -239,7 +334,43 @@ mod imp {
         #[template_child]
         pub failure_dismiss: TemplateChild<gtk::Button>,
         #[template_child]
+        pub channel_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub channel_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub channel_picker: TemplateChild<gtk::DropDown>,
+        #[template_child]
+        pub window_closed_label: TemplateChild<gtk::Label>,
+        #[template_child]
         pub attachments: TemplateChild<gtk::FlowBox>,
+        #[template_child]
+        pub attachments_note: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub template_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub template_message: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub template_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub template_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub template_picker: TemplateChild<gtk::DropDown>,
+        #[template_child]
+        pub variables_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub preview_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub preview_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub preview_text: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub template_spinner: TemplateChild<gtk::Spinner>,
+        #[template_child]
+        pub send_template_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub text_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub draft_row: TemplateChild<gtk::Box>,
         #[template_child]
         pub attach_button: TemplateChild<gtk::Button>,
         #[template_child]
@@ -277,6 +408,28 @@ mod imp {
         pub scroll: Cell<Scroll>,
         /// The file chooser, so leaving the thread can close it.
         pub picking: FilePicker,
+        /// Whether a picker's choices or choice are being set from the core,
+        /// which is not the member choosing.
+        pub choosing: Cell<bool>,
+        /// The reply channels the chooser was last built from.
+        pub channels: RefCell<Vec<ReplyTarget>>,
+        /// The owner picker's choices, as last built: each member's address,
+        /// or `None` for nobody.
+        pub assignees: RefCell<Vec<(Option<String>, String)>>,
+        /// The template picker's templates, by id, as last built; its first
+        /// choice is the placeholder, before them.
+        pub templates: RefCell<Vec<(String, String)>>,
+        /// One field per variable of the chosen template, as last built.
+        pub variables: RefCell<Vec<(gtk::Entry, gtk::Label)>>,
+        /// Each variable's text against the model's, as the composer's: a
+        /// value this field sent is only acknowledged when it comes back, so
+        /// typing on ahead of the model is never written over.
+        pub variable_echoes: RefCell<Vec<Echo>>,
+        /// The template the variable fields were built for, by id.
+        pub variables_for: RefCell<Option<String>>,
+        /// The template picker's choice as the core last had it: the
+        /// placeholder (0) until a template is chosen.
+        pub template_selected: Cell<u32>,
     }
 
     #[glib::object_subclass]
@@ -308,6 +461,13 @@ mod imp {
             on_click(&self.send_button, &*view, || {
                 Event::Thread(ThreadEvent::Send)
             });
+            on_click(&self.send_template_button, &*view, || {
+                Event::Thread(ThreadEvent::SendTemplate)
+            });
+            on_click(&self.assign_failure_dismiss, &*view, || {
+                Event::Thread(ThreadEvent::DismissAssignFailure)
+            });
+            view.watch_pickers();
             let weak = view.downgrade();
             self.draft_button.connect_clicked(move |_| {
                 if let Some(view) = weak.upgrade() {
@@ -402,6 +562,97 @@ impl ThreadView {
         });
     }
 
+    /// The three pickers send what the member chooses, and nothing while the
+    /// core's state is drawn into them, nor a choice already made: choosing
+    /// an owner is sent to the service, and its member is notified.
+    fn watch_pickers(&self) {
+        let imp = self.imp();
+        let weak = self.downgrade();
+        imp.channel_picker.connect_selected_notify(move |picker| {
+            let Some(view) = weak.upgrade() else {
+                return;
+            };
+            let imp = view.imp();
+            if imp.choosing.get() {
+                return;
+            }
+            let chosen = usize::try_from(picker.selected())
+                .ok()
+                .and_then(|index| imp.channels.borrow().get(index).cloned());
+            if let Some(chosen) = chosen {
+                view.send(Event::Thread(ThreadEvent::ChooseChannel(
+                    chosen.channel.to_owned(),
+                )));
+            }
+        });
+        let weak = self.downgrade();
+        imp.assign_picker.connect_selected_notify(move |picker| {
+            let Some(view) = weak.upgrade() else {
+                return;
+            };
+            let imp = view.imp();
+            if imp.choosing.get() {
+                return;
+            }
+            let chosen = usize::try_from(picker.selected())
+                .ok()
+                .and_then(|index| imp.assignees.borrow().get(index).cloned());
+            if let Some((email, _)) = chosen {
+                view.send(Event::Thread(ThreadEvent::Assign(email)));
+            }
+        });
+        let weak = self.downgrade();
+        imp.template_picker.connect_selected_notify(move |picker| {
+            let Some(view) = weak.upgrade() else {
+                return;
+            };
+            let imp = view.imp();
+            if imp.choosing.get() {
+                return;
+            }
+            // The first choice is the placeholder, before the templates. The
+            // core has no "no template" once one is chosen, so going back to
+            // the placeholder puts the chosen template back, on the next turn
+            // of the main loop (not while the drop-down is still choosing).
+            let selected = picker.selected();
+            if selected == 0 {
+                let chosen = imp.template_selected.get();
+                if chosen != 0 {
+                    let weak = view.downgrade();
+                    glib::idle_add_local_once(move || {
+                        if let Some(view) = weak.upgrade() {
+                            let picker = view.imp().template_picker.get();
+                            view.set_choices(&picker, None, chosen);
+                        }
+                    });
+                }
+                return;
+            }
+            let chosen = usize::try_from(selected)
+                .ok()
+                .and_then(|index| index.checked_sub(1))
+                .and_then(|index| imp.templates.borrow().get(index).cloned());
+            if let Some((id, _)) = chosen {
+                view.send(Event::Thread(ThreadEvent::ChooseTemplate(id)));
+            }
+        });
+    }
+
+    /// Sets `picker`'s choices to `labels` when they changed, and its choice
+    /// to `selected`, as the core's state rather than the member's choosing.
+    fn set_choices(&self, picker: &gtk::DropDown, labels: Option<&[String]>, selected: u32) {
+        let imp = self.imp();
+        imp.choosing.set(true);
+        if let Some(labels) = labels {
+            let words: Vec<&str> = labels.iter().map(String::as_str).collect();
+            picker.set_model(Some(&gtk::StringList::new(&words)));
+        }
+        if picker.selected() != selected {
+            picker.set_selected(selected);
+        }
+        imp.choosing.set(false);
+    }
+
     /// Keeps the history's position as it grows: see [`Scroll`].
     fn watch_scroll(&self) {
         let adjustment = self.imp().scroller.vadjustment();
@@ -472,11 +723,53 @@ impl ThreadView {
         };
         imp.subtitle.set_visible(!line.is_empty());
         imp.subtitle.set_label(&line);
+        self.draw_assignment(screen, capabilities);
         draw_line(&imp.read_only_label, note);
         imp.composer.set_visible(note.is_none());
         if note.is_none() {
             self.draw_composer(screen, capabilities);
         }
+    }
+
+    /// Who owns the thread: the picker for a member who may change it, once
+    /// the members are being read, and the owner's line for everyone else.
+    fn draw_assignment(&self, screen: &ThreadScreen, capabilities: &Capabilities) {
+        let imp = self.imp();
+        let assignment = &screen.assignment;
+        let picker = assignment.members != AssigneeList::NotLoaded;
+        imp.assign_row.set_visible(true);
+        imp.assign_label.set_visible(picker);
+        imp.assign_label
+            .set_label(core_text::thread_assign_label(lang()));
+        imp.assign_picker.set_visible(picker);
+        imp.assign_line.set_visible(!picker);
+        imp.assign_line.set_label(&assignment_line(assignment));
+        let choices = assignee_choices(assignment);
+        let selected = choices
+            .iter()
+            .position(|(email, _)| *email == assignment.assignee)
+            .unwrap_or(0);
+        let changed = *imp.assignees.borrow() != choices;
+        if changed {
+            imp.assignees.replace(choices.clone());
+        }
+        let labels: Vec<String> = choices.into_iter().map(|(_, label)| label).collect();
+        self.set_choices(
+            &imp.assign_picker,
+            changed.then_some(labels.as_slice()),
+            u32::try_from(selected).unwrap_or(0),
+        );
+        imp.assign_picker
+            .set_sensitive(screen.controls(capabilities).can_assign);
+        imp.assign_picker
+            .update_property(&[gtk::accessible::Property::Label(
+                core_text::thread_assign_label(lang()),
+            )]);
+        draw_spinner(&imp.assign_spinner, assignment.saving);
+        let failure = assignment.failure.as_ref().map(failure_text);
+        imp.assign_failure_box.set_visible(failure.is_some());
+        imp.assign_failure
+            .set_label(failure.as_deref().unwrap_or_default());
     }
 
     fn draw_history(&self, events: &ThreadEvents, thread_key: &str, capabilities: &Capabilities) {
@@ -556,6 +849,26 @@ impl ThreadView {
             .is_some_and(|target| target.channel == CHANNEL_SMS);
         imp.attach_button.set_visible(texting);
         imp.attach_button.set_sensitive(controls.can_attach);
+        self.draw_channels(screen, controls.can_choose_channel);
+        draw_line(
+            &imp.attachments_note,
+            screen
+                .attachments_blocked()
+                .then(|| core_text::thread_attachments_sms_only(lang())),
+        );
+        let closed = window_closed(screen);
+        draw_line(
+            &imp.window_closed_label,
+            closed.map(|_| core_text::thread_whatsapp_window_closed(lang())),
+        );
+        // Free text is not offered once the window has closed: the box is the
+        // template picker then.
+        imp.text_row.set_visible(closed.is_none());
+        imp.draft_row.set_visible(closed.is_none());
+        imp.template_box.set_visible(closed.is_some());
+        if let Some(whatsapp) = closed {
+            self.draw_templates(whatsapp, controls.can_send_template);
+        }
         imp.send_button.set_sensitive(controls.can_send);
         imp.draft_button.set_sensitive(controls.can_draft_reply);
         let failure = composer.failure.as_ref().map(failure_text);
@@ -581,6 +894,173 @@ impl ThreadView {
         if *imp.chips.borrow() != composer.attachments {
             self.draw_chips(&composer.attachments);
         }
+    }
+
+    /// The reply channel chooser, offered when there is more than one way to
+    /// reply, the one in use chosen.
+    fn draw_channels(&self, screen: &ThreadScreen, can_choose: bool) {
+        let imp = self.imp();
+        imp.channel_row.set_visible(screen.reply_choices.len() > 1);
+        imp.channel_label
+            .set_label(core_text::thread_channel_label(lang()));
+        let changed = *imp.channels.borrow() != screen.reply_choices;
+        if changed {
+            imp.channels.replace(screen.reply_choices.clone());
+        }
+        let labels: Vec<String> = screen
+            .reply_choices
+            .iter()
+            .map(|choice| reply_line(Some(choice)))
+            .collect();
+        let selected = screen
+            .reply_choices
+            .iter()
+            .position(|choice| screen.reply_target.as_ref() == Some(choice))
+            .unwrap_or(0);
+        self.set_choices(
+            &imp.channel_picker,
+            changed.then_some(labels.as_slice()),
+            u32::try_from(selected).unwrap_or(0),
+        );
+        imp.channel_picker.set_sensitive(can_choose);
+        imp.channel_picker
+            .update_property(&[gtk::accessible::Property::Label(
+                core_text::thread_channel_label(lang()),
+            )]);
+    }
+
+    /// The template picker a closed window offers: the approved templates, a
+    /// field per variable of the one chosen, the filled preview as the service
+    /// will store it, and Send template.
+    fn draw_templates(&self, whatsapp: &WhatsAppComposer, can_send: bool) {
+        let imp = self.imp();
+        let (message, templates) = template_choices(whatsapp);
+        draw_line(&imp.template_message, message);
+        imp.template_row.set_visible(!templates.is_empty());
+        imp.template_label
+            .set_label(core_text::thread_template_label(lang()));
+        let changed = *imp.templates.borrow() != templates;
+        let mut labels = vec![core_text::thread_template_placeholder(lang()).to_owned()];
+        labels.extend(templates.iter().map(|(_, label)| label.clone()));
+        let chosen = whatsapp.template();
+        let selected = chosen
+            .and_then(|template| templates.iter().position(|(id, _)| *id == template.id))
+            .map_or(0, |index| index + 1);
+        if changed {
+            imp.templates.replace(templates);
+        }
+        imp.template_selected
+            .set(u32::try_from(selected).unwrap_or(0));
+        self.set_choices(
+            &imp.template_picker,
+            changed.then_some(labels.as_slice()),
+            u32::try_from(selected).unwrap_or(0),
+        );
+        imp.template_picker.set_sensitive(!whatsapp.sending);
+        imp.template_picker
+            .update_property(&[gtk::accessible::Property::Label(
+                core_text::thread_template_label(lang()),
+            )]);
+        self.draw_variables(whatsapp);
+        let preview = whatsapp.preview();
+        imp.preview_box.set_visible(preview.is_some());
+        imp.preview_label
+            .set_label(core_text::thread_template_preview(lang()));
+        imp.preview_text
+            .set_label(preview.as_deref().unwrap_or_default());
+        imp.send_template_button
+            .set_label(core_text::thread_template_send(lang()));
+        imp.send_template_button.set_sensitive(can_send);
+        draw_spinner(&imp.template_spinner, whatsapp.sending);
+    }
+
+    /// One field per `{{n}}` of the chosen template, built again only when
+    /// another template is chosen, so typing keeps its place.
+    fn draw_variables(&self, whatsapp: &WhatsAppComposer) {
+        let imp = self.imp();
+        let template = whatsapp.template();
+        let count = template.map_or(0, |template| template.variable_count);
+        let id = template.map(|template| template.id.clone());
+        if *imp.variables_for.borrow() != id {
+            imp.variables_for.replace(id);
+            clear_box(&imp.variables_box);
+            let mut fields = Vec::with_capacity(count);
+            for index in 0..count {
+                let label = WhatsAppComposer::variable_label(index);
+                let entry = gtk::Entry::builder()
+                    .placeholder_text(label.as_str())
+                    .name("template-variable")
+                    .build();
+                entry.update_property(&[gtk::accessible::Property::Label(&label)]);
+                let weak = self.downgrade();
+                entry.connect_changed(move |entry| {
+                    let Some(view) = weak.upgrade() else {
+                        return;
+                    };
+                    let imp = view.imp();
+                    if imp.choosing.get() {
+                        return;
+                    }
+                    let text = entry.text();
+                    if let Some(echo) = imp.variable_echoes.borrow_mut().get_mut(index) {
+                        echo.typed(&text);
+                    }
+                    view.send(Event::Thread(ThreadEvent::TemplateVariable(
+                        index,
+                        text.into(),
+                    )));
+                });
+                let required = gtk::Label::builder()
+                    .xalign(0.0)
+                    .use_markup(false)
+                    .css_classes(["caption", "error"])
+                    .build();
+                let field = gtk::Box::builder()
+                    .orientation(gtk::Orientation::Vertical)
+                    .spacing(2)
+                    .build();
+                field.append(
+                    &gtk::Label::builder()
+                        .label(label.as_str())
+                        .xalign(0.0)
+                        .use_markup(false)
+                        .css_classes(["caption", "dim-label"])
+                        .build(),
+                );
+                field.append(&entry);
+                field.append(&required);
+                imp.variables_box.append(&field);
+                fields.push((entry, required));
+            }
+            imp.variables.replace(fields);
+            imp.variable_echoes
+                .replace((0..count).map(|_| Echo::default()).collect());
+        }
+        imp.variables_box.set_visible(count > 0);
+        imp.choosing.set(true);
+        for (index, (entry, required)) in imp.variables.borrow().iter().enumerate() {
+            let value = whatsapp.variables.get(index).cloned().unwrap_or_default();
+            let shown = entry.text();
+            // Only a value the field did not send is written: one it sent is
+            // acknowledged, and what was typed since stays.
+            let write = imp
+                .variable_echoes
+                .borrow_mut()
+                .get_mut(index)
+                .is_some_and(|echo| echo.write(&value, &shown));
+            if write {
+                entry.set_text(&value);
+            }
+            entry.set_sensitive(!whatsapp.sending);
+            draw_line(
+                required,
+                value
+                    .trim()
+                    .is_empty()
+                    .then(|| core_text::thread_template_variable_required(lang())),
+            );
+        }
+        imp.choosing.set(false);
     }
 
     fn draw_chips(&self, attachments: &[String]) {
@@ -642,6 +1122,8 @@ impl ThreadView {
         let imp = self.imp();
         imp.picking.close();
         imp.thread_key.replace(None);
+        // Another thread's template fields start afresh.
+        imp.variables_for.replace(None);
     }
 }
 
@@ -892,6 +1374,107 @@ mod tests {
         };
         assert_eq!(reply_line(Some(&email)), "Email to ada@example.com");
         assert_eq!(reply_line(None), "");
+    }
+
+    #[test]
+    fn every_reply_channel_reads_as_a_person_names_it() {
+        let target = |channel, to: &str| ReplyTarget {
+            to: to.to_owned(),
+            channel,
+        };
+        assert_eq!(
+            reply_line(Some(&target(CHANNEL_WHATSAPP, "+14165550177"))),
+            "WhatsApp \u{b7} +1 416 555 0177"
+        );
+        assert_eq!(
+            reply_line(Some(&target(CHANNEL_MESSENGER, "fb:5550101"))),
+            "Messenger",
+            "an fb: id means nothing to a person"
+        );
+        assert_eq!(
+            reply_line(Some(&target(CHANNEL_INSTAGRAM, "ig:5550102"))),
+            "Instagram"
+        );
+        assert_eq!(channel("messenger"), "Messenger");
+        assert_eq!(channel("instagram"), "Instagram");
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(
+                reply_line(Some(&target(CHANNEL_WHATSAPP, "+14165550177"))),
+                "WhatsApp \u{b7} +1 416 555 0177"
+            );
+            assert_eq!(channel("messenger"), "Messenger");
+        });
+    }
+
+    #[test]
+    fn the_owner_picker_offers_nobody_the_members_and_the_owner() {
+        let mut assignment = ThreadAssignment::default();
+        assert_eq!(assignment_line(&assignment), "Unassigned");
+        assert_eq!(
+            assignee_choices(&assignment),
+            [(None, "Unassigned".to_owned())],
+            "nobody, until the members are read"
+        );
+        assignment.assignee = Some("gone@example.com".to_owned());
+        assignment.members = AssigneeList::Ready(vec!["ada@example.com".to_owned()]);
+        assert_eq!(assignment_line(&assignment), "Assigned to gone@example.com");
+        assert_eq!(
+            assignee_choices(&assignment),
+            [
+                (None, "Unassigned".to_owned()),
+                (
+                    Some("ada@example.com".to_owned()),
+                    "ada@example.com".to_owned()
+                ),
+                (
+                    Some("gone@example.com".to_owned()),
+                    "gone@example.com".to_owned()
+                ),
+            ],
+            "the owner shows even when no longer a member"
+        );
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(assignment_line(&assignment), "Assignée à gone@example.com");
+            assert_eq!(assignee_choices(&assignment)[0].1, "Non assignée");
+        });
+    }
+
+    #[test]
+    fn a_closed_window_offers_the_approved_templates_or_says_why_not() {
+        let mut whatsapp = WhatsAppComposer::default();
+        assert_eq!(
+            template_choices(&whatsapp),
+            (Some("Loading templates"), Vec::new())
+        );
+        whatsapp.templates = TemplateList::Failed(crate::testing::failure("Offline.", true));
+        assert_eq!(
+            template_choices(&whatsapp).0,
+            Some("The templates could not be loaded. Try again in a moment.")
+        );
+        whatsapp.templates = TemplateList::Ready(Vec::new());
+        assert_eq!(
+            template_choices(&whatsapp).0,
+            Some(
+                "No approved template for this number yet. Refresh the templates in Messaging settings."
+            )
+        );
+        whatsapp.templates = TemplateList::Ready(vec![district_core::SendableTemplate {
+            id: "wa_tpl_reminder".to_owned(),
+            name: "appointment_reminder".to_owned(),
+            language: "en_US".to_owned(),
+            body: "Hi {{1}}.".to_owned(),
+            variable_count: 1,
+        }]);
+        assert_eq!(
+            template_choices(&whatsapp),
+            (
+                None,
+                vec![(
+                    "wa_tpl_reminder".to_owned(),
+                    "appointment_reminder (en_US)".to_owned()
+                )]
+            )
+        );
     }
 
     #[test]

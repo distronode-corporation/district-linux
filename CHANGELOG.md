@@ -13,6 +13,29 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+App parity (1), (2), (3) and (5) on Linux, as District AI for Windows has them: reply
+channels, Messenger and Instagram conversations, conversation owners, and WhatsApp's
+templates once the customer-service window has closed.
+
+### Added
+
+- Messenger and Instagram conversations in the Inbox, each labelled by its channel, and
+  each conversation's owner under its row ("Assigned to ..."). The app reads the inbox
+  with the core's `meta_channels` on, and its presence declares
+  `capabilities: ["metaChannels"]` when it registers this desktop, so the service also
+  sends it those messages.
+- A reply channel chooser in a conversation, listing the ways to reply the service names
+  for it (text message, email, WhatsApp, Messenger, Instagram), the first chosen. Images
+  go by text message only: on another channel the composer says so beside them, and Send
+  waits until they are removed.
+- An owner picker under a conversation's title ("Unassigned", the workspace's Agency and
+  Client members, and the current owner even when no longer among them), one change at a
+  time, with the service's refusal beside it. A Viewer sees the owner's line without the
+  picker.
+- On WhatsApp, a closed customer-service window turns the composer into a template picker:
+  the approved templates, a field per variable, the filled preview as the service will
+  store it, and Send template. Every word on these screens is the core's.
+
 ### Changed
 
 - The dialler is country-aware (dialler design A, the core's rules): a flag and
@@ -23,8 +46,10 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   "Rings <country> · <international number>", and that E.164 number is what is sent.
   A wrong length keeps Call off and is said once the box loses the keyboard, on Enter,
   or when the switched-off Call button is pressed. The workspace's home country comes
-  from its own numbers. The core is district-core-rust 8.0.0 (up from 7.0.1), the
-  release that carries the dialler.
+  from its own numbers.
+- The core is district-core-rust 8.0.0 (up from 7.0.1), the release that carries the
+  dialler, the reply channels, Messenger and Instagram, thread owners and WhatsApp
+  templates.
 
 ## [3.2.0] - 2026-10-27
 

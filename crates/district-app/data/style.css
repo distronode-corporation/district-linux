@@ -53,6 +53,20 @@ row.unread .conversation-title {
   font-weight: bold;
 }
 
+/* A Messenger or Instagram thread's channel, beside its name in the inbox. */
+.channel-chip {
+  padding: 0 7px;
+  border-radius: 999px;
+  background-color: alpha(@accent_bg_color, 0.15);
+  color: @accent_color;
+  font-weight: bold;
+}
+
+/* A WhatsApp template filled in, as the service will store it. */
+.template-preview {
+  padding: 8px 10px;
+}
+
 .bubble {
   padding: 8px 12px;
   border-radius: 14px;

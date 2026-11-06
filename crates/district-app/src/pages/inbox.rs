@@ -6,8 +6,8 @@ use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::BTreeSet;
 
 use district_core::{
-    ComposeEvent, ConversationList, Conversations, Event, InboxEvent, Route, SearchState, SignedIn,
-    format_phone_number,
+    ComposeEvent, ConversationList, Conversations, Event, InboxEvent, InboxScreen, Route,
+    SearchState, SignedIn, format_phone_number,
 };
 use district_model::{ConversationSummary, MessageSearchHit};
 
@@ -448,16 +448,46 @@ pub(crate) fn avatar(title: &str, size: i32) -> adw::Avatar {
     adw::Avatar::new(size, Some(title), has_initials(title))
 }
 
-/// What a screen reader says for a thread's row: who, the latest message,
-/// and its badges.
-pub(crate) fn row_description(title: &str, preview: &str, unread: i64, draft: bool) -> String {
-    let mut parts = vec![title.to_owned(), preview.to_owned()];
+/// What a row says besides who and the latest message: the channel of a
+/// Messenger or Instagram thread, which has no number or address to tell it
+/// by, and the thread's owner. Both in the core's words.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct RowExtras {
+    /// "Messenger" or "Instagram", for a thread on one.
+    pub channel: Option<&'static str>,
+    /// "Assigned to ada@example.com", for a thread someone owns.
+    pub assignee: Option<String>,
+}
+
+impl RowExtras {
+    pub(crate) fn of(conversation: &ConversationSummary) -> Self {
+        Self {
+            channel: InboxScreen::meta_channel_label(conversation),
+            assignee: InboxScreen::assignee_line(conversation),
+        }
+    }
+}
+
+/// What a screen reader says for a thread's row: who, on which channel when
+/// it is Messenger or Instagram, the latest message, its badges, and its
+/// owner.
+pub(crate) fn row_description(
+    title: &str,
+    preview: &str,
+    unread: i64,
+    draft: bool,
+    extras: &RowExtras,
+) -> String {
+    let mut parts = vec![title.to_owned()];
+    parts.extend(extras.channel.map(str::to_owned));
+    parts.push(preview.to_owned());
     if unread > 0 {
         parts.push(text::inbox_unread(lang(), unread));
     }
     if draft {
         parts.push(text::inbox_draft_saved(lang()).to_owned());
     }
+    parts.extend(extras.assignee.clone());
     parts.join(", ")
 }
 
@@ -482,9 +512,20 @@ fn conversation_row(
             .css_classes(classes.to_vec())
             .build()
     };
+    let extras = RowExtras::of(conversation);
     let top = line(6);
     let name = text(&title, &["conversation-title"]);
     top.append(&name);
+    if let Some(channel) = extras.channel {
+        top.append(
+            &gtk::Label::builder()
+                .label(channel)
+                .name("channel-chip")
+                .valign(gtk::Align::Center)
+                .css_classes(["channel-chip", "caption"])
+                .build(),
+        );
+    }
     let when = now
         .and_then(|now| short_time(&conversation.last_message.created_at, now))
         .unwrap_or_default();
@@ -528,6 +569,11 @@ fn conversation_row(
         .build();
     lines.append(&top);
     lines.append(&bottom);
+    if let Some(assignee) = &extras.assignee {
+        let owner = text(assignee, &["caption", "dim-label"]);
+        owner.set_widget_name("assignee-line");
+        lines.append(&owner);
+    }
     let content = gtk::Box::builder()
         .spacing(12)
         .margin_start(12)
@@ -545,7 +591,7 @@ fn conversation_row(
         row.add_css_class("unread");
     }
     row.update_property(&[gtk::accessible::Property::Label(&row_description(
-        &title, &preview, unread, has_draft,
+        &title, &preview, unread, has_draft, &extras,
     ))]);
     row
 }
@@ -676,11 +722,23 @@ mod tests {
 
     #[test]
     fn a_row_says_who_what_and_its_badges() {
+        let none = RowExtras::default();
         assert_eq!(
-            row_description("Ada", "Thanks.", 2, true),
+            row_description("Ada", "Thanks.", 2, true, &none),
             "Ada, Thanks., 2 unread, reply saved as a draft"
         );
-        assert_eq!(row_description("Ada", "Thanks.", 0, false), "Ada, Thanks.");
+        assert_eq!(
+            row_description("Ada", "Thanks.", 0, false, &none),
+            "Ada, Thanks."
+        );
+        let owned = RowExtras {
+            channel: Some("Messenger"),
+            assignee: Some("Assigned to ada@example.com".to_owned()),
+        };
+        assert_eq!(
+            row_description("fb:5550101", "Hi.", 1, false, &owned),
+            "fb:5550101, Messenger, Hi., 1 unread, Assigned to ada@example.com"
+        );
     }
 
     #[test]
