@@ -59,6 +59,13 @@ templates once the customer-service window has closed.
   reply channels, Messenger and Instagram, thread owners and WhatsApp templates, and
   9.0.0 the Messenger and Instagram reply window.
 
+### Fixed
+
+- A placed call or an HQ voice session no longer ends when the connection is rebuilt
+  (core 9.0.0). The media library reports everyone as having left while it reconnects;
+  the far end or the HQ voice agent leaving now ends the call or the session only once a
+  2-second grace window is over with them still gone and the connection up.
+
 ## [3.2.0] - 2026-10-27
 
 District HQ by voice: talk to District HQ in a build with calls, with every change it

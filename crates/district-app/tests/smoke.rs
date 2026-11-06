@@ -3460,6 +3460,10 @@ fn hq_voice(smoke: &Smoke) {
             identity: "agent-hq".to_owned(),
         },
     );
+    // Not at once: a connection being rebuilt reports the agent as gone too,
+    // so the core waits out its grace window first (core 9.0.0).
+    assert!(!smoke.pending("DisconnectMedia"));
+    smoke.wait_over(district_core::EMPTY_ROOM_GRACE);
     assert!(smoke.pending("DisconnectMedia"));
     assert!(smoke.shows_text("Voice session ended because District HQ left the session."));
     assert!(smoke.shown("voice_card") && smoke.shown("voice_start"));
