@@ -11,8 +11,12 @@
 //! reply channel chooser (text message, email, WhatsApp, Messenger,
 //! Instagram), the owner picker in the header, and, on WhatsApp once the
 //! customer-service window has closed, the approved templates in place of free
-//! text. Every word on them is the core's (`core_text`), and every decision
-//! (what is offered, when each control works) is the core's too.
+//! text. On Messenger and Instagram, the reply window as the web Inbox shows
+//! it: a "Human agent reply (7-day window)" badge while only a person may
+//! reply (the model's reply is off), and once it has closed, a warning over a
+//! composer whose Send is off; no countdown. Every word on them is the core's
+//! (`core_text`), and every decision (what is offered, when each control
+//! works) is the core's too.
 
 use std::cell::{Cell, OnceCell, RefCell};
 
@@ -205,6 +209,21 @@ pub(crate) fn window_closed(screen: &ThreadScreen) -> Option<&WhatsAppComposer> 
         .filter(|whatsapp| whatsapp.window == WhatsAppWindowState::Closed)
 }
 
+/// Why nothing can be written now, over the composer: the WhatsApp window has
+/// closed (only a template may go), or the Messenger or Instagram window has
+/// (nothing may go until the customer writes again). `None` while a window is
+/// open, being read, unreadable or in a state this build does not know: those
+/// block nothing.
+pub(crate) fn closed_line(screen: &ThreadScreen) -> Option<&'static str> {
+    if window_closed(screen).is_some() {
+        Some(core_text::thread_whatsapp_window_closed(lang()))
+    } else if screen.meta_window_closed() {
+        Some(core_text::thread_meta_window_closed(lang()))
+    } else {
+        None
+    }
+}
+
 /// How many images a message carries, in words.
 pub(crate) fn images_attached(count: usize) -> String {
     text::thread_images_attached(lang(), i64::try_from(count).unwrap_or(i64::MAX))
@@ -339,6 +358,8 @@ mod imp {
         pub channel_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub channel_picker: TemplateChild<gtk::DropDown>,
+        #[template_child]
+        pub meta_badge: TemplateChild<gtk::Label>,
         #[template_child]
         pub window_closed_label: TemplateChild<gtk::Label>,
         #[template_child]
@@ -857,12 +878,16 @@ impl ThreadView {
                 .then(|| core_text::thread_attachments_sms_only(lang())),
         );
         let closed = window_closed(screen);
+        draw_line(&imp.window_closed_label, closed_line(screen));
         draw_line(
-            &imp.window_closed_label,
-            closed.map(|_| core_text::thread_whatsapp_window_closed(lang())),
+            &imp.meta_badge,
+            screen
+                .meta_human_agent()
+                .then(|| core_text::thread_meta_human_agent(lang())),
         );
-        // Free text is not offered once the window has closed: the box is the
-        // template picker then.
+        // Free text is not offered once the WhatsApp window has closed: the
+        // box is the template picker then. A closed Messenger or Instagram
+        // window keeps the box, as the web Inbox does, with Send off.
         imp.text_row.set_visible(closed.is_none());
         imp.draft_row.set_visible(closed.is_none());
         imp.template_box.set_visible(closed.is_some());

@@ -224,6 +224,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::calls_page_calls(Locale::FrCa), "Appels");
     assert_eq!(text::calls_page_choose_call_see_summary_transcript(Locale::En), "Choose a call to see its summary and transcript.");
     assert_eq!(text::calls_page_choose_call_see_summary_transcript(Locale::FrCa), "Choisissez un appel pour voir son résumé et sa transcription.");
+    assert_eq!(text::calls_page_live_calls(Locale::En), "Live calls");
+    assert_eq!(text::calls_page_live_calls(Locale::FrCa), "Appels en cours");
     assert_eq!(text::calls_page_no_call_open(Locale::En), "No call open");
     assert_eq!(text::calls_page_no_call_open(Locale::FrCa), "Aucun appel sélectionné");
     assert_eq!(text::calls_page_place_call(Locale::En), "Place a call");

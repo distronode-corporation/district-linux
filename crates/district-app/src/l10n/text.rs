@@ -965,6 +965,15 @@ pub fn calls_page_choose_call_see_summary_transcript(l: Locale) -> &'static str 
     }
 }
 
+/// `calls_page.live_calls`
+#[must_use]
+pub fn calls_page_live_calls(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Live calls",
+        Locale::FrCa => "Appels en cours",
+    }
+}
+
 /// `calls_page.no_call_open`
 #[must_use]
 pub fn calls_page_no_call_open(l: Locale) -> &'static str {

@@ -851,6 +851,14 @@ screen = "calls_page"
 state = "reviewed"
 note = "In calls-page.ui."
 
+[calls_page.live_calls]
+en = "Live calls"
+fr = "Appels en cours"
+ctx = "title"
+screen = "calls_page"
+state = "reviewed"
+note = "In calls-page.ui: the heading of the calls in progress above the call log, and that list's accessible name. Each opens to the call's supervise controls. The web dashboard's Live calls page and its menu entry, verbatim in both languages."
+
 [calls_page.no_call_open]
 en = "No call open"
 fr = "Aucun appel sélectionné"

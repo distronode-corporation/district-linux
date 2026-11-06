@@ -95,6 +95,38 @@
                                     <property name="margin-top">12</property>
                                     <property name="margin-bottom">12</property>
                                     <child>
+                                      <!-- The calls in progress, above the log: each opens
+                                           to its supervise controls. Shown only while there
+                                           are any. -->
+                                      <object class="GtkBox" id="live_box">
+                                        <property name="visible">False</property>
+                                        <property name="orientation">vertical</property>
+                                        <property name="spacing">8</property>
+                                        <property name="margin-bottom">10</property>
+                                        <child>
+                                          <object class="GtkLabel" id="live_heading">
+                                            <property name="label" translatable="yes" context="calls_page.live_calls">Live calls</property>
+                                            <property name="xalign">0</property>
+                                            <property name="wrap">True</property>
+                                            <style>
+                                              <class name="heading"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkListBox" id="live_list">
+                                            <property name="selection-mode">single</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes" context="calls_page.live_calls">Live calls</property>
+                                            </accessibility>
+                                            <style>
+                                              <class name="boxed-list"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
                                       <object class="GtkLabel" id="refresh_failure">
                                         <property name="visible">False</property>
                                         <property name="xalign">0</property>
