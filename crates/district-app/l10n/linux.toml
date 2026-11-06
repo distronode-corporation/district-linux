@@ -3365,48 +3365,48 @@ en = "Messenger and Instagram conversations in the Inbox, a reply channel choose
 fr = "Les conversations Messenger et Instagram dans la boîte de réception, le choix du canal de réponse (texto, courriel, WhatsApp, Messenger, Instagram), et la personne assignée à chaque conversation, avec un sélecteur pour l'assigner"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
-note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them. New in 3.3.0; the French is a draft for review."
+state = "reviewed"
+note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_3_0.li2]
 en = "On WhatsApp, an approved template once the 24-hour window has closed; on Messenger and Instagram, the reply window, as on the web Inbox"
 fr = "Sur WhatsApp, un modèle approuvé une fois la fenêtre de 24 heures fermée; sur Messenger et Instagram, la fenêtre de réponse, comme dans la boîte de réception Web"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
-note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them. New in 3.3.0; the French is a draft for review."
+state = "reviewed"
+note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_3_0.li3]
 en = "Live calls above the call log: listen in on a call under way, send your receptionist a note, or take the call over and hand it back"
 fr = "Appels en cours au-dessus du journal des appels\u00A0: vous pouvez écouter un appel en direct, souffler une consigne à votre réceptionniste, ou prendre l'appel et le lui redonner"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
-note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them. New in 3.3.0; the French is a draft for review."
+state = "reviewed"
+note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_3_0.li4]
 en = "The dialler has a country button with a searchable list, and says which country a number rings before you call"
 fr = "Le clavier a un bouton de pays et une liste où chercher, et indique le pays de destination d'un numéro avant que vous appeliez"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
-note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them. New in 3.3.0; the French is a draft for review."
+state = "reviewed"
+note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_3_0.li5]
 en = "Calls no longer drop when the connection is rebuilt"
 fr = "Les appels ne sont plus coupés quand la connexion est rétablie"
 ctx = "body"
 screen = "metainfo"
-state = "draft"
-note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them. New in 3.3.0; the French is a draft for review."
+state = "reviewed"
+note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.release_3_3_0.p]
 en = "The web Inbox's channels and live supervise: reply by Messenger, Instagram or WhatsApp, assign conversations, and listen in on a call, send your receptionist a note or take the call over."
 fr = "Les canaux de la boîte de réception Web et la supervision en direct\u00A0: répondez par Messenger, Instagram ou WhatsApp, assignez les conversations, et vous pouvez écouter un appel, souffler une consigne à votre réceptionniste ou prendre l'appel."
 ctx = "body"
 screen = "metainfo"
-state = "draft"
-note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them. New in 3.3.0; the French is a draft for review."
+state = "reviewed"
+note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them."
 
 [metainfo.screenshot_caption.call]
 en = "A call placed from the desktop, with mute and hang up always in reach"
