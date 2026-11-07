@@ -2393,6 +2393,15 @@ pub fn guard_keep_editing(l: Locale) -> &'static str {
     }
 }
 
+/// `hq.hold_to_talk`
+#[must_use]
+pub fn hq_hold_to_talk(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Hold to talk",
+        Locale::FrCa => "Maintenir pour parler",
+    }
+}
+
 /// `hq.unknown_note`
 #[must_use]
 pub fn hq_unknown_note(l: Locale) -> &'static str {
@@ -2813,6 +2822,15 @@ pub fn marketplace_opt_in_flow(l: Locale) -> &'static str {
     match l {
         Locale::En => "How people agree to the messages (optional)",
         Locale::FrCa => "Comment les gens consentent aux messages (facultatif)",
+    }
+}
+
+/// `marketplace.upload_for`
+#[must_use]
+pub fn marketplace_upload_for(l: Locale, requirement: &str) -> String {
+    match l {
+        Locale::En => format!("Upload {requirement}"),
+        Locale::FrCa => format!("Téléverser\u{00A0}: {requirement}"),
     }
 }
 

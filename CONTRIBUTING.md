@@ -446,9 +446,12 @@ thread's owner given and refused, the reply channels, and a closed WhatsApp
 window's template filled and sent), the call log and a call's transcript,
 contacts (adding, editing, research, blocking, deleting, each question) and the
 blocked callers, District HQ (a question, an answer in Markdown and its links, a
-change proposed, dismissed and confirmed), analytics and its charts, the phone
+change proposed, dismissed and confirmed; voice, open and push to talk), analytics and its charts, the phone
 numbers and their search, a number's routing reapplied and its release, the
-carrier tab (a trunk, the passcode sender, a lookup, both registrations), billing, workflows with their runs, switches and the
+carrier tab (a trunk, the passcode sender, a lookup, both registrations), the
+Registrations tab (requirements, a draft's details, a document uploaded through
+the file chooser and removed, a filing in review, refused and unanswered),
+billing, workflows with their runs, switches and the
 campaign's question, booking pages and their sections, the Desk
 (the queue, raising a ticket, a ticket's status and reply, the settings and a logo
 picked in the file chooser), support requests (raising one, a reply, closing one),

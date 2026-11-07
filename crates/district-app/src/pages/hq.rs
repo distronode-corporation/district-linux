@@ -289,6 +289,7 @@ pub struct Voice {
     spinner: gtk::Spinner,
     line: gtk::Label,
     microphone: gtk::Button,
+    hold: gtk::Button,
     start: gtk::Button,
     stop: gtk::Button,
     dismiss: gtk::Button,
@@ -310,6 +311,159 @@ pub(crate) fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
         .valign(gtk::Align::Center)
         .css_classes(classes.to_vec())
         .build()
+}
+
+/// What Hold to talk holds: whether the microphone was asked on, and the
+/// release on its way. Every way of letting go (the release, a cancel, the
+/// keyboard leaving, the button leaving the screen) is one release, sent from
+/// the main loop: several of them happen while the window is drawn, when the
+/// sink drops what it is sent, and a microphone left on is the one outcome
+/// this must never have.
+#[derive(Debug)]
+struct Hold<P: Sends> {
+    page: glib::WeakRef<P>,
+    /// Whether Microphone(true) was sent and its (false) not yet.
+    held: Cell<bool>,
+    /// The press or release last asked for: a release sends only if nothing
+    /// was asked after it, so two ways of letting go at once send one off,
+    /// and a press after a release keeps the microphone on.
+    asked: Cell<u64>,
+}
+
+impl<P: Sends> Hold<P> {
+    fn new(page: &P) -> Self {
+        Self {
+            page: page.downgrade(),
+            held: Cell::new(false),
+            asked: Cell::new(0),
+        }
+    }
+
+    /// Held down: Microphone(true), once per press however often a key
+    /// repeats. Input is never handled while the window is drawn.
+    fn press(&self) {
+        self.asked.set(self.asked.get() + 1);
+        if !self.held.replace(true)
+            && let Some(page) = self.page.upgrade()
+        {
+            page.send(Event::Microphone(true));
+        }
+    }
+
+    /// Let go, however: Microphone(false), once, from the main loop.
+    fn release(self: &std::rc::Rc<Self>) {
+        let asked = self.asked.get() + 1;
+        self.asked.set(asked);
+        Self::release_later(std::rc::Rc::downgrade(self), asked);
+    }
+
+    /// Sends the release `asked` once the window is not being drawn, unless
+    /// something was asked since or nothing is held. A sink still quiet when
+    /// it runs puts it off again: it is never dropped.
+    fn release_later(hold: std::rc::Weak<Self>, asked: u64) {
+        glib::idle_add_local_once(move || {
+            let Some(this) = hold.upgrade() else {
+                return;
+            };
+            if this.asked.get() != asked || !this.held.get() {
+                return;
+            }
+            let Some(page) = this.page.upgrade() else {
+                return;
+            };
+            match page.sink() {
+                Some(sink) if sink.is_quiet() => Self::release_later(hold, asked),
+                Some(sink) => {
+                    this.held.set(false);
+                    sink.send(Event::Microphone(false));
+                }
+                None => this.held.set(false),
+            }
+        });
+    }
+}
+
+/// Hold to talk, for a push-to-talk session: the microphone is on while the
+/// button is held down, with the pointer or with Space or Enter, and off when
+/// it is let go, when the keyboard leaves it, or when it is hidden. In place
+/// of the microphone button, which would leave it on: a push-to-talk session
+/// joins with the microphone off and opens it only while the member acts.
+pub(crate) fn hold_to_talk<P: Sends>(page: &P, name: &str) -> gtk::Button {
+    let label = text::hq_hold_to_talk(lang());
+    let button = gtk::Button::builder()
+        .child(
+            &adw::ButtonContent::builder()
+                .icon_name("audio-input-microphone-symbolic")
+                .label(label)
+                .build(),
+        )
+        .name(name)
+        .valign(gtk::Align::Center)
+        .css_classes(["pill"])
+        .visible(false)
+        .build();
+    let hold = std::rc::Rc::new(Hold::new(page));
+    // Before the button's own click gesture, in the capture phase, and it
+    // claims the press: the button's gesture claims it otherwise, and a
+    // gesture on the same widget that loses the press is cancelled, which
+    // would turn the microphone off as soon as it went on. The button never
+    // clicks; holding it is all it does. Its "stopped" is not a release: the
+    // gesture stops counting presses once the double-click time is up, while
+    // the button is still held.
+    let press = gtk::GestureClick::builder()
+        .button(gtk::gdk::BUTTON_PRIMARY)
+        .propagation_phase(gtk::PropagationPhase::Capture)
+        .build();
+    let on = hold.clone();
+    press.connect_pressed(move |gesture, _, _, _| {
+        gesture.set_state(gtk::EventSequenceState::Claimed);
+        on.press();
+    });
+    let off = hold.clone();
+    press.connect_released(move |_, _, _, _| off.release());
+    let off = hold.clone();
+    press.connect_cancel(move |_, _| off.release());
+    button.add_controller(press);
+    let keys = gtk::EventControllerKey::builder()
+        .propagation_phase(gtk::PropagationPhase::Capture)
+        .build();
+    let on = hold.clone();
+    keys.connect_key_pressed(move |_, key, _, _| {
+        if is_talk_key(key) {
+            // A held key repeats; the first press alone turns it on.
+            on.press();
+            glib::Propagation::Stop
+        } else {
+            glib::Propagation::Proceed
+        }
+    });
+    let off = hold.clone();
+    keys.connect_key_released(move |_, key, _, _| {
+        if is_talk_key(key) {
+            off.release();
+        }
+    });
+    button.add_controller(keys);
+    let focus = gtk::EventControllerFocus::new();
+    let off = hold.clone();
+    focus.connect_leave(move |_| off.release());
+    button.add_controller(focus);
+    let off = hold;
+    button.connect_unmap(move |_| off.release());
+    button.update_property(&[gtk::accessible::Property::Label(label)]);
+    button
+}
+
+/// The keys that hold a button down.
+fn is_talk_key(key: gtk::gdk::Key) -> bool {
+    matches!(
+        key,
+        gtk::gdk::Key::space
+            | gtk::gdk::Key::KP_Space
+            | gtk::gdk::Key::Return
+            | gtk::gdk::Key::KP_Enter
+            | gtk::gdk::Key::ISO_Enter
+    )
 }
 
 /// The tallest the cards proposed by voice grow before they scroll, and the
@@ -448,6 +602,7 @@ impl HqPage {
             .valign(gtk::Align::Center)
             .css_classes(["circular"])
             .build();
+        let hold = hold_to_talk(self, "voice_hold_to_talk");
         // The icon beside the words, never in their place: a button given an
         // icon name loses its label, and with it its name to a screen reader.
         let start = gtk::Button::builder()
@@ -565,11 +720,15 @@ impl HqPage {
             .build();
         let cards_scroller = voice_cards_scroller(&cards, "voice_cards_scroller");
 
+        // Under the bar, on a line of its own: its words beside the bar's
+        // buttons would hold a narrow window wider than itself.
+        hold.set_halign(gtk::Align::Start);
         // Above the typed card and the question line, in reading order.
         for widget in [
             cards_scroller.upcast_ref::<gtk::Widget>(),
             notice.upcast_ref(),
             disclosure.upcast_ref(),
+            hold.upcast_ref(),
             bar.upcast_ref(),
         ] {
             imp.bottom.prepend(widget);
@@ -597,6 +756,7 @@ impl HqPage {
                 spinner,
                 line,
                 microphone,
+                hold,
                 start,
                 stop,
                 dismiss,
@@ -650,7 +810,13 @@ impl HqPage {
         let microphone = session.map_or(MicrophoneState::Off, |session| session.microphone);
         let (icon, action, wanted) = microphone_button(microphone);
         imp.microphone_wanted.set(wanted);
-        voice.microphone.set_visible(live && session.is_some());
+        let push_to_talk = state.push_to_talk;
+        voice
+            .microphone
+            .set_visible(live && session.is_some() && !push_to_talk);
+        voice
+            .hold
+            .set_visible(live && session.is_some() && push_to_talk);
         voice.microphone.set_icon_name(icon);
         voice
             .microphone

@@ -2,7 +2,7 @@
 //! reapplied or released (behind the core's confirmation); a search of the
 //! numbers for sale; and the carrier tab ([`CarrierPanel`]). Nothing here buys
 //! a number: a member whose role could buy one is offered the web marketplace
-//! instead.
+//! instead. The Registrations tab is [`RegistrationsPanel`].
 
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
@@ -23,6 +23,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::carrier::{CarrierPanel, write_notice};
+use crate::pages::registrations::RegistrationsPanel;
 use crate::pages::shared::{
     Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, known_wire_label,
     plain_label, wire_text, wrap_button_label,
@@ -308,6 +309,10 @@ mod imp {
         #[template_child]
         pub carrier_box: TemplateChild<gtk::Box>,
         #[template_child]
+        pub registrations_tab: TemplateChild<gtk::ToggleButton>,
+        #[template_child]
+        pub registrations_box: TemplateChild<gtk::Box>,
+        #[template_child]
         pub tab_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub owned_stack: TemplateChild<gtk::Stack>,
@@ -354,6 +359,8 @@ mod imp {
         pub controls: RefCell<Vec<NumberControls>>,
         /// The carrier tab.
         pub carrier: OnceCell<Rc<CarrierPanel>>,
+        /// The Registrations tab.
+        pub registrations: OnceCell<Rc<RegistrationsPanel>>,
         /// The confirmation the core is asking.
         pub asking: Asking,
         pub found: RefCell<Option<Vec<AvailableNumber>>>,
@@ -390,13 +397,27 @@ mod imp {
             self.type_row
                 .set_model(Some(&gtk::StringList::new(&labels)));
             self.carrier_tab.set_label(MarketplaceTab::carrier_label());
-            // The three tabs side by side held the screen wider than a narrow
-            // window in French with Large Text: their words wrap instead.
-            for tab in [&*self.owned_tab, &*self.search_tab, &*self.carrier_tab] {
+            self.registrations_tab
+                .set_label(MarketplaceTab::registrations_label());
+            // The tabs side by side held the screen wider than a narrow window
+            // in French with Large Text: their words wrap instead.
+            for tab in [
+                &*self.owned_tab,
+                &*self.search_tab,
+                &*self.carrier_tab,
+                &*self.registrations_tab,
+            ] {
                 wrap_button_label(tab.upcast_ref());
+                // The tab takes the keyboard, never the flow box's child.
+                if let Some(child) = tab.parent() {
+                    child.set_focusable(false);
+                }
             }
             self.carrier
                 .set(CarrierPanel::new(&page, &self.carrier_box))
+                .ok();
+            self.registrations
+                .set(RegistrationsPanel::new(&page, &self.registrations_box))
                 .ok();
             let search = || Event::Marketplace(MarketplaceEvent::Search);
             on_click(&self.web_button, &*page, || {
@@ -409,6 +430,7 @@ mod imp {
                 (&*self.owned_tab, MarketplaceTab::Owned),
                 (&*self.search_tab, MarketplaceTab::Search),
                 (&*self.carrier_tab, MarketplaceTab::Carrier),
+                (&*self.registrations_tab, MarketplaceTab::Registrations),
             ] {
                 let weak = page.downgrade();
                 tab.connect_toggled(move |tab| {
@@ -516,13 +538,19 @@ impl MarketplacePage {
             .set_active(screen.tab == MarketplaceTab::Search);
         imp.carrier_tab
             .set_active(screen.tab == MarketplaceTab::Carrier);
+        imp.registrations_tab
+            .set_active(screen.tab == MarketplaceTab::Registrations);
         imp.tab_stack.set_visible_child_name(match screen.tab {
             MarketplaceTab::Owned => "owned",
             MarketplaceTab::Search => "search",
             MarketplaceTab::Carrier => "carrier",
+            MarketplaceTab::Registrations => "registrations",
         });
         if let Some(carrier) = imp.carrier.get() {
             carrier.update(&screen.admin, capabilities);
+        }
+        if let Some(registrations) = imp.registrations.get() {
+            registrations.update(&screen.admin, capabilities);
         }
         self.ask(&screen.admin);
         for (row, echo, value) in [
@@ -581,6 +609,9 @@ impl MarketplacePage {
     /// outlives it.
     pub(crate) fn leave(&self) {
         self.imp().asking.close();
+        if let Some(registrations) = self.imp().registrations.get() {
+            registrations.leave();
+        }
     }
 
     /// The held numbers' controls as their write goes: none while one is on
