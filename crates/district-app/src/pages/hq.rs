@@ -313,6 +313,76 @@ pub(crate) fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
         .build()
 }
 
+/// What Hold to talk holds: whether the microphone was asked on, and the
+/// release on its way. Every way of letting go (the release, a cancel, the
+/// keyboard leaving, the button leaving the screen) is one release, sent from
+/// the main loop: several of them happen while the window is drawn, when the
+/// sink drops what it is sent, and a microphone left on is the one outcome
+/// this must never have.
+#[derive(Debug)]
+struct Hold<P: Sends> {
+    page: glib::WeakRef<P>,
+    /// Whether Microphone(true) was sent and its (false) not yet.
+    held: Cell<bool>,
+    /// The press or release last asked for: a release sends only if nothing
+    /// was asked after it, so two ways of letting go at once send one off,
+    /// and a press after a release keeps the microphone on.
+    asked: Cell<u64>,
+}
+
+impl<P: Sends> Hold<P> {
+    fn new(page: &P) -> Self {
+        Self {
+            page: page.downgrade(),
+            held: Cell::new(false),
+            asked: Cell::new(0),
+        }
+    }
+
+    /// Held down: Microphone(true), once per press however often a key
+    /// repeats. Input is never handled while the window is drawn.
+    fn press(&self) {
+        self.asked.set(self.asked.get() + 1);
+        if !self.held.replace(true)
+            && let Some(page) = self.page.upgrade()
+        {
+            page.send(Event::Microphone(true));
+        }
+    }
+
+    /// Let go, however: Microphone(false), once, from the main loop.
+    fn release(self: &std::rc::Rc<Self>) {
+        let asked = self.asked.get() + 1;
+        self.asked.set(asked);
+        Self::release_later(std::rc::Rc::downgrade(self), asked);
+    }
+
+    /// Sends the release `asked` once the window is not being drawn, unless
+    /// something was asked since or nothing is held. A sink still quiet when
+    /// it runs puts it off again: it is never dropped.
+    fn release_later(hold: std::rc::Weak<Self>, asked: u64) {
+        glib::idle_add_local_once(move || {
+            let Some(this) = hold.upgrade() else {
+                return;
+            };
+            if this.asked.get() != asked || !this.held.get() {
+                return;
+            }
+            let Some(page) = this.page.upgrade() else {
+                return;
+            };
+            match page.sink() {
+                Some(sink) if sink.is_quiet() => Self::release_later(hold, asked),
+                Some(sink) => {
+                    this.held.set(false);
+                    sink.send(Event::Microphone(false));
+                }
+                None => this.held.set(false),
+            }
+        });
+    }
+}
+
 /// Hold to talk, for a push-to-talk session: the microphone is on while the
 /// button is held down, with the pointer or with Space or Enter, and off when
 /// it is let go, when the keyboard leaves it, or when it is hidden. In place
@@ -332,19 +402,7 @@ pub(crate) fn hold_to_talk<P: Sends>(page: &P, name: &str) -> gtk::Button {
         .css_classes(["pill"])
         .visible(false)
         .build();
-    let held = std::rc::Rc::new(Cell::new(false));
-    let talk = {
-        let page = page.downgrade();
-        let held = held.clone();
-        move |on: bool| {
-            // Each press is one Microphone(true), and each its one (false).
-            if held.replace(on) != on
-                && let Some(page) = page.upgrade()
-            {
-                page.send(Event::Microphone(on));
-            }
-        }
-    };
+    let hold = std::rc::Rc::new(Hold::new(page));
     // Before the button's own click gesture, in the capture phase, and it
     // claims the press: the button's gesture claims it otherwise, and a
     // gesture on the same widget that loses the press is cancelled, which
@@ -356,51 +414,42 @@ pub(crate) fn hold_to_talk<P: Sends>(page: &P, name: &str) -> gtk::Button {
         .button(gtk::gdk::BUTTON_PRIMARY)
         .propagation_phase(gtk::PropagationPhase::Capture)
         .build();
-    let on = talk.clone();
+    let on = hold.clone();
     press.connect_pressed(move |gesture, _, _, _| {
         gesture.set_state(gtk::EventSequenceState::Claimed);
-        on(true);
+        on.press();
     });
-    let off = talk.clone();
-    press.connect_released(move |_, _, _, _| off(false));
-    let off = talk.clone();
-    press.connect_cancel(move |_, _| off(false));
+    let off = hold.clone();
+    press.connect_released(move |_, _, _, _| off.release());
+    let off = hold.clone();
+    press.connect_cancel(move |_, _| off.release());
     button.add_controller(press);
     let keys = gtk::EventControllerKey::builder()
         .propagation_phase(gtk::PropagationPhase::Capture)
         .build();
-    let on = talk.clone();
+    let on = hold.clone();
     keys.connect_key_pressed(move |_, key, _, _| {
         if is_talk_key(key) {
             // A held key repeats; the first press alone turns it on.
-            on(true);
+            on.press();
             glib::Propagation::Stop
         } else {
             glib::Propagation::Proceed
         }
     });
-    let off = talk.clone();
+    let off = hold.clone();
     keys.connect_key_released(move |_, key, _, _| {
         if is_talk_key(key) {
-            off(false);
+            off.release();
         }
     });
     button.add_controller(keys);
-    // The keyboard leaving it and the button going from the screen happen
-    // while the window is drawn, when the sink drops what it is sent: the
-    // microphone goes off just after, from the main loop.
     let focus = gtk::EventControllerFocus::new();
-    let off = talk.clone();
-    focus.connect_leave(move |_| {
-        let off = off.clone();
-        glib::idle_add_local_once(move || off(false));
-    });
+    let off = hold.clone();
+    focus.connect_leave(move |_| off.release());
     button.add_controller(focus);
-    let off = talk;
-    button.connect_unmap(move |_| {
-        let off = off.clone();
-        glib::idle_add_local_once(move || off(false));
-    });
+    let off = hold;
+    button.connect_unmap(move |_| off.release());
     button.update_property(&[gtk::accessible::Property::Label(label)]);
     button
 }

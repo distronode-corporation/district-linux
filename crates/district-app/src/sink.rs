@@ -34,6 +34,11 @@ impl EventSink {
         }
     }
 
+    /// Whether the window is being drawn, when what is sent is dropped.
+    pub(crate) fn is_quiet(&self) -> bool {
+        self.quiet.get()
+    }
+
     /// Runs `draw` with the sink quiet.
     pub(crate) fn quietly<T>(&self, draw: impl FnOnce() -> T) -> T {
         let was = self.quiet.replace(true);
@@ -58,5 +63,7 @@ mod tests {
         assert_eq!(sink.quietly(|| sink.quietly(|| 7)), 7);
         sink.send(Event::Refresh);
         assert_eq!(receiver.try_recv(), Ok(Event::Refresh), "loud again after");
+        assert!(sink.quietly(|| sink.is_quiet()));
+        assert!(!sink.is_quiet());
     }
 }

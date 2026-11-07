@@ -3127,18 +3127,36 @@ fn hq_push_to_talk(smoke: &Smoke) {
     assert!(smoke.shown("voice_dock_hold_to_talk") && !smoke.shown("voice_dock_microphone"));
     smoke.shot("50b-hq-voice-dock-push-to-talk");
     hold_and_let_go(smoke, "voice_dock_hold_to_talk");
-    // Held as the screen changes: the button goes, and the microphone with it.
+    // Held as the screen changes: the button goes while the window is drawn,
+    // when the sink drops what it is sent, and its gesture is cancelled then
+    // too, as GTK cancels a gesture whose widget goes. Both are one release,
+    // sent once the drawing is done: one Microphone(false), never none.
     let press = controller::<gtk::GestureClick>(smoke, "voice_dock_hold_to_talk");
     press.emit_by_name::<()>("pressed", &[&1i32, &5.0f64, &5.0f64]);
     smoke.pump();
     assert_eq!(microphone_asked(smoke), Some(true));
+    let cancelled = std::rc::Rc::new(std::cell::Cell::new(false));
+    let gesture = press.clone();
+    let seen = cancelled.clone();
+    smoke
+        .mapped("voice_dock_hold_to_talk")
+        .connect_unmap(move |_| {
+            gesture.emit_by_name::<()>("cancel", &[&None::<gdk::EventSequence>]);
+            seen.set(true);
+        });
     smoke.activate("sidebar-hq");
     smoke.pump();
+    assert!(
+        cancelled.get(),
+        "the gesture was cancelled as the button went"
+    );
     assert_eq!(
         microphone_asked(smoke),
         Some(false),
-        "the button went while held: off"
+        "the button went while held: off, once"
     );
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), None, "and only once");
     smoke.click("voice_stop");
     assert!(smoke.pending("DisconnectMedia"));
     smoke.forget();
