@@ -322,6 +322,17 @@ impl Smoke {
     }
 
     /// Whether a mapped label shows exactly `text`.
+    /// Whether a mapped label reads exactly `text` on screen: its text once
+    /// any markup is parsed, where [`Self::shows_text`] compares what it was
+    /// given.
+    fn reads_text(&self, text: &str) -> bool {
+        descendants(self.window().upcast_ref())
+            .into_iter()
+            .filter(WidgetExt::is_mapped)
+            .filter_map(|widget| widget.downcast::<gtk::Label>().ok())
+            .any(|label| label.text() == text)
+    }
+
     fn shows_text(&self, text: &str) -> bool {
         descendants(self.window().upcast_ref())
             .into_iter()
@@ -4116,7 +4127,7 @@ fn german_requirements() -> Result<NumberAnswer, ApiError> {
             "numberType": "local",
             "endUserType": "business",
             "regulationSid": "RN-contract-de",
-            "friendlyName": "Germany: Local - Business",
+            "friendlyName": "Germany: Local <Business> & Co",
             "requirements": [
                 {"kind": "end_user", "name": "Business", "requirementName": "business_info", "type": "end_user", "fields": ["business_name", "vat_number"]},
                 {"kind": "supporting_document", "name": "Proof of address", "requirementName": "proof_of_address", "type": "document", "fields": ["address"], "acceptedDocuments": [{"name": "Utility bill", "type": "utility_bill", "fields": ["address"]}]}
@@ -4196,7 +4207,10 @@ fn registrations_tab(smoke: &Smoke) {
     let call = number_call(smoke, german_requirements());
     assert!(call.contains("Some(\"business\")"), "{call}");
     assert!(call.contains("\"DE\""), "{call}");
-    assert!(smoke.shows_text("Germany: Local - Business"));
+    assert!(
+        smoke.reads_text("Germany: Local <Business> & Co"),
+        "the carrier's words as they are, never markup"
+    );
     assert!(smoke.shows_text("Proof of address"));
     assert!(smoke.shows_text("Documents \u{b7} address"));
     scroll_to_filings(smoke);

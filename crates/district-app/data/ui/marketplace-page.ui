@@ -61,10 +61,16 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkBox">
+                  <!-- A flow box, so the four tabs go onto a second line when a
+                       narrow window cannot hold them on one (French at 400 px). -->
+                  <object class="GtkFlowBox" id="tabs_box">
                     <property name="halign">start</property>
+                    <property name="selection-mode">none</property>
+                    <property name="min-children-per-line">1</property>
+                    <property name="max-children-per-line">4</property>
+                    <property name="column-spacing">4</property>
+                    <property name="row-spacing">4</property>
                     <style>
-                      <class name="linked"/>
                       <class name="number-tabs"/>
                     </style>
                     <child>

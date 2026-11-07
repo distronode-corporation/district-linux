@@ -542,7 +542,8 @@ impl RegistrationsPanel {
                 regulation,
                 purchasable,
             } => {
-                group.set_description(Some(&regulation.friendly_name));
+                // The carrier's words, shown as they are, never as markup.
+                group.set_description(Some(&glib::markup_escape_text(&regulation.friendly_name)));
                 if !purchasable {
                     group.add(&not_purchasable());
                 }
@@ -635,7 +636,9 @@ impl RegistrationsPanel {
             );
             return;
         }
-        group.set_description(Some(ns::numbers_registration_status_caption(l)));
+        group.set_description(Some(&glib::markup_escape_text(
+            ns::numbers_registration_status_caption(l),
+        )));
         for registration in &list.registrations {
             self.list.append(&self.card(registrations, registration));
         }

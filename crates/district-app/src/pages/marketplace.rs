@@ -408,6 +408,10 @@ mod imp {
                 &*self.registrations_tab,
             ] {
                 wrap_button_label(tab.upcast_ref());
+                // The tab takes the keyboard, never the flow box's child.
+                if let Some(child) = tab.parent() {
+                    child.set_focusable(false);
+                }
             }
             self.carrier
                 .set(CarrierPanel::new(&page, &self.carrier_box))
