@@ -2946,17 +2946,187 @@ fn voice_packet(packet: serde_json::Value) -> MediaEvent {
     }
 }
 
-/// What the service answers when a voice session is asked for.
+/// What the service answers when a voice session is asked for, with an open
+/// microphone.
 fn hq_voice_credential() -> district_model::HqVoiceTokenResponse {
+    hq_voice_credential_held(district_model::HQ_VOICE_MIC_OPEN)
+}
+
+/// [`hq_voice_credential`], with the microphone held `mic_mode`.
+fn hq_voice_credential_held(mic_mode: &str) -> district_model::HqVoiceTokenResponse {
     serde_json::from_value(serde_json::json!({
         "success": true,
         "token": "contract-livekit-hq-voice-jwt",
         "url": "wss://media.example.com",
         "roomName": "hq_ws-contract-test_00000000-0000-4000-8000-000000000000",
         "processingRegion": "us",
+        "micMode": mic_mode,
+        "sessionId": "contract-hq-voice-session",
         "e2ee": {"key": "YFT+/ceW4bhgizPFpeX9E5a3PVZ9T07aWRQq4uwQwW0="},
     }))
     .expect("a voice credential")
+}
+
+/// The controller of type `T` on the widget named `name` that is on screen.
+fn controller<T: IsA<gtk::EventController> + IsA<glib::Object>>(smoke: &Smoke, name: &str) -> T {
+    let widget = smoke.mapped(name);
+    let controllers = widget.observe_controllers();
+    (0..controllers.n_items())
+        .filter_map(|index| controllers.item(index).and_downcast::<T>())
+        .next()
+        .unwrap_or_else(|| panic!("{name} has the controller"))
+}
+
+/// Whether the microphone was last asked on (`Some(true)`), off, or not at
+/// all since the last look.
+fn microphone_asked(smoke: &Smoke) -> Option<bool> {
+    smoke.pending("SetMicrophone").then(|| {
+        let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
+            unreachable!()
+        };
+        assert!(
+            !smoke.pending("SetMicrophone"),
+            "one change of the microphone at a time"
+        );
+        enabled
+    })
+}
+
+/// Holds and lets go of the hold-to-talk button named `name`: with the
+/// pointer, then with Space (held, so it repeats), then held as the
+/// keyboard leaves it. The microphone is on while it is held, and off each
+/// time it is let go.
+fn hold_and_let_go(smoke: &Smoke, name: &str) {
+    let press = controller::<gtk::GestureClick>(smoke, name);
+    press.emit_by_name::<()>("pressed", &[&1i32, &5.0f64, &5.0f64]);
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), Some(true), "held: on");
+    press.emit_by_name::<()>("released", &[&1i32, &5.0f64, &5.0f64]);
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), Some(false), "let go: off");
+    // The gesture stops after its release: nothing more is sent.
+    press.emit_by_name::<()>("stopped", &[]);
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), None, "off once");
+
+    let keys = controller::<gtk::EventControllerKey>(smoke, name);
+    use glib::translate::IntoGlib;
+    let space = gdk::Key::space.into_glib();
+    for _ in 0..3 {
+        let handled = keys.emit_by_name::<bool>(
+            "key-pressed",
+            &[&space, &65u32, &gdk::ModifierType::empty()],
+        );
+        assert!(handled, "the key holds the button, it does not click it");
+        smoke.pump();
+    }
+    assert_eq!(microphone_asked(smoke), Some(true), "Space held: on, once");
+    keys.emit_by_name::<()>(
+        "key-released",
+        &[&space, &65u32, &gdk::ModifierType::empty()],
+    );
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), Some(false), "Space let go: off");
+    let other = gdk::Key::a.into_glib();
+    let handled = keys.emit_by_name::<bool>(
+        "key-pressed",
+        &[&other, &38u32, &gdk::ModifierType::empty()],
+    );
+    assert!(!handled, "another key does nothing");
+    assert_eq!(microphone_asked(smoke), None);
+
+    // Held as the keyboard leaves it: off, never left on.
+    keys.emit_by_name::<bool>(
+        "key-pressed",
+        &[&space, &65u32, &gdk::ModifierType::empty()],
+    );
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), Some(true));
+    controller::<gtk::EventControllerFocus>(smoke, name).emit_by_name::<()>("leave", &[]);
+    smoke.pump();
+    assert_eq!(
+        microphone_asked(smoke),
+        Some(false),
+        "the keyboard left: off"
+    );
+}
+
+/// A push-to-talk session: it joins with the microphone off, District HQ
+/// and the voice dock show Hold to talk in place of the microphone button,
+/// and holding it is the only way the microphone goes on. An open session
+/// shows the microphone button and no Hold to talk.
+fn hq_push_to_talk(smoke: &Smoke) {
+    smoke.activate("sidebar-hq");
+    smoke.forget();
+    smoke.click("voice_start");
+    if smoke.shown("voice_accept") {
+        smoke.click("voice_accept");
+    }
+    smoke.reply("RequestHqVoice", |ticket| Event::HqVoiceIssued {
+        ticket,
+        result: Ok(hq_voice_credential_held(district_model::HQ_VOICE_MIC_PUSH)),
+    });
+    let Effect::ConnectMedia {
+        session,
+        microphone,
+        ..
+    } = smoke.take("ConnectMedia")
+    else {
+        unreachable!()
+    };
+    assert!(
+        !microphone,
+        "a push-to-talk session joins with the microphone off"
+    );
+    smoke.media(session, MediaEvent::Connected);
+    smoke.media(
+        session,
+        MediaEvent::ParticipantJoined(Participant::new("agent-hq", None, true)),
+    );
+    smoke.media(session, MediaEvent::AgentState("listening".to_owned()));
+    assert!(smoke.shown("voice_hold_to_talk") && !smoke.shown("voice_microphone"));
+    assert!(smoke.shows_text("Hold to talk"));
+    assert_eq!(
+        microphone_asked(smoke),
+        None,
+        "nothing before the member acts"
+    );
+    hold_and_let_go(smoke, "voice_hold_to_talk");
+    smoke.shot("48b-hq-voice-push-to-talk");
+    smoke.resize(400, 760);
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "hold to talk, narrow"
+    );
+    smoke.shot("48c-hq-voice-push-to-talk-narrow");
+    smoke.resize(1024, 720);
+
+    smoke.activate("sidebar-calls");
+    if smoke.pending("LoadCalls") {
+        smoke.reply("LoadCalls", |ticket| Event::CallsLoaded {
+            ticket,
+            result: Ok(call_page()),
+        });
+    }
+    assert!(smoke.shown("voice_dock_hold_to_talk") && !smoke.shown("voice_dock_microphone"));
+    smoke.shot("50b-hq-voice-dock-push-to-talk");
+    hold_and_let_go(smoke, "voice_dock_hold_to_talk");
+    // Held as the screen changes: the button goes, and the microphone with it.
+    let press = controller::<gtk::GestureClick>(smoke, "voice_dock_hold_to_talk");
+    press.emit_by_name::<()>("pressed", &[&1i32, &5.0f64, &5.0f64]);
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), Some(true));
+    smoke.activate("sidebar-hq");
+    smoke.pump();
+    assert_eq!(
+        microphone_asked(smoke),
+        Some(false),
+        "the button went while held: off"
+    );
+    smoke.click("voice_stop");
+    assert!(smoke.pending("DisconnectMedia"));
+    smoke.forget();
 }
 
 /// A voice session joined, its agent listening, and two changes proposed.
@@ -3250,9 +3420,82 @@ fn french_narrow() {
         assert_eq!(label.wrap_mode(), gtk::pango::WrapMode::Word, "{name}");
     }
     smoke.shot("fr-50-voice-dock-narrow");
+    smoke.click("voice_dock_stop");
+    // The two changes cancelled, so the dock goes and the tab has the room.
+    for _ in 0..2 {
+        smoke.click("voice_card_cancel");
+        smoke.reply("CancelHqVoice", |ticket| Event::HqVoiceCancelled {
+            ticket,
+            result: Ok(district_model::HqProposalCancelResponse { success: true }),
+        });
+    }
+    assert!(!smoke.shown("voice_dock"));
+    smoke.forget();
+    registrations_in_french(&smoke);
     fs::remove_dir_all(&catalog).ok();
     smoke.app.emit_by_name::<()>("shutdown", &[]);
     println!("French at 400 px passed");
+}
+
+/// The Registrations tab in French, narrow and at the default width: the
+/// requirements, a draft with its fields, its upload and a document, a filing
+/// in review and one refused with the carrier's reason.
+fn registrations_in_french(smoke: &Smoke) {
+    let split = smoke
+        .find("split_view")
+        .downcast::<adw::NavigationSplitView>()
+        .unwrap();
+    split.set_show_content(false);
+    smoke.pump();
+    smoke.activate("sidebar-numbers");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    smoke.forget();
+    split.set_show_content(true);
+    smoke.pump();
+    smoke.click("registrations_tab");
+    assert!(smoke.shows_text("Inscriptions"), "the core's French tab");
+    number_call(smoke, filings(serde_json::json!([])));
+    assert!(smoke.shows_text("Aucune demande déposée"));
+    smoke.shot("fr-57b-registrations-empty-narrow");
+    smoke.type_into("registration-country", "de");
+    smoke.click("requirements-check");
+    number_call(smoke, german_requirements());
+    let stored = serde_json::json!([{
+        "id": "RD-1", "requirementName": "proof_of_address", "mimeType": "application/pdf",
+        "sizeBytes": 19, "stored": true, "submitted": false, "updatedAt": "2026-11-07T09:05:00Z"
+    }]);
+    smoke.click("refresh_button");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    number_call(
+        smoke,
+        filings(serde_json::json!([
+            filing("BU-contract-1", "draft", stored),
+            filing("BU-contract-2", "in-review", serde_json::json!([])),
+            filing("BU-contract-3", "twilio-rejected", serde_json::json!([])),
+        ])),
+    );
+    smoke.forget();
+    assert!(smoke.shows_text("Brouillon") && smoke.shows_text("Refusée"));
+    assert!(smoke.shows_text("Téléverser\u{a0}: Proof of address"));
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "the registrations tab in French, narrow"
+    );
+    scroll_to_filings(smoke);
+    smoke.shot("fr-57c-registrations-narrow");
+    split.set_show_content(false);
+    smoke.resize(1024, 720);
+    smoke.pump();
+    scroll_to_filings(smoke);
+    smoke.shot("fr-57d-registrations");
+    smoke.resize(400, 760);
 }
 
 /// [`french_narrow`], in a child with a French desktop's environment.
@@ -3352,6 +3595,10 @@ fn hq_voice(smoke: &Smoke) {
     smoke.media(session, MediaEvent::AgentState("listening".to_owned()));
     assert!(smoke.shows_text("Listening. Speak to District HQ."));
     assert!(smoke.shown("voice_microphone"));
+    assert!(
+        !smoke.shown("voice_hold_to_talk"),
+        "an open microphone has no Hold to talk"
+    );
     smoke.click("voice_microphone");
     let Effect::SetMicrophone { enabled, .. } = smoke.take("SetMicrophone") else {
         unreachable!()
@@ -3798,6 +4045,7 @@ fn numbers_screen(smoke: &Smoke) {
     smoke.forget();
     managing_numbers(smoke);
     carrier_tab(smoke);
+    registrations_tab(smoke);
     // The screen fits a narrow window, its tabs and buttons included.
     smoke.resize(400, 760);
     smoke.click("owned_tab");
@@ -3807,6 +4055,333 @@ fn numbers_screen(smoke: &Smoke) {
     assert_eq!(smoke.past_the_edge(), Vec::<String>::new(), "number search");
     smoke.shot("56b-numbers-search-narrow");
     smoke.resize(1024, 720);
+    smoke.forget();
+}
+
+/// Scrolls the window holding the Registrations tab to its end, where the
+/// filings are, for a screenshot.
+fn scroll_to_filings(smoke: &Smoke) {
+    let mut widget = smoke.mapped("registrations").parent();
+    while let Some(current) = widget {
+        if let Ok(scroller) = current.clone().downcast::<gtk::ScrolledWindow>() {
+            smoke.pump();
+            let adjustment = scroller.vadjustment();
+            adjustment.set_value(adjustment.upper() - adjustment.page_size());
+            smoke.pump();
+            return;
+        }
+        widget = current.parent();
+    }
+    panic!("the tab scrolls");
+}
+
+/// A filing as the service lists it.
+fn filing(id: &str, status: &str, documents: serde_json::Value) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "isoCountry": "DE",
+        "numberType": "local",
+        "endUserType": "business",
+        "friendlyName": "Berlin office",
+        "status": status,
+        "rejectionReasons": if status == "twilio-rejected" {
+            serde_json::json!(["The proof of address is older than three months."])
+        } else {
+            serde_json::json!([])
+        },
+        "createdAt": "2026-11-07T09:00:00Z",
+        "documents": documents,
+    })
+}
+
+/// The workspace's filings, as the service answers them.
+fn filings(registrations: serde_json::Value) -> Result<NumberAnswer, ApiError> {
+    Ok(NumberAnswer::Registrations(from_json(serde_json::json!({
+        "success": true,
+        "registrations": registrations,
+        "approvedCountries": [],
+        "platformCountries": ["US", "CA"],
+    }))))
+}
+
+/// What Germany's regulator asks of a local business number.
+fn german_requirements() -> Result<NumberAnswer, ApiError> {
+    Ok(NumberAnswer::Requirements(from_json(serde_json::json!({
+        "success": true,
+        "country": "DE",
+        "numberType": "local",
+        "purchasable": true,
+        "requirements": {
+            "isoCountry": "DE",
+            "numberType": "local",
+            "endUserType": "business",
+            "regulationSid": "RN-contract-de",
+            "friendlyName": "Germany: Local - Business",
+            "requirements": [
+                {"kind": "end_user", "name": "Business", "requirementName": "business_info", "type": "end_user", "fields": ["business_name", "vat_number"]},
+                {"kind": "supporting_document", "name": "Proof of address", "requirementName": "proof_of_address", "type": "document", "fields": ["address"], "acceptedDocuments": [{"name": "Utility bill", "type": "utility_bill", "fields": ["address"]}]}
+            ]
+        }
+    }))))
+}
+
+/// The Registrations tab, every state: the filings failing, then none; a
+/// country with no regulation; Germany's requirements; a draft started, its
+/// details typed, a document put on it and taken off, and the draft filed
+/// behind its question; the filing in review and then refused with the
+/// carrier's reason; a second draft whose filing went unanswered, which is not
+/// offered again; and the tab in a narrow window.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn registrations_tab(smoke: &Smoke) {
+    smoke.click("registrations_tab");
+    assert!(smoke.shows_text("Registrations"));
+    let call = number_call(smoke, Err(server_error()));
+    assert!(call.contains("Registrations"), "{call}");
+    assert!(smoke.shown("registrations-failure"));
+    assert!(smoke.shows_part("Could not load this workspace's registrations."));
+    smoke.shot("57a-registrations-failed");
+    smoke.click("registrations-retry");
+    number_call(smoke, filings(serde_json::json!([])));
+    assert!(smoke.shown("registrations-empty"));
+    assert!(smoke.shows_text("Nothing filed yet"));
+    assert!(smoke.shows_text("US, CA"), "the countries open today");
+    assert!(!smoke.sensitive("requirements-check"), "a country first");
+    assert!(!smoke.sensitive("registration-start"));
+    smoke.shot("57b-registrations-empty");
+
+    // A country with nothing to file.
+    smoke.type_into("registration-country", "us");
+    assert!(smoke.sensitive("requirements-check"));
+    smoke.click("requirements-check");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::Requirements(from_json(serde_json::json!({
+            "success": true, "country": "US", "numberType": "local", "purchasable": true, "requirements": null
+        })))),
+    );
+    assert!(call.contains("country: \"US\""), "sent in capitals: {call}");
+    assert!(smoke.shows_text("US \u{b7} No registration required"));
+
+    // Germany's requirements, then a draft for it.
+    smoke.type_into("registration-country", "de");
+    assert!(
+        !smoke.shown("requirements-none"),
+        "the answer for another country is put away"
+    );
+    smoke.type_into("registration-name", "Berlin office");
+    // An individual's, then a business's again: the end-user type goes with
+    // the form.
+    smoke.click("registration-end-user-individual");
+    smoke.click("requirements-check");
+    let call = number_call(smoke, Err(server_error()));
+    assert!(call.contains("Some(\"individual\")"), "{call}");
+    assert!(
+        smoke.shown("requirements-failure"),
+        "a failed lookup is not \"nothing to file\""
+    );
+    smoke.click("registration-end-user-business");
+    assert!(
+        !smoke.shown("requirements-failure"),
+        "put away with the question it answered"
+    );
+    // Enter in the country asks too; a failure offers Try again.
+    smoke
+        .mapped("registration-country")
+        .downcast::<adw::EntryRow>()
+        .unwrap()
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    number_call(smoke, Err(server_error()));
+    smoke.click("requirements-retry");
+    let call = number_call(smoke, german_requirements());
+    assert!(call.contains("Some(\"business\")"), "{call}");
+    assert!(call.contains("\"DE\""), "{call}");
+    assert!(smoke.shows_text("Germany: Local - Business"));
+    assert!(smoke.shows_text("Proof of address"));
+    assert!(smoke.shows_text("Documents \u{b7} address"));
+    scroll_to_filings(smoke);
+    smoke.shot("57c-registrations-requirements");
+    smoke.click("registration-start");
+    assert!(
+        !smoke.sensitive("registration-start"),
+        "one write at a time"
+    );
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::RegistrationCreated(from_json(
+            serde_json::json!({
+                "success": true,
+                "registration": filing("BU-contract-1", "draft", serde_json::json!([])),
+            }),
+        ))),
+    );
+    assert!(call.contains("Berlin office"), "{call}");
+    number_call(
+        smoke,
+        filings(serde_json::json!([filing(
+            "BU-contract-1",
+            "draft",
+            serde_json::json!([])
+        )])),
+    );
+    let country = smoke
+        .mapped("registration-country")
+        .dynamic_cast::<gtk::Editable>()
+        .expect("an editable")
+        .text();
+    assert_eq!(country, "", "the form empties once the draft is started");
+    assert_eq!(smoke.count("registration-card"), 1);
+    assert!(smoke.shows_text("DE \u{b7} Local") && smoke.shows_text("Draft"));
+    assert_eq!(
+        smoke.count("registration-detail"),
+        2,
+        "its regulation's fields"
+    );
+    assert!(smoke.shows_text("Upload Proof of address"));
+    assert!(smoke.sensitive("registration-file"));
+
+    // Its details typed, and a document put on it.
+    smoke.type_into("registration-detail", "Acme GmbH");
+    let document =
+        std::env::temp_dir().join(format!("district-smoke-proof-{}.pdf", std::process::id()));
+    fs::write(&document, b"%PDF-1.7\n%contract\n").expect("the document is written");
+    pick(smoke, "registration-upload", &document);
+    wait_for(smoke, "NumberAdmin");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::RegistrationDocumentUploaded(from_json(
+            serde_json::json!({
+                "success": true,
+                "document": {"id": "RD-1", "requirementName": "proof_of_address", "mimeType": "application/pdf", "sizeBytes": 19, "createdAt": "2026-11-07T09:05:00Z"}
+            }),
+        ))),
+    );
+    fs::remove_file(&document).ok();
+    assert!(call.contains("proof_of_address"), "{call}");
+    assert!(call.contains("application/pdf"), "{call}");
+    assert!(
+        !call.contains("%PDF"),
+        "the file's bytes are counted, never printed"
+    );
+    let stored = serde_json::json!([{
+        "id": "RD-1", "requirementName": "proof_of_address", "mimeType": "application/pdf",
+        "sizeBytes": 19, "stored": true, "submitted": false, "updatedAt": "2026-11-07T09:05:00Z"
+    }]);
+    number_call(
+        smoke,
+        filings(serde_json::json!([filing(
+            "BU-contract-1",
+            "draft",
+            stored.clone()
+        )])),
+    );
+    assert!(smoke.shows_text("Stored, not yet filed"));
+    assert!(smoke.shown("registration-remove"));
+    let detail = smoke.nth::<adw::EntryRow>("registration-detail", 0).text();
+    assert_eq!(
+        detail, "Acme GmbH",
+        "what was typed stays as the list is read again"
+    );
+    scroll_to_filings(smoke);
+    smoke.shot("57d-registration-documents");
+    smoke.click("registration-remove");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::RegistrationDocumentRemoved(from_json(
+            serde_json::json!({"success": true, "documentId": "RD-1"}),
+        ))),
+    );
+    assert!(call.contains("RD-1"), "{call}");
+    number_call(
+        smoke,
+        filings(serde_json::json!([filing(
+            "BU-contract-1",
+            "draft",
+            stored.clone()
+        )])),
+    );
+
+    // Filed, behind its question.
+    smoke.click("registration-file");
+    assert!(smoke.shows_text("File this registration?"));
+    smoke.respond("cancel");
+    assert!(!smoke.pending("NumberAdmin"), "nothing filed");
+    smoke.click("registration-file");
+    smoke.respond("confirm");
+    let call = number_call(
+        smoke,
+        Ok(NumberAnswer::RegistrationSubmitted(from_json(
+            serde_json::json!({
+                "success": true,
+                "registration": {"id": "BU-contract-1", "status": "pending-review", "submittedAt": "2026-11-07T09:10:00Z"}
+            }),
+        ))),
+    );
+    assert!(call.contains("SubmitRegistration"), "{call}");
+    assert!(call.contains("Acme GmbH"), "the details go with it: {call}");
+    let filed = serde_json::json!([{
+        "id": "RD-1", "requirementName": "proof_of_address", "mimeType": "application/pdf",
+        "sizeBytes": 19, "stored": true, "submitted": true, "updatedAt": "2026-11-07T09:10:00Z"
+    }]);
+    number_call(
+        smoke,
+        filings(serde_json::json!([filing(
+            "BU-contract-1",
+            "in-review",
+            filed.clone()
+        )])),
+    );
+    assert!(smoke.shows_text("Filed. The carrier is reviewing it."));
+    assert!(smoke.shows_text("Filed with the carrier"));
+    assert!(!smoke.shown("registration-file") && !smoke.shown("registration-remove"));
+    scroll_to_filings(smoke);
+    smoke.shot("57e-registration-submitted");
+
+    // Refused, with the carrier's reason; and a second draft whose filing
+    // went unanswered, which is not offered again.
+    smoke.click("refresh_button");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    number_call(
+        smoke,
+        filings(serde_json::json!([
+            filing("BU-contract-1", "twilio-rejected", filed),
+            filing("BU-contract-2", "draft", serde_json::json!([])),
+        ])),
+    );
+    assert!(smoke.shown("registration-reason"));
+    assert!(smoke.shows_text("The proof of address is older than three months."));
+    assert!(smoke.shows_text("What the carrier objected to"));
+    smoke.click("registration-file");
+    smoke.respond("confirm");
+    number_call(smoke, Err(server_error()));
+    assert!(smoke.shows_part("not offered again"));
+    assert!(smoke.mapped("registrations-notice").has_css_class("error"));
+    number_call(
+        smoke,
+        filings(serde_json::json!([
+            filing("BU-contract-1", "twilio-rejected", serde_json::json!([])),
+            filing("BU-contract-2", "draft", serde_json::json!([])),
+        ])),
+    );
+    assert!(
+        !smoke.sensitive("registration-file"),
+        "a filing that may have gone through is not offered again"
+    );
+    scroll_to_filings(smoke);
+    smoke.shot("57f-registration-rejected");
+    smoke.resize(400, 760);
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "the registrations tab, narrow"
+    );
+    scroll_to_filings(smoke);
+    smoke.shot("57g-registrations-narrow");
+    smoke.resize(1024, 720);
+    smoke.click("owned_tab");
     smoke.forget();
 }
 
@@ -8858,6 +9433,15 @@ fn viewer_screens(smoke: &Smoke) {
     assert!(smoke.shows_part("held on Distronode's carrier account"));
     smoke.shot("87-numbers-viewer");
     smoke.forget();
+    // A viewer may not file: the Registrations tab reads nothing and offers
+    // nothing, and the reason is the note above the tabs, said once.
+    smoke.click("registrations_tab");
+    assert!(!smoke.pending("NumberAdmin"), "nothing read for a viewer");
+    assert!(smoke.shown("registrations-viewer"));
+    assert!(!smoke.shown("registration-start") && !smoke.shown("requirements-check"));
+    smoke.shot("87b-registrations-viewer");
+    smoke.click("owned_tab");
+    smoke.forget();
 
     smoke.activate("sidebar-billing");
     smoke.reply("LoadWorkspaceBilling", |ticket| {
@@ -11808,6 +12392,7 @@ fn main() {
     contacts_screens(&smoke);
     hq_screen(&smoke);
     hq_voice(&smoke);
+    hq_push_to_talk(&smoke);
     voice_dock_beside_a_call(&smoke);
     analytics_screen(&smoke);
     numbers_screen(&smoke);

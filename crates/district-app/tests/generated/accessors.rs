@@ -548,6 +548,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::guard_discard_title(Locale::FrCa), "Abandonner vos modifications?");
     assert_eq!(text::guard_keep_editing(Locale::En), "Keep editing");
     assert_eq!(text::guard_keep_editing(Locale::FrCa), "Continuer la modification");
+    assert_eq!(text::hq_hold_to_talk(Locale::En), "Hold to talk");
+    assert_eq!(text::hq_hold_to_talk(Locale::FrCa), "Maintenir pour parler");
     assert_eq!(text::hq_unknown_note(Locale::En), "The change may have been made before the answer was lost. Check before confirming again.");
     assert_eq!(text::hq_unknown_note(Locale::FrCa), "Le changement a peut-être été effectué avant la perte de la connexion. Vérifiez avant de confirmer de nouveau.");
     assert_eq!(text::hq_viewer_note(Locale::En), "Nothing has been changed. Only an agency or client member of this workspace can confirm a change.");
@@ -650,6 +652,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::marketplace_offered_by(Locale::FrCa, "{carrier}"), "Proposé par {carrier}");
     assert_eq!(text::marketplace_opt_in_flow(Locale::En), "How people agree to the messages (optional)");
     assert_eq!(text::marketplace_opt_in_flow(Locale::FrCa), "Comment les gens consentent aux messages (facultatif)");
+    assert_eq!(text::marketplace_upload_for(Locale::En, "{requirement}"), "Upload {requirement}");
+    assert_eq!(text::marketplace_upload_for(Locale::FrCa, "{requirement}"), "Téléverser\u{00A0}: {requirement}");
     assert_eq!(text::marketplace_page_area_code(Locale::En), "Area code");
     assert_eq!(text::marketplace_page_area_code(Locale::FrCa), "Indicatif régional");
     assert_eq!(text::marketplace_page_country_code(Locale::En), "Country code");

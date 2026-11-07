@@ -32,6 +32,7 @@ mod messaging;
 mod messaging_form;
 mod overview;
 mod persona;
+mod registrations;
 mod reply_box;
 pub(crate) mod report;
 mod rooms;

@@ -289,6 +289,7 @@ pub struct Voice {
     spinner: gtk::Spinner,
     line: gtk::Label,
     microphone: gtk::Button,
+    hold: gtk::Button,
     start: gtk::Button,
     stop: gtk::Button,
     dismiss: gtk::Button,
@@ -310,6 +311,103 @@ pub(crate) fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
         .valign(gtk::Align::Center)
         .css_classes(classes.to_vec())
         .build()
+}
+
+/// Hold to talk, for a push-to-talk session: the microphone is on while the
+/// button is held down, with the pointer or with Space or Enter, and off when
+/// it is let go, when the keyboard leaves it, or when it is hidden. In place
+/// of the microphone button, which would leave it on: a push-to-talk session
+/// joins with the microphone off and opens it only while the member acts.
+pub(crate) fn hold_to_talk<P: Sends>(page: &P, name: &str) -> gtk::Button {
+    let label = text::hq_hold_to_talk(lang());
+    let button = gtk::Button::builder()
+        .child(
+            &adw::ButtonContent::builder()
+                .icon_name("audio-input-microphone-symbolic")
+                .label(label)
+                .build(),
+        )
+        .name(name)
+        .valign(gtk::Align::Center)
+        .css_classes(["pill"])
+        .visible(false)
+        .build();
+    let held = std::rc::Rc::new(Cell::new(false));
+    let talk = {
+        let page = page.downgrade();
+        let held = held.clone();
+        move |on: bool| {
+            // Each press is one Microphone(true), and each its one (false).
+            if held.replace(on) != on
+                && let Some(page) = page.upgrade()
+            {
+                page.send(Event::Microphone(on));
+            }
+        }
+    };
+    // Before the button's own click handling, which claims the press.
+    let press = gtk::GestureClick::builder()
+        .button(0)
+        .propagation_phase(gtk::PropagationPhase::Capture)
+        .build();
+    let on = talk.clone();
+    press.connect_pressed(move |_, _, _, _| on(true));
+    let off = talk.clone();
+    press.connect_released(move |_, _, _, _| off(false));
+    let off = talk.clone();
+    press.connect_stopped(move |_| off(false));
+    let off = talk.clone();
+    press.connect_cancel(move |_, _| off(false));
+    button.add_controller(press);
+    let keys = gtk::EventControllerKey::builder()
+        .propagation_phase(gtk::PropagationPhase::Capture)
+        .build();
+    let on = talk.clone();
+    keys.connect_key_pressed(move |_, key, _, _| {
+        if is_talk_key(key) {
+            // A held key repeats; the first press alone turns it on.
+            on(true);
+            glib::Propagation::Stop
+        } else {
+            glib::Propagation::Proceed
+        }
+    });
+    let off = talk.clone();
+    keys.connect_key_released(move |_, key, _, _| {
+        if is_talk_key(key) {
+            off(false);
+        }
+    });
+    button.add_controller(keys);
+    // The keyboard leaving it and the button going from the screen happen
+    // while the window is drawn, when the sink drops what it is sent: the
+    // microphone goes off just after, from the main loop.
+    let focus = gtk::EventControllerFocus::new();
+    let off = talk.clone();
+    focus.connect_leave(move |_| {
+        let off = off.clone();
+        glib::idle_add_local_once(move || off(false));
+    });
+    button.add_controller(focus);
+    let off = talk;
+    button.connect_unmap(move |_| {
+        let off = off.clone();
+        glib::idle_add_local_once(move || off(false));
+    });
+    button.update_property(&[gtk::accessible::Property::Label(label)]);
+    button
+}
+
+/// The keys that hold a button down.
+fn is_talk_key(key: gtk::gdk::Key) -> bool {
+    matches!(
+        key,
+        gtk::gdk::Key::space
+            | gtk::gdk::Key::KP_Space
+            | gtk::gdk::Key::Return
+            | gtk::gdk::Key::KP_Enter
+            | gtk::gdk::Key::ISO_Enter
+    )
 }
 
 /// The tallest the cards proposed by voice grow before they scroll, and the
@@ -448,6 +546,7 @@ impl HqPage {
             .valign(gtk::Align::Center)
             .css_classes(["circular"])
             .build();
+        let hold = hold_to_talk(self, "voice_hold_to_talk");
         // The icon beside the words, never in their place: a button given an
         // icon name loses its label, and with it its name to a screen reader.
         let start = gtk::Button::builder()
@@ -565,11 +664,15 @@ impl HqPage {
             .build();
         let cards_scroller = voice_cards_scroller(&cards, "voice_cards_scroller");
 
+        // Under the bar, on a line of its own: its words beside the bar's
+        // buttons would hold a narrow window wider than itself.
+        hold.set_halign(gtk::Align::Start);
         // Above the typed card and the question line, in reading order.
         for widget in [
             cards_scroller.upcast_ref::<gtk::Widget>(),
             notice.upcast_ref(),
             disclosure.upcast_ref(),
+            hold.upcast_ref(),
             bar.upcast_ref(),
         ] {
             imp.bottom.prepend(widget);
@@ -597,6 +700,7 @@ impl HqPage {
                 spinner,
                 line,
                 microphone,
+                hold,
                 start,
                 stop,
                 dismiss,
@@ -650,7 +754,13 @@ impl HqPage {
         let microphone = session.map_or(MicrophoneState::Off, |session| session.microphone);
         let (icon, action, wanted) = microphone_button(microphone);
         imp.microphone_wanted.set(wanted);
-        voice.microphone.set_visible(live && session.is_some());
+        let push_to_talk = state.push_to_talk;
+        voice
+            .microphone
+            .set_visible(live && session.is_some() && !push_to_talk);
+        voice
+            .hold
+            .set_visible(live && session.is_some() && push_to_talk);
         voice.microphone.set_icon_name(icon);
         voice
             .microphone

@@ -27,7 +27,7 @@ use crate::gtk::{self, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::Sends;
 use crate::pages::call_bar::microphone_button;
-use crate::pages::hq::{button, voice_card, voice_cards_scroller, voice_line};
+use crate::pages::hq::{button, hold_to_talk, voice_card, voice_cards_scroller, voice_line};
 use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
 use crate::sink::EventSink;
 
@@ -50,6 +50,7 @@ struct Parts {
     notice: gtk::Label,
     dismiss: gtk::Button,
     microphone: gtk::Button,
+    hold: gtk::Button,
     stop: gtk::Button,
     cards: gtk::Box,
     cards_scroller: gtk::ScrolledWindow,
@@ -147,6 +148,7 @@ impl VoiceDock {
             .valign(gtk::Align::Center)
             .css_classes(["circular"])
             .build();
+        let hold = hold_to_talk(self, "voice_dock_hold_to_talk");
         let stop = button(
             core_text::hq_voice_stop(lang()),
             "voice_dock_stop",
@@ -194,8 +196,11 @@ impl VoiceDock {
             .margin_start(12)
             .margin_end(12)
             .build();
+        // Under the bar, on a line of its own, as on District HQ.
+        hold.set_halign(gtk::Align::Start);
         for widget in [
             bar.upcast_ref::<gtk::Widget>(),
+            hold.upcast_ref(),
             notice.upcast_ref(),
             cards_scroller.upcast_ref(),
             review.upcast_ref(),
@@ -225,6 +230,7 @@ impl VoiceDock {
                 notice,
                 dismiss,
                 microphone,
+                hold,
                 stop,
                 cards,
                 cards_scroller,
@@ -265,7 +271,9 @@ impl VoiceDock {
         let microphone = session.map_or(MicrophoneState::Off, |session| session.microphone);
         let (icon, action, wanted) = microphone_button(microphone);
         imp.microphone_wanted.set(wanted);
-        parts.microphone.set_visible(live && session.is_some());
+        let talking = live && session.is_some();
+        parts.microphone.set_visible(talking && !state.push_to_talk);
+        parts.hold.set_visible(talking && state.push_to_talk);
         parts.microphone.set_icon_name(icon);
         let tooltip = text::call_bar_microphone_tooltip(lang(), action);
         parts.microphone.set_tooltip_text(Some(&tooltip));

@@ -83,6 +83,11 @@
                         <property name="group">owned_tab</property>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkToggleButton" id="registrations_tab">
+                        <property name="group">owned_tab</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>
@@ -174,6 +179,16 @@
                         <property name="name">carrier</property>
                         <property name="child">
                           <object class="GtkBox" id="carrier_box">
+                            <property name="orientation">vertical</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">registrations</property>
+                        <property name="child">
+                          <object class="GtkBox" id="registrations_box">
                             <property name="orientation">vertical</property>
                           </object>
                         </property>
