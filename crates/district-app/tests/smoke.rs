@@ -3012,10 +3012,14 @@ fn hold_and_let_go(smoke: &Smoke, name: &str) {
     press.emit_by_name::<()>("pressed", &[&1i32, &5.0f64, &5.0f64]);
     smoke.pump();
     assert_eq!(microphone_asked(smoke), Some(true), "held: on");
+    // The gesture stops counting presses once the double-click time is up,
+    // with the button still held: not a release.
+    press.emit_by_name::<()>("stopped", &[]);
+    smoke.pump();
+    assert_eq!(microphone_asked(smoke), None, "still held: still on");
     press.emit_by_name::<()>("released", &[&1i32, &5.0f64, &5.0f64]);
     smoke.pump();
     assert_eq!(microphone_asked(smoke), Some(false), "let go: off");
-    // The gesture stops after its release: nothing more is sent.
     press.emit_by_name::<()>("stopped", &[]);
     smoke.pump();
     assert_eq!(microphone_asked(smoke), None, "off once");

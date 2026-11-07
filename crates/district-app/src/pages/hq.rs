@@ -345,17 +345,24 @@ pub(crate) fn hold_to_talk<P: Sends>(page: &P, name: &str) -> gtk::Button {
             }
         }
     };
-    // Before the button's own click handling, which claims the press.
+    // Before the button's own click gesture, in the capture phase, and it
+    // claims the press: the button's gesture claims it otherwise, and a
+    // gesture on the same widget that loses the press is cancelled, which
+    // would turn the microphone off as soon as it went on. The button never
+    // clicks; holding it is all it does. Its "stopped" is not a release: the
+    // gesture stops counting presses once the double-click time is up, while
+    // the button is still held.
     let press = gtk::GestureClick::builder()
-        .button(0)
+        .button(gtk::gdk::BUTTON_PRIMARY)
         .propagation_phase(gtk::PropagationPhase::Capture)
         .build();
     let on = talk.clone();
-    press.connect_pressed(move |_, _, _, _| on(true));
+    press.connect_pressed(move |gesture, _, _, _| {
+        gesture.set_state(gtk::EventSequenceState::Claimed);
+        on(true);
+    });
     let off = talk.clone();
     press.connect_released(move |_, _, _, _| off(false));
-    let off = talk.clone();
-    press.connect_stopped(move |_| off(false));
     let off = talk.clone();
     press.connect_cancel(move |_, _| off(false));
     button.add_controller(press);
