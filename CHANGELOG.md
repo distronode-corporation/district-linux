@@ -36,6 +36,11 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 - district-core-rust 10.0.0. It reads the whole of the service's HQ voice credential (the
   microphone mode and the session's id), which 9.0.0 refused.
+- district-core-rust 11.0.0. When a District HQ voice session ends here, however it ends
+  (Stop, a workspace switch, signing out, sleep or quitting, the time limit, the agent
+  leaving or the room lost), the service is told, so only the minutes used are counted; a
+  session whose room was never joined is given back. Quitting does not wait for the
+  answer longer than it already waits for its other last work.
 
 ## [3.3.0] - 2026-11-06
 
