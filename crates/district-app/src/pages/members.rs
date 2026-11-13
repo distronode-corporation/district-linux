@@ -20,6 +20,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed, Frame};
 use crate::pages::shared::{Ask, Asking, draw_line, draw_spinner, wire_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -172,15 +173,15 @@ mod imp {
                 .ok();
             let weak = view.downgrade();
             self.email_row.connect_entry_activated(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Members(MembersEvent::Add));
-                }
+                });
             });
             let weak = view.downgrade();
             self.new_name_row.connect_entry_activated(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Members(MembersEvent::Rename));
-                }
+                });
             });
         }
     }
@@ -387,13 +388,13 @@ impl MembersView {
                 destructive: true,
             }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Members(if yes {
                         MembersEvent::ConfirmRemove
                     } else {
                         MembersEvent::CancelRemove
                     }));
-                }
+                });
             },
         );
     }

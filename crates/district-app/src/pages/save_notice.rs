@@ -19,6 +19,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang};
 use crate::pages::Sends;
 use crate::pages::shared::failure_text;
+use crate::pages::upgraded;
 use crate::sink::EventSink;
 
 mod imp {
@@ -61,12 +62,12 @@ mod imp {
             let notice = self.obj();
             let weak = notice.downgrade();
             self.notice_dismiss.connect_clicked(move |_| {
-                if let Some(notice) = weak.upgrade() {
+                upgraded(&weak, |notice| {
                     let event = notice.imp().dismiss.borrow().clone();
                     if let Some(event) = event {
                         notice.send(event);
                     }
-                }
+                });
             });
         }
     }

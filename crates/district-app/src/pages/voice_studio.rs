@@ -28,6 +28,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang};
 use crate::pages::settings_kit::Frame;
 use crate::pages::shared::{draw_busy, draw_line, failure_text, wrap_button_label};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -470,9 +471,9 @@ impl VoiceStudioView {
                 let id = recipe.id.clone();
                 let weak = self.downgrade();
                 row.connect_activated(move |_| {
-                    if let Some(view) = weak.upgrade() {
+                    upgraded(&weak, |view| {
                         view.edit(StudioEdit::ApplyRecipe(id.clone()));
-                    }
+                    });
                 });
                 imp.recipes_group.add(&row);
                 held.1.push(row.upcast());
@@ -535,9 +536,9 @@ impl VoiceStudioView {
             }
             let weak = self.downgrade();
             row.connect_activated(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.studio_event(VoiceStudioEvent::SelectLeg(leg.clone()));
-                }
+                });
             });
             imp.chain_group.add(&row);
             held.1.push(row.upcast());
@@ -679,12 +680,12 @@ impl VoiceStudioView {
                 let path = key.key.clone();
                 let held = weak.clone();
                 scale.connect_value_changed(move |scale| {
-                    if let Some(view) = held.upgrade() {
+                    upgraded(&held, |view| {
                         view.edit(StudioEdit::Number {
                             key: path.clone(),
                             value: Some(scale.value()),
                         });
-                    }
+                    });
                 });
                 row.add_suffix(&scale);
                 let default =
@@ -698,12 +699,12 @@ impl VoiceStudioView {
                             let path = key.key.clone();
                             let start = range.start;
                             check.connect_toggled(move |check| {
-                                if let Some(view) = weak.upgrade() {
+                                upgraded(&weak, |view| {
                                     view.edit(StudioEdit::Number {
                                         key: path.clone(),
                                         value: (!check.is_active()).then_some(start),
                                     });
-                                }
+                                });
                             });
                             row.add_suffix(&check);
                             check
@@ -744,12 +745,12 @@ impl VoiceStudioView {
                     .build();
                 let path = key.key.clone();
                 row.connect_active_notify(move |row| {
-                    if let Some(view) = weak.upgrade() {
+                    upgraded(&weak, |view| {
                         view.edit(StudioEdit::Flag {
                             key: path.clone(),
                             on: row.is_active(),
                         });
-                    }
+                    });
                 });
                 (row.clone().upcast(), Tuning::Flag { row })
             }
@@ -780,12 +781,12 @@ impl VoiceStudioView {
                 let buffer = text.buffer();
                 let path = key.key.clone();
                 buffer.connect_changed(move |buffer| {
-                    if let Some(view) = weak.upgrade() {
+                    upgraded(&weak, |view| {
                         view.edit(StudioEdit::Lines {
                             key: path.clone(),
                             text: crate::pages::settings_kit::buffer_text(buffer),
                         });
-                    }
+                    });
                 });
                 let row = gtk::ListBoxRow::builder()
                     .activatable(false)

@@ -30,6 +30,7 @@ use crate::pages::shared::{
     Ask, Asking, FilePicker, draw_line, draw_spinner, failure_text, icon_button, short_text,
     wire_text,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -265,28 +266,28 @@ mod imp {
             });
             let weak = view.downgrade();
             self.file_button.connect_clicked(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.pick_file();
-                }
+                });
             });
             // A file's refusal stands until the form is changed or added.
             let weak = view.downgrade();
             self.title_row.connect_changed(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.refuse_file(None);
-                }
+                });
             });
             let weak = view.downgrade();
             self.content_view.buffer().connect_changed(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.refuse_file(None);
-                }
+                });
             });
             let weak = view.downgrade();
             self.add_button.connect_clicked(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.refuse_file(None);
-                }
+                });
             });
             self.title
                 .set(Echoed::text(&*self.title_row, &*view, |title| {
@@ -558,13 +559,13 @@ impl KnowledgeView {
                     destructive: *destructive,
                 }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Knowledge(if yes {
                         KnowledgeEvent::Confirm
                     } else {
                         KnowledgeEvent::Cancel
                     }));
-                }
+                });
             },
         );
     }

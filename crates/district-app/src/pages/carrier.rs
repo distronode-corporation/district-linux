@@ -32,6 +32,7 @@ use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::marketplace::MarketplacePage;
 use crate::pages::shared::{draw_line, failure_text, plain_label, wire_text};
+use crate::pages::upgraded;
 
 /// The notice under a write's control, with the sentence saying why it is
 /// not offered again when that is so; `None` when there is nothing to say.
@@ -373,9 +374,9 @@ impl CarrierPanel {
 
     /// Sends `event` to the core.
     fn send(&self, event: NumberAdminEvent) {
-        if let Some(page) = self.page.upgrade() {
+        upgraded(&self.page, |page| {
             page.send(Event::Marketplace(MarketplaceEvent::Numbers(event)));
-        }
+        });
     }
 
     /// Sends the form `form` makes, unless the fields are being written.
@@ -679,9 +680,9 @@ type Form = fn(&CarrierPanel) -> NumberAdminEvent;
 
 /// Runs `then` with the panel `weak` points at, while it lives.
 fn with(weak: &Weak<CarrierPanel>, then: impl FnOnce(&CarrierPanel)) {
-    if let Some(panel) = weak.upgrade() {
+    upgraded(weak, |panel| {
         then(&panel);
-    }
+    });
 }
 
 #[cfg(test)]

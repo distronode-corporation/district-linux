@@ -34,6 +34,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{lang, text};
 use crate::pages::shared::plain_label;
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_activate, on_click};
 use crate::sink::EventSink;
 
@@ -215,9 +216,9 @@ impl BookingsPane {
     fn sender(&self) -> Send {
         let pane = self.downgrade();
         Rc::new(move |event| {
-            if let Some(pane) = pane.upgrade() {
+            upgraded(&pane, |pane| {
                 pane.send(event);
-            }
+            });
         })
     }
 

@@ -23,6 +23,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::pages::Sends;
 use crate::pages::shared::{clear_list, draw_line, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::sink::EventSink;
 
 /// The event that carries `event` to the core.
@@ -165,28 +166,28 @@ mod imp {
                 )]);
             let weak = dialog.downgrade();
             self.to_row.connect_changed(move |row| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.edited(ComposeEvent::Query(row.text().into()));
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.to_row.connect_entry_activated(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(compose(ComposeEvent::UseTyped));
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.subject_row.connect_changed(move |row| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.edited(ComposeEvent::EditSubject(row.text().into()));
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.body.buffer().connect_changed(move |buffer| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     let body = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false);
                     dialog.edited(ComposeEvent::EditBody(body.into()));
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.channel_row.connect_selected_notify(move |row| {
@@ -198,10 +199,10 @@ mod imp {
             });
             let weak = dialog.downgrade();
             self.contacts_list.connect_row_activated(move |_, row| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     let event = dialog.chosen(row.index());
                     dialog.send(compose(event));
-                }
+                });
             });
             for (button, event) in [
                 (&*self.change_button, ComposeEvent::ClearRecipient),
@@ -210,16 +211,16 @@ mod imp {
             ] {
                 let weak = dialog.downgrade();
                 button.connect_clicked(move |_| {
-                    if let Some(dialog) = weak.upgrade() {
+                    upgraded(&weak, |dialog| {
                         dialog.send(compose(event.clone()));
-                    }
+                    });
                 });
             }
             let weak = dialog.downgrade();
             dialog.connect_close_attempt(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(compose(ComposeEvent::Cancel));
-                }
+                });
             });
         }
     }

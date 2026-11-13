@@ -13,6 +13,7 @@ use crate::gtk::{self, glib};
 use crate::l10n::{lang, sched_text, text};
 use crate::pages::Sends;
 use crate::pages::shared::{draw_spinner, plain_label, wrap_bound_title};
+use crate::pages::upgraded;
 
 /// What the member does on the list, as the core takes it.
 pub(super) fn list_event(event: EventTypesEvent) -> Event {
@@ -31,9 +32,9 @@ pub(super) fn control_of(control: &str, name: &str) -> String {
 
 /// Sends `event` through `pane`, if it is still there.
 pub(super) fn send(pane: &glib::WeakRef<EventTypesPane>, event: Event) {
-    if let Some(pane) = pane.upgrade() {
+    upgraded(pane, |pane| {
         pane.send(event);
-    }
+    });
 }
 
 /// A dialog over the pane: Cancel at the start of its header, and at its end

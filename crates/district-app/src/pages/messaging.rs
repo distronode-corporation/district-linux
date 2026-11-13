@@ -29,6 +29,7 @@ use crate::pages::settings_kit::{Choices, Echoed};
 use crate::pages::shared::{
     Ask, Asking, draw_spinner, failure_text, humanize, icon_button, wire_text,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -505,13 +506,13 @@ impl MessagingView {
                 destructive: true,
             }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Messaging(if yes {
                         MessagingEvent::ConfirmDelete
                     } else {
                         MessagingEvent::CancelDelete
                     }));
-                }
+                });
             },
         );
     }

@@ -11,6 +11,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -242,13 +243,13 @@ impl DevicesPage {
                 destructive: true,
             }),
             move |yes| {
-                if let Some(page) = page.upgrade() {
+                upgraded(&page, |page| {
                     page.send(Event::Devices(if yes {
                         DevicesEvent::Confirm
                     } else {
                         DevicesEvent::Cancel
                     }));
-                }
+                });
             },
         );
     }

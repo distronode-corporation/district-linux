@@ -21,6 +21,7 @@ use crate::pages::shared::{
     Ask, Asking, Landing, clear_box, conversation_message, draw_line, draw_spinner, failure_text,
     placeholder_text, short_text,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -193,13 +194,13 @@ impl SupportRequestView {
                 destructive: false,
             }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Support(if yes {
                         SupportEvent::ConfirmClose
                     } else {
                         SupportEvent::CancelClose
                     }));
-                }
+                });
             },
         );
         let landed = imp

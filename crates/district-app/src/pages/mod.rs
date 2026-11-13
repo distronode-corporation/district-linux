@@ -98,6 +98,40 @@ pub(crate) trait Sends: IsA<glib::Object> {
     }
 }
 
+/// A weak reference a widget's handler holds: a GObject's or an `Rc`'s.
+pub(crate) trait Held {
+    /// What it points at, while that is still there.
+    type Strong;
+
+    /// What it points at, or `None` once that has gone.
+    fn get(&self) -> Option<Self::Strong>;
+}
+
+impl<T: glib::object::ObjectType> Held for glib::WeakRef<T> {
+    type Strong = T;
+
+    fn get(&self) -> Option<T> {
+        self.upgrade()
+    }
+}
+
+impl<T> Held for std::rc::Weak<T> {
+    type Strong = std::rc::Rc<T>;
+
+    fn get(&self) -> Option<std::rc::Rc<T>> {
+        self.upgrade()
+    }
+}
+
+/// Runs `then` with what `weak` holds, if it is still there. A widget's
+/// handler holds its page, view or dialog weakly, so the handler does not keep
+/// it alive, and a signal can come after it has gone: then nothing happens.
+pub(crate) fn upgraded<W: Held>(weak: &W, then: impl FnOnce(W::Strong)) {
+    if let Some(strong) = weak.get() {
+        then(strong);
+    }
+}
+
 /// Sends `event()` from `page` each time `button` is clicked. The page is
 /// held weakly, so the button does not keep it alive.
 pub(crate) fn on_click<P: Sends>(
@@ -107,9 +141,9 @@ pub(crate) fn on_click<P: Sends>(
 ) {
     let page = page.downgrade();
     button.connect_clicked(move |_| {
-        if let Some(page) = page.upgrade() {
+        upgraded(&page, |page| {
             page.send(event());
-        }
+        });
     });
 }
 
@@ -121,9 +155,9 @@ pub(crate) fn on_activate<P: Sends>(
 ) {
     let page = page.downgrade();
     row.connect_activated(move |_| {
-        if let Some(page) = page.upgrade() {
+        upgraded(&page, |page| {
             page.send(event());
-        }
+        });
     });
 }
 
@@ -136,6 +170,26 @@ pub(crate) fn escape(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_handler_runs_only_while_what_it_holds_is_there() {
+        let object = glib::Object::new::<glib::Object>();
+        let weak = object.downgrade();
+        let runs = std::cell::Cell::new(0);
+        upgraded(&weak, |held| {
+            assert_eq!(held, object);
+            runs.set(runs.get() + 1);
+        });
+        drop(object);
+        upgraded(&weak, |_| runs.set(runs.get() + 1));
+        assert_eq!(runs.get(), 1);
+
+        let shared = std::rc::Rc::new(7);
+        let weak = std::rc::Rc::downgrade(&shared);
+        upgraded(&weak, |held| assert_eq!(*held, 7));
+        drop(shared);
+        upgraded(&weak, |_| panic!("gone"));
+    }
 
     /// Every template the window is built from.
     const TEMPLATES: [(&str, &str); 52] = [

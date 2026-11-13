@@ -19,6 +19,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::shared::{draw_line, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::sink::EventSink;
 
 /// Where the form stands, as the core has it.
@@ -156,40 +157,40 @@ mod imp {
             ] {
                 let weak = dialog.downgrade();
                 row.connect_changed(move |_| {
-                    if let Some(dialog) = weak.upgrade() {
+                    upgraded(&weak, |dialog| {
                         dialog.changed();
-                    }
+                    });
                 });
             }
             let weak = dialog.downgrade();
             self.kind_row.connect_selected_notify(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.changed();
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.message.buffer().connect_changed(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.changed();
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.submit_button.connect_clicked(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(dialog.imp().kind.get().submit());
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.cancel_button.connect_clicked(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(dialog.imp().kind.get().cancel());
-                }
+                });
             });
             let weak = dialog.downgrade();
             dialog.connect_close_attempt(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(dialog.imp().kind.get().cancel());
-                }
+                });
             });
         }
     }

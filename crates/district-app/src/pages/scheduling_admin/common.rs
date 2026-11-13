@@ -17,6 +17,7 @@ use crate::adw::prelude::*;
 use crate::gtk;
 use crate::l10n::{lang, text};
 use crate::pages::shared::{Ask, Asking, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::pages::workflows::tone_class;
 use crate::pages::{Sends, escape, on_click};
 
@@ -200,9 +201,9 @@ pub(crate) fn confirm_once_keeping<P: Sends + IsA<gtk::Widget>>(
 ) {
     let weak = page.downgrade();
     asking.sync_keeping(page, wanted, keep, move |confirmed| {
-        if let Some(page) = weak.upgrade() {
+        upgraded(&weak, |page| {
             page.send(if confirmed { yes.clone() } else { no.clone() });
-        }
+        });
     });
 }
 

@@ -23,6 +23,7 @@ use crate::background::START_AT_LOGIN_ACTION;
 use crate::crash::CRASH_REPORTS_ACTION;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_activate};
 use crate::sink::EventSink;
 
@@ -125,9 +126,9 @@ mod imp {
             });
             let weak = page.downgrade();
             self.ring_here_row.connect_active_notify(move |row| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.send(Event::SetRingOnThisComputer(row.is_active()));
-                }
+                });
             });
         }
     }

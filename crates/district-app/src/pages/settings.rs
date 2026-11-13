@@ -26,6 +26,7 @@ use crate::pages::persona::PersonaView;
 use crate::pages::routing::RoutingView;
 use crate::pages::shared::{RowIds, back_on_fold, clear_list};
 use crate::pages::tools::ToolsView;
+use crate::pages::upgraded;
 use crate::pages::voice_studio::VoiceStudioView;
 use crate::routes;
 use crate::sink::EventSink;
@@ -126,9 +127,9 @@ mod imp {
             let page = self.obj();
             let weak = page.downgrade();
             self.hub_list.connect_row_activated(move |_, row| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.open_row(row);
-                }
+                });
             });
             back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }

@@ -19,6 +19,7 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{RowIds, back_on_fold, clear_list, draw_line, failure_text, short_text};
 use crate::pages::support_request::SupportRequestView;
 use crate::pages::ticket_form::{FormState, TicketFormDialog};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -125,9 +126,9 @@ mod imp {
             for list in [&*self.open_list, &*self.resolved_list] {
                 let weak = page.downgrade();
                 list.connect_row_activated(move |_, row| {
-                    if let Some(page) = weak.upgrade() {
+                    upgraded(&weak, |page| {
                         page.open_row(row);
-                    }
+                    });
                 });
             }
             back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());

@@ -26,6 +26,7 @@ use crate::gtk::{self, gio};
 use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::shared::plain_label;
+use crate::pages::upgraded;
 
 /// Where a member who cannot report in the app reports instead.
 pub(crate) const SUPPORT_WEB_URL: &str = "https://www.distronode.com/support";
@@ -129,9 +130,9 @@ pub(crate) fn button<P: Sends>(page: &P, offer: Offer, target: ReportTarget) -> 
     draw_button(&button, offer);
     let page = page.downgrade();
     button.connect_clicked(move |button| {
-        if let Some(page) = page.upgrade() {
+        upgraded(&page, |page| {
             open(&page, button.upcast_ref(), offer, target.clone());
-        }
+        });
     });
     button
 }

@@ -20,6 +20,7 @@ use crate::guard;
 use crate::l10n::{lang, text};
 use crate::notifications::{self, BUTTON_ACTION, OPEN_ACTION};
 use crate::pages;
+use crate::pages::upgraded;
 use crate::sink::EventSink;
 use crate::style::Brand;
 use crate::window::{
@@ -318,12 +319,12 @@ impl Controller {
         dialog.set_close_response(DONT_SEND);
         let controller = Rc::downgrade(self);
         dialog.connect_closed(move |closed| {
-            if let Some(controller) = controller.upgrade() {
+            upgraded(&controller, |controller| {
                 let mut question = controller.crash_question.borrow_mut();
                 if question.as_ref() == Some(closed) {
                     *question = None;
                 }
-            }
+            });
         });
         let controller = Rc::downgrade(self);
         dialog.connect_response(None, move |_, response| {
@@ -349,7 +350,7 @@ impl Controller {
         // the web dashboard's: one click on the taskbar shows the controls.
         let controller = Rc::downgrade(self);
         window.connect_close_request(move |_| {
-            if let Some(controller) = controller.upgrade() {
+            upgraded(&controller, |controller| {
                 controller
                     .events
                     .try_send(Event::Hq(HqEvent::StopVoice))
@@ -366,7 +367,7 @@ impl Controller {
                 if controller.hold.borrow().is_some() {
                     controller.background.backgrounded();
                 }
-            }
+            });
             glib::Propagation::Proceed
         });
         // Whether the user can be looking at the window, told to the model

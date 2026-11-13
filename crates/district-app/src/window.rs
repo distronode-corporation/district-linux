@@ -20,6 +20,7 @@ use crate::adw::prelude::*;
 use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, gio, glib};
 use crate::l10n::{lang, text};
+use crate::pages::upgraded;
 use crate::pages::{
     AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
     DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
@@ -200,21 +201,21 @@ mod imp {
             self.report_banner.set_use_markup(false);
             let weak = window.downgrade();
             self.back_button.connect_clicked(move |_| {
-                if let Some(window) = weak.upgrade() {
+                upgraded(&weak, |window| {
                     window.send(Event::Back);
-                }
+                });
             });
             let weak = window.downgrade();
             self.refresh_button.connect_clicked(move |_| {
-                if let Some(window) = weak.upgrade() {
+                upgraded(&weak, |window| {
                     window.send(Event::Refresh);
-                }
+                });
             });
             let weak = window.downgrade();
             self.notice_banner.connect_button_clicked(move |_| {
-                if let Some(window) = weak.upgrade() {
+                upgraded(&weak, |window| {
                     window.send(Event::DismissNotice);
-                }
+                });
             });
             let weak = window.downgrade();
             self.workspace_dropdown
@@ -231,15 +232,15 @@ mod imp {
                 });
             let weak = window.downgrade();
             self.live_banner.connect_button_clicked(move |_| {
-                if let Some(window) = weak.upgrade() {
+                upgraded(&weak, |window| {
                     window.send(Event::Refresh);
-                }
+                });
             });
             let weak = window.downgrade();
             self.report_banner.connect_button_clicked(move |_| {
-                if let Some(window) = weak.upgrade() {
+                upgraded(&weak, |window| {
                     window.send(Event::Support(SupportEvent::DismissReport));
-                }
+                });
             });
             for split in [
                 self.split_view.get(),
@@ -252,9 +253,9 @@ mod imp {
             ] {
                 let weak = window.downgrade();
                 split.connect_collapsed_notify(move |_| {
-                    if let Some(window) = weak.upgrade() {
+                    upgraded(&weak, |window| {
                         window.draw_chrome();
-                    }
+                    });
                 });
             }
         }

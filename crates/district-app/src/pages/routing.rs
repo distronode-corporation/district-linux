@@ -20,6 +20,7 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Choices, Echoed, Frame, draw_config, unlisted};
 use crate::pages::shared::{Ask, Asking, draw_busy, icon_button};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -285,13 +286,13 @@ impl RoutingView {
                 destructive: confirm.rules == 0,
             }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::RoutingRules(if yes {
                         RoutingRulesEvent::ConfirmSave
                     } else {
                         RoutingRulesEvent::CancelSave
                     }));
-                }
+                });
             },
         );
         if draw_config(frame, &section.config, &section.save).is_none() {

@@ -29,6 +29,7 @@ use crate::pages::Sends;
 use crate::pages::call_bar::microphone_button;
 use crate::pages::hq::{button, hold_to_talk, voice_card, voice_cards_scroller, voice_line};
 use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
+use crate::pages::upgraded;
 use crate::sink::EventSink;
 
 /// Whether the dock shows: away from District HQ, while a session is being
@@ -218,9 +219,9 @@ impl VoiceDock {
         crate::pages::on_click(&review, self, || Event::Navigate(Route::Hq));
         let weak = self.downgrade();
         microphone.connect_clicked(move |_| {
-            if let Some(dock) = weak.upgrade() {
+            upgraded(&weak, |dock| {
                 dock.send(Event::Microphone(dock.imp().microphone_wanted.get()));
-            }
+            });
         });
         self.imp()
             .parts

@@ -33,6 +33,7 @@ use crate::gtk;
 use crate::l10n::{lang, sched_text, text};
 use crate::pages::scheduling_admin::common::write_line;
 use crate::pages::shared::{draw_line, draw_spinner, plain_label, wrap_bound_title};
+use crate::pages::upgraded;
 
 /// What a dialog's controls send: an event, to the pane's sink.
 pub(crate) type Send = Rc<dyn Fn(Event)>;
@@ -280,9 +281,9 @@ impl ImageRow {
         choose.connect_clicked(move |_| pick(target));
         let (parent, send) = (shell.dialog.downgrade(), Rc::clone(send));
         remove.connect_clicked(move |_| {
-            if let Some(parent) = parent.upgrade() {
+            upgraded(&parent, |parent| {
                 ask_remove(&parent, target, &send);
-            }
+            });
         });
         Self {
             row,

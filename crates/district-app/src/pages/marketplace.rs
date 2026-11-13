@@ -28,6 +28,7 @@ use crate::pages::shared::{
     Ask, Asking, Echo, clear_list, draw_line, failure_text, humanize, known_wire_label,
     plain_label, wire_text, wrap_button_label,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -444,24 +445,24 @@ mod imp {
             for row in [&*self.area_row, &*self.country_row] {
                 let weak = page.downgrade();
                 row.connect_changed(move |row| {
-                    if let Some(page) = weak.upgrade() {
+                    upgraded(&weak, |page| {
                         page.edited(row);
-                    }
+                    });
                 });
                 let weak = page.downgrade();
                 row.connect_entry_activated(move |_| {
-                    if let Some(page) = weak.upgrade() {
+                    upgraded(&weak, |page| {
                         page.send(search());
-                    }
+                    });
                 });
             }
             let weak = page.downgrade();
             self.type_row.connect_selected_notify(move |_| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.send(Event::Marketplace(MarketplaceEvent::EditSearch(
                         page.form(),
                     )));
-                }
+                });
             });
         }
     }
@@ -594,13 +595,13 @@ impl MarketplacePage {
                     destructive: confirmation.is_destructive(),
                 }),
             move |yes| {
-                if let Some(page) = page.upgrade() {
+                upgraded(&page, |page| {
                     page.send(numbers(if yes {
                         NumberAdminEvent::Confirm
                     } else {
                         NumberAdminEvent::CancelConfirmation
                     }));
-                }
+                });
             },
         );
     }

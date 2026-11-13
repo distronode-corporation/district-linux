@@ -23,6 +23,7 @@ use crate::pages::shared::{
     Ask, Asking, clear_list, draw_line, draw_spinner, failure_text, humanize, known_wire_label,
     when_text, wire_text,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -304,13 +305,13 @@ impl WorkflowsPage {
                 destructive: false,
             }),
             move |yes| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.send(Event::Workflows(if yes {
                         WorkflowsEvent::ConfirmCampaign
                     } else {
                         WorkflowsEvent::CancelCampaign
                     }));
-                }
+                });
             },
         );
     }
@@ -444,22 +445,22 @@ impl WorkflowsPage {
         let id = workflow.id.clone();
         let weak = self.downgrade();
         switch.connect_active_notify(move |switch| {
-            if let Some(page) = weak.upgrade() {
+            upgraded(&weak, |page| {
                 page.send(Event::Workflows(WorkflowsEvent::SetActive {
                     workflow_id: id.clone(),
                     active: switch.is_active(),
                 }));
-            }
+            });
         });
         row.add_suffix(&switch);
         let id = workflow.id.clone();
         let weak = self.downgrade();
         row.connect_expanded_notify(move |_| {
-            if let Some(page) = weak.upgrade() {
+            upgraded(&weak, |page| {
                 page.send(Event::Workflows(WorkflowsEvent::ToggleExpanded {
                     workflow_id: id.clone(),
                 }));
-            }
+            });
         });
         row
     }

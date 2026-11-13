@@ -22,6 +22,7 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Echoed, Frame, draw_config};
 use crate::pages::shared::{Ask, Asking, draw_busy, draw_line, icon_button};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -140,9 +141,9 @@ mod imp {
                 .ok();
             let weak = view.downgrade();
             self.new_number_row.connect_entry_activated(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Directory(DirectoryEvent::Add));
-                }
+                });
             });
         }
     }
@@ -204,13 +205,13 @@ impl DirectoryView {
                 destructive: confirm.entries == 0,
             }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Directory(if yes {
                         DirectoryEvent::ConfirmSave
                     } else {
                         DirectoryEvent::CancelSave
                     }));
-                }
+                });
             },
         );
         if draw_config(frame, &section.config, &section.save).is_none() {

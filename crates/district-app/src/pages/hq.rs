@@ -34,6 +34,7 @@ use crate::markdown::to_markup;
 use crate::pages::call_bar::microphone_button;
 use crate::pages::report::{self, Offer};
 use crate::pages::shared::{clear_box, draw_line, draw_spinner, failure_text, plain_label};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -250,15 +251,15 @@ mod imp {
             on_click(&self.dismiss_button, &*page, || Event::Hq(HqEvent::Dismiss));
             let weak = page.downgrade();
             self.ask_button.connect_clicked(move |_| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.ask();
-                }
+                });
             });
             let weak = page.downgrade();
             self.prompt_entry.connect_activate(move |_| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.ask();
-                }
+                });
             });
             page.build_voice();
             // A new line of the conversation scrolls into view.
@@ -746,9 +747,9 @@ impl HqPage {
         });
         let weak = self.downgrade();
         microphone.connect_clicked(move |_| {
-            if let Some(page) = weak.upgrade() {
+            upgraded(&weak, |page| {
                 page.send(Event::Microphone(page.imp().microphone_wanted.get()));
-            }
+            });
         });
         imp.voice
             .set(Voice {
@@ -1028,9 +1029,9 @@ impl HqPage {
                     .build();
                 let weak = self.downgrade();
                 label.connect_activate_link(move |_, uri| {
-                    if let Some(page) = weak.upgrade() {
+                    upgraded(&weak, |page| {
                         page.send(Event::Hq(HqEvent::OpenLink(uri.to_owned())));
-                    }
+                    });
                     glib::Propagation::Stop
                 });
                 let answer = gtk::Box::builder()

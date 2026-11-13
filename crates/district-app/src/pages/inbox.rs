@@ -21,6 +21,7 @@ use crate::pages::shared::{
     Echo, RowIds, back_on_fold, clear_list, draw_line, draw_spinner, failure_text, now, short_time,
 };
 use crate::pages::thread::ThreadView;
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -291,9 +292,9 @@ impl InboxPage {
         });
         let weak = self.downgrade();
         imp.search_entry.connect_stop_search(move |_| {
-            if let Some(page) = weak.upgrade() {
+            upgraded(&weak, |page| {
                 page.send(Event::Inbox(InboxEvent::ClearSearch));
-            }
+            });
         });
     }
 
