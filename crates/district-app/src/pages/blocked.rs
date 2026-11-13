@@ -16,6 +16,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{Ask, Asking, clear_list, failure_text, long_time, now};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -176,13 +177,13 @@ impl BlockedView {
                 destructive: false,
             }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Contacts(if yes {
                         ContactsEvent::ConfirmUnblock
                     } else {
                         ContactsEvent::CancelUnblock
                     }));
-                }
+                });
             },
         );
         let before = imp.unblocking.replace(screen.unblocking.clone());

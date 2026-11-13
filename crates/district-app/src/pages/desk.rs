@@ -24,6 +24,7 @@ use crate::pages::shared::{
     RowIds, back_on_fold, clear_list, draw_line, failure_text, now, short_time, wire_text,
 };
 use crate::pages::ticket_form::{FormState, TicketFormDialog};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -212,9 +213,9 @@ mod imp {
             });
             let weak = page.downgrade();
             self.ticket_list.connect_row_activated(move |_, row| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.open_row(row);
-                }
+                });
             });
             back_on_fold(&self.split_view, &*page, |page| page.imp().open.get());
         }

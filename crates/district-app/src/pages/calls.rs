@@ -27,6 +27,7 @@ use crate::pages::shared::{
     EndWatch, PagedRows, PagingFooter, back_on_fold, failure_text, now, placeholder_text,
     short_time, watch_end,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -219,9 +220,9 @@ mod imp {
             });
             let weak = page.downgrade();
             let end = watch_end(&self.list_scroller, move || {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.send(Event::Calls(CallsEvent::LoadMore));
-                }
+                });
             });
             self.end.set(end).ok();
             let weak = page.downgrade();

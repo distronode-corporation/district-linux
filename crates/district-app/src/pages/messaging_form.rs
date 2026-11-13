@@ -25,6 +25,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::settings_kit::{Choices, Echoed};
 use crate::pages::shared::{draw_line, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -196,17 +197,17 @@ mod imp {
                 .ok();
             let weak = dialog.downgrade();
             self.default_row.connect_active_notify(move |row| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(Event::Messaging(MessagingEvent::Form(
                         MessagingFormEdit::MakeDefault(row.is_active()),
                     )));
-                }
+                });
             });
             let weak = dialog.downgrade();
             dialog.connect_close_attempt(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(Event::Messaging(MessagingEvent::CloseForm));
-                }
+                });
             });
         }
     }

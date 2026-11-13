@@ -44,6 +44,7 @@ use crate::pages::carrier::write_notice;
 use crate::pages::marketplace::MarketplacePage;
 use crate::pages::scheduling_admin::common::badge;
 use crate::pages::shared::{FilePicker, clear_box, draw_line, failure_text, plain_label};
+use crate::pages::upgraded;
 
 /// The largest document the service takes: 10 MiB. One byte more is read, so
 /// a larger file reaches the service as one and its refusal says why.
@@ -342,11 +343,11 @@ impl RegistrationsPanel {
 
     /// Sends `event` to the core.
     fn send(&self, event: RegistrationEvent) {
-        if let Some(page) = self.page.upgrade() {
+        upgraded(&self.page, |page| {
             page.send(Event::Marketplace(MarketplaceEvent::Numbers(
                 NumberAdminEvent::Registration(event),
             )));
-        }
+        });
     }
 
     /// The form as the fields hold it.
@@ -872,9 +873,9 @@ impl RegistrationsPanel {
 
 /// Runs `then` with the panel `weak` points at, while it lives.
 fn with(weak: &Weak<RegistrationsPanel>, then: impl FnOnce(&Rc<RegistrationsPanel>)) {
-    if let Some(panel) = weak.upgrade() {
+    upgraded(weak, |panel| {
         then(&panel);
-    }
+    });
 }
 
 #[cfg(test)]

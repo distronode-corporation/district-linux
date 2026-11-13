@@ -16,6 +16,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::shared::{draw_line, draw_spinner, fit_height};
+use crate::pages::upgraded;
 use crate::sink::EventSink;
 
 /// Which form the dialog is.
@@ -131,28 +132,28 @@ mod imp {
                 });
                 let weak = dialog.downgrade();
                 row.connect_entry_activated(move |_| {
-                    if let Some(dialog) = weak.upgrade() {
+                    upgraded(&weak, |dialog| {
                         dialog.send(Event::Contacts(dialog.imp().kind.get().submit()));
-                    }
+                    });
                 });
             }
             let weak = dialog.downgrade();
             self.submit_button.connect_clicked(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(Event::Contacts(dialog.imp().kind.get().submit()));
-                }
+                });
             });
             let weak = dialog.downgrade();
             self.cancel_button.connect_clicked(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(Event::Contacts(dialog.imp().kind.get().cancel()));
-                }
+                });
             });
             let weak = dialog.downgrade();
             dialog.connect_close_attempt(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(Event::Contacts(dialog.imp().kind.get().cancel()));
-                }
+                });
             });
         }
     }

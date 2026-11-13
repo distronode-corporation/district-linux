@@ -42,6 +42,7 @@ use crate::pages::shared::{
     Ask, Asking, clear_box, draw_line, draw_spinner, failure_text, icon_button, plain_label,
     wrap_button_label,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 
 /// Whether `model` is supervising a call, or asking to: listening, on the
@@ -465,9 +466,9 @@ impl SuperviseCard {
         on_click(&whisper_send, view, supervise(SuperviseEvent::SendWhisper));
         let weak = view.downgrade();
         whisper.connect_activate(move |_| {
-            if let Some(view) = weak.upgrade() {
+            upgraded(&weak, |view| {
                 view.send(Event::Supervise(SuperviseEvent::SendWhisper));
-            }
+            });
         });
         let whisper_echo = Echoed::text(&whisper, view, |draft| {
             Event::Supervise(SuperviseEvent::EditWhisper(draft))
@@ -476,9 +477,9 @@ impl SuperviseCard {
         let wanted = Rc::clone(&microphone_wanted);
         let weak = view.downgrade();
         microphone.connect_clicked(move |_| {
-            if let Some(view) = weak.upgrade() {
+            upgraded(&weak, |view| {
                 view.send(Event::Microphone(wanted.get()));
-            }
+            });
         });
 
         Self {
@@ -611,10 +612,10 @@ impl SuperviseCard {
         // The newest line in view, once the new ones are laid out.
         let scroller = self.lines_scroller.downgrade();
         glib::idle_add_local_once(move || {
-            if let Some(scroller) = scroller.upgrade() {
+            upgraded(&scroller, |scroller| {
                 let adjustment = scroller.vadjustment();
                 adjustment.set_value(adjustment.upper() - adjustment.page_size());
-            }
+            });
         });
     }
 
@@ -663,13 +664,13 @@ impl SuperviseCard {
             wanted,
             Some(core_text::supervise_take_over_cancel(lang())),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Supervise(if yes {
                         SuperviseEvent::ConfirmTakeOver
                     } else {
                         SuperviseEvent::CancelTakeOver
                     }));
-                }
+                });
             },
         );
     }

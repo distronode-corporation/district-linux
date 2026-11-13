@@ -29,6 +29,7 @@ use crate::l10n::{core_text, lang, text};
 use crate::notifications;
 use crate::pages::shared::{draw_line, draw_spinner};
 use crate::pages::transcript::TranscriptPanel;
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -249,9 +250,9 @@ mod imp {
             });
             let weak = bar.downgrade();
             self.call_mute_button.connect_clicked(move |_| {
-                if let Some(bar) = weak.upgrade() {
+                upgraded(&weak, |bar| {
                     bar.send(Event::Microphone(bar.imp().microphone_wanted.get()));
-                }
+                });
             });
         }
     }

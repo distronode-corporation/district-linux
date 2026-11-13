@@ -30,6 +30,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{clear_box, draw_line, draw_spinner};
+use crate::pages::upgraded;
 
 /// The most lines read out from one change of the transcript.
 pub(crate) const MOST_ANNOUNCED_AT_ONCE: usize = 3;
@@ -232,9 +233,9 @@ mod imp {
             self.transcript_lines_scroller
                 .vadjustment()
                 .connect_value_changed(move |adjustment| {
-                    if let Some(panel) = weak.upgrade() {
+                    upgraded(&weak, |panel| {
                         panel.imp().following.set(at_end(adjustment));
-                    }
+                    });
                 });
         }
     }

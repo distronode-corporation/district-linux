@@ -21,6 +21,7 @@ use crate::l10n::{core_text, lang, text};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::Echoed;
 use crate::pages::shared::{draw_busy, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -146,11 +147,11 @@ mod imp {
             }
             let weak = view.downgrade();
             self.availability_row.connect_active_notify(move |row| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::CallHandling(CallHandlingEvent::SetAvailable(
                         row.is_active(),
                     )));
-                }
+                });
             });
         }
     }

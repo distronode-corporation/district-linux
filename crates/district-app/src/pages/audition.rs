@@ -19,6 +19,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{draw_line, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -146,9 +147,9 @@ mod imp {
             );
             let weak = dialog.downgrade();
             dialog.connect_close_attempt(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(Event::Persona(PersonaEvent::ClosePreview));
-                }
+                });
             });
         }
     }

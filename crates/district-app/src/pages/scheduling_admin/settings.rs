@@ -36,6 +36,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{lang, sched_text, text};
 use crate::pages::shared::{FilePicker, Pick as FilePick};
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -305,9 +306,9 @@ impl SettingsPane {
     fn sender(&self) -> Send {
         let pane = self.downgrade();
         Rc::new(move |event| {
-            if let Some(pane) = pane.upgrade() {
+            upgraded(&pane, |pane| {
                 pane.send(event);
-            }
+            });
         })
     }
 
@@ -315,9 +316,9 @@ impl SettingsPane {
     fn picker(&self) -> Pick {
         let pane = self.downgrade();
         Rc::new(move |target| {
-            if let Some(pane) = pane.upgrade() {
+            upgraded(&pane, |pane| {
                 pane.pick_image(target);
-            }
+            });
         })
     }
 

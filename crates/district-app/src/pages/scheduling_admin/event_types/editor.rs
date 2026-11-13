@@ -22,6 +22,7 @@ use crate::adw::prelude::*;
 use crate::gtk::{self, glib};
 use crate::pages::scheduling_admin::common::write_line;
 use crate::pages::shared::draw_line;
+use crate::pages::upgraded;
 
 /// The duration typed, as minutes, once it is a whole number of at least 1.
 pub(super) fn typed_minutes(raw: &str) -> Option<i64> {
@@ -227,9 +228,9 @@ impl EditorView {
         let edited = |view: &Rc<Self>| {
             let weak = Rc::downgrade(view);
             move || {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     send(&view.pane, view.edit_event());
-                }
+                });
             }
         };
         for entry in [&self.description, &self.duration, &self.interval]

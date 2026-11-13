@@ -28,6 +28,7 @@ use crate::pages::shared::{
     Ask, Asking, Landing, add_value_row, clear_group, failure_text, humanize, known_wire_label,
     long_time, now, wire_text,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -466,13 +467,13 @@ impl ContactView {
                 destructive: confirmation != ContactConfirmation::Unblock,
             }),
             move |yes| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Contacts(if yes {
                         ContactsEvent::Confirm
                     } else {
                         ContactsEvent::Cancel
                     }));
-                }
+                });
             },
         );
     }

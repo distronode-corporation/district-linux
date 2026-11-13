@@ -12,6 +12,7 @@ use crate::gtk::{self, glib};
 use crate::l10n::{lang, text};
 use crate::pages::Sends;
 use crate::pages::shared::{draw_spinner, plain_label, wrap_bound_title};
+use crate::pages::upgraded;
 
 /// What the member does on the team, as the core takes it.
 pub(super) fn team_event(event: TeamEvent) -> Event {
@@ -25,9 +26,9 @@ pub(super) fn control_of(control: &str, name: &str) -> String {
 
 /// Sends `event` to the core through `pane`, if it is still there.
 pub(super) fn send(pane: &glib::WeakRef<TeamPane>, event: TeamEvent) {
-    if let Some(pane) = pane.upgrade() {
+    upgraded(pane, |pane| {
         pane.send(team_event(event));
-    }
+    });
 }
 
 /// A dialog over the pane: its way out at the start of its header, and its

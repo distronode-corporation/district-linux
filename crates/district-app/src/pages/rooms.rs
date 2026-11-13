@@ -19,6 +19,7 @@ use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::meeting_record::{MeetingRecordDialog, meeting_title};
 use crate::pages::shared::{Echo, RowIds, clear_list, draw_spinner, failure_text, when_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 use crate::window::DistrictWindow;
@@ -183,15 +184,15 @@ mod imp {
             on_click(&self.meetings_retry, &*page, || Event::Refresh);
             let weak = page.downgrade();
             self.mute_button.connect_clicked(move |_| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.send(Event::Microphone(!page.imp().microphone_on.get()));
-                }
+                });
             });
             let weak = page.downgrade();
             self.copy_link_button.connect_clicked(move |_| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.copy_guest_link();
-                }
+                });
             });
             let weak = page.downgrade();
             self.room_row.connect_changed(move |row| {
@@ -204,15 +205,15 @@ mod imp {
             });
             let weak = page.downgrade();
             self.room_row.connect_entry_activated(move |_| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.send(Event::Rooms(RoomsEvent::Start));
-                }
+                });
             });
             let weak = page.downgrade();
             self.meeting_list.connect_row_activated(move |_, row| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.open_row(row);
-                }
+                });
             });
         }
     }

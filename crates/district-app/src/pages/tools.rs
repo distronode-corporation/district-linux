@@ -15,6 +15,7 @@ use crate::l10n::{core_text, lang};
 use crate::pages::save_notice::SaveNotice;
 use crate::pages::settings_kit::{Frame, draw_config};
 use crate::pages::shared::draw_busy;
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -88,9 +89,9 @@ mod imp {
             });
             let weak = view.downgrade();
             self.research_row.connect_active_notify(move |row| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Tools(ToolsEvent::SetEnrichment(row.is_active())));
-                }
+                });
             });
         }
     }
@@ -199,12 +200,12 @@ impl ToolsView {
         let id = row.id.clone();
         let weak = self.downgrade();
         switch.connect_active_notify(move |switch| {
-            if let Some(view) = weak.upgrade() {
+            upgraded(&weak, |view| {
                 view.send(Event::Tools(ToolsEvent::Toggle {
                     id: id.clone(),
                     enabled: switch.is_active(),
                 }));
-            }
+            });
         });
         self.imp().tools_group.add(&switch);
         (row.id.clone(), switch)

@@ -38,6 +38,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang};
 use crate::pages::shared::Echo;
+use crate::pages::upgraded;
 use crate::pages::{Sends, on_click};
 use crate::sink::EventSink;
 
@@ -145,9 +146,9 @@ mod imp {
                     .build();
                 let weak = page.downgrade();
                 button.connect_clicked(move |_| {
-                    if let Some(page) = weak.upgrade() {
+                    upgraded(&weak, |page| {
                         page.type_key(key);
-                    }
+                    });
                 });
                 let (column, row) = (index % COLUMNS, index / COLUMNS);
                 // Both are below four, so neither conversion can fail.
@@ -161,9 +162,9 @@ mod imp {
             }
             let weak = page.downgrade();
             self.backspace_button.connect_clicked(move |_| {
-                if let Some(page) = weak.upgrade() {
+                upgraded(&weak, |page| {
                     page.delete_key();
-                }
+                });
             });
             on_click(&self.call_button, &*page, || {
                 Event::Dialer(DialerEvent::Dial)
@@ -330,9 +331,9 @@ impl DialerPage {
         });
         let weak = self.downgrade();
         imp.number_entry.connect_activate(move |_| {
-            if let Some(page) = weak.upgrade() {
+            upgraded(&weak, |page| {
                 page.send(Event::Dialer(DialerEvent::Dial));
-            }
+            });
         });
     }
 
@@ -421,18 +422,18 @@ impl DialerPage {
         let imp = self.imp();
         let weak = self.downgrade();
         imp.country_popover.connect_show(move |_| {
-            if let Some(page) = weak.upgrade() {
+            upgraded(&weak, |page| {
                 let imp = page.imp();
                 imp.country_search.set_text("");
                 page.fill_country_list("");
                 imp.country_search.grab_focus();
-            }
+            });
         });
         let weak = self.downgrade();
         imp.country_search.connect_search_changed(move |search| {
-            if let Some(page) = weak.upgrade() {
+            upgraded(&weak, |page| {
                 page.fill_country_list(&search.text());
-            }
+            });
         });
         let weak = self.downgrade();
         imp.country_search.connect_activate(move |search| {

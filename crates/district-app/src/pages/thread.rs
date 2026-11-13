@@ -41,6 +41,7 @@ use crate::pages::shared::{
     Echo, FilePicker, Pick, clear_box, day_heading, draw_line, draw_spinner, failure_text,
     icon_button, instant_in, now, placeholder_text, plain_label,
 };
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -491,10 +492,10 @@ mod imp {
             view.watch_pickers();
             let weak = view.downgrade();
             self.draft_button.connect_clicked(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.imp().draft_phase.set(DraftPhase::Asked);
                     view.send(Event::Thread(ThreadEvent::DraftReply));
-                }
+                });
             });
             let weak = view.downgrade();
             self.draft_report_button.connect_clicked(move |button| {
@@ -512,9 +513,9 @@ mod imp {
             });
             let weak = view.downgrade();
             self.attach_button.connect_clicked(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.pick_image();
-                }
+                });
             });
             view.watch_text();
             view.watch_scroll();
@@ -564,9 +565,9 @@ impl ThreadView {
         imp.text.add_controller(keys);
         let weak = self.downgrade();
         imp.text.connect_preedit_changed(move |_, preedit| {
-            if let Some(view) = weak.upgrade() {
+            upgraded(&weak, |view| {
                 view.imp().composing.set(!preedit.is_empty());
-            }
+            });
         });
         let weak = self.downgrade();
         imp.text.buffer().connect_changed(move |buffer| {
@@ -641,10 +642,10 @@ impl ThreadView {
                 if chosen != 0 {
                     let weak = view.downgrade();
                     glib::idle_add_local_once(move || {
-                        if let Some(view) = weak.upgrade() {
+                        upgraded(&weak, |view| {
                             let picker = view.imp().template_picker.get();
                             view.set_choices(&picker, None, chosen);
-                        }
+                        });
                     });
                 }
                 return;
@@ -679,11 +680,11 @@ impl ThreadView {
         let adjustment = self.imp().scroller.vadjustment();
         let weak = self.downgrade();
         adjustment.connect_value_changed(move |adjustment| {
-            if let Some(view) = weak.upgrade() {
+            upgraded(&weak, |view| {
                 view.imp()
                     .from_end
                     .set(adjustment.upper() - adjustment.page_size() - adjustment.value());
-            }
+            });
         });
         let weak = self.downgrade();
         let follow = move |adjustment: &gtk::Adjustment| {

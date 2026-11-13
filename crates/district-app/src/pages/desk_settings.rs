@@ -17,6 +17,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{Echo, FilePicker, Pick, draw_line, draw_spinner, failure_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape, on_click};
 use crate::sink::EventSink;
 
@@ -125,15 +126,15 @@ mod imp {
             );
             let weak = view.downgrade();
             self.enabled_row.connect_active_notify(move |row| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Desk(DeskEvent::SetEnabled(row.is_active())));
-                }
+                });
             });
             let weak = view.downgrade();
             self.notify_row.connect_active_notify(move |row| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.send(Event::Desk(DeskEvent::SetNotify(row.is_active())));
-                }
+                });
             });
             let weak = view.downgrade();
             self.brand_row.connect_changed(move |row| {
@@ -146,9 +147,9 @@ mod imp {
             });
             let weak = view.downgrade();
             self.choose_button.connect_clicked(move |_| {
-                if let Some(view) = weak.upgrade() {
+                upgraded(&weak, |view| {
                     view.pick_logo();
-                }
+                });
             });
         }
     }

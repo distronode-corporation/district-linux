@@ -14,6 +14,7 @@ use crate::l10n::{lang, sched_text, text};
 use crate::pages::Sends;
 use crate::pages::scheduling_admin::common::write_line;
 use crate::pages::shared::{draw_spinner, icon_button, plain_label, wrap_bound_title};
+use crate::pages::upgraded;
 
 /// What the member does on the working hours, as the core takes it.
 pub(super) fn hours_event(event: HoursEvent) -> Event {
@@ -27,9 +28,9 @@ pub(super) fn control_of(control: &str, name: &str) -> String {
 
 /// Sends `event` through `pane`, if it is still there.
 pub(super) fn send(pane: &glib::WeakRef<HoursPane>, event: HoursEvent) {
-    if let Some(pane) = pane.upgrade() {
+    upgraded(pane, |pane| {
         pane.send(hours_event(event));
-    }
+    });
 }
 
 /// Sends `event` through `pane` when `button` is pressed.

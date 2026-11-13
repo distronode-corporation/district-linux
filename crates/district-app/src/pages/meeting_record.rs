@@ -15,6 +15,7 @@ use crate::adw::subclass::prelude::*;
 use crate::gtk::{self, CompositeTemplate, glib};
 use crate::l10n::{core_text, lang, text};
 use crate::pages::shared::{add_value_row, clear_group, failure_text, when_text, wire_text};
+use crate::pages::upgraded;
 use crate::pages::{Sends, escape};
 use crate::sink::EventSink;
 
@@ -166,9 +167,9 @@ mod imp {
             self.parent_constructed();
             let weak = self.obj().downgrade();
             self.obj().connect_close_attempt(move |_| {
-                if let Some(dialog) = weak.upgrade() {
+                upgraded(&weak, |dialog| {
                     dialog.send(Event::Rooms(RoomsEvent::CloseRecord));
-                }
+                });
             });
         }
     }
