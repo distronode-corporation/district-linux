@@ -21,15 +21,19 @@ unsound = "all"
 # entry the day it can go.
 ignore = [
   # zvariant 5.15.0, zbus_names 4.3.4, zvariant_derive 5.15.0: unmaintained notices
-  # (2026-10-16), not vulnerabilities. Upstream merged all three into zbus 6.0.0 as
-  # `zbus::wire`, `zbus::names` and its derive macros, but every zbus 5 release still
-  # pulls them. zbus 5.19 arrives directly (district-desktop, for logind) and through
-  # ashpd 0.13, oo7 0.6 and ksni 0.3, none of which takes zbus 6 yet. They go when
-  # those three move and the tree carries only zbus 6 (issue #61). Review by
-  # 2027-01-21. Decided by Sean on 2026-10-21 (decisions log, GitLab #2).
-  { id = "RUSTSEC-2026-0370", reason = "zvariant unmaintained (merged into zbus 6), via zbus 5.19 from district-desktop, ashpd, oo7, ksni; not a vulnerability; replacement tracked in #61; review by 2027-01-21" },
-  { id = "RUSTSEC-2026-0371", reason = "zbus_names unmaintained (merged into zbus 6), via zbus 5.19 from district-desktop, ashpd, oo7, ksni; not a vulnerability; replacement tracked in #61; review by 2027-01-21" },
-  { id = "RUSTSEC-2026-0372", reason = "zvariant_derive unmaintained (merged into zbus 6), via zbus 5.19 from district-desktop, ashpd, oo7, ksni; not a vulnerability; replacement tracked in #61; review by 2027-01-21" },
+  # (2026-10-16), not vulnerabilities, and no fixed version: the advisories list none,
+  # because the fix is to stop using the standalone crates. Upstream merged all three
+  # into zbus 6.0.0 as `zbus::wire`, `zbus::names` and its derive macros, but every
+  # zbus 5 release still pulls them. district-desktop's own logind code is on zbus 6
+  # already; zbus 5.19 arrives only through ashpd 0.13, oo7 0.6 and ksni 0.3.
+  # Checked 2026-11-14: ashpd 0.14.0 and oo7 0.7.1 take zbus 6, but ksni 0.3.7 (the
+  # latest) still requires zbus 5, so moving ashpd and oo7 alone would leave zbus 5 in
+  # the tree through ksni. They go when ksni ships a zbus 6 release and ashpd, oo7 and
+  # ksni move together, so the tree carries only zbus 6 (issue #61). Review by
+  # 2027-01-21.
+  { id = "RUSTSEC-2026-0370", reason = "zvariant unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
+  { id = "RUSTSEC-2026-0371", reason = "zbus_names unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
+  { id = "RUSTSEC-2026-0372", reason = "zvariant_derive unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
 ]
 
 [licenses]
