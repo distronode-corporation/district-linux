@@ -135,15 +135,78 @@ jobs:
             --volume "$GITHUB_WORKSPACE:/src" --workdir /src "$IMAGE" sleep infinity
           df -h /
 
+      # The SDK extensions the manifest names, from Flathub, each on the
+      # branch the SDK's extension point gives it (as flatpak-builder resolves
+      # it), and nothing else: the GNOME Platform and SDK are the image's own
+      # and stay at the image's commits, which the digest above pins.
+      #
+      # Not flatpak-builder's --install-deps-from, which runs `flatpak update`
+      # on every dependency the image already has before it installs the rest.
+      # An update ends by moving the old deployment into /var/lib/flatpak/.removed
+      # with rename(2), and on some runners overlayfs refuses to rename a
+      # directory that comes from an image layer: "Invalid cross-device link"
+      # (EXDEV), then a segfault, before anything is built. Installing a ref
+      # the image does not have creates its directories in the container's
+      # own layer, so nothing from the image is renamed.
+      - name: Install the SDK extensions
+        env:
+          MANIFEST: packaging/flatpak/com.distronode.DistrictAI.yml
+        run: |
+          set -euo pipefail
+          docker exec --env MANIFEST flatpak bash -euo pipefail -c \
+            'flatpak-builder --show-manifest "$MANIFEST"' > "$RUNNER_TEMP/manifest.json"
+          sdk="$(jq -er '.sdk' "$RUNNER_TEMP/manifest.json")"
+          branch="$(jq -er '."runtime-version"' "$RUNNER_TEMP/manifest.json")"
+          mapfile -t extensions < <(jq -er '."sdk-extensions"[]' "$RUNNER_TEMP/manifest.json")
+          case "$sdk" in
+            */*) echo "::error::the manifest's sdk ($sdk) names a branch, which this step does not read"; exit 1 ;;
+          esac
+          docker exec --env SDK_REF="$sdk//$branch" flatpak bash -euo pipefail -c \
+            'flatpak info --system --show-metadata "$SDK_REF"' > "$RUNNER_TEMP/sdk-metadata"
+          # The key flatpak-builder reads: version= in [Extension NAME], or in
+          # [Extension PARENT] with NAME's last part cut off, else the SDK's
+          # own branch.
+          extension_branch() {
+            local group
+            for group in "$1" "${1%.*}"; do
+              if grep -qxF "[Extension $group]" "$RUNNER_TEMP/sdk-metadata"; then
+                awk -v group="[Extension $group]" -v fallback="$branch" '
+                  $0 == group { found = 1; next }
+                  found && /^\[/ { exit }
+                  found && /^version=/ { sub(/^version=/, ""); print; printed = 1; exit }
+                  END { if (!printed) print fallback }
+                ' "$RUNNER_TEMP/sdk-metadata"
+                return
+              fi
+            done
+            echo "::error::$sdk//$branch has no extension point for $1" >&2
+            return 1
+          }
+          if [ "${#extensions[@]}" -eq 0 ]; then
+            echo "::error::read no sdk-extensions from the manifest"
+            exit 1
+          fi
+          refs=()
+          for extension in "${extensions[@]}"; do
+            extension_branch="$(extension_branch "$extension")"
+            refs+=("runtime/$extension/x86_64/$extension_branch")
+          done
+          printf 'installing %s\n' "${refs[@]}"
+          docker exec flatpak flatpak install --system --noninteractive flathub "${refs[@]}"
+          docker exec --env SDK_REF="$sdk//$branch" flatpak bash -euo pipefail -c '
+            flatpak info --system "$SDK_REF"
+            flatpak list --system --runtime --columns=application,branch,active
+          '
+
       # flatpak-builder itself, from the image, rather than the
       # flatpak-github-actions action, which is two commands of it: one less
       # third party holding code execution in the job that builds what users
       # install (and this repository's allowed-actions list does not name it).
-      # The SDK extensions come from Flathub at build time
-      # (--install-deps-from). No cache: every crate and libwebrtc are
-      # downloaded and checked against their pinned digests on every run, and a
-      # release must never be built from a restored build directory. No FUSE in
-      # a container, hence --disable-rofiles-fuse.
+      # It installs and updates nothing (no --install-deps-from): the step
+      # above has put everything it needs in place. No cache: every crate and
+      # libwebrtc are downloaded and checked against their pinned digests on
+      # every run, and a release must never be built from a restored build
+      # directory. No FUSE in a container, hence --disable-rofiles-fuse.
       #
       # The DSN only for a release's tag push (release.yml passes the secret;
       # nothing else does), and the build its crash reports name: the commit's
@@ -156,8 +219,7 @@ jobs:
           export DISTRICT_AI_BUILD="${GITHUB_SHA::12}"
           docker exec --env LINUX_SENTRY_DSN --env DISTRICT_AI_BUILD flatpak bash -euo pipefail -c '
             flatpak-builder --version
-            flatpak-builder --disable-rofiles-fuse --force-clean \
-              --install-deps-from=flathub --arch=x86_64 \
+            flatpak-builder --disable-rofiles-fuse --force-clean --arch=x86_64 \
               --state-dir=.flatpak-builder --repo=repo \
               flatpak_app packaging/flatpak/com.distronode.DistrictAI.yml
             flatpak build-bundle --arch=x86_64 \
