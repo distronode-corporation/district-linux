@@ -27,9 +27,10 @@ ignore = [
   # zbus 5 release still pulls them. district-desktop's own logind code is on zbus 6
   # already; zbus 5.19 arrives only through ashpd 0.13, oo7 0.6 and ksni 0.3.
   # Checked 2026-11-14: ashpd 0.14.0 and oo7 0.7.1 take zbus 6, but ksni 0.3.7 (the
-  # latest) still requires zbus 5 and ashpd 0.13, so ksni alone keeps them in the tree
-  # until it ships a zbus 6 release. They go when ashpd, oo7 and ksni move and the tree
-  # carries only zbus 6 (issue #61). Review by 2027-01-21.
+  # latest) still requires zbus 5, so moving ashpd and oo7 alone would leave zbus 5 in
+  # the tree through ksni. They go when ksni ships a zbus 6 release and ashpd, oo7 and
+  # ksni move together, so the tree carries only zbus 6 (issue #61). Review by
+  # 2027-01-21.
   { id = "RUSTSEC-2026-0370", reason = "zvariant unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
   { id = "RUSTSEC-2026-0371", reason = "zbus_names unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
   { id = "RUSTSEC-2026-0372", reason = "zvariant_derive unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
