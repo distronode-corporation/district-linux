@@ -243,13 +243,17 @@ jobs:
       # image's GNOME 51 Platform, installed system-wide, which is where this
       # installs too), and run in the sandbox with exactly the manifest's
       # permissions. --version touches no display, keyring or network, and says
-      # whether the build has calls, which a release must.
+      # whether the build has calls, which a release must. --no-deps and
+      # --no-related: by default the install also updates the runtime the
+      # bundle names, and its related refs, which fails the same way as the
+      # build's updates did (see "Install the SDK extensions"), and would run
+      # the app on another Platform commit than the one it was built against.
       - name: The installed bundle runs, with calls
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           docker exec --env VERSION flatpak bash -euo pipefail -c '
-            flatpak install --system --noninteractive --bundle district-ai.flatpak
+            flatpak install --system --noninteractive --no-deps --no-related --bundle district-ai.flatpak
             flatpak info --system com.distronode.DistrictAI
             flatpak info --system --show-permissions com.distronode.DistrictAI
             XDG_RUNTIME_DIR="$(mktemp -d)"
