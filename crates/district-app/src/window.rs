@@ -22,10 +22,11 @@ use crate::gtk::{self, CompositeTemplate, gio, glib};
 use crate::l10n::{lang, text};
 use crate::pages::upgraded;
 use crate::pages::{
-    AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeskPage,
-    DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
-    SchedulingAdminPage, SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage, VoiceDock,
-    WorkflowsPage, draw_line, draw_spinner, in_contacts, in_desk, in_settings, in_support, report,
+    AccountPage, AnalyticsPage, BillingPage, CallBar, CallsPage, ContactsPage, DeleteAccountPage,
+    DeskPage, DevicesPage, DialerPage, HqPage, InboxPage, MarketplacePage, OverviewPage, RoomsPage,
+    SchedulingAdminPage, SchedulingPage, Sends, SessionPage, SettingsPage, SupportPage,
+    TwoStepPage, VoiceDock, WorkflowsPage, draw_line, draw_spinner, in_contacts, in_desk,
+    in_settings, in_support, report,
 };
 
 /// The window action that turns the microphone on or off, and its shortcut.
@@ -112,6 +113,10 @@ mod imp {
         #[template_child]
         pub devices_page: TemplateChild<DevicesPage>,
         #[template_child]
+        pub two_step_page: TemplateChild<TwoStepPage>,
+        #[template_child]
+        pub delete_account_page: TemplateChild<DeleteAccountPage>,
+        #[template_child]
         pub inbox_page: TemplateChild<InboxPage>,
         #[template_child]
         pub calls_page: TemplateChild<CallsPage>,
@@ -164,6 +169,8 @@ mod imp {
             OverviewPage::static_type();
             AccountPage::static_type();
             DevicesPage::static_type();
+            TwoStepPage::static_type();
+            DeleteAccountPage::static_type();
             InboxPage::static_type();
             CallsPage::static_type();
             ContactsPage::static_type();
@@ -290,6 +297,8 @@ impl DistrictWindow {
         imp.overview_page.set_sink(sink.clone());
         imp.account_page.set_sink(sink.clone());
         imp.devices_page.set_sink(sink.clone());
+        imp.two_step_page.set_sink(sink.clone());
+        imp.delete_account_page.set_sink(sink.clone());
         imp.inbox_page.set_sink(sink.clone());
         imp.calls_page.set_sink(sink.clone());
         imp.contacts_page.set_sink(sink.clone());
@@ -439,6 +448,12 @@ impl DistrictWindow {
         if !showing(|route| *route == Route::Workflows) {
             imp.workflows_page.leave();
         }
+        if !showing(|route| *route == Route::TwoStep) {
+            imp.two_step_page.leave();
+        }
+        if !showing(|route| *route == Route::DeleteAccount) {
+            imp.delete_account_page.leave();
+        }
         if !showing(in_desk) {
             imp.desk_page.leave();
         }
@@ -587,6 +602,14 @@ impl DistrictWindow {
             Route::Devices => {
                 imp.page_stack.set_visible_child_name("devices");
                 imp.devices_page.update(&signed_in.devices);
+            }
+            Route::TwoStep => {
+                imp.page_stack.set_visible_child_name("two-step");
+                imp.two_step_page.update(&signed_in.two_step);
+            }
+            Route::DeleteAccount => {
+                imp.page_stack.set_visible_child_name("delete-account");
+                imp.delete_account_page.update(&signed_in.delete_account);
             }
             Route::Inbox | Route::Thread { .. } => {
                 imp.page_stack.set_visible_child_name("inbox");

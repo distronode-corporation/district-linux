@@ -82,6 +82,17 @@
               </object>
             </child>
             <child>
+              <object class="AdwActionRow" id="two_step_row">
+                <property name="use-markup">False</property>
+                <property name="activatable">True</property>
+                <child type="suffix">
+                  <object class="GtkImage">
+                    <property name="icon-name">go-next-symbolic</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
               <object class="AdwActionRow" id="sign_out_row">
                 <property name="title" translatable="yes" context="account_page.sign_out">Sign out</property>
                 <property name="use-markup">False</property>
@@ -95,7 +106,7 @@
                 <property name="activatable">True</property>
                 <child type="suffix">
                   <object class="GtkImage">
-                    <property name="icon-name">adw-external-link-symbolic</property>
+                    <property name="icon-name">go-next-symbolic</property>
                   </object>
                 </child>
               </object>

@@ -102,6 +102,10 @@ pub(crate) fn shown(session: &SessionState) -> Option<Shown> {
             body: match signing_out.scope {
                 SignOutScope::ThisDevice => text::session_signing_out_this_device(lang()),
                 SignOutScope::Everywhere => text::session_signing_out_everywhere(lang()),
+                // The account is gone: what is left is this computer's half.
+                SignOutScope::AccountDeleted { .. } => {
+                    text::session_signing_out_this_device(lang())
+                }
             }
             .to_owned(),
             busy: true,
@@ -317,7 +321,13 @@ mod tests {
         assert_eq!(signing_in.title, "Signing in");
         assert!(signing_in.busy && signing_in.cancel);
 
-        for scope in [SignOutScope::ThisDevice, SignOutScope::Everywhere] {
+        for scope in [
+            SignOutScope::ThisDevice,
+            SignOutScope::Everywhere,
+            SignOutScope::AccountDeleted {
+                erasure_pending: true,
+            },
+        ] {
             let out = shown(&SessionState::SigningOut(SigningOut { scope })).unwrap();
             assert_eq!(out.title, "Signing out");
             assert!(out.busy && !out.sign_in);

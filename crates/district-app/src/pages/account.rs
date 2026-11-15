@@ -1,6 +1,6 @@
 //! The account: this build and this computer, whether the app starts at
-//! login, whether it sends crash reports, whether calls ring here, the devices signed in, signing out, and
-//! where deleting the account starts.
+//! login, whether it sends crash reports, whether calls ring here, the devices signed in,
+//! two-step verification, signing out, and deleting the account.
 //!
 //! "Start at login" is this computer's, not the core's: the application's
 //! `start-at-login` action holds it (see [`crate::background`]).
@@ -44,6 +44,8 @@ mod imp {
         #[template_child]
         pub devices_row: TemplateChild<adw::ActionRow>,
         #[template_child]
+        pub two_step_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
         pub sign_out_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub delete_row: TemplateChild<adw::ActionRow>,
@@ -85,7 +87,16 @@ mod imp {
                 Event::Navigate(Route::Devices)
             });
             on_activate(&self.sign_out_row, &*page, || Event::SignOut);
-            on_activate(&self.delete_row, &*page, || Event::DeleteAccount);
+            self.two_step_row
+                .set_title(core_text::two_step_title(lang()));
+            self.two_step_row
+                .set_subtitle(core_text::account_two_step_caption(lang()));
+            on_activate(&self.two_step_row, &*page, || {
+                Event::Navigate(Route::TwoStep)
+            });
+            on_activate(&self.delete_row, &*page, || {
+                Event::Navigate(Route::DeleteAccount)
+            });
             self.ring_here_row
                 .set_title(core_text::presence_setting_label(lang()));
             self.ring_here_row

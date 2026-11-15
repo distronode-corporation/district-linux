@@ -249,6 +249,22 @@
                                         </child>
                                         <child>
                                           <object class="GtkStackPage">
+                                            <property name="name">two-step</property>
+                                            <property name="child">
+                                              <object class="DistrictTwoStepPage" id="two_step_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
+                                            <property name="name">delete-account</property>
+                                            <property name="child">
+                                              <object class="DistrictDeleteAccountPage" id="delete_account_page"/>
+                                            </property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkStackPage">
                                             <property name="name">inbox</property>
                                             <property name="child">
                                               <object class="DistrictInboxPage" id="inbox_page"/>

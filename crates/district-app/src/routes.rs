@@ -1,7 +1,7 @@
 //! The sidebar, and each screen's title: presentation only. Which screens a
 //! member may open is the core's decision ([`Capabilities::allows`]).
 
-use crate::l10n::{lang, text};
+use crate::l10n::{core_text, lang, text};
 use district_core::{Capabilities, Route, WorkspaceSection};
 
 /// A group of sidebar rows.
@@ -157,6 +157,8 @@ pub(crate) fn title(route: &Route) -> &'static str {
         Route::Dialer => text::route_dialler(lang()),
         Route::Account => text::route_account(lang()),
         Route::Devices => text::route_devices(lang()),
+        Route::TwoStep => core_text::two_step_title(lang()),
+        Route::DeleteAccount => core_text::delete_account_title(lang()),
         Route::Workspace(section) => match section {
             WorkspaceSection::Hub => text::route_workspace_settings(lang()),
             // District Studio's, named as the web's pages are.
@@ -206,6 +208,8 @@ mod tests {
             Route::Dialer,
             Route::Account,
             Route::Devices,
+            Route::TwoStep,
+            Route::DeleteAccount,
         ];
         routes.extend(WorkspaceSection::ALL.map(Route::Workspace));
         routes.extend(
@@ -231,6 +235,8 @@ mod tests {
             );
         }
         assert_eq!(highlighted(&Route::Devices), Route::Account);
+        assert_eq!(highlighted(&Route::TwoStep), Route::Account);
+        assert_eq!(highlighted(&Route::DeleteAccount), Route::Account);
         assert_eq!(
             highlighted(&Route::Workspace(WorkspaceSection::Persona)),
             Route::Workspace(WorkspaceSection::Hub)
