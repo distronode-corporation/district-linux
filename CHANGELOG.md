@@ -42,9 +42,9 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   session whose room was never joined is given back. Quitting does not wait for the
   answer longer than it already waits for its other last work.
 - district-core-rust 12.0.0. A message's attachments say which are files, so a thread
-  shows each file (a PDF, say) by its name, on a line of its own with a document icon,
-  as the phone apps do. Only images are counted on the "images attached" line; a file is
-  no longer called an image.
+  shows each file (a PDF, say) on a line of its own with a document icon, as the phone
+  apps do: by its name, or as "Attachment" when it came without one. Only images are
+  counted on the "images attached" line; a file is no longer called an image.
 
 ## [3.3.0] - 2026-11-06
 
