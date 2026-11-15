@@ -13,6 +13,9 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
 
 ## [Unreleased]
 
+The detail of what 3.4.0 changes. The `[3.4.0]` section below is what the GitHub Release
+shows, so it stays short; these entries move under it once 3.4.0 is released.
+
 ### Added
 
 - The Registrations tab on the phone numbers screen, as on Android: a country's regulatory
@@ -45,6 +48,31 @@ to match, and make the metadata's `<release>` for it stable, with the same date.
   shows each file (a PDF, say) on a line of its own with a document icon, as the phone
   apps do: by its name, or as "Attachment" when it came without one. Only images are
   counted on the "images attached" line; a file is no longer called an image.
+
+## [3.4.0] - 2026-11-15
+
+Register your phone numbers with a country's regulator, talk to District HQ with push to
+talk, and see the files in a conversation by their names.
+
+### Added
+
+- A Registrations tab on the phone numbers screen. Check what a country's regulator asks
+  for, fill in the details, upload the documents (a PDF, PNG or JPEG, up to 10 MB) and
+  file the registration with the carrier. Each filing shows its status and anything the
+  carrier objected to.
+- Push to talk in District HQ voice. When your HQ voice settings use push to talk, hold
+  down Hold to talk (or Space or Enter) to speak; the microphone turns off when you let
+  go.
+
+### Changed
+
+- However a District HQ voice session ends, only the minutes used are counted, and a
+  session that never connected is not counted at all.
+
+### Fixed
+
+- A file sent in a conversation, such as a PDF, shows on its own line with its name and a
+  document icon, and is no longer counted as an image.
 
 ## [3.3.0] - 2026-11-06
 
@@ -723,7 +751,8 @@ The history of how it was built is in the repository's commits.
 - Calls link this project's own build of LiveKit's libwebrtc, which leaves out the
   H.264 and H.265 codecs and FFmpeg (NOTICE lists what it contains).
 
-[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/distronode-corporation/district-linux/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/distronode-corporation/district-linux/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/distronode-corporation/district-linux/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/distronode-corporation/district-linux/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/distronode-corporation/district-linux/compare/v3.0.3...v3.1.0

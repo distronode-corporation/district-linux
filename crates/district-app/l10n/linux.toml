@@ -3433,6 +3433,46 @@ screen = "metainfo"
 state = "reviewed"
 note = "The 3.3.0 release's notes in the AppStream metadata, as software centres show them."
 
+[metainfo.release_3_4_0.li1]
+en = "A Registrations tab on the phone numbers screen: check what a country's regulator asks for, fill in the details, upload the documents, file the registration with the carrier and follow where it stands"
+fr = "Un onglet Inscriptions dans l'écran des numéros de téléphone\u00A0: vérifiez les exigences de l'organisme de réglementation d'un pays, remplissez les renseignements, téléversez les documents, déposez l'inscription auprès du transporteur et suivez où elle en est"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review."
+
+[metainfo.release_3_4_0.li2]
+en = "Push to talk in District HQ voice: when your HQ voice settings use it, the microphone is on only while you hold down Hold to talk, or Space or Enter"
+fr = "District HQ par la voix avec «\u00A0Maintenir pour parler\u00A0»\u00A0: quand vos paramètres vocaux de HQ l'utilisent, le micro n'est ouvert que pendant que vous maintenez le bouton enfoncé, ou la touche Espace ou Entrée"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review."
+
+[metainfo.release_3_4_0.li3]
+en = "However a District HQ voice session ends, only the minutes used are counted"
+fr = "Peu importe comment se termine une session vocale de District HQ, seules les minutes utilisées sont comptées"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review."
+
+[metainfo.release_3_4_0.li4]
+en = "A file in a conversation, such as a PDF, shows on its own line with its name and a document icon, and is no longer counted as an image"
+fr = "Un fichier dans une conversation, comme un PDF, s'affiche sur sa propre ligne avec son nom et une icône de document, et n'est plus compté comme une image"
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review."
+
+[metainfo.release_3_4_0.p]
+en = "Register your numbers with a country's regulator, talk to District HQ by holding a button, and see the files in a conversation by their names."
+fr = "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé, et voyez les fichiers d'une conversation sous leur nom."
+ctx = "body"
+screen = "metainfo"
+state = "draft"
+note = "The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review."
+
 [metainfo.screenshot_caption.call]
 en = "A call placed from the desktop, with mute and hang up always in reach"
 fr = "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main"
