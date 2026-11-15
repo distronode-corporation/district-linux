@@ -5420,6 +5420,15 @@ pub fn thread_attach_image_title(l: Locale) -> &'static str {
     }
 }
 
+/// `thread.attachment`
+#[must_use]
+pub fn thread_attachment(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Attachment",
+        Locale::FrCa => "Pièce jointe",
+    }
+}
+
 /// `thread.delivered`
 #[must_use]
 pub fn thread_delivered(l: Locale) -> &'static str {

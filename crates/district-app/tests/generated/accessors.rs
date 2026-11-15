@@ -1232,6 +1232,8 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::support_request_failed_title(Locale::FrCa), "Impossible de charger cette demande");
     assert_eq!(text::thread_attach_image_title(Locale::En), "Attach an image");
     assert_eq!(text::thread_attach_image_title(Locale::FrCa), "Joindre une image");
+    assert_eq!(text::thread_attachment(Locale::En), "Attachment");
+    assert_eq!(text::thread_attachment(Locale::FrCa), "Pièce jointe");
     assert_eq!(text::thread_delivered(Locale::En), "Delivered");
     assert_eq!(text::thread_delivered(Locale::FrCa), "Livré");
     assert_eq!(text::thread_email(Locale::En), "Email");

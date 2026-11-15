@@ -1975,6 +1975,14 @@ fn inbox_and_thread(smoke: &Smoke) {
     );
     assert!(smoke.shown("older_button"));
     assert!(smoke.shows_text("Text message to +1 416 555 0142"));
+    // The quote sent as a PDF reads by its name, and only the photo is an
+    // image: a file is never counted as one.
+    assert_eq!(
+        smoke.parts_shown("image attached"),
+        1,
+        "only the photo is an image"
+    );
+    assert!(smoke.shows_text("Roof quote.pdf"), "the file by its name");
     assert!(!smoke.shown("back_button"), "the list is beside it");
     smoke.shot("19-thread");
 
