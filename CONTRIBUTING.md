@@ -382,9 +382,12 @@ A release is a `vX.Y.Z` tag on a commit on main, and
 request:
 
 1. Bump `[workspace.package] version` in `Cargo.toml`.
-2. Rename `## [Unreleased]` in CHANGELOG.md to `## [X.Y.Z] - YYYY-MM-DD` and
-   start a new empty `[Unreleased]` above it. That section becomes the release
-   notes.
+2. Add `## [X.Y.Z] - YYYY-MM-DD` to CHANGELOG.md below `[Unreleased]`. That
+   section becomes the release notes on the GitHub Release, so it is short and
+   written for the people who install the app. The detailed entries stay under
+   `[Unreleased]`, with a line saying they belong to X.Y.Z, and move under
+   `## [X.Y.Z]` once the release is out (with an empty `[Unreleased]` above
+   it).
 3. Make the newest `<release>` in the AppStream metadata that version, stable
    (no `type`), with the same date, and move its screenshot links to the new
    tag, `vX.Y.Z` (see "Store screenshots"). The metadata and the desktop entry
@@ -408,7 +411,7 @@ SHA-256 of every catalog (`linux.toml` and `scheduling.toml`);
 `python3 scripts/check-fr-signoff.py` fails, naming each catalog, when one
 differs, is missing or is not listed. The release's guard runs it, and pull
 requests do not, because catalogs change between releases. A release whose
-catalogs changed (French, or English the French follows) needs the manager's
+catalogs changed (French, or English the French follows) needs the maintainers'
 review of the French and a new `signoff.json` in the release pull request.
 
 The workflow then refuses a tag that is not on main or that the versions do not

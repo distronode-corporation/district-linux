@@ -3941,6 +3941,51 @@ pub fn metainfo_release_3_3_0_p(l: Locale) -> &'static str {
     }
 }
 
+/// `metainfo.release_3_4_0.li1`
+#[must_use]
+pub fn metainfo_release_3_4_0_li1(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A Registrations tab on the phone numbers screen: check what a country's regulator asks for, fill in the details, upload the documents, file the registration with the carrier and follow where it stands",
+        Locale::FrCa => "Un onglet Inscriptions dans l'écran des numéros de téléphone\u{00A0}: vérifiez les exigences de l'organisme de réglementation d'un pays, remplissez les renseignements, téléversez les documents, déposez l'inscription auprès du transporteur et suivez où elle en est",
+    }
+}
+
+/// `metainfo.release_3_4_0.li2`
+#[must_use]
+pub fn metainfo_release_3_4_0_li2(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Push to talk in District HQ voice: when your HQ voice settings use it, the microphone is on only while you hold down the Hold to talk button, or Space or Enter",
+        Locale::FrCa => "«\u{00A0}Appuyer pour parler\u{00A0}» dans District HQ par la voix\u{00A0}: si vos paramètres vocaux de HQ l'activent, le micro ne s'ouvre que si vous maintenez le bouton «\u{00A0}Maintenir pour parler\u{00A0}», ou la touche Espace ou Entrée",
+    }
+}
+
+/// `metainfo.release_3_4_0.li3`
+#[must_use]
+pub fn metainfo_release_3_4_0_li3(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "However a District HQ voice session ends, only the minutes used are counted",
+        Locale::FrCa => "Peu importe comment se termine une session vocale de District HQ, seules les minutes utilisées sont comptées",
+    }
+}
+
+/// `metainfo.release_3_4_0.li4`
+#[must_use]
+pub fn metainfo_release_3_4_0_li4(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "A file in a conversation, such as a PDF, shows on its own line with its name and a document icon, and is no longer counted as an image",
+        Locale::FrCa => "Un fichier dans une conversation, comme un PDF, s'affiche sur sa propre ligne avec son nom et une icône de document, et n'est plus compté comme une image",
+    }
+}
+
+/// `metainfo.release_3_4_0.p`
+#[must_use]
+pub fn metainfo_release_3_4_0_p(l: Locale) -> &'static str {
+    match l {
+        Locale::En => "Register your numbers with a country's regulator, talk to District HQ by holding a button, and see the files in a conversation by their names.",
+        Locale::FrCa => "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé, et voyez les fichiers d'une conversation sous leur nom.",
+    }
+}
+
 /// `metainfo.screenshot_caption.call`
 #[must_use]
 pub fn metainfo_screenshot_caption_call(l: Locale) -> &'static str {

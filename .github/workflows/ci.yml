@@ -234,7 +234,7 @@ jobs:
       # The app's catalogs, crates/district-app/l10n/linux.toml and
       # scheduling.toml: valid and canonical, the Rust accessors and the
       # gettext catalogs generated from them current, and the vendored tools
-      # the monorepo's, unedited. Then the
+      # unedited. Then the
       # French rules over whatever French it holds, and the French catalog as
       # msgfmt compiles it for the packages.
       - name: The catalog, and what is generated from it, are current
