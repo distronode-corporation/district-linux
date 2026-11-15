@@ -1,11 +1,11 @@
 {
-  "signed_off_by": "Sean Dean, 2026-11-06",
-  "release": "v3.3.0",
-  "commit": "917197df2888d389434e88d6469d0a824dd4aa3a",
+  "signed_off_by": "Sean Dean, by approving this file's pull request, 2026-11-15. The 8 French strings changed since v3.3.0 were reviewed by an AI agent and 3 were corrected.",
+  "release": "v3.4.0",
+  "commit": "8bef447299e1bcab0f304f0725b5dd1a7937c260",
   "catalogs": [
     {
       "path": "crates/district-app/l10n/linux.toml",
-      "sha256": "336b8ff1b76b6547246ea9b3f9b977f09feb09d5c7239a63f73fe34da9f4411f"
+      "sha256": "cffc67eea3445ed9c7923346efc79cce8eb888e72af192ab1b4d76be1a7f3ade"
     },
     {
       "path": "crates/district-app/l10n/scheduling.toml",
