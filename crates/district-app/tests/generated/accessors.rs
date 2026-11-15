@@ -907,9 +907,9 @@ fn every_accessor_says_what_the_catalog_says() {
     assert_eq!(text::metainfo_release_3_4_0_li3(Locale::En), "However a District HQ voice session ends, only the minutes used are counted");
     assert_eq!(text::metainfo_release_3_4_0_li3(Locale::FrCa), "Peu importe comment se termine une session vocale de District HQ, seules les minutes utilisées sont comptées");
     assert_eq!(text::metainfo_release_3_4_0_li4(Locale::En), "A file in a conversation, such as a PDF, shows on its own line with its name and a document icon, and is no longer counted as an image");
-    assert_eq!(text::metainfo_release_3_4_0_li4(Locale::FrCa), "Un fichier dans une conversation, comme un PDF, s'affiche sur une ligne à part, avec son nom et une icône de document, et n'est plus compté comme une image");
+    assert_eq!(text::metainfo_release_3_4_0_li4(Locale::FrCa), "Un fichier dans une conversation, comme un PDF, s'affiche sur sa propre ligne avec son nom et une icône de document, et n'est plus compté comme une image");
     assert_eq!(text::metainfo_release_3_4_0_p(Locale::En), "Register your numbers with a country's regulator, talk to District HQ by holding a button, and see the files in a conversation by their names.");
-    assert_eq!(text::metainfo_release_3_4_0_p(Locale::FrCa), "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé et voyez les fichiers d'une conversation sous leur nom.");
+    assert_eq!(text::metainfo_release_3_4_0_p(Locale::FrCa), "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé, et voyez les fichiers d'une conversation sous leur nom.");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::En), "A call placed from the desktop, with mute and hang up always in reach");
     assert_eq!(text::metainfo_screenshot_caption_call(Locale::FrCa), "Un appel passé depuis l'ordinateur, avec Couper le micro et Raccrocher toujours à portée de main");
     assert_eq!(text::metainfo_screenshot_caption_call_log(Locale::En), "The call log, with each call's summary and transcript");

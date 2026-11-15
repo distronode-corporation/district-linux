@@ -3459,7 +3459,7 @@ note = "The 3.4.0 release's notes in the AppStream metadata, as software centres
 
 [metainfo.release_3_4_0.li4]
 en = "A file in a conversation, such as a PDF, shows on its own line with its name and a document icon, and is no longer counted as an image"
-fr = "Un fichier dans une conversation, comme un PDF, s'affiche sur une ligne à part, avec son nom et une icône de document, et n'est plus compté comme une image"
+fr = "Un fichier dans une conversation, comme un PDF, s'affiche sur sa propre ligne avec son nom et une icône de document, et n'est plus compté comme une image"
 ctx = "body"
 screen = "metainfo"
 state = "reviewed"
@@ -3467,7 +3467,7 @@ note = "The 3.4.0 release's notes in the AppStream metadata, as software centres
 
 [metainfo.release_3_4_0.p]
 en = "Register your numbers with a country's regulator, talk to District HQ by holding a button, and see the files in a conversation by their names."
-fr = "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé et voyez les fichiers d'une conversation sous leur nom."
+fr = "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé, et voyez les fichiers d'une conversation sous leur nom."
 ctx = "body"
 screen = "metainfo"
 state = "reviewed"
