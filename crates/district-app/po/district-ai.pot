@@ -3383,6 +3383,12 @@ msgid "Attach an image"
 msgstr ""
 
 #. screen: inbox; ctx: label; tier: T3
+#. Under a message, beside a file icon: the name shown for an attached file (a PDF, say) that came without a name of its own. A file with a name reads by that name instead, each on a line of its own; images are counted on the thread.images_attached line. The iPhone app's word for a file attachment, in both languages.
+msgctxt "thread.attachment"
+msgid "Attachment"
+msgstr ""
+
+#. screen: inbox; ctx: label; tier: T3
 msgctxt "thread.delivered"
 msgid "Delivered"
 msgstr ""
@@ -3404,6 +3410,7 @@ msgid "Image {number}"
 msgstr ""
 
 #. screen: inbox; ctx: label; tier: T3
+#. Under a message, beside an image icon: how many images it carries. Files (a PDF, say) are not counted here: each reads by its name on a line of its own.
 msgctxt "thread.images_attached"
 msgid "{count} image attached"
 msgid_plural "{count} images attached"

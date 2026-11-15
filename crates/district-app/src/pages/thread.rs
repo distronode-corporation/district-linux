@@ -230,6 +230,32 @@ pub(crate) fn images_attached(count: usize) -> String {
     text::thread_images_attached(lang(), i64::try_from(count).unwrap_or(i64::MAX))
 }
 
+/// A message's attachments told apart, as the phone apps tell them: how many
+/// are images, and the name of each file the service says is not one (a PDF,
+/// say), in the message's order. A URL the service says nothing about, or
+/// sends without a type, is an image, as every attachment was before it said
+/// (`TimelineEvent::file_attachment_for`).
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct Attached {
+    pub(crate) images: usize,
+    pub(crate) files: Vec<String>,
+}
+
+pub(crate) fn attached(event: &TimelineEvent) -> Attached {
+    let mut attached = Attached::default();
+    for url in &event.media_urls {
+        match event.file_attachment_for(url) {
+            // A file that came without a name is still a file, never "image".
+            Some(file) if file.file_name.trim().is_empty() => attached
+                .files
+                .push(text::thread_attachment(lang()).to_owned()),
+            Some(file) => attached.files.push(file.file_name.clone()),
+            None => attached.images += 1,
+        }
+    }
+    attached
+}
+
 /// Whether the composer holds a reply the model wrote, as District AI for
 /// Windows tells: the core does not say, it writes the reply into the box as
 /// if it had been typed.
@@ -1186,13 +1212,17 @@ fn message_bubble(event: &TimelineEvent, time: &str) -> gtk::Widget {
         body.set_max_width_chars(60);
         bubble.append(&body);
     }
-    if !event.media_urls.is_empty() {
-        let line = gtk::Box::builder().spacing(6).build();
-        line.append(&gtk::Image::from_icon_name("image-x-generic-symbolic"));
-        line.append(&gtk::Label::new(Some(&images_attached(
-            event.media_urls.len(),
-        ))));
-        bubble.append(&line);
+    // The images counted on one line, as ever; each file on a line of its
+    // own, by its name, so a PDF is never called an image.
+    let attached = attached(event);
+    if attached.images > 0 {
+        bubble.append(&attachment_line(
+            "image-x-generic-symbolic",
+            &images_attached(attached.images),
+        ));
+    }
+    for name in &attached.files {
+        bubble.append(&attachment_line("x-office-document-symbolic", name));
     }
     column.append(&bubble);
     let mut meta = vec![channel(&event.event_type).to_owned()];
@@ -1213,6 +1243,15 @@ fn message_bubble(event: &TimelineEvent, time: &str) -> gtk::Widget {
         .build();
     column.append(&meta);
     column.upcast()
+}
+
+/// One line of a message's attachments: an icon and its words, shown as they
+/// are (a file's name is the sender's).
+fn attachment_line(icon: &str, words: &str) -> gtk::Box {
+    let line = gtk::Box::builder().spacing(6).build();
+    line.append(&gtk::Image::from_icon_name(icon));
+    line.append(&plain_label(words, &[]));
+    line
 }
 
 /// A call in the thread: centred, with its summary under it, and Report
@@ -1281,7 +1320,7 @@ fn call_entry(
 
 #[cfg(test)]
 mod tests {
-    use district_model::CHANNEL_EMAIL;
+    use district_model::{CHANNEL_EMAIL, TimelineAttachment};
 
     use super::*;
 
@@ -1376,6 +1415,46 @@ mod tests {
         assert_eq!(call_line(&call), "Missed call");
         assert_eq!(images_attached(1), "1 image attached");
         assert_eq!(images_attached(3), "3 images attached");
+    }
+
+    #[test]
+    fn a_file_reads_by_its_name_and_only_images_are_counted_as_images() {
+        let attachment = |url: &str, mime_type: &str, file_name: &str| TimelineAttachment {
+            url: url.to_owned(),
+            mime_type: mime_type.to_owned(),
+            file_name: file_name.to_owned(),
+        };
+        let mut message = event("sms", "outbound", "delivered");
+        message.media_urls = ["photo", "quote", "plain", "untyped", "unnamed"]
+            .map(str::to_owned)
+            .to_vec();
+        message.attachments = vec![
+            attachment("photo", "image/jpeg", "Roof.jpg"),
+            attachment("quote", "application/pdf", "Roof quote.pdf"),
+            attachment("untyped", "", "old.png"),
+            attachment("unnamed", "text/plain", " "),
+        ];
+        // "plain" has no entry, and "untyped" no type: both are images, as
+        // every attachment was before the service said.
+        assert_eq!(
+            attached(&message),
+            Attached {
+                images: 3,
+                files: vec!["Roof quote.pdf".to_owned(), "Attachment".to_owned()],
+            }
+        );
+        district_core::l10n::with_locale(Locale::FrCa, || {
+            assert_eq!(attached(&message).files[1], "Pièce jointe");
+        });
+        // A message of images alone keeps its one line, and a message with
+        // nothing attached has none.
+        message.attachments.clear();
+        assert_eq!(attached(&message).images, 5);
+        assert_eq!(attached(&message).files, Vec::<String>::new());
+        assert_eq!(
+            attached(&event("sms", "inbound", "received")),
+            Attached::default()
+        );
     }
 
     #[test]
