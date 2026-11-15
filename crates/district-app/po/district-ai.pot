@@ -2472,31 +2472,31 @@ msgid "The web Inbox's channels and live supervise: reply by Messenger, Instagra
 msgstr ""
 
 #. screen: metainfo; ctx: body; tier: T3
-#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review.
+#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_4_0.li1"
 msgid "A Registrations tab on the phone numbers screen: check what a country's regulator asks for, fill in the details, upload the documents, file the registration with the carrier and follow where it stands"
 msgstr ""
 
 #. screen: metainfo; ctx: body; tier: T3
-#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review.
+#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_4_0.li2"
 msgid "Push to talk in District HQ voice: when your HQ voice settings use it, the microphone is on only while you hold down the Hold to talk button, or Space or Enter"
 msgstr ""
 
 #. screen: metainfo; ctx: body; tier: T3
-#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review.
+#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_4_0.li3"
 msgid "However a District HQ voice session ends, only the minutes used are counted"
 msgstr ""
 
 #. screen: metainfo; ctx: body; tier: T3
-#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review.
+#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_4_0.li4"
 msgid "A file in a conversation, such as a PDF, shows on its own line with its name and a document icon, and is no longer counted as an image"
 msgstr ""
 
 #. screen: metainfo; ctx: body; tier: T3
-#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review.
+#. The 3.4.0 release's notes in the AppStream metadata, as software centres show them.
 msgctxt "metainfo.release_3_4_0.p"
 msgid "Register your numbers with a country's regulator, talk to District HQ by holding a button, and see the files in a conversation by their names."
 msgstr ""

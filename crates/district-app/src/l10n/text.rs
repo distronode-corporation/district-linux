@@ -3955,7 +3955,7 @@ pub fn metainfo_release_3_4_0_li1(l: Locale) -> &'static str {
 pub fn metainfo_release_3_4_0_li2(l: Locale) -> &'static str {
     match l {
         Locale::En => "Push to talk in District HQ voice: when your HQ voice settings use it, the microphone is on only while you hold down the Hold to talk button, or Space or Enter",
-        Locale::FrCa => "District HQ par la voix avec «\u{00A0}Maintenir pour parler\u{00A0}»\u{00A0}: quand vos paramètres vocaux de HQ l'utilisent, le micro n'est ouvert que pendant que vous maintenez le bouton enfoncé, ou la touche Espace ou Entrée",
+        Locale::FrCa => "«\u{00A0}Appuyer pour parler\u{00A0}» dans District HQ par la voix\u{00A0}: si vos paramètres vocaux de HQ l'activent, le micro ne s'ouvre que si vous maintenez le bouton «\u{00A0}Maintenir pour parler\u{00A0}», ou la touche Espace ou Entrée",
     }
 }
 
@@ -3973,7 +3973,7 @@ pub fn metainfo_release_3_4_0_li3(l: Locale) -> &'static str {
 pub fn metainfo_release_3_4_0_li4(l: Locale) -> &'static str {
     match l {
         Locale::En => "A file in a conversation, such as a PDF, shows on its own line with its name and a document icon, and is no longer counted as an image",
-        Locale::FrCa => "Un fichier dans une conversation, comme un PDF, s'affiche sur sa propre ligne avec son nom et une icône de document, et n'est plus compté comme une image",
+        Locale::FrCa => "Un fichier dans une conversation, comme un PDF, s'affiche sur une ligne à part, avec son nom et une icône de document, et n'est plus compté comme une image",
     }
 }
 
@@ -3982,7 +3982,7 @@ pub fn metainfo_release_3_4_0_li4(l: Locale) -> &'static str {
 pub fn metainfo_release_3_4_0_p(l: Locale) -> &'static str {
     match l {
         Locale::En => "Register your numbers with a country's regulator, talk to District HQ by holding a button, and see the files in a conversation by their names.",
-        Locale::FrCa => "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé, et voyez les fichiers d'une conversation sous leur nom.",
+        Locale::FrCa => "Inscrivez vos numéros auprès de l'organisme de réglementation d'un pays, parlez à District HQ en maintenant un bouton enfoncé et voyez les fichiers d'une conversation sous leur nom.",
     }
 }
 
