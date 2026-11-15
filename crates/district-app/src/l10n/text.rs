@@ -3955,7 +3955,7 @@ pub fn metainfo_release_3_4_0_li1(l: Locale) -> &'static str {
 pub fn metainfo_release_3_4_0_li2(l: Locale) -> &'static str {
     match l {
         Locale::En => "Push to talk in District HQ voice: when your HQ voice settings use it, the microphone is on only while you hold down the Hold to talk button, or Space or Enter",
-        Locale::FrCa => "District HQ par la voix avec «\u{00A0}Maintenir pour parler\u{00A0}»\u{00A0}: quand vos paramètres vocaux de HQ l'utilisent, le micro n'est ouvert que pendant que vous maintenez le bouton enfoncé, ou la touche Espace ou Entrée",
+        Locale::FrCa => "«\u{00A0}Appuyer pour parler\u{00A0}» dans District HQ par la voix\u{00A0}: si vos paramètres vocaux de HQ l'activent, le micro ne s'ouvre que si vous maintenez le bouton «\u{00A0}Maintenir pour parler\u{00A0}», ou la touche Espace ou Entrée",
     }
 }
 
