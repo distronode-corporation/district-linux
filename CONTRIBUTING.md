@@ -408,7 +408,7 @@ SHA-256 of every catalog (`linux.toml` and `scheduling.toml`);
 `python3 scripts/check-fr-signoff.py` fails, naming each catalog, when one
 differs, is missing or is not listed. The release's guard runs it, and pull
 requests do not, because catalogs change between releases. A release whose
-catalogs changed (French, or English the French follows) needs the manager's
+catalogs changed (French, or English the French follows) needs the maintainers'
 review of the French and a new `signoff.json` in the release pull request.
 
 The workflow then refuses a tag that is not on main or that the versions do not

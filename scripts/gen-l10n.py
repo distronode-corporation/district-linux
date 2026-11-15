@@ -38,7 +38,7 @@ French. The packages install those only with French on
 (scripts/french-enabled.py), so a French-off build's files stay English.
 
 `--check` also verifies tools/l10n/ against its SHA256SUMS (`l10n.py vendor
---check`), so the vendored tools are the monorepo's, unedited. The test
+--check`), so the vendored tools are unedited. The test
 `l10n::templates` in the app holds every `.ui` string to the .pot's English
 for its key.
 

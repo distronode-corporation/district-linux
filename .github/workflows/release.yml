@@ -124,7 +124,7 @@ jobs:
       # The French is signed off per release: every catalog must be the one
       # i18n/fr-CA/signoff.json records, and scripts/check-fr-signoff.py names
       # each one that is not. A release whose catalogs changed needs the
-      # manager's review of the French and a new signoff.json
+      # maintainers' review of the French and a new signoff.json
       # (CONTRIBUTING.md, "Releases").
       - name: The catalogs are the signed-off French
         run: python3 scripts/check-fr-signoff.py
