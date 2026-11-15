@@ -3442,7 +3442,7 @@ state = "draft"
 note = "The 3.4.0 release's notes in the AppStream metadata, as software centres show them. The French is a draft for review."
 
 [metainfo.release_3_4_0.li2]
-en = "Push to talk in District HQ voice: when your HQ voice settings use it, the microphone is on only while you hold down Hold to talk, or Space or Enter"
+en = "Push to talk in District HQ voice: when your HQ voice settings use it, the microphone is on only while you hold down the Hold to talk button, or Space or Enter"
 fr = "District HQ par la voix avec «\u00A0Maintenir pour parler\u00A0»\u00A0: quand vos paramètres vocaux de HQ l'utilisent, le micro n'est ouvert que pendant que vous maintenez le bouton enfoncé, ou la touche Espace ou Entrée"
 ctx = "body"
 screen = "metainfo"

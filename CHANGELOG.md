@@ -7,9 +7,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 `scripts/check-version.py` holds the newest released section's heading to the version in
 `Cargo.toml` and to the AppStream metadata's newest release, so a release is one edit to
-each: rename `[Unreleased]` to the version and date, bump `[workspace.package] version`
-to match, and make the metadata's `<release>` for it stable, with the same date. See
-"Releases" in CONTRIBUTING.md.
+each: add the version's dated section (the short release notes; the detail stays under
+`[Unreleased]` until the release is out), bump `[workspace.package] version` to match,
+and make the metadata's `<release>` for it stable, with the same date. See "Releases" in
+CONTRIBUTING.md.
 
 ## [Unreleased]
 
@@ -61,8 +62,8 @@ talk, and see the files in a conversation by their names.
   file the registration with the carrier. Each filing shows its status and anything the
   carrier objected to.
 - Push to talk in District HQ voice. When your HQ voice settings use push to talk, hold
-  down Hold to talk (or Space or Enter) to speak; the microphone turns off when you let
-  go.
+  down the Hold to talk button (or Space or Enter) to speak; the microphone turns off
+  when you let go.
 
 ### Changed
 
