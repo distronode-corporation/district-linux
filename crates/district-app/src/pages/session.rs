@@ -102,7 +102,8 @@ pub(crate) fn shown(session: &SessionState) -> Option<Shown> {
             body: match signing_out.scope {
                 SignOutScope::ThisDevice => text::session_signing_out_this_device(lang()),
                 SignOutScope::Everywhere => text::session_signing_out_everywhere(lang()),
-                // The account is gone: what is left is this computer's half.
+                // The core runs the same sign-out as for this device: it tells
+                // the service, then removes the sign-in from this computer.
                 SignOutScope::AccountDeleted { .. } => {
                     text::session_signing_out_this_device(lang())
                 }

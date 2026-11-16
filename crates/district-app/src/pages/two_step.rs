@@ -30,15 +30,28 @@ use crate::sink::EventSink;
 /// How long a secret stays on the clipboard.
 pub(crate) const CLIPBOARD_LIFETIME: Duration = Duration::from_secs(120);
 
+thread_local! {
+    /// Counts the copies, so a copy's timer knows whether a later copy, even
+    /// of the same text, has replaced it.
+    static COPIES: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
 /// Copies `text` to `widget`'s clipboard, and takes it off again after
-/// [`CLIPBOARD_LIFETIME`], unless something else was copied since.
+/// [`CLIPBOARD_LIFETIME`], unless something else was copied since. Copying
+/// the same text again starts the time again.
 pub(crate) fn copy_for_a_while(widget: &impl IsA<gtk::Widget>, text: &str) {
     let clipboard = widget.as_ref().clipboard();
     clipboard.set_text(text);
     let copied = glib::GString::from(text);
+    let this_copy = COPIES.with(|copies| {
+        copies.set(copies.get() + 1);
+        copies.get()
+    });
     glib::timeout_add_local_once(CLIPBOARD_LIFETIME, move || {
-        // Only what this app put there, and only while it is still that.
-        if clipboard.is_local()
+        // Only what this app put there, only while it is still that, and only
+        // if this app has copied nothing since.
+        if COPIES.with(std::cell::Cell::get) == this_copy
+            && clipboard.is_local()
             && clipboard
                 .content()
                 .and_then(|content| content.value(glib::Type::STRING).ok())

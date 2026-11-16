@@ -12,8 +12,9 @@ use district_model::Credential;
 
 use crate::adw;
 use crate::adw::prelude::*;
-use crate::gtk;
+use crate::gtk::{self, glib};
 use crate::l10n::{core_text, lang};
+use crate::pages::shared::wrap_button_label;
 use crate::pages::{Sends, on_click, upgraded};
 
 /// The events one screen's re-authentication sends.
@@ -60,17 +61,55 @@ pub(crate) fn heading(text: &str) -> gtk::Label {
         .build()
 }
 
-/// A button with `label`, named `name`.
+/// A button with `label`, named `name`. The label wraps rather than hold the
+/// page wider than a narrow window: in French, "Ouvrir dans une application
+/// d'authentification" is wider than 400 px on one line.
 pub(crate) fn button(label: &str, name: &str, classes: &[&str]) -> gtk::Button {
     let button = gtk::Button::builder()
         .label(label)
         .name(name)
         .halign(gtk::Align::Start)
         .build();
+    wrap_button_label(&button);
     for class in classes {
         button.add_css_class(class);
     }
     button
+}
+
+/// Sends the typed password, and the code when the form asks for one, once
+/// both are filled in, and clears the entries. The entries are held weakly
+/// (see [`build`]); every handler that calls this belongs to the form, so
+/// they are there whenever it runs.
+fn send_typed<P: Sends>(
+    page: &P,
+    password: &glib::WeakRef<adw::PasswordEntryRow>,
+    code: Option<&glib::WeakRef<adw::EntryRow>>,
+    submit: fn(Credential, Option<Credential>) -> Event,
+) -> Option<()> {
+    let password = password.upgrade()?;
+    let code = match code {
+        Some(code) => Some(code.upgrade()?),
+        None => None,
+    };
+    let typed = password.text();
+    let typed_code = code.as_ref().map(|code| code.text());
+    let ready = !typed.is_empty()
+        && typed_code
+            .as_ref()
+            .is_none_or(|code| !code.trim().is_empty());
+    if !ready {
+        return None;
+    }
+    page.send(submit(
+        Credential::new(typed.as_str()),
+        typed_code.map(|code| Credential::new(code.as_str())),
+    ));
+    password.set_text("");
+    if let Some(code) = &code {
+        code.set_text("");
+    }
+    Some(())
 }
 
 /// The widgets for `step`, under `intro`, and the controls a busy screen makes
@@ -141,30 +180,17 @@ pub(crate) fn build<P: Sends>(
                 "reauth_continue",
                 &["suggested-action", "pill"],
             );
+            // The entries are held weakly: each entry's own handler holds
+            // `send`, and a strong hold would keep both, and what is typed in
+            // them, alive after the form is gone.
             let send = {
                 let page = page.downgrade();
-                let password = password.clone();
-                let code = code.clone();
+                let password = password.downgrade();
+                let code = code.as_ref().map(|code| code.downgrade());
                 let submit = events.submit;
                 move || {
                     upgraded(&page, |page| {
-                        let typed = password.text();
-                        let typed_code = code.as_ref().map(|code| code.text());
-                        let ready = !typed.is_empty()
-                            && typed_code
-                                .as_ref()
-                                .is_none_or(|code| !code.trim().is_empty());
-                        if !ready {
-                            return;
-                        }
-                        page.send(submit(
-                            Credential::new(typed.as_str()),
-                            typed_code.map(|code| Credential::new(code.as_str())),
-                        ));
-                        password.set_text("");
-                        if let Some(code) = &code {
-                            code.set_text("");
-                        }
+                        send_typed(&page, &password, code.as_ref(), submit);
                     });
                 }
             };

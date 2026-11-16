@@ -227,14 +227,19 @@ impl DeleteAccountPage {
                     "delete_submit",
                     &["destructive-action", "pill"],
                 );
+                // The entry is held weakly: its own handler holds `send`, and
+                // a strong hold would keep it, and the typed address, alive
+                // after `leave`.
                 let send = {
                     let page = self.downgrade();
-                    let email = email.clone();
+                    let email = email.downgrade();
                     move || {
                         upgraded(&page, |page| {
-                            page.send(Event::AccountDeletion(DeleteAccountEvent::Delete {
-                                confirmation: email.text().to_string(),
-                            }));
+                            upgraded(&email, |email| {
+                                page.send(Event::AccountDeletion(DeleteAccountEvent::Delete {
+                                    confirmation: email.text().to_string(),
+                                }));
+                            });
                         });
                     }
                 };
