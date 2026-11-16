@@ -433,19 +433,23 @@ impl TwoStepPage {
             "two_step_confirm",
             &["suggested-action", "pill"],
         );
+        // The entry is held weakly: its own handler holds `send`, and a strong
+        // hold would keep it, and the typed code, alive after the step is gone.
         let send = {
             let page = self.downgrade();
-            let code = code.clone();
+            let code = code.downgrade();
             move || {
                 upgraded(&page, |page| {
-                    let typed = code.text();
-                    if typed.trim().is_empty() {
-                        return;
-                    }
-                    page.send(Event::TwoStep(TwoStepEvent::Confirm(Credential::new(
-                        typed.as_str(),
-                    ))));
-                    code.set_text("");
+                    upgraded(&code, |code| {
+                        let typed = code.text();
+                        if typed.trim().is_empty() {
+                            return;
+                        }
+                        page.send(Event::TwoStep(TwoStepEvent::Confirm(Credential::new(
+                            typed.as_str(),
+                        ))));
+                        code.set_text("");
+                    });
                 });
             }
         };
