@@ -65,9 +65,7 @@ shows, so it stays short; these entries move under it once 3.4.0 is released.
   shows each file (a PDF, say) on a line of its own with a document icon, as the phone
   apps do: by its name, or as "Attachment" when it came without one. Only images are
   counted on the "images attached" line; a file is no longer called an image.
-- district-core-rust 13.0.0, for two-step verification and the account's deletion. Until
-  that release is tagged, this branch builds on its pull request's commit. (Not part of
-  3.4.0.)
+- district-core-rust 13.0.0, for two-step verification and the account's deletion.
 
 ## [3.4.0] - 2026-11-15
 
