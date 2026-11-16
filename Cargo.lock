@@ -780,7 +780,7 @@ dependencies = [
 [[package]]
 name = "district-api"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "district-l10n",
  "district-model",
@@ -820,7 +820,7 @@ dependencies = [
 [[package]]
 name = "district-auth"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "base64 0.22.1",
  "district-api",
@@ -839,7 +839,7 @@ dependencies = [
 [[package]]
 name = "district-call"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "district-core",
  "district-model",
@@ -854,7 +854,7 @@ dependencies = [
 [[package]]
 name = "district-core"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "base64 0.22.1",
  "district-api",
@@ -872,7 +872,7 @@ dependencies = [
 [[package]]
 name = "district-crash"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "sentry",
  "serde_json",
@@ -900,7 +900,7 @@ dependencies = [
 [[package]]
 name = "district-host"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "district-auth",
  "district-core",
@@ -914,12 +914,12 @@ dependencies = [
 [[package]]
 name = "district-l10n"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 
 [[package]]
 name = "district-live"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "district-api",
  "district-model",
@@ -939,7 +939,7 @@ dependencies = [
 [[package]]
 name = "district-model"
 version = "13.0.0"
-source = "git+https://github.com/distronode-corporation/district-core-rust?rev=2dd15e7e0382292828f9a48f9a6212e34c73b3ca#2dd15e7e0382292828f9a48f9a6212e34c73b3ca"
+source = "git+https://github.com/distronode-corporation/district-core-rust?rev=cf10ac18ea250c95e2d84e431d4ee3909820b753#cf10ac18ea250c95e2d84e431d4ee3909820b753"
 dependencies = [
  "serde",
  "serde_json",

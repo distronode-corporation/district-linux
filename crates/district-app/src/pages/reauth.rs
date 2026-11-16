@@ -89,7 +89,7 @@ pub(crate) fn build<P: Sends>(
             column.append(&sentence(intro, "reauth_intro"));
             if matches!(step, ReauthStep::Browser(_)) {
                 column.append(&sentence(
-                    &core_text::session_waiting_for_browser(lang()),
+                    core_text::session_waiting_for_browser(lang()),
                     "reauth_waiting",
                 ));
             }
