@@ -19,6 +19,22 @@ shows, so it stays short; these entries move under it once 3.4.0 is released.
 
 ### Added
 
+- Two-step verification in the app, as on the iPhone: Account, Two-step verification says
+  whether it is on, since when and how many recovery codes are left. Turning it on or off
+  starts with confirming it is you: a fresh sign-in with Google, Microsoft or Apple in
+  your browser, or your password with, when two-step verification is on, its code.
+  Turning it on then shows the new secret as a QR code and a key, with Copy key and Open
+  in an authenticator app, asks for the authenticator's code, and shows the recovery codes
+  once, with Copy all. A copy of the key or the codes is taken off the clipboard after two
+  minutes. The key and the codes are never logged, and are dropped when you leave the
+  screen. An account with no password turns it off after a provider sign-in. There is no
+  way to make new recovery codes on their own: turn it off and on again. (Not part of
+  3.4.0.)
+- Delete your account, in the app (it opened the web page in your browser): what is
+  deleted and what is kept, confirming it is you as for two-step verification, then your
+  account's email address, typed. A refusal says whether anything was deleted. After the
+  deletion this computer is signed out, and the sign-in screen says the account was
+  deleted. (Not part of 3.4.0.)
 - The Registrations tab on the phone numbers screen, as on Android: a country's regulatory
   registration for its numbers. Type the country, choose the number type and whether the
   number is for a business or an individual, and Check requirements lists what the
@@ -49,6 +65,7 @@ shows, so it stays short; these entries move under it once 3.4.0 is released.
   shows each file (a PDF, say) on a line of its own with a document icon, as the phone
   apps do: by its name, or as "Attachment" when it came without one. Only images are
   counted on the "images attached" line; a file is no longer called an image.
+- district-core-rust 13.0.0, for two-step verification and the account's deletion.
 
 ## [3.4.0] - 2026-11-15
 

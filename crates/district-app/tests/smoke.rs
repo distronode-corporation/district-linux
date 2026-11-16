@@ -1256,6 +1256,264 @@ fn account_and_devices(smoke: &Smoke) {
     assert!(smoke.shown("sign_out_row"), "back to the account");
 }
 
+/// The status the service answers, on or off.
+fn mfa_status(enrolled: bool) -> district_model::MfaStatus {
+    district_model::MfaStatus {
+        enrolled,
+        enrolled_at: enrolled.then(|| "2026-10-01T12:00:00.000Z".to_owned()),
+        backup_codes_remaining: if enrolled { 7 } else { 0 },
+        can_disable: true,
+    }
+}
+
+/// The browser's answer to the re-authentication page the app just opened.
+fn reauth_answer(smoke: &Smoke) -> String {
+    let Effect::OpenOneTimeUrl { url } = smoke.take("OpenOneTimeUrl") else {
+        unreachable!()
+    };
+    let page = url.expose();
+    assert!(page.contains("/auth/native/reauth?"), "{}", page.len());
+    let state = page
+        .split(['?', '&'])
+        .find_map(|pair| pair.strip_prefix("state="))
+        .expect("a state")
+        .to_owned();
+    assert!(
+        !url.expose().contains(THIS_DEVICE),
+        "the page is given the installation's hash, never its id"
+    );
+    // GLib hands the link over with a slash after the host.
+    format!("districtai://auth/?code=reauth-code&state={state}")
+}
+
+fn button_label(smoke: &Smoke, name: &str) -> String {
+    smoke
+        .find(name)
+        .downcast::<gtk::Button>()
+        .expect("a button")
+        .label()
+        .map(|label| label.to_string())
+        .unwrap_or_default()
+}
+
+fn answer_reauth(smoke: &Smoke, result: Result<i64, ApiError>) -> district_core::ReauthProof {
+    let Effect::Reauthenticate {
+        ticket,
+        action,
+        proof,
+    } = smoke.take("Reauthenticate")
+    else {
+        unreachable!()
+    };
+    smoke.answer(Event::Reauthenticated {
+        ticket,
+        action,
+        result,
+    });
+    proof
+}
+
+/// Two-step verification: on through a provider, with the secret and the
+/// recovery codes shown once, then off by password with its code; and the
+/// account's deletion as far as a refused email address. The deletion that
+/// goes through is the core's test: here it would end the walk's session.
+#[allow(clippy::too_many_lines)] // One flow, step by step, as a person goes.
+fn account_security(smoke: &Smoke) {
+    smoke.activate("sidebar-account");
+    assert!(smoke.shown("two_step_row"));
+    smoke.activate("two_step_row");
+    let Effect::LoadTwoStep { ticket } = smoke.take("LoadTwoStep") else {
+        unreachable!()
+    };
+    assert!(smoke.shown("back_button"), "below the account");
+    smoke.answer(Event::TwoStepLoaded {
+        ticket,
+        result: Ok(mfa_status(false)),
+    });
+    assert!(smoke.shown("two_step_status_row"));
+    assert_eq!(button_label(smoke, "two_step_change"), "Turn on");
+    smoke.shot("10-two-step-off");
+
+    smoke.click("two_step_change");
+    assert!(smoke.shown("reauth_google") && smoke.shown("reauth_use_password"));
+    smoke.shot("11-two-step-confirm-it-is-you");
+    smoke.click("reauth_google");
+    let link = reauth_answer(smoke);
+    assert!(smoke.shown("reauth_waiting"));
+    hand_over(smoke, &link);
+    assert!(
+        !smoke.sensitive("reauth_google"),
+        "busy while the proof is checked"
+    );
+    let proof = answer_reauth(smoke, Ok(300));
+    assert!(matches!(proof, district_core::ReauthProof::Provider { .. }));
+    let Effect::StartTwoStep { ticket } = smoke.take("StartTwoStep") else {
+        unreachable!()
+    };
+    smoke.answer(Event::TwoStepStarted {
+        ticket,
+        result: Ok(fixture("district-mfa-enroll.json")),
+    });
+    assert!(smoke.shown("two_step_qr"), "the service's QR code is drawn");
+    assert_eq!(smoke.subtitle("two_step_key"), "JBSWY3DPEHPK3PXP");
+    smoke.shot("12-two-step-scan");
+    smoke.click("two_step_copy_key");
+    assert_eq!(clipboard_text(smoke).as_deref(), Some("JBSWY3DPEHPK3PXP"));
+    smoke.click("two_step_confirm");
+    assert!(
+        !smoke.pending("ConfirmTwoStep"),
+        "nothing to send without a code"
+    );
+    smoke.type_into("two_step_code", "123456");
+    smoke.click("two_step_confirm");
+    let Effect::ConfirmTwoStep { ticket, code } = smoke.take("ConfirmTwoStep") else {
+        unreachable!()
+    };
+    assert_eq!(code.expose(), "123456");
+    smoke.answer(Event::TwoStepConfirmed {
+        ticket,
+        result: Ok(fixture("district-mfa-confirm.json")),
+    });
+    assert_eq!(smoke.label("two_step_codes"), "aaaa-bbbb\ncccc-dddd");
+    smoke.shot("13-two-step-recovery-codes");
+    smoke.click("two_step_copy_codes");
+    assert_eq!(
+        clipboard_text(smoke).as_deref(),
+        Some("aaaa-bbbb\ncccc-dddd")
+    );
+    smoke.click("two_step_codes_done");
+    assert!(!smoke.shown("two_step_codes"), "the codes are shown once");
+    let Effect::LoadTwoStep { ticket } = smoke.take("LoadTwoStep") else {
+        unreachable!()
+    };
+    smoke.answer(Event::TwoStepLoaded {
+        ticket,
+        result: Ok(mfa_status(true)),
+    });
+    assert!(smoke.shown("two_step_notice"));
+    assert_eq!(button_label(smoke, "two_step_change"), "Turn off");
+    smoke.shot("14-two-step-on");
+    smoke.click("two_step_dismiss");
+    assert!(!smoke.shown("two_step_notice"));
+
+    // Off, by password: the service asks for the code with it.
+    smoke.click("two_step_change");
+    smoke.click("reauth_use_password");
+    smoke.type_into("reauth_password", "correct horse");
+    smoke.click("reauth_continue");
+    let proof = answer_reauth(
+        smoke,
+        Err(ApiError::Envelope {
+            status: 401,
+            code: "MFA_REQUIRED".to_owned(),
+            detail: ErrorDetail {
+                message: Some("Enter the code from your authenticator app.".to_owned()),
+                code: Some("MFA_REQUIRED".to_owned()),
+                ..ErrorDetail::default()
+            },
+        }),
+    );
+    assert!(matches!(
+        proof,
+        district_core::ReauthProof::Password { code: None, .. }
+    ));
+    assert!(smoke.shown("reauth_code"));
+    let typed = smoke
+        .mapped("reauth_password")
+        .dynamic_cast::<gtk::Editable>()
+        .expect("an entry");
+    assert_eq!(typed.text(), "", "never kept");
+    smoke.shot("15-two-step-password-and-code");
+    smoke.type_into("reauth_password", "correct horse");
+    smoke.type_into("reauth_code", "654321");
+    smoke.click("reauth_continue");
+    let proof = answer_reauth(smoke, Ok(300));
+    let district_core::ReauthProof::Password {
+        code: Some(code), ..
+    } = proof
+    else {
+        unreachable!()
+    };
+    assert_eq!(code.expose(), "654321");
+    let Effect::TurnOffTwoStep { ticket } = smoke.take("TurnOffTwoStep") else {
+        unreachable!()
+    };
+    smoke.answer(Event::TwoStepTurnedOff {
+        ticket,
+        result: Ok(()),
+    });
+    let Effect::LoadTwoStep { ticket } = smoke.take("LoadTwoStep") else {
+        unreachable!()
+    };
+    smoke.answer(Event::TwoStepLoaded {
+        ticket,
+        result: Ok(mfa_status(false)),
+    });
+    assert_eq!(button_label(smoke, "two_step_change"), "Turn on");
+    // A first read that fails offers a retry.
+    smoke.click("back_button");
+    smoke.activate("two_step_row");
+    let Effect::LoadTwoStep { ticket } = smoke.take("LoadTwoStep") else {
+        unreachable!()
+    };
+    smoke.answer(Event::TwoStepLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(smoke.shown("two_step_failure"));
+    smoke.click("two_step_retry");
+    let Effect::LoadTwoStep { ticket } = smoke.take("LoadTwoStep") else {
+        unreachable!()
+    };
+    smoke.answer(Event::TwoStepLoaded {
+        ticket,
+        result: Ok(mfa_status(false)),
+    });
+    smoke.click("back_button");
+
+    // Deleting the account: what goes, confirming it is you, then the email.
+    smoke.activate("delete_row");
+    assert!(smoke.shown("delete_what_is_deleted") && smoke.shown("reauth_microsoft"));
+    assert!(!smoke.pending("OpenUrl"), "the deletion is in the app now");
+    smoke.shot("16-delete-account");
+    smoke.click("reauth_use_password");
+    smoke.type_into("reauth_password", "correct horse");
+    // Enter sends it, as Continue does.
+    smoke
+        .mapped("reauth_password")
+        .downcast::<adw::EntryRow>()
+        .expect("an entry row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
+    answer_reauth(smoke, Ok(300));
+    assert!(smoke.shown("delete_email"));
+    smoke.type_into("delete_email", "someone@example.com");
+    smoke.shot("17-delete-account-last-step");
+    smoke.click("delete_submit");
+    let Effect::DeleteAccount {
+        ticket,
+        confirmation,
+    } = smoke.take("DeleteAccount")
+    else {
+        unreachable!()
+    };
+    assert_eq!(confirmation, "someone@example.com");
+    smoke.answer(Event::AccountDeleted {
+        ticket,
+        result: Err(ApiError::Forbidden(ErrorDetail {
+            message: Some("That is not this account's email address.".to_owned()),
+            code: Some("confirmation_mismatch".to_owned()),
+            ..ErrorDetail::default()
+        })),
+    });
+    assert!(smoke.shown("delete_failure"));
+    assert!(smoke.sensitive("delete_submit"), "a typo costs nothing");
+    smoke.shot("18-delete-account-refused");
+    smoke.click("back_button");
+    assert!(smoke.shown("sign_out_row"), "back to the account");
+    assert!(!smoke.shown("delete_email"), "the typed address is dropped");
+}
+
 /// The inbox's threads, read as the service reads them all, so the list says
 /// it may be short. The app asks with `metaChannels=1`, so each thread carries
 /// its ways to reply: here the one the fixture's row offers, so a reply goes
@@ -3472,10 +3730,85 @@ fn french_narrow() {
     }
     assert!(!smoke.shown("voice_dock"));
     smoke.forget();
+    account_security_in_french(&smoke);
     registrations_in_french(&smoke);
     fs::remove_dir_all(&catalog).ok();
     smoke.app.emit_by_name::<()>("shutdown", &[]);
     println!("French at 400 px passed");
+}
+
+/// Two-step verification and the account's deletion in French, at the default
+/// width and at 400 px: every step's words are the core's French, and none
+/// runs past the window's edge.
+fn account_security_in_french(smoke: &Smoke) {
+    smoke.resize(1024, 720);
+    smoke.forget();
+    smoke.activate("sidebar-account");
+    smoke.activate("two_step_row");
+    smoke.reply("LoadTwoStep", |ticket| Event::TwoStepLoaded {
+        ticket,
+        result: Ok(mfa_status(false)),
+    });
+    assert!(smoke.shows_text("Désactivée"), "the core's French status");
+    smoke.shot("fr-60-two-step-off");
+    smoke.click("two_step_change");
+    assert!(smoke.shows_text("Confirmez qu'il s'agit bien de vous"));
+    smoke.shot("fr-61-two-step-confirm-it-is-you");
+    smoke.click("reauth_use_password");
+    smoke.type_into("reauth_password", "correct horse");
+    smoke.click("reauth_continue");
+    answer_reauth(smoke, Ok(300));
+    smoke.reply("StartTwoStep", |ticket| Event::TwoStepStarted {
+        ticket,
+        result: Ok(fixture("district-mfa-enroll.json")),
+    });
+    assert!(smoke.shows_text("Ajoutez District AI à votre application d'authentification"));
+    smoke.shot("fr-62-two-step-scan");
+    smoke.resize(400, 760);
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "the secret's step in French"
+    );
+    smoke.shot("fr-63-two-step-scan-narrow");
+    smoke.resize(1024, 720);
+    smoke.type_into("two_step_code", "123456");
+    smoke.click("two_step_confirm");
+    smoke.reply("ConfirmTwoStep", |ticket| Event::TwoStepConfirmed {
+        ticket,
+        result: Ok(fixture("district-mfa-confirm.json")),
+    });
+    assert!(smoke.shows_text("Enregistrez vos codes de récupération"));
+    smoke.shot("fr-64-two-step-recovery-codes");
+    smoke.click("two_step_codes_done");
+    smoke.reply("LoadTwoStep", |ticket| Event::TwoStepLoaded {
+        ticket,
+        result: Ok(mfa_status(true)),
+    });
+    assert!(smoke.shows_text("Activée"));
+    smoke.shot("fr-65-two-step-on");
+
+    smoke.click("back_button");
+    smoke.activate("delete_row");
+    assert!(smoke.shows_text("Supprimer votre compte"));
+    smoke.shot("fr-66-delete-account");
+    smoke.resize(400, 760);
+    assert_eq!(
+        smoke.past_the_edge(),
+        Vec::<String>::new(),
+        "the deletion's first step in French"
+    );
+    smoke.shot("fr-67-delete-account-narrow");
+    smoke.resize(1024, 720);
+    smoke.click("reauth_use_password");
+    smoke.type_into("reauth_password", "correct horse");
+    smoke.click("reauth_continue");
+    answer_reauth(smoke, Ok(300));
+    assert!(smoke.shows_text("Dernière étape"));
+    smoke.shot("fr-68-delete-account-last-step");
+    smoke.click("back_button");
+    smoke.forget();
+    smoke.resize(400, 760);
 }
 
 /// The Registrations tab in French, narrow and at the default width: the
@@ -12429,6 +12762,7 @@ fn main() {
     signing_in(&smoke);
     overview_page(&smoke);
     account_and_devices(&smoke);
+    account_security(&smoke);
     inbox_and_thread(&smoke);
     app_parity(&smoke);
     composing(&smoke);
