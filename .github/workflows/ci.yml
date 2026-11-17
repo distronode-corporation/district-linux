@@ -3,7 +3,8 @@ name: CI
 # `rust` formats, lints and tests the whole workspace, the GTK app included (its
 # smoke test runs the real window under a virtual display), and measures line
 # coverage while the tests run, holding every crate to its floor in
-# coverage-floors.toml. `msrv` compiles it at the declared minimum Rust version and
+# coverage-floors.toml. `msrv` compiles it at the declared minimum Rust version,
+# `repeatable` builds the workspace's crates twice and compares the bytes, and
 # `repo` runs the repository checks under scripts/ and validates the app's desktop
 # entry and AppStream metadata. `cargo-deny`,
 # `dependency-review` (pull requests only) and `zizmor` are the supply chain:
@@ -215,6 +216,71 @@ jobs:
       # app's smoke test included.
       - name: cargo check at the MSRV
         run: cargo check --workspace --all-targets --locked --features district-app/gtk-tests,district-app/fr-ca
+
+  # The build is repeatable: the workspace's own crates, built a second time from
+  # the same commit, are the same bytes, the `district-ai` binary included. This is
+  # the default build (no `voice`, so no libwebrtc). Dependencies are built once
+  # and reused, so this compares what this repository's source produces.
+  # Incremental compilation is off, as it is in a release build, because its
+  # partitioning is not deterministic between runs. The packages themselves are
+  # not compared: the .deb and the Flatpak carry file times and the build's own
+  # metadata.
+  repeatable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the GTK 4 and libadwaita development files
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2086 # deliberate word splitting into one package per arg
+          sudo apt-get install -y --no-install-recommends $LINUX_DEPS
+
+      - name: Install the stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustc --version
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: repeatable
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build twice and compare the workspace's libraries and binary
+        run: |
+          set -euo pipefail
+          crates="$(python3 -c 'import tomllib;print(" ".join(m.rsplit("/",1)[1] for m in tomllib.load(open("Cargo.toml","rb"))["workspace"]["members"]))')"
+          for round in first second; do
+            for crate in $crates; do cargo clean -p "$crate"; done
+            # The artifacts' paths come from cargo's own messages, not from a glob
+            # under target/, whose layout cargo is free to change.
+            cargo build --workspace --locked --message-format=json-render-diagnostics \
+              > "$RUNNER_TEMP/$round.json"
+            python3 - "$RUNNER_TEMP/$round.json" > "$RUNNER_TEMP/$round.txt" <<'PY'
+          import hashlib, json, os, sys
+          crates = os.path.join(os.getcwd(), "crates") + os.sep
+          for line in open(sys.argv[1]):
+              m = json.loads(line)
+              if m.get("reason") != "compiler-artifact" or not m["manifest_path"].startswith(crates):
+                  continue
+              files = [f for f in m["filenames"] if f.endswith(".rlib")]
+              if "bin" in m["target"]["kind"] and m.get("executable"):
+                  files.append(m["executable"])
+              for f in files:
+                  digest = hashlib.sha256(open(f, "rb").read()).hexdigest()
+                  print(digest, m["target"]["name"], os.path.basename(f))
+          PY
+            sort -k2 -o "$RUNNER_TEMP/$round.txt" "$RUNNER_TEMP/$round.txt"
+          done
+          cat "$RUNNER_TEMP/first.txt"
+          # One rlib per crate plus the district-ai binary.
+          test "$(wc -l < "$RUNNER_TEMP/first.txt")" -eq "$(( $(wc -w <<< "$crates") + 1 ))"
+          diff "$RUNNER_TEMP/first.txt" "$RUNNER_TEMP/second.txt"
 
   # Seconds of runtime. The scripts need Python 3.11 or newer (tomllib), which
   # ubuntu-24.04 ships.

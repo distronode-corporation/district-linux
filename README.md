@@ -119,17 +119,54 @@ and FFmpeg (see [NOTICE](NOTICE)).
   keyring, notifications, links and files go through the desktop portals, so
   your desktop needs xdg-desktop-portal and a backend for it, as most do.
 
-Each package comes with a signed attestation of the build that made it, which
-you can check with the GitHub CLI:
+## Quick start
+
+1. Install the package for your system (above).
+2. Open **District AI** from your desktop's app launcher (or run `district-ai`, or
+   `flatpak run com.distronode.DistrictAI` for the Flatpak).
+3. Press **Sign in with your browser**. Your browser opens District AI's sign-in
+   page; once you are signed in, the browser hands you back to the app.
+4. Your workspace opens, with the call log, the inbox and the rest of it in the
+   sidebar.
+
+To have calls handed to you ring on this computer, turn on **Ring on this
+computer** on the account screen.
+
+## Verify a release
+
+Each package comes with a signed attestation of the build that made it, made
+through Sigstore by this repository's release workflow. Check it with the GitHub
+CLI:
 
 ```
-gh attestation verify district-ai_3.4.0-1_amd64.deb --repo distronode-corporation/district-linux
+gh attestation verify district-ai_3.4.0-1_amd64.deb --repo distronode-corporation/district-linux \
+  --signer-workflow distronode-corporation/district-linux/.github/workflows/release.yml
 ```
 
 The attestation is also attached to the release as
 `district-ai_<version>.intoto.jsonl`, so you can check a download against that
 file rather than GitHub's attestation store by adding
-`--bundle district-ai_<version>.intoto.jsonl` to that command.
+`--bundle district-ai_<version>.intoto.jsonl` to that command. The same command
+checks the Flatpak bundle.
+
+## Uninstall
+
+Sign out first (on the account screen), so the service revokes this computer's
+session and the app removes it from your keyring; signing out also removes this
+computer's registration for calls. Then remove the package:
+
+```
+sudo apt remove district-ai                         # the .deb
+flatpak uninstall --user com.distronode.DistrictAI  # the Flatpak; add --delete-data to remove its data
+```
+
+Removing the .deb leaves your files. To remove them too, delete
+`~/.config/com.distronode.DistrictAI`, `~/.local/state/com.distronode.DistrictAI`
+and `~/.local/share/com.distronode.DistrictAI` (or the same under
+`$XDG_CONFIG_HOME`, `$XDG_STATE_HOME` and `$XDG_DATA_HOME`), and
+`~/.config/autostart/com.distronode.DistrictAI.desktop` if "Start at login" was
+on. The Flatpak keeps its files under `~/.var/app/com.distronode.DistrictAI`,
+which `--delete-data` removes.
 
 ## Build from source
 

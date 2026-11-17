@@ -53,6 +53,8 @@ Dependencies point one way: `district-app` sits on top, the core's
 `district-model` at the bottom, and nothing below `district-app` depends on GTK.
 That is what lets `district-desktop` (and every crate of the core) be built and
 tested on a machine without the GTK development files, and without a display.
+[ARCHITECTURE.md](ARCHITECTURE.md) has the picture: the parts, how an action
+moves through them, and where state lives.
 
 ## Setup
 
@@ -572,7 +574,9 @@ The packages have theirs too, `deb.yml` and `flatpak.yml` (see "Packaging").
 CI runs those tests with line coverage measured and checks it against the floors;
 [Coverage](#coverage) below has the commands to do the same. CI also runs
 `cargo check` at the declared minimum Rust version (the `msrv` job),
-`cargo deny --locked check` against [deny.toml](deny.toml), and
+`cargo deny --locked check` against [deny.toml](deny.toml), a second build of the
+workspace's crates and the `district-ai` binary compared byte for byte with the first
+(the `repeatable` job, on the default build), and
 [zizmor](https://docs.zizmor.sh) over the workflows. Clippy runs with
 `-D warnings`, so a warning is a failure. There is no formatting bot; run
 `cargo fmt --all` yourself.
@@ -707,22 +711,45 @@ made, found through `cargo metadata` (`crates/district-app/tests/contracts/`),
 so the app is tested against the same bytes as the core, at the same commit,
 and no fixture is copied here.
 
+## Style
+
+Code follows the Rust style guide as `rustfmt` implements it (`rustfmt.toml`),
+plus `cargo clippy --all-targets -- -D warnings` with the workspace lints in
+`Cargo.toml` (`unsafe_code` forbidden, `missing_docs`, `dbg_macro`, `todo` and
+`unimplemented`), so a lint or a compiler warning is a failure. The UI templates
+in `data/ui/` are GTK Builder XML, and the desktop entry and the AppStream metadata
+pass `desktop-file-validate` and `appstreamcli validate`. `.editorconfig` sets the
+indentation and line endings. CI's `rust` and `repo` jobs run all of it, and a pull
+request that fails it does not merge.
+
+## Tests
+
+A pull request that adds or changes functionality adds tests for it to the
+automated suite, and a bug fix adds a test that fails without the fix. A screen
+that changes is driven in the smoke test (see "The smoke test"), and decisions
+are tested in `district-core`, in the core's repository, wherever they can be.
+Line coverage is held to the floors in `coverage-floors.toml`, which only go up
+(see [Coverage](#coverage)).
+
 ## Commits and pull requests
 
 Conventional Commits are not required. What is required is that the message says
 **why**, not just what: the diff already says what. A good message names the thing
 that was wrong, the evidence, and what would have caught it.
 
-Pull requests run `.github/workflows/ci.yml`, and all of it must be green.
+Pull requests run `.github/workflows/ci.yml`, and all of it must be green. Docs
+change in the same pull request as the behaviour they describe.
+
+By contributing you agree that your contribution is licensed under the Apache
+License 2.0, as section 5 of the licence provides. There is no CLA and no
+sign-off requirement.
+
+How a change is reviewed and accepted, and who holds which role, is in the
+organization's
+[GOVERNANCE.md](https://github.com/distronode-corporation/.github/blob/main/GOVERNANCE.md).
 
 ## Reporting bugs
 
 Open an issue with the bug report form. For anything security-relevant, do not
 open an issue; see [SECURITY.md](SECURITY.md). Questions go to
 [Discussions](https://github.com/distronode-corporation/district-linux/discussions).
-
-## Licence of contributions
-
-By contributing you agree that your contribution is licensed under the Apache
-License 2.0, as section 5 of the licence provides. There is no CLA and no
-sign-off requirement.
