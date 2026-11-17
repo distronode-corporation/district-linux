@@ -10,8 +10,9 @@
 //! the workspace's, so their Edit needs a member who may change it; the
 //! profile and the notifications are the member's own, so every member has
 //! theirs. A tab that failed reads only itself again: the window's Refresh
-//! would enter the section afresh, on its first tab. The dialogs, and the
-//! images they upload, are in [`dialog`].
+//! keeps the tab showing, but forgets what every tab read (each is read again
+//! as it next shows) and closes the dialog. The dialogs, and the images they
+//! upload, are in [`dialog`].
 
 mod dialog;
 
