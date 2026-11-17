@@ -574,7 +574,9 @@ The packages have theirs too, `deb.yml` and `flatpak.yml` (see "Packaging").
 CI runs those tests with line coverage measured and checks it against the floors;
 [Coverage](#coverage) below has the commands to do the same. CI also runs
 `cargo check` at the declared minimum Rust version (the `msrv` job),
-`cargo deny --locked check` against [deny.toml](deny.toml), and
+`cargo deny --locked check` against [deny.toml](deny.toml), a second build of the
+workspace's crates and the `district-ai` binary compared byte for byte with the first
+(the `repeatable` job, on the default build), and
 [zizmor](https://docs.zizmor.sh) over the workflows. Clippy runs with
 `-D warnings`, so a warning is a failure. There is no formatting bot; run
 `cargo fmt --all` yourself.
