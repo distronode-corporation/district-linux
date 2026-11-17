@@ -74,7 +74,7 @@ impl LoadFrame {
 
     /// [`new`](Self::new), whose Try again sends `retry_event` instead: a
     /// section with tabs reads only the tab shown again, where the window's
-    /// Refresh opens the section afresh on its first tab.
+    /// Refresh keeps the tab showing but forgets what every tab read.
     pub(crate) fn retrying<P: Sends>(
         page: &P,
         name: &str,
