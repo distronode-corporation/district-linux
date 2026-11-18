@@ -22,8 +22,9 @@ A native GTK 4 and libadwaita desktop app for District AI, the AI voice receptio
 (the Flatpak is in [Install](#install)):
 
 ```
+cd ~/Downloads    # or wherever your browser saved the .deb
 sudo apt install ./district-ai_3.4.0-1_amd64.deb
-district-ai    # then press "Sign in with your browser"
+district-ai       # then press "Sign in with your browser"
 ```
 
 > **Status: 3.4.0 is the current release**, as a .deb and a Flatpak bundle for x86_64, both
