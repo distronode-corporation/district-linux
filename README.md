@@ -6,25 +6,37 @@
 
 # District AI for Linux
 
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/distronode-corporation/district-linux/badge)](https://scorecard.dev/viewer/?uri=github.com/distronode-corporation/district-linux)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15874/badge)](https://www.bestpractices.dev/projects/15874)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/distronode-corporation/district-linux/badge)](https://scorecard.dev/viewer/?uri=github.com/distronode-corporation/district-linux)
 [![Latest release](https://img.shields.io/github/v/release/distronode-corporation/district-linux?label=release)](https://github.com/distronode-corporation/district-linux/releases/latest)
+[![License: Apache-2.0](https://img.shields.io/github/license/distronode-corporation/district-linux)](LICENSE)
+[![CI](https://github.com/distronode-corporation/district-linux/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/distronode-corporation/district-linux/actions/workflows/ci.yml)
 
-A native GTK 4 and libadwaita desktop client for District AI, the AI voice
-receptionist from Distronode.
+A native GTK 4 and libadwaita desktop app for District AI, the AI voice receptionist from
+[Distronode](https://distronode.com) that answers a business's phone calls.
 
 ![The call log, with a call's summary and transcript](crates/district-app/data/screenshots/call-log.png)
 
-> **Status: 3.4.0 is the current release**, as a .deb and a Flatpak bundle for
-> x86_64, both with calls, on the
-> [Releases](https://github.com/distronode-corporation/district-linux/releases/latest)
-> page (see [Install](#install)). Calls on the desktop need a build with the
-> `voice` feature, as both packages are; a default build from source has
-> everything else, and says so where calls would be.
+**Quick start** on Ubuntu 24.04, Debian 13 or newer, with the `.deb` from the
+[latest release](https://github.com/distronode-corporation/district-linux/releases/latest)
+(the Flatpak is in [Install](#install)):
 
-**Links:** [project page](https://www.distronode.com/open-source/district-linux),
-[GitLab mirror](https://gitlab.com/distronode-corporation/district-linux) (read-only
-mirror; issues and pull requests live on GitHub), [CHANGELOG](CHANGELOG.md).
+```
+cd ~/Downloads    # or wherever your browser saved the .deb
+sudo apt install ./district-ai_3.4.0-1_amd64.deb
+district-ai       # then press "Sign in with your browser"
+```
+
+> **Status: 3.4.0 is the current release**, as a .deb and a Flatpak bundle for x86_64, both
+> with calls. A default build from source has everything but calls, and says so where calls
+> would be.
+
+**Links:** [Distronode](https://distronode.com) ·
+[project page](https://www.distronode.com/open-source/district-linux) ·
+[Distronode on GitHub](https://github.com/distronode-corporation) ·
+[CHANGELOG](CHANGELOG.md) · [ROADMAP](ROADMAP.md) ·
+[GitLab mirror](https://gitlab.com/distronode-corporation/district-linux) (read only; issues
+and pull requests live on GitHub)
 
 ## What it does
 
@@ -69,7 +81,10 @@ use them with, so we are asking before we build anything:
   <img alt="The overview, with the workspace's numbers and recent calls" src="crates/district-app/data/screenshots/overview.png" width="49%">
 </p>
 
-![A call placed from the desktop, under way over the contact's details](crates/district-app/data/screenshots/call.png)
+<p>
+  <img alt="A call placed from the desktop, under way over the contact's details" src="crates/district-app/data/screenshots/call.png" width="49%">
+  <img alt="The contacts list, with a contact's details" src="crates/district-app/data/screenshots/contacts.png" width="49%">
+</p>
 
 ## Platform support
 
