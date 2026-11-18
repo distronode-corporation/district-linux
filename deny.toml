@@ -34,6 +34,13 @@ ignore = [
   { id = "RUSTSEC-2026-0370", reason = "zvariant unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
   { id = "RUSTSEC-2026-0371", reason = "zbus_names unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
   { id = "RUSTSEC-2026-0372", reason = "zvariant_derive unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21" },
+  # chrono 0.4.45: unmaintained notice (RUSTSEC-2026-0543, 2026-11-18), all versions, no
+  # fixed release; not a vulnerability. No crate here depends on it: it arrives only with
+  # calls, through district-core-rust's district-call 13.0.0 (the `voice` feature) ->
+  # livekit 0.10.1 -> livekit-data-stream 0.2.0 and livekit-protocol 0.8.2 ->
+  # pbjson-types 0.9.0. It goes when livekit and pbjson-types drop chrono, the core takes
+  # that release and this repository the core tag (issue #115). Review by 2027-02-18.
+  { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained, all versions, no fixed release; not a vulnerability; via district-call (district-core-rust) -> livekit 0.10.1 -> livekit-data-stream, pbjson-types, only with the voice feature; migration tracked in #115; review by 2027-02-18" },
 ]
 
 [licenses]
