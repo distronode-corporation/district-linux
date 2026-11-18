@@ -503,7 +503,7 @@ GNOME Software show on the app's page. They are the PNGs in
 `crates/district-app/data/screenshots/`, and a second test beside the smoke
 test draws them, `crates/district-app/tests/store_screenshots.rs`: the real
 window against the same kind of scripted runner, answered with an invented
-plumbing business's calls, messages and contacts written in the test (every
+accounting firm's calls, messages and contacts written in the test (every
 person in it made up, every number in the 555-0100 to 555-0199 range), rather
 than with the contract fixtures, whose names read like test data. Each scene is
 a window of 1000 by 700, in the light style, with the rounded corners and the shadow a compositing desktop

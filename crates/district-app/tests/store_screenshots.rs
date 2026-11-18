@@ -3,8 +3,8 @@
 //!
 //! Like the smoke test (`tests/smoke.rs`), this builds the whole window
 //! against a scripted stand-in for the effect runner and answers what the app
-//! asks for. Unlike it, the answers are written here, for an invented plumbing
-//! business, so that the pictures read like a working day rather than like
+//! asks for. Unlike it, the answers are written here, for an invented accounting
+//! firm, so that the pictures read like a working day rather than like
 //! test data: every business, person and email address in them is made up,
 //! and every phone number is in the fictional 555-0100 to 555-0199 range.
 //!
@@ -60,8 +60,8 @@ const WIDTH: i32 = 1000;
 const HEIGHT: i32 = 700;
 
 /// The invented business, and its one workspace.
-const WORKSPACE: &str = "ws-kestrel-row";
-const BUSINESS: &str = "Kestrel Row Plumbing";
+const WORKSPACE: &str = "ws-brackenmoor";
+const BUSINESS: &str = "Brackenmoor Accounting";
 
 /// The scripted stand-in for the effect runner: every effect is kept for the
 /// script to answer, or not.
@@ -353,8 +353,8 @@ const CALLS: [Call<'static>; 8] = [
         direction: "inbound",
         minutes_ago: 190,
         seconds: 142,
-        summary: "Kitchen sink leaking under the cabinet. Booked a repair visit for \
-                  Thursday between 9 and 11 am.",
+        summary: "New bakery owner. Booked a consultation on her books and taxes for \
+                  Thursday at 10 am.",
     },
     Call {
         id: "call-weekend",
@@ -363,7 +363,7 @@ const CALLS: [Call<'static>; 8] = [
         direction: "inbound",
         minutes_ago: 230,
         seconds: 48,
-        summary: "Asked whether we come out for emergencies on weekends. Took a number \
+        summary: "Asked whether we file extensions for personal returns. Took a number \
                   for a call back.",
     },
     Call {
@@ -373,7 +373,7 @@ const CALLS: [Call<'static>; 8] = [
         direction: "outbound",
         minutes_ago: 1_210,
         seconds: 245,
-        summary: "Talked through replacing the water heater. The quote follows by text.",
+        summary: "Went through what is missing for his amended return. The list follows by text.",
     },
     Call {
         id: "call-missed",
@@ -391,8 +391,8 @@ const CALLS: [Call<'static>; 8] = [
         direction: "inbound",
         minutes_ago: 1_420,
         seconds: 220,
-        summary: "Wants a quote for a bathroom remodel. Transferred to the office to book \
-                  a site visit.",
+        summary: "Wants help registering her consulting business and setting up payroll. \
+                  Transferred to a partner.",
     },
     Call {
         id: "call-daniel",
@@ -401,7 +401,7 @@ const CALLS: [Call<'static>; 8] = [
         direction: "inbound",
         minutes_ago: 2_880,
         seconds: 110,
-        summary: "Low water pressure upstairs. Booked a visit for Monday morning.",
+        summary: "Received an IRS notice about last year's return. Booked a review for Monday.",
     },
     Call {
         id: "call-hannah",
@@ -410,7 +410,7 @@ const CALLS: [Call<'static>; 8] = [
         direction: "inbound",
         minutes_ago: 3_020,
         seconds: 125,
-        summary: "Outdoor faucet dripping since the frost. Sent a quote by text.",
+        summary: "Asked what to bring to her tax appointment. Sent the checklist by text.",
     },
     Call {
         id: "call-marcus",
@@ -431,12 +431,12 @@ fn rosa_call() -> Value {
     call["disposition"] = json!("booked");
     call["analysis"] = json!({
         "keyPoints": [
-            "Leak under the kitchen sink since this morning",
-            "The shut-off valve is closed for now"
+            "Opened a bakery in March and keeps her receipts in a spreadsheet",
+            "Has not made an estimated tax payment yet"
         ],
         "objections": [],
-        "topics": ["Repair", "Booking"],
-        "actionItems": ["Bring a replacement trap and supply lines"],
+        "topics": ["New client", "Booking"],
+        "actionItems": ["Send the new-client intake form and document checklist"],
         "followUpSuggested": false
     });
     call["followUp"] = json!({
@@ -449,18 +449,18 @@ fn rosa_call() -> Value {
 }
 
 /// The text the receptionist sent Rosa after her call.
-const FOLLOW_UP: &str = "Hi Rosa, this is Kestrel Row Plumbing. Your visit is booked for \
-                         Thursday between 9 and 11 am. Reply here if anything changes.";
+const FOLLOW_UP: &str = "Hi Rosa, this is Brackenmoor Accounting. Your consultation is booked \
+                         for Thursday at 10 am. Reply here if anything changes.";
 
 /// Rosa's call, as the service writes a transcript: a line a turn.
 const TRANSCRIPT: &str = "\
-Receptionist: Thanks for calling Kestrel Row Plumbing, this is Ava. How can I help?
-Caller: Hi, my kitchen sink is leaking under the cabinet. It started this morning and \
-it's getting worse.
-Receptionist: I'm sorry to hear that. Have you been able to turn the water off?
-Caller: Yes, I closed the valve under the sink, so it's stopped for now.
-Receptionist: That was the right thing to do. A plumber can come on Thursday between \
-9 and 11 am. Would that work?
+Receptionist: Thanks for calling Brackenmoor Accounting, this is Ava. How can I help?
+Caller: Hi, I opened a bakery this spring and I need help with my books and taxes. \
+I haven't paid anything quarterly yet.
+Receptionist: You're in the right place. Is that ongoing bookkeeping, this year's taxes, or both?
+Caller: Both, I think. Right now my receipts are all in a spreadsheet.
+Receptionist: That's a good start. One of our accountants can meet with you on Thursday \
+at 10 am to go through it. Would that work?
 Caller: Thursday morning is perfect.
 Receptionist: You're booked in, and I'll text you the details now. Is there anything \
 else I can help with?
@@ -487,12 +487,12 @@ fn overview() -> Value {
         "workspaceId": WORKSPACE,
         "role": "client",
         "metrics": {
-            "totalCalls": 1_284,
-            "callsThisWeek": 63,
-            "totalContacts": 342,
-            "avgDuration": 154
+            "totalCalls": 864,
+            "callsThisWeek": 41,
+            "totalContacts": 318,
+            "avgDuration": 192
         },
-        "avgDurationLabel": "2m 34s",
+        "avgDurationLabel": "3m 12s",
         "recentCalls": recent
     })
 }
@@ -550,7 +550,7 @@ fn conversations() -> Value {
                 Some(("contact-rosa", "Rosa Delgado")),
                 "+13125550142",
                 (
-                    "Perfect, see you Thursday. Should I clear out the cabinet first?",
+                    "Perfect, see you Thursday. Should I bring my bank statements too?",
                     "inbound",
                     6,
                 ),
@@ -559,14 +559,14 @@ fn conversations() -> Value {
             conversation(
                 None,
                 "+13125550189",
-                ("Do you come out for emergencies on weekends?", "inbound", 35),
+                ("Do you file extensions for personal returns?", "inbound", 35),
                 1,
             ),
             conversation(
                 Some(("contact-priya", "Priya Raman")),
                 "+13125550117",
                 (
-                    "Thanks for the quote. Could you start the week after next?",
+                    "Thanks for the quote. Could payroll start on the first of the month?",
                     "inbound",
                     140,
                 ),
@@ -576,7 +576,7 @@ fn conversations() -> Value {
                 Some(("contact-owen", "Owen Barker")),
                 "+13125550164",
                 (
-                    "We can install the new water heater on Monday morning. Does 8 am work?",
+                    "We still need your brokerage 1099-B to file the amendment. Can you upload it?",
                     "outbound",
                     1_190,
                 ),
@@ -586,7 +586,7 @@ fn conversations() -> Value {
                 Some(("contact-daniel", "Daniel Osei")),
                 "+13125550131",
                 (
-                    "Thanks, the pressure is back to normal upstairs.",
+                    "Thanks, the IRS letter makes sense now. See you Monday.",
                     "inbound",
                     2_700,
                 ),
@@ -634,19 +634,19 @@ fn rosa_thread() -> Value {
                 185,
                 FOLLOW_UP,
             ),
-            text("sms-2", "inbound", 41, "Thank you! Is there a charge for the visit itself?"),
+            text("sms-2", "inbound", 41, "Thank you! Is there a charge for the first meeting?"),
             text(
                 "sms-3",
                 "outbound",
                 30,
-                "The service call fee is $79, and it comes off the bill if you go ahead \
-                 with the repair.",
+                "The first consultation is free, and we send a fixed quote for the year \
+                 after it.",
             ),
             text(
                 "sms-4",
                 "inbound",
                 6,
-                "Perfect, see you Thursday. Should I clear out the cabinet first?",
+                "Perfect, see you Thursday. Should I bring my bank statements too?",
             ),
         ],
         "pageInfo": {"hasMore": false, "oldest": ago(190), "oldestId": "call-rosa"}
@@ -680,11 +680,12 @@ fn contact(name: &str, number: &str, email: bool, context: Option<&str>) -> Valu
 }
 
 fn contacts() -> ContactListResponse {
-    let owen = "Water heater is 14 years old and losing pressure. Quoted for a \
-                replacement, to be installed on Monday at 8 am.";
-    let priya = "Remodeling the upstairs bathroom: a new shower valve, vanity and \
-                 toilet. Wants to start the week after next.";
-    let rosa = "Kitchen sink leak. Visit booked for Thursday between 9 and 11 am.";
+    let owen = "Amending his 2025 return for a brokerage statement that came late. \
+                Waiting on the 1099-B before filing.";
+    let priya = "Starting a consulting business: registering the company, payroll for \
+                 two employees and quarterly estimates. Wants to start next month.";
+    let rosa = "New bakery owner. Consultation on bookkeeping and quarterly taxes, \
+                Thursday at 10 am.";
     from(json!({
         "success": true,
         "contacts": [
@@ -907,7 +908,7 @@ fn inbox_scene(store: &Store) {
         .downcast::<gtk::TextView>()
         .expect("the composer")
         .buffer()
-        .set_text("Yes please, that gives us room to work. See you Thursday!");
+        .set_text("Yes please, the last three months would help. See you Thursday!");
     store.pump();
     assert!(store.shows("Rosa Delgado"));
     store.forget();
@@ -970,7 +971,7 @@ fn call_scene(store: &Store) {
         result: Ok(from(json!({
             "success": true,
             "callId": "call-store-owen",
-            "roomName": "direct_ws-kestrel-row-call-store-owen",
+            "roomName": "direct_ws-brackenmoor-call-store-owen",
             "token": "store-screenshot-token",
             "url": "wss://media.example.com"
         }))),
