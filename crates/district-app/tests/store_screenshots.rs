@@ -680,8 +680,8 @@ fn contact(name: &str, number: &str, email: bool, context: Option<&str>) -> Valu
 }
 
 fn contacts() -> ContactListResponse {
-    let owen = "Amending his 2025 return for a brokerage statement that came late. \
-                Waiting on the 1099-B before filing.";
+    let owen = "Amending his 2025 return. Waiting on the 1099-B from his brokerage \
+                before filing.";
     let priya = "Starting a consulting business: registering the company, payroll for \
                  two employees and quarterly estimates. Wants to start next month.";
     let rosa = "New bakery owner. Consultation on bookkeeping and quarterly taxes, \
