@@ -1,7 +1,7 @@
 # Roadmap
 
-The near-term plan for District AI for Linux. This repository has no open issues, so the list is
-taken from the repository's own unfinished items, each named with where it comes from. It has no
+The near-term plan for District AI for Linux. It is taken from this repository's one open issue
+and its own unfinished items, each named with where it comes from. It has no
 dates: an item is done when the change that does it is merged and released, and it then leaves
 this list for [CHANGELOG.md](CHANGELOG.md). Anything here can change; open an issue to discuss an
 item or to propose a new one.
@@ -17,6 +17,12 @@ This roadmap covers the next twelve months, to November 2027.
   in the README's platform table. Calls link this project's own build of libwebrtc
   ([`.github/workflows/libwebrtc.yml`](.github/workflows/libwebrtc.yml)), so another architecture
   needs that build for it as well as the packages.
+- **chrono out of the calls build.** RUSTSEC-2026-0543 marks `chrono` as unmaintained. No crate
+  here depends on it: it arrives only in a build with calls, through the core's `district-call`
+  and the LiveKit crates it uses, and `deny.toml` tolerates the notice until then. It is done
+  when LiveKit moves to a release without chrono, District AI core for Rust takes that release
+  and this repository moves to that core tag
+  ([#115](https://github.com/distronode-corporation/district-linux/issues/115)).
 
 ## Open questions
 
