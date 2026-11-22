@@ -78,6 +78,22 @@ jobs:
       - name: Versions agree with the tag
         run: python3 scripts/check-version.py "v$VERSION"
 
+      # The same extraction release.yml's guard makes the notes with: a dated
+      # but empty section would pass the version check and fail the release.
+      - name: CHANGELOG.md's section for the version is not empty
+        run: |
+          set -euo pipefail
+          awk -v tag="## [${VERSION}]" '
+            index($0, tag)==1 {cap=1; next}
+            index($0, "## [")==1 && cap==1 {cap=0}
+            substr($0,1,1)=="[" && cap==1 {exit}
+            cap {print}
+          ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release-notes.md"; then
+            echo "::error::CHANGELOG.md's section for $VERSION is empty"
+            exit 1
+          fi
+
       - name: The core's pin agrees with Cargo.lock and with its tag
         run: python3 scripts/check-pins.py
 
