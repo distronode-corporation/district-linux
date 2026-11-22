@@ -218,13 +218,14 @@ jobs:
       # every run, and a release must never be built from a restored build
       # directory. No FUSE in a container, hence --disable-rofiles-fuse.
       #
-      # The DSN only for a release's tag push (release.yml passes the secret;
-      # nothing else does), and the build its crash reports name: the commit's
+      # The DSN only for release.yml's run on a `v` tag (release.yml passes
+      # the secret; nothing else does; in a called workflow `github` is the
+      # caller's), and the build its crash reports name: the commit's
       # first twelve characters, as release.yml names the Sentry release. Both
       # reach the build through the manifest's secret-env.
       - name: Build the bundle
         env:
-          LINUX_SENTRY_DSN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && secrets.LINUX_SENTRY_DSN || '' }}
+          LINUX_SENTRY_DSN: ${{ startsWith(github.ref, 'refs/tags/v') && github.workflow_ref == format('{0}/.github/workflows/release.yml@{1}', github.repository, github.ref) && secrets.LINUX_SENTRY_DSN || '' }}
         run: |
           export DISTRICT_AI_BUILD="${GITHUB_SHA::12}"
           docker exec --env LINUX_SENTRY_DSN --env DISTRICT_AI_BUILD flatpak bash -euo pipefail -c '

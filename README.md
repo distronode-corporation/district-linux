@@ -164,6 +164,23 @@ file rather than GitHub's attestation store by adding
 `--bundle district-ai_<version>.intoto.jsonl` to that command. The same command
 checks the Flatpak bundle.
 
+From the next release on, the release tag is an annotated tag signed with
+[gitsign](https://github.com/sigstore/gitsign): keyless Sigstore signing by
+this repository's tag workflow, under its GitHub OIDC identity, with the
+signature recorded in Sigstore's public transparency log. There is no
+long-lived signing key. Tags up to and including v3.4.0 were made before this
+and are not signed. With gitsign installed, in a clone with the tags fetched:
+
+```
+gitsign verify-tag vX.Y.Z \
+  --certificate-identity https://github.com/distronode-corporation/district-linux/.github/workflows/tag.yml@refs/heads/main \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+It succeeds only when the signature is valid, is in the transparency log, and
+was made by that workflow file running on main of this repository. The release
+workflow runs the same check and builds nothing from a tag that fails it.
+
 ## Uninstall
 
 Sign out first (on the account screen), so the service revokes this computer's
