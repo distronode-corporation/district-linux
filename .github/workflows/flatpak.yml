@@ -82,6 +82,10 @@ jobs:
       #     -H 'Accept: application/vnd.oci.image.index.v1+json' \
       #     https://ghcr.io/v2/flathub-infra/flatpak-github-actions/manifests/gnome-51
       IMAGE: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51@sha256:78d969b18225ae107ca29497bf09c4a3f791e5f1838a9a912a529d0024fb6210
+      # True only for release.yml's run on a `v` tag, the one run that builds
+      # a release's binary: the Build the bundle step below refuses such a run
+      # whose DSN is not set.
+      RELEASING: ${{ startsWith(github.ref, 'refs/tags/v') && github.workflow_ref == format('{0}/.github/workflows/release.yml@{1}', github.repository, github.ref) }}
     steps:
       # ⛔ THE RUNNER'S DISK IS NOT BIG ENOUGH AS IT COMES. The image (about 6 GB
       # unpacked), the rust-stable and llvm22 extensions, the vendored crates,
@@ -222,11 +226,17 @@ jobs:
       # the secret; nothing else does; in a called workflow `github` is the
       # caller's), and the build its crash reports name: the commit's
       # first twelve characters, as release.yml names the Sentry release. Both
-      # reach the build through the manifest's secret-env.
+      # reach the build through the manifest's secret-env. A release run
+      # without the DSN is refused rather than built, which would carry no
+      # crash reports.
       - name: Build the bundle
         env:
           LINUX_SENTRY_DSN: ${{ startsWith(github.ref, 'refs/tags/v') && github.workflow_ref == format('{0}/.github/workflows/release.yml@{1}', github.repository, github.ref) && secrets.LINUX_SENTRY_DSN || '' }}
         run: |
+          if [ "$RELEASING" = "true" ] && [ -z "$LINUX_SENTRY_DSN" ]; then
+            echo "::error::the LINUX_SENTRY_DSN secret is not set: this release would carry no crash reports"
+            exit 1
+          fi
           export DISTRICT_AI_BUILD="${GITHUB_SHA::12}"
           docker exec --env LINUX_SENTRY_DSN --env DISTRICT_AI_BUILD flatpak bash -euo pipefail -c '
             flatpak-builder --version
