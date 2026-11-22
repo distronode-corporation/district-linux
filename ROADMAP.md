@@ -6,6 +6,8 @@ dates: an item is done when the change that does it is merged and released, and 
 this list for [CHANGELOG.md](CHANGELOG.md). Anything here can change; open an issue to discuss an
 item or to propose a new one.
 
+This roadmap covers the next twelve months, to November 2027.
+
 ## Near term
 
 - **Two-step verification and Delete account, released.** Both are merged and listed under
@@ -22,6 +24,17 @@ item or to propose a new one.
   sign in. Whether it can work without one, and what that would look like, is an open question
   we are asking about before building anything (README, "Without an account with us";
   [the discussion](https://github.com/distronode-corporation/.github/discussions/1)).
+
+## Not planned
+
+- **macOS and Windows.** This app is Linux only; the README's platform table lists both as "Not
+  targeted".
+- **Signing up or buying in the app.** Billing stays read only and buying a number stays on the
+  web (README, "What it does"); the core's in-app purchases are turned off here
+  (`in_app_purchases: false` in `crates/district-app/src/startup.rs`).
+- **The H.264 and H.265 codecs and FFmpeg in the calls build.** The project's libwebrtc build
+  leaves them out and fails if any of their symbols remain ([NOTICE](NOTICE),
+  [CONTRIBUTING.md](CONTRIBUTING.md#rebuilding-libwebrtc)).
 
 ## How the project is run
 
