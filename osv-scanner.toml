@@ -1,0 +1,29 @@
+# OSV-Scanner's ignore list, read by OpenSSF Scorecard's Vulnerabilities check
+# and by `osv-scanner scan source -r .`. It MIRRORS deny.toml's [advisories]
+# `ignore`: the same four advisories, the same reasons, and the reasoning for
+# each (the path it arrives by and what would retire it) is written there, not
+# here. cargo-deny is the gate (the audit workflow fails on any advisory not in
+# its list); this file only stops Scorecard counting the four that list already
+# answers. All four are unmaintained notices, not vulnerabilities.
+#
+# KEEP THE TWO LISTS IN STEP. Add an advisory here only once deny.toml ignores
+# it, and remove it here the day it leaves deny.toml. cargo-deny has no expiry
+# field, so no `ignoreUntil` is set here either; the zbus entries (2027-01-21)
+# and the chrono entry (2027-02-18) carry their review date in the reason text in
+# both files.
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0370"
+reason = "zvariant unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0371"
+reason = "zbus_names unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0372"
+reason = "zvariant_derive unmaintained (merged into zbus 6), via zbus 5.19 from ashpd, oo7, ksni; not a vulnerability; ksni has no zbus 6 release yet; replacement tracked in #61; review by 2027-01-21"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0543"
+reason = "chrono unmaintained, all versions, no fixed release; not a vulnerability; via district-call (district-core-rust) -> livekit 0.10.1 -> livekit-data-stream, pbjson-types, only with the voice feature; migration tracked in #115; review by 2027-02-18"

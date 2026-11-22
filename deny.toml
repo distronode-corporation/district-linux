@@ -19,6 +19,10 @@ unsound = "all"
 # Every vulnerability and unmaintained or unsound notice fails the check unless it
 # is listed here with the reason it is tolerated and what would retire it. Remove an
 # entry the day it can go.
+# OpenSSF Scorecard reads OSV through OSV-Scanner, not this file, so osv-scanner.toml
+# MIRRORS the entries below (same ids, same reasons) for its Vulnerabilities check.
+# Keep the two lists in step: an entry added or removed here is added or removed there
+# in the same change.
 ignore = [
   # zvariant 5.15.0, zbus_names 4.3.4, zvariant_derive 5.15.0: unmaintained notices
   # (2026-10-16), not vulnerabilities, and no fixed version: the advisories list none,
