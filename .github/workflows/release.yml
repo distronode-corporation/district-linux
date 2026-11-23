@@ -1,14 +1,20 @@
 name: Release
 
-# Fires on a `vX.Y.Z` tag and publishes the two packages a user installs: the
+# Runs on a `vX.Y.Z` tag and publishes the two packages a user installs: the
 # .deb (Ubuntu 24.04, Debian 13 and newer) and the Flatpak bundle, both x86_64
 # and both built with calls. A third file, `district-ai_<version>.intoto.jsonl`,
 # is the signed provenance attestation over both, attached so it can be
 # verified offline and found by OpenSSF Scorecard.
 #
+# tag.yml creates the tag, signed with gitsign, and then starts this workflow
+# on it (a tag pushed with a workflow's token starts no workflow by itself).
+# To re-run a release, re-run this run, or dispatch this workflow again on the
+# same tag: `gh workflow run release.yml --ref vX.Y.Z`.
+#
 # Four stages, and only the last two can write anything:
 #
-# - `guard` refuses a tag that should not be built: one on a commit that is not
+# - `guard` refuses a tag that should not be built: one tag.yml did not sign
+#   (README.md, "Verify a release"), one on a commit that is not
 #   on main (CI never tested it), one that the versions in Cargo.toml,
 #   CHANGELOG.md and the AppStream metadata do not all name, one without a
 #   CHANGELOG.md section to make the notes from, a tree without the contract
@@ -34,8 +40,8 @@ name: Release
 #
 # Crash reports are off in every build until its user says yes. The packages
 # carry the DSN reports go to, the LINUX_SENTRY_DSN repository secret, which
-# deb.yml and flatpak.yml take from here and only on a `v` tag push
-# (crates/district-app/src/crash.rs). `sentry` needs SENTRY_AUTH_TOKEN, a
+# deb.yml and flatpak.yml take from here and only in this workflow's run on a
+# `v` tag (crates/district-app/src/crash.rs). `sentry` needs SENTRY_AUTH_TOKEN, a
 # secret of the `release` environment.
 #
 # ⛔ THE LICENCE GATE. A build with calls statically links libwebrtc, so
@@ -50,9 +56,10 @@ name: Release
 #
 # Artifact attestations need the repository to be public (or GitHub Enterprise
 # Cloud); in a private repository `publish` fails at the attestation.
+# Dispatched on the tag, by tag.yml or by hand; `guard` refuses a run on
+# anything but a vX.Y.Z tag.
 on:
-  push:
-    tags: ['v*.*.*']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -70,12 +77,71 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       body: ${{ steps.notes.outputs.body }}
+    env:
+      # The same pin as tag.yml's. Move both together.
+      GITSIGN_VERSION: 0.18.0
+      GITSIGN_SHA256: 2bc625472a08fea3bb6a57982c7d8b4978d1032251d305ceef3bf2ded0ca4483
     steps:
+      # A dispatch can name any branch or tag; only a release tag is built.
+      - name: The run is on a vX.Y.Z tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" != "tag" ] || ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Run this workflow on a vX.Y.Z tag, not $GITHUB_REF. tag.yml makes the tag and starts it."
+            exit 1
+          fi
+
       # The whole history and every branch, for the ancestry check below.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      # The run was dispatched for one commit, GITHUB_SHA, and everything below
+      # reads the tree this run checked out: the two must be the same commit
+      # before anything else is trusted. `${GITHUB_SHA}^{commit}` names that
+      # commit whatever the dispatch recorded, a commit itself or a tag object
+      # peeled to the commit it names; `dispatched` carries it to the steps
+      # below.
+      - name: The checkout is the commit the run was dispatched for
+        run: |
+          set -euo pipefail
+          dispatched="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+          if [ "$(git rev-parse HEAD)" != "$dispatched" ]; then
+            echo "::error::this run checked out $(git rev-parse HEAD), not $dispatched, the commit it was dispatched for"
+            exit 1
+          fi
+          echo "dispatched=$dispatched" >> "$GITHUB_ENV"
+
+      - name: Install gitsign
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/gitsign" \
+            "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
+          echo "${GITSIGN_SHA256}  $RUNNER_TEMP/gitsign" | sha256sum -c -
+          install -m 0755 "$RUNNER_TEMP/gitsign" /usr/local/bin/gitsign
+          gitsign --version
+
+      # ⛔ ONLY A TAG TAG.YML SIGNED IS BUILT. The tag object is fetched again
+      # as the server holds it, so the check reads the annotated, signed tag
+      # and not a local copy. It must name the commit this run checked out and
+      # carry a valid gitsign signature, in the transparency log, made by
+      # tag.yml on main of this repository: the identity README.md ("Verify a
+      # release") tells users to expect.
+      - name: The tag is signed by tag.yml on main
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "+refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          if [ "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" != "tag" ]; then
+            echo "::error::$GITHUB_REF_NAME is a lightweight tag; a release tag is annotated and signed by tag.yml"
+            exit 1
+          fi
+          if [ "$(git rev-parse "refs/tags/${GITHUB_REF_NAME}^{commit}")" != "$dispatched" ]; then
+            echo "::error::$GITHUB_REF_NAME does not name $dispatched, the commit this run checked out"
+            exit 1
+          fi
+          gitsign verify-tag "$GITHUB_REF_NAME" \
+            --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/tag.yml@refs/heads/main" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
       # ⛔ A TAG IS NOT A BRANCH, AND CI DOES NOT RUN ON ONE. ci.yml runs on
       # pushes to main and on pull requests, so a tag on a commit that never
@@ -88,12 +154,12 @@ jobs:
             echo "::error::the checkout has no origin/main to compare the tag with"
             exit 1
           fi
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
-            echo "::error::$GITHUB_REF_NAME points at $GITHUB_SHA, which is not on main."
+          if ! git merge-base --is-ancestor "$dispatched" refs/remotes/origin/main; then
+            echo "::error::$GITHUB_REF_NAME points at $dispatched, which is not on main."
             echo "CI never ran on this commit. Merge it to main first, then move the tag."
             exit 1
           fi
-          echo "$GITHUB_SHA is on main"
+          echo "$dispatched is on main"
 
       # Cargo.toml, CHANGELOG.md and the metainfo's newest release all name the
       # tag's version, the CHANGELOG.md section exists and is dated, and the

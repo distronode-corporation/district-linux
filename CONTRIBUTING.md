@@ -379,9 +379,9 @@ is sent unless it is handed both a DSN and the user's consent (its SECURITY.md,
 
 ## Releases
 
-A release is a `vX.Y.Z` tag on a commit on main, and
-`.github/workflows/release.yml` does the rest. Before tagging, in one pull
-request:
+A release is a signed `vX.Y.Z` tag on a commit on main, made by
+`.github/workflows/tag.yml`, and `.github/workflows/release.yml` does the rest.
+Before tagging, in one pull request:
 
 1. Bump `[workspace.package] version` in `Cargo.toml`.
 2. Add `## [X.Y.Z] - YYYY-MM-DD` to CHANGELOG.md below `[Unreleased]`. That
@@ -405,7 +405,28 @@ request:
 
 `python3 scripts/check-version.py` checks the four agree, and with the tag as
 its argument checks them against the tag, as the release does. Once the pull
-request is merged, tag the merge commit and push the tag.
+request is merged, run the tag workflow from main:
+
+```
+gh workflow run tag.yml --ref main -f version=X.Y.Z -f summary="the release in a few words" \
+  -f commit=<the full 40-character commit you reviewed>
+```
+
+`commit` is the commit you reviewed, typed in full, not looked up at run time
+(for the release pull request's merge commit, `gh pr view <n> --json
+mergeCommit`). It must still be main's head: the workflow refuses before
+signing anything if main has moved, reads main again just before pushing and
+pushes nothing if it moved during the run, and tags exactly that commit.
+
+It runs the same checks the release's guard runs, creates the annotated tag on
+that commit, signs it with gitsign (keyless, under the workflow's own GitHub
+OIDC identity), verifies the signature, pushes the tag and starts
+`release.yml` on it. Do not push a `v` tag by hand: release tags can never be
+moved or deleted outside admin bypass, and release.yml's guard refuses any tag
+tag.yml did not sign (README.md, "Verify a release" has the check). Its
+`publish` job then waits for the maintainer's approval of the pending
+deployment in the release environment. To re-run a release, re-run its run,
+or `gh workflow run release.yml --ref vX.Y.Z`.
 
 The French is signed off per release. `i18n/fr-CA/signoff.json` names who
 signed it off, the release and commit the catalogs were read at, and the
@@ -416,14 +437,15 @@ requests do not, because catalogs change between releases. A release whose
 catalogs changed (French, or English the French follows) needs the maintainers'
 review of the French and a new `signoff.json` in the release pull request.
 
-The workflow then refuses a tag that is not on main or that the versions do not
-match, builds the .deb and the Flatpak with deb.yml and flatpak.yml (read-only,
+release.yml then refuses a tag that tag.yml did not sign, that is not on main
+or that the versions do not match, builds the .deb and the Flatpak with deb.yml and flatpak.yml (read-only,
 no caches, from the committed Cargo.lock) and tests them as pull requests do,
-and publishes: it attests each package's build provenance, verifies the
-attestations, creates a draft release with the notes, the two packages and the
-attestation bundle, checks GitHub holds exactly `district-ai_X.Y.Z-1_amd64.deb`,
-`district-ai_X.Y.Z_x86_64.flatpak` and `district-ai_X.Y.Z.intoto.jsonl`, and
-only then makes it public. A failed run
+and publishes: its `publish` job waits for the maintainer's approval of the
+pending deployment in the release environment, then attests each package's
+build provenance, verifies the attestations, creates a draft release with the
+notes, the two packages and the attestation bundle, checks GitHub holds
+exactly `district-ai_X.Y.Z-1_amd64.deb`, `district-ai_X.Y.Z_x86_64.flatpak`
+and `district-ai_X.Y.Z.intoto.jsonl`, and only then makes it public. A failed run
 leaves a draft or nothing, and a re-run replaces a leftover draft but never
 touches a published release.
 

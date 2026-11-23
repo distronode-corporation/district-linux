@@ -73,6 +73,10 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # True only for release.yml's run on a `v` tag, the one run that builds a
+  # release's binary: the Build the .deb step below refuses such a run whose
+  # DSN is not set.
+  RELEASING: ${{ startsWith(github.ref, 'refs/tags/v') && github.workflow_ref == format('{0}/.github/workflows/release.yml@{1}', github.repository, github.ref) }}
 
 jobs:
   build:
@@ -141,14 +145,21 @@ jobs:
       - name: Cargo.lock is up to date
         run: cargo fetch --locked
 
-      # The DSN only for a release's tag push (release.yml passes the secret;
-      # nothing else does), and the build its crash reports name: the commit's
+      # The DSN only for release.yml's run on a `v` tag (release.yml passes
+      # the secret; nothing else does; in a called workflow `github` is the
+      # caller's), and the build its crash reports name: the commit's
       # first twelve characters, as release.yml names the Sentry release.
+      # A release run without the DSN is refused rather than built, which
+      # would carry no crash reports.
       - name: Build the .deb
         env:
-          LINUX_SENTRY_DSN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && secrets.LINUX_SENTRY_DSN || '' }}
+          LINUX_SENTRY_DSN: ${{ startsWith(github.ref, 'refs/tags/v') && github.workflow_ref == format('{0}/.github/workflows/release.yml@{1}', github.repository, github.ref) && secrets.LINUX_SENTRY_DSN || '' }}
         run: |
           set -euo pipefail
+          if [ "$RELEASING" = "true" ] && [ -z "$LINUX_SENTRY_DSN" ]; then
+            echo "::error::the LINUX_SENTRY_DSN secret is not set: this release would carry no crash reports"
+            exit 1
+          fi
           export DISTRICT_AI_BUILD="${GITHUB_SHA::12}"
           scripts/build-deb.sh
 
