@@ -127,7 +127,7 @@ jobs:
       # to write the profiles. Not plain `cargo llvm-cov`, which on stable Rust
       # leaves out the doctests, so a doctest that stopped compiling would pass.
       # `clean --workspace` drops any stale profiles and uninstrumented builds of
-      # the workspace's crates first. The report merges both runs; the text one
+      # the workspace's crates first. The report merges every run; the text one
       # lists the uncovered lines, the JSON one is what the next step checks.
       - name: cargo test, measuring line coverage
         env:
@@ -150,6 +150,11 @@ jobs:
           cargo test --workspace --locked --exclude district-app
           xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
             cargo test -p district-app --locked --features gtk-tests
+          # The English-only build (no `fr-ca`), measured into the same report:
+          # src/l10n.rs takes the other side of FRENCH_ENABLED there, which the
+          # default build compiles out. Its unit tests only.
+          xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
+            cargo test -p district-app --locked --no-default-features --lib
           cargo llvm-cov report --show-missing-lines
           cargo llvm-cov report --json --summary-only --output-path "$RUNNER_TEMP/coverage.json"
 
@@ -214,6 +219,9 @@ jobs:
           cargo "+$NIGHTLY" llvm-cov --branch --workspace --exclude district-app --locked --no-report
           xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
             cargo "+$NIGHTLY" llvm-cov --branch -p district-app --locked --features gtk-tests --no-report
+          # The English-only build too, as in `rust`.
+          xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
+            cargo "+$NIGHTLY" llvm-cov --branch -p district-app --locked --no-default-features --lib --no-report
           cargo "+$NIGHTLY" llvm-cov report --branch --show-missing-lines
           cargo "+$NIGHTLY" llvm-cov report --branch --json --summary-only --output-path "$RUNNER_TEMP/branches.json"
           cargo "+$NIGHTLY" llvm-cov report --branch --lcov --output-path "$RUNNER_TEMP/branches.lcov"
