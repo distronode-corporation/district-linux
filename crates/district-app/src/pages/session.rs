@@ -232,7 +232,8 @@ mod tests {
         let (model, _) = Model::new(config());
         let checking = shown(model.session()).unwrap();
         assert_eq!(checking.title, "District AI");
-        assert!(checking.busy && !checking.retry);
+        assert!(checking.busy);
+        assert!(!checking.retry);
 
         let offline = SessionState::Restoring(Restoring {
             problem: Some(RetryReason::Offline),
@@ -245,7 +246,8 @@ mod tests {
             "{}",
             offline.body
         );
-        assert!(offline.retry && !offline.busy);
+        assert!(offline.retry);
+        assert!(!offline.busy);
 
         let locked = SessionState::Restoring(Restoring {
             problem: Some(RetryReason::SecretStoreLocked),
@@ -271,7 +273,9 @@ mod tests {
                 text::session_welcome_body(lang())
             )
         );
-        assert!(first.sign_in && !first.retry_sign_out && first.error.is_none());
+        assert!(first.sign_in);
+        assert!(!first.retry_sign_out);
+        assert!(first.error.is_none());
 
         let failed = shown(&signed_out(
             SignedOutWhy::NeverSignedIn,
@@ -324,7 +328,8 @@ mod tests {
         model.update(Event::SignIn);
         let signing_in = shown(model.session()).unwrap();
         assert_eq!(signing_in.title, "Signing in");
-        assert!(signing_in.busy && signing_in.cancel);
+        assert!(signing_in.busy);
+        assert!(signing_in.cancel);
 
         for scope in [
             SignOutScope::ThisDevice,
@@ -335,7 +340,8 @@ mod tests {
         ] {
             let out = shown(&SessionState::SigningOut(SigningOut { scope })).unwrap();
             assert_eq!(out.title, "Signing out");
-            assert!(out.busy && !out.sign_in);
+            assert!(out.busy);
+            assert!(!out.sign_in);
         }
 
         let (model, _) = restored();

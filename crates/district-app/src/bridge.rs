@@ -209,8 +209,9 @@ mod tests {
         let main_thread = tokio::spawn(async move {
             let command = receiver.recv().await.expect("a command");
             let shown = format!("{command:?}");
-            let UiCommand::OpenUri { url, reply } = command else {
-                panic!("{shown}");
+            let (url, reply) = match command {
+                UiCommand::OpenUri { url, reply } => (url, reply),
+                _ => panic!("{shown}"),
             };
             assert_eq!(url, "https://www.distronode.com/one-time?code=secret");
             assert_eq!(shown, "OpenUri { url: <redacted> }");

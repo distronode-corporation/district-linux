@@ -381,8 +381,9 @@ mod tests {
             .iter()
             .position(|e| matches!(e, Effect::SchedulingAdmin { .. }))
         {
-            let Effect::SchedulingAdmin { ticket, .. } = effects.remove(index) else {
-                unreachable!()
+            let ticket = match effects.remove(index) {
+                Effect::SchedulingAdmin { ticket, .. } => ticket,
+                _ => unreachable!(),
             };
             effects.extend(model.update(Event::SchedulingAdminAnswered {
                 ticket,
@@ -438,8 +439,9 @@ mod tests {
                 day("c", "2030-12-26"),
             ])
         });
-        let Some(HoursDialog::Overrides(editor)) = hours(&model).dialog.as_ref() else {
-            panic!("the overrides")
+        let editor = match hours(&model).dialog.as_ref() {
+            Some(HoursDialog::Overrides(editor)) => editor,
+            _ => panic!("the overrides"),
         };
         assert_eq!(
             DialogKind::of(&HoursDialog::Overrides(editor.clone())),
@@ -448,8 +450,9 @@ mod tests {
         assert_eq!(delete_asked(editor), None, "nothing asked yet");
         let key = editor.rows()[0].key.clone();
         act(&mut model, HoursEvent::AskDeleteOverride(key.clone()));
-        let Some(HoursDialog::Overrides(editor)) = hours(&model).dialog.as_ref() else {
-            panic!("the overrides")
+        let editor = match hours(&model).dialog.as_ref() {
+            Some(HoursDialog::Overrides(editor)) => editor,
+            _ => panic!("the overrides"),
         };
         assert_eq!(
             delete_asked(editor),

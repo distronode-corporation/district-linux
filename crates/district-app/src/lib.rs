@@ -157,10 +157,9 @@ pub(crate) mod testing {
     /// A model of `config` signed in, and the effects the sign-in asked for.
     pub(crate) fn restored_in(config: CoreConfig) -> (Model, Vec<Effect>) {
         let (mut model, effects) = Model::new(config);
-        let Effect::RestoreSession { ticket } =
-            find(&effects, |e| matches!(e, Effect::RestoreSession { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::RestoreSession { .. })) {
+            Effect::RestoreSession { ticket } => ticket,
+            _ => unreachable!(),
         };
         let effects = model.update(Event::SessionRestored {
             ticket,
@@ -182,10 +181,9 @@ pub(crate) mod testing {
         list: Result<WorkspaceListResponse, ApiError>,
     ) -> (Model, Vec<Effect>) {
         let (mut model, effects) = restored_in(config);
-        let Effect::LoadWorkspaces { ticket } =
-            find(&effects, |e| matches!(e, Effect::LoadWorkspaces { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::LoadWorkspaces { .. })) {
+            Effect::LoadWorkspaces { ticket } => ticket,
+            _ => unreachable!(),
         };
         let effects = model.update(Event::WorkspacesLoaded {
             ticket,

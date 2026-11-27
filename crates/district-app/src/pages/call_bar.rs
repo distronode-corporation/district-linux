@@ -384,22 +384,33 @@ mod tests {
         assert_eq!(ringing.title, IncomingRing::TITLE);
         assert_eq!(ringing.message, IncomingRing::BODY);
         assert_eq!(ringing.note, Some(IncomingRing::MICROPHONE_NOTE));
-        assert!(ringing.answer && ringing.can_answer && ringing.decline && ringing.can_decline);
-        assert!(ringing.sounding && !ringing.dismiss && !ringing.answering);
+        assert!(ringing.answer);
+        assert!(ringing.can_answer);
+        assert!(ringing.decline);
+        assert!(ringing.can_decline);
+        assert!(ringing.sounding);
+        assert!(!ringing.dismiss);
+        assert!(!ringing.answering);
 
         let waiting = ring_shown(&ring(RingPhase::Waiting), None);
         assert_eq!(waiting.title, Notification::WAITING_TITLE);
         assert_eq!(waiting.message, IncomingRing::WAITING_BODY);
-        assert!(!waiting.answer && waiting.decline && waiting.can_decline);
-        assert!(!waiting.sounding && waiting.note.is_none());
+        assert!(!waiting.answer);
+        assert!(waiting.decline);
+        assert!(waiting.can_decline);
+        assert!(!waiting.sounding);
+        assert!(waiting.note.is_none());
 
         // A call in a workspace other than the one open names it.
         let elsewhere = ring_shown(&ring(RingPhase::Ringing), Some("Bravo Client"));
         assert_eq!(elsewhere.title, "Incoming call in Bravo Client");
 
         let answering = ring_shown(&ring(RingPhase::Answering), None);
-        assert!(answering.answer && !answering.can_answer && answering.answering);
-        assert!(answering.decline && !answering.can_decline);
+        assert!(answering.answer);
+        assert!(!answering.can_answer);
+        assert!(answering.answering);
+        assert!(answering.decline);
+        assert!(!answering.can_decline);
 
         for (end, title, line) in [
             (
@@ -429,7 +440,9 @@ mod tests {
                 (title, line)
             );
             assert_eq!(ended.icon, "call-missed-symbolic");
-            assert!(ended.dismiss && !ended.answer && !ended.decline);
+            assert!(ended.dismiss);
+            assert!(!ended.answer);
+            assert!(!ended.decline);
         }
     }
 
@@ -448,7 +461,8 @@ mod tests {
         assert_eq!(shown.title, "+1 212 555 0142");
         assert_eq!(shown.status, ActiveCall::DIALING);
         assert_eq!(shown.icon, "call-outgoing-symbolic");
-        assert!(shown.controls && shown.note.is_none());
+        assert!(shown.controls);
+        assert!(shown.note.is_none());
         // Hung up before the dial answered: over, and never answered, so no
         // length to explain.
         model.update(Event::Call(CallEvent::HangUp));
@@ -456,7 +470,8 @@ mod tests {
         let shown = call_shown(call);
         assert_eq!(shown.icon, "call-stop-symbolic");
         assert_eq!(shown.status, ActiveCall::ENDED);
-        assert!(!shown.controls && shown.note.is_none());
+        assert!(!shown.controls);
+        assert!(shown.note.is_none());
     }
 
     #[test]

@@ -714,13 +714,13 @@ mod tests {
         }];
         search.running = true;
         search.truncated = true;
-        let Some(SearchShown::Hits {
-            hits,
-            running,
-            truncated,
-        }) = search_shown(&search)
-        else {
-            panic!("the matches");
+        let (hits, running, truncated) = match search_shown(&search) {
+            Some(SearchShown::Hits {
+                hits,
+                running,
+                truncated,
+            }) => (hits, running, truncated),
+            _ => panic!("the matches"),
         };
         assert_eq!((hits.len(), running, truncated), (1, true, true));
     }

@@ -134,7 +134,8 @@ mod tests {
             "dark ink on it"
         );
         // GTK 4.14 cannot parse CSS variables.
-        assert!(!light.contains("var(") && !light.contains("--"));
+        assert!(!light.contains("var("));
+        assert!(!light.contains("--"));
     }
 
     /// From libadwaita 1.6 the stock widgets read variables: the same
@@ -163,6 +164,8 @@ mod tests {
         assert!(!dark.contains("var("));
         // The libadwaita running decides it: 1.5 has no variables to read.
         assert!(!reads_variables(1, 5));
-        assert!(reads_variables(1, 6) && reads_variables(1, 9) && reads_variables(2, 0));
+        assert!(reads_variables(1, 6));
+        assert!(reads_variables(1, 9));
+        assert!(reads_variables(2, 0));
     }
 }
