@@ -3377,6 +3377,20 @@ fn hold_and_let_go(smoke: &Smoke, name: &str) {
 fn hq_push_to_talk(smoke: &Smoke) {
     smoke.activate("sidebar-hq");
     smoke.forget();
+    // A session the service will not open says why, and can be started again.
+    smoke.click("voice_start");
+    if smoke.shown("voice_accept") {
+        smoke.click("voice_accept");
+    }
+    smoke.reply("RequestHqVoice", |ticket| Event::HqVoiceIssued {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(
+        smoke.shown("voice_start"),
+        "a failed start can be tried again"
+    );
+    smoke.forget();
     smoke.click("voice_start");
     if smoke.shown("voice_accept") {
         smoke.click("voice_accept");
@@ -5037,6 +5051,16 @@ fn carrier_tab(smoke: &Smoke) {
     number_call(smoke, Err(server_error()));
     assert!(smoke.shows_text("No carrier connected"));
     assert!(smoke.shown("sip-failure"));
+    // Once more, with the carrier's own read failing too.
+    smoke.click("refresh_button");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    number_call(smoke, Err(server_error()));
+    number_call(smoke, Err(server_error()));
+    number_call(smoke, Err(server_error()));
+    assert!(smoke.shown("carrier-failure"));
     smoke.click("owned_tab");
     smoke.forget();
 }
@@ -5625,6 +5649,13 @@ fn scheduling_bookings(smoke: &Smoke) {
         smoke.shown("booking-answers-loading"),
         "the answers are read again"
     );
+    // Read again with none: the booking says it asked nothing.
+    bookings_reply(
+        smoke,
+        |r| matches!(r, Request::BookingAnswers { .. }),
+        Ok(serde_json::json!({"ok": true, "data": {"items": []}})),
+    );
+    assert!(smoke.shown("booking-no-questions"));
     smoke.click("booking-cancel-keep");
     assert!(!smoke.shown("booking-cancel-dialog"));
     smoke.forget();
@@ -8975,7 +9006,14 @@ fn dialing(smoke: &Smoke) {
         smoke.label("country_button_label"),
         "\u{1f1e9}\u{1f1ea} +49"
     );
-    // A search that matches nothing says so.
+    // A search that matches nothing says so (the pick closed the list, so
+    // it opens again first).
+    smoke
+        .mapped("country_button")
+        .downcast::<gtk::MenuButton>()
+        .unwrap()
+        .popup();
+    smoke.pump();
     search.set_text("zzzz");
     let deadline = Instant::now() + Duration::from_secs(5);
     while !smoke.shows_text("No country matches.") {
@@ -8985,12 +9023,6 @@ fn dialing(smoke: &Smoke) {
         );
         smoke.pump();
     }
-    smoke
-        .mapped("country_button")
-        .downcast::<gtk::MenuButton>()
-        .unwrap()
-        .popup();
-    smoke.pump();
     search.set_text("");
     smoke.pump();
     smoke
@@ -9133,6 +9165,14 @@ fn dialing(smoke: &Smoke) {
     );
     assert_eq!(smoke.count("transcript-line"), 3);
     assert!(smoke.shows_text("Of course. Morning or"));
+    // The panel reads where the member is whenever its list moves.
+    descendants(&smoke.mapped("transcript"))
+        .into_iter()
+        .find_map(|widget| widget.downcast::<gtk::ScrolledWindow>().ok())
+        .expect("the transcript's scroller")
+        .vadjustment()
+        .emit_by_name::<()>("value-changed", &[]);
+    smoke.pump();
     smoke.shot("145a-call-transcript");
     let mute = smoke
         .mapped("call_mute_button")
