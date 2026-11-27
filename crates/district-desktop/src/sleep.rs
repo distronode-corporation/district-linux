@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Suspend and resume: logind's `PrepareForSleep` signal and the delay
 //! inhibitor that holds the sleep while the app gets ready for it.
 //!

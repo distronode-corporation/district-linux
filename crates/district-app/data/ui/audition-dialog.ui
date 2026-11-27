@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The audition of the persona on screen: what it is and costs before it
      starts, Start, where it stands, and Stop. Closing it asks the core, which
      stops the audition first. src/pages/persona.rs fills it. -->

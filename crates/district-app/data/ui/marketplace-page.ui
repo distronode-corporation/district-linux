@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Phone numbers: the numbers the workspace holds, each with its routing
      reapplied or released; a search of the numbers for sale; and the carrier
      tab (src/pages/carrier.rs). Buying opens the web.

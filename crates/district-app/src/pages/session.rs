@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The page for everything outside a session: looking for a stored one,
 //! signed out, signing in through the browser, and signing out.
 

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- How the last save of a settings section ended: saved, or failed with the
      edits kept. A save that landed and could not be read back is the
      section's own page, which offers a read, never a save.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' working hours, as iOS draws them: for a member who may
 //! change things, the two editors' buttons (Your working hours, Date
 //! overrides); the week, every day Monday first and an empty one too (a day

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The dialler: the country button and its searchable list, the box the
      number is typed or pasted into, the line naming where it rings, a keypad,
      and Call. src/pages/dialer.rs fills it, adds the keypad's keys and the

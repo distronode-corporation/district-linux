@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' event types: the list, with its create button, and
      one event type (its details, its hosts, its questions, and the buttons
      that open its editor, its state actions, its hosts and its questions).

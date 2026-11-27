@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The real app: every adapter the effect runner needs, built once, and the
 //! application run over them.
 

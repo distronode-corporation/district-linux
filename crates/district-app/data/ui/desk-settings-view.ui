@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The help desk's settings, built only from the settings read, and its
      logo, picked in the desktop's file chooser. src/pages/desk_settings.rs
      fills it. -->

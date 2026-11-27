@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- One call: who, when, its summary and analysis, and its transcript, read
      when the call is opened. src/pages/call.rs fills it. -->
 <interface>

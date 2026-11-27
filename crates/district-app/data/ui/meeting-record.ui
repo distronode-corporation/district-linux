@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- A meeting's record over the rooms lobby: when it was, its minutes, its
      action items and its transcript. Closing it asks the core, which drops the
      record and closes it. src/pages/meeting_record.rs fills it. -->

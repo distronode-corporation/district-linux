@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Contacts: the list beside the open contact or the blocked callers,
      folding to one pane at a time when narrow. src/pages/contacts.rs fills it,
      and opens the form that adds a contact as a dialog. -->

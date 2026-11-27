@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Compiles `data/` (the `.ui` templates, the stylesheet, the ringtone, the
 //! icons and the AppStream metadata) into the gresource the binary carries,
 //! with the `glib-compile-resources` that ships beside the GTK development

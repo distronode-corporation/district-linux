@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! A safe subset of Markdown as `gtk::Label` markup, for District HQ's answers.
 //!
 //! An answer is written by a model on the service, so it is the service's

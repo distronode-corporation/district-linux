@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Workflows: the outbound campaign's card, and each workflow with its switch
 //! and what its runs did. A switch is shown at once and put back by the core
 //! if the service refuses; pausing or resuming the campaign asks first, and

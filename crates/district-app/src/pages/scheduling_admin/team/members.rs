@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! A team's hosts, as a dialog, as iOS draws it: each host with their
 //! routing priority, Save priority and Remove (asked once, over the pane),
 //! and under them the people who could be added, one to pick, then Add

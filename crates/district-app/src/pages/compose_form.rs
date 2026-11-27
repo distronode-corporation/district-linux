@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Starting a conversation from the inbox, as a dialog over it: the core's
 //! [`ComposeScreen`].
 //!

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The workspace settings: the hub's sections beside the one open, folding
      to one pane at a time when narrow. src/pages/settings.rs fills it. -->
 <interface>

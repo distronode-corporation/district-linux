@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The call's live transcript, under the call strip: who said what so far,
      a line still being heard drawn as provisional, where the transcript
      stands, and once the call is over the full transcript. It folds away,

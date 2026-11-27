@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The help desk: the queue of tickets the workspace's customers raised,
 //! beside the open ticket or the desk's settings. In a narrow window one pane
 //! shows at a time. The whole desk is closed to a viewer, so it is never drawn

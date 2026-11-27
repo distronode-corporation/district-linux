@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The application: its id, what it is built from, and the desktop's four
 //! entry points (start-up, activation, a link handed over, quitting).
 //! Closing the window does not quit while a session is open (see

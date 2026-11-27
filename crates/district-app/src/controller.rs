@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The controller: the core's model on the GTK main thread, the one place
 //! events are handled, and the one place the window is drawn from.
 

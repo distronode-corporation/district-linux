@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! One contact: who, how to reach them, what is known about their number and
 //! what research found, and the changes a member may make. Deleting, clearing
 //! research, blocking and unblocking each ask first, in a dialog; editing

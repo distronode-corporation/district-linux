@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The open workspace's overview, or why there is none to show.
 
 use std::cell::{OnceCell, RefCell};

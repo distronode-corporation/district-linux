@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Hold the AppStream metadata's screenshots to the pictures committed for them.
 
     python3 scripts/check-screenshots.py              # check the tree

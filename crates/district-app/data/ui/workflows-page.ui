@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Workflows: the outbound campaign's card with its switch, which asks
      first, and each workflow with its switch and its runs.
      src/pages/workflows.rs fills it. -->

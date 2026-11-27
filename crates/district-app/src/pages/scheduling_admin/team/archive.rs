@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Archiving a scheduler account, as an alert dialog (a yes or no question,
 //! as the HIG has it): its question as the heading, what archiving does as
 //! the body, then why it cannot be done yet (still counting, or bookings to

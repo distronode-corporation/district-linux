@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The audition dialog: a real, billed call to the receptionist with the
 //! persona on screen, saved or not.
 //!

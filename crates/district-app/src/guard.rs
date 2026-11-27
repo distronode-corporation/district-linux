@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The question before leaving a settings section with changes that are not
 //! saved: "Discard your changes?".
 //!

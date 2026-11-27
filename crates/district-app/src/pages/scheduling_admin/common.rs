@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the booking pages' sections share: a read drawn as loading, failed or
 //! ready ([`LoadFrame`]); a failure, or what a write came to, on a line of its
 //! own in its tone ([`failure_line`], [`write_line`]); a status badge

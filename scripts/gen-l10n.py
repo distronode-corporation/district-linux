@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Generate the app's string accessors and gettext catalogs from its
 catalogs, or check that what is committed is what the catalogs produce.
 

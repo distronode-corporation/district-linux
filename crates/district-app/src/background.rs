@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Background mode: closing the window does not quit the app, so a call
 //! handed to this computer still rings, and messages are still notified,
 //! until the member quits.

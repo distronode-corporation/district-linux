@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Writes THIRD-PARTY-LICENSES.txt, the licence text of every crate a build with
 # calls links, with the crates each text covers, because MIT, BSD, ISC and
 # MPL-2.0 ask for their notices to travel with a binary. Both packages ship it:

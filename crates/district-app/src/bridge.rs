@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the effect runner asks of the desktop, carried to the main thread.
 //!
 //! The runner runs on the Tokio runtime's threads, and a link, a notification,

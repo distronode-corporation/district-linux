@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- District HQ: the conversation, the card for a proposed change, and the
      line to ask on. src/pages/hq.rs fills it; an answer's Markdown is drawn
      by src/markdown.rs. -->

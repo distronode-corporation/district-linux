@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- One help desk ticket: its customer, its status and the buttons that move
      it, its conversation, and the reply. src/pages/desk_ticket.rs fills it. -->
 <interface>

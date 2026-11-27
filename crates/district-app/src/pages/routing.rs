@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The routing rules: which callers get which voice and instruction. Each
 //! stored rule is a card of its own, edited one key at a time with the web
 //! console's choices, and a stored value those choices do not list is shown as

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Linux desktop adapters for District AI for Linux. No GTK.
 //!
 //! What any desktop app keeps on the machine (the device id, the refresh

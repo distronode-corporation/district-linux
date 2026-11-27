@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Read the version
 description: >-
   The workspace's version, [workspace.package] version in Cargo.toml, as the

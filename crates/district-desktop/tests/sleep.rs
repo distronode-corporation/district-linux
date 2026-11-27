@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What this crate adds to `district_host::watch_sleep`: the limit the app
 //! gives it, and the error logind's side reports. `Logind` itself is tested
 //! against a private bus in logind.rs.

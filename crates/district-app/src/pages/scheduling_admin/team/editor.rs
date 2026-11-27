@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! A team's name, as a dialog: creating a team, or renaming one and, apart
 //! from the rename, deleting it, as iOS draws them. The delete is never the
 //! dialog's action and never shares its question: the pane asks it once.

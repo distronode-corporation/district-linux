@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Phone numbers: the numbers the workspace holds, each with its routing
 //! reapplied or released (behind the core's confirmation); a search of the
 //! numbers for sale; and the carrier tab ([`CarrierPanel`]). Nothing here buys

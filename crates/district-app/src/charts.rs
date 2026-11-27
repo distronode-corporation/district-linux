@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The analytics charts, drawn with cairo on a `gtk::DrawingArea` from the
 //! series the core prepares ([`ChartBar`], [`SentimentShare`], the history's
 //! fractions). Nothing here works a figure out: every length is a fraction the

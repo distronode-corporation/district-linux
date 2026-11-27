@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The form adding or editing one carrier account, as a dialog.
 //!
 //! Its key boxes are built from the carrier's own fields

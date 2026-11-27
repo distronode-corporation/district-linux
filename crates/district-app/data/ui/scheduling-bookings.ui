@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' bookings section: every booking a page at a time
      ("list"), and one booking ("detail"). What depends on what was read (the
      frames, the rows, the dialogs) src/pages/scheduling_admin/bookings.rs

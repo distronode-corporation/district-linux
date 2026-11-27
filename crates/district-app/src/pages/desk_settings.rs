@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The help desk's settings and its logo.
 //!
 //! The form exists only once the settings are read, and a save sends only what

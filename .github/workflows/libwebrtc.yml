@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: libwebrtc
 
 # Builds the audio-only libwebrtc that a build with calls links, with

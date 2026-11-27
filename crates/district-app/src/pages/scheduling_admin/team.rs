@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' team section, as iOS draws it: who left the workspace
 //! while still holding bookings, named at the top; the members (the
 //! workspace's members beside the scheduler's own users, each with their

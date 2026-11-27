@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The dialogs over the settings, as District AI for iPhone and iPad draws
 //! its sheets: the member's profile and picture, their notifications, the
 //! booking page and its images, and the booking assistant.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The receptionist's capabilities: a switch for every tool this build can
 //! name and for every stored id it cannot, saved together as the list read
 //! with the switches applied; and outside research on contacts, a switch of

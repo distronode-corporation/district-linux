@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # cargo-about configuration: the third-party licence file both packages ship as
 # THIRD-PARTY-LICENSES.txt beside NOTICE, written at build time by
 # scripts/third-party-licenses.sh from about.hbs. It holds the licence text of every crate

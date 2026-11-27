@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Call handling: who answers for the whole workspace, saved with a button,
      and whether the member is rung, sent at once. Each is read on its own
      and says so when it fails. src/pages/call_handling.rs fills it. -->

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The headless smoke test: the whole window, built against a scripted
 //! stand-in for the effect runner, driven the way a person would drive it.
 //!

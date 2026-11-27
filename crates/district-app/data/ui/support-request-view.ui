@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- One support request: where it stands, closing it after a question, the
      conversation with Distronode, and the reply.
      src/pages/support_request.rs fills it. -->

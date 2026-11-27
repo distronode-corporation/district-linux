@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The call log beside the open call. The next page is read as the list nears
 //! its end; in a narrow window one pane shows at a time. "Place a call" opens
 //! the dialler, for a role the core lets dial, in a build that can.

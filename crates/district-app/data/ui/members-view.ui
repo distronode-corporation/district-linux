@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The members: each with their role, changed and removed by an agency
      member only, adding one, and renaming the workspace.
      src/pages/members.rs fills it. -->

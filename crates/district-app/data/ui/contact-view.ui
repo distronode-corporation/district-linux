@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- One contact: who, how to reach them, what research found, and the
      changes a member may make, each after a question where the core asks one.
      src/pages/contact.rs fills it. -->

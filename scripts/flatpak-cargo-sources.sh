@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Writes packaging/flatpak/cargo-sources.json from Cargo.lock: every crate in the
 # lock file as a source flatpak-builder downloads and checks against the SHA-256
 # Cargo.lock records, and the Cargo configuration that points the build at them,

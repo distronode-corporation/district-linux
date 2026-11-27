@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' sections, one child each, named as
      src/pages/scheduling_admin/mod.rs's area_name names them. Each section
      draws in its own template (scheduling-<area>.ui). -->

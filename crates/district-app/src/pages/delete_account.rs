@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Deleting the account, in the app: what is deleted and what is kept, a
 //! fresh re-authentication (see [`crate::pages::reauth`]), then the account's
 //! email address, typed, and the final button.

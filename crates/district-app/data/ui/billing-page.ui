@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Billing, read only: the workspace's plan and its minutes, and the
      account's subscriptions and invoices, which read and fail apart.
      src/pages/billing.rs fills it. -->

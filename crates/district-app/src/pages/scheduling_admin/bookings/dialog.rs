@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The dialogs over the bookings: cancelling one (from the list, or from one
 //! booking), moving one to another free time, and handing one to another
 //! host, as District AI for iPhone and iPad draws them: the question, what the

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Deb
 
 # Builds District AI for Linux as a .deb, with calls, on Ubuntu 24.04, checks

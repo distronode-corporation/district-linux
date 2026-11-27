@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The workspace settings: the hub's sections, as the member's role allows
 //! them, beside the section open. In a narrow window one pane shows at a
 //! time, and the hub is the way back from a section.

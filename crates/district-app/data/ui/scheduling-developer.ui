@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' developer section: the zone its times are in, the
      three tabs (API keys, connected apps and the MCP address, webhooks) and a
      pane per tab. What depends on what was read (the frames, the rows, the

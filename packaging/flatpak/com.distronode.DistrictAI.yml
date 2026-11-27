@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # District AI for Linux as a Flatpak, built with calls (the app's `voice`
 # feature). .github/workflows/flatpak.yml builds it into a bundle and runs the
 # built app's --version inside the sandbox; CONTRIBUTING.md ("Packaging") has

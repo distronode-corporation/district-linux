@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The help desk: the queue beside the open ticket or the desk's settings,
      folding to one pane at a time when narrow. src/pages/desk.rs fills it,
      and opens the form that raises a ticket as a dialog. -->

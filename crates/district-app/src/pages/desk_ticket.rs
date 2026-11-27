@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! One help desk ticket: who raised it, its status and the buttons that move
 //! it, its conversation, and the reply. Each change is sent once, on its
 //! press, and the ticket shows what the service answers with.

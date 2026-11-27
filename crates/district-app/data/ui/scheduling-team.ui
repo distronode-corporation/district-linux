@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' team section: who left the workspace still holding
      bookings, the members (each where they stand with the scheduler, and
      Archive account), and the teams (each with Edit and Hosts, and Create

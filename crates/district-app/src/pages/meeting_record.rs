@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! A meeting's record, over the rooms lobby: when it was and who was there,
 //! its minutes, its action items and its whole transcript. Closing it tells
 //! the core, which drops the record; leaving the lobby closes it too.

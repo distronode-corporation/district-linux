@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Analytics: call analytics over a window with its charts, this month's
 //! metered usage, and the last few months of it. Each of the three reads
 //! apart and fails apart; the screen as a whole says it failed only when all

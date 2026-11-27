@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The dialler, below Calls: a country button with a searchable list, the box
 //! the number is typed or pasted into, the line naming where it rings, a
 //! keypad, and Call. Dialler design A; the rules are the core's

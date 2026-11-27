@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The rooms lobby: starting or joining a room by its name, the room joined,
 //! and the meetings held, each opening its record over the lobby. A room is
 //! joined through the call engine; this screen shows where that stands and

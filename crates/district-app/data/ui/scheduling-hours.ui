@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' working hours: the two editors' buttons, the week
      (every day, Monday first, an empty one too) and the dated overrides
      still to come. src/pages/scheduling_admin/hours.rs fills it, places the

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The phone numbers screen's Registrations tab, from the core's
 //! [`NumberRegistrations`]: what a country's regulator asks for, starting a
 //! draft filing, and the workspace's filings with their status, the carrier's

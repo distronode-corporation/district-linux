@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' overview, as iOS draws it: the booking desk at a glance
 //! (the booking page's links, the calendars, the working hours, the event
 //! types, the next booking) in the zone the core names, and the bookings
