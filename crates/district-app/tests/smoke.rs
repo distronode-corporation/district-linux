@@ -2439,6 +2439,19 @@ fn composing(smoke: &Smoke) {
     assert!(smoke.shows_part("You can still enter a number or an email address above."));
     smoke.click("cancel_button");
     assert!(!smoke.shown("to_row"), "the form closes");
+    // Escape (the dialog's close attempt) cancels it too.
+    smoke.click("new_button");
+    smoke.reply("LoadContacts", |ticket| Event::ContactsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    smoke
+        .mapped("to_row")
+        .ancestor(adw::Dialog::static_type())
+        .expect("the compose dialog")
+        .emit_by_name::<()>("close-attempt", &[]);
+    smoke.pump();
+    assert!(!smoke.shown("to_row"), "Escape closes the form");
     smoke.click("new_button");
     smoke.reply("LoadContacts", |ticket| Event::ContactsLoaded {
         ticket,
@@ -2464,7 +2477,11 @@ fn composing(smoke: &Smoke) {
     assert!(smoke.sensitive("send_button"));
     smoke.click("change_button");
     smoke.type_into("to_row", "+14165550199");
-    smoke.activate_nth("compose-typed", 0);
+    // Enter in the To box uses what is typed, as its row does.
+    smoke
+        .mapped("to_row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
     assert!(
         !smoke.shown("subject_row"),
         "a number goes as a text message"
@@ -2514,6 +2531,18 @@ fn call_page() -> Vec<CallSummary> {
 fn calls_screens(smoke: &Smoke) {
     smoke.activate("sidebar-calls");
     smoke.script.pending.borrow_mut().clear();
+    // A log with no calls says so, with nothing to retry.
+    smoke.click("refresh_button");
+    let tk = smoke.ticket("LoadCalls");
+    smoke.answer(Event::CallsLoaded {
+        ticket: tk,
+        result: Ok(Vec::new()),
+    });
+    assert_eq!(smoke.count("call-row"), 0);
+    assert_ne!(
+        smoke.status_title("list_status"),
+        "Could not load the call log"
+    );
     smoke.click("refresh_button");
     let tk = smoke.ticket("LoadCalls");
     smoke.answer(Event::CallsLoaded {
@@ -12303,7 +12332,13 @@ fn supervise_card(smoke: &Smoke) {
     // A note: sent once, the field cleared when it is delivered, and what
     // the receptionist did with it.
     smoke.type_into("supervise_whisper", "Offer Thursday morning");
-    smoke.click("supervise_whisper_send");
+    // Enter in the field sends it, as Send does (below).
+    smoke
+        .mapped("supervise_whisper")
+        .downcast::<gtk::Entry>()
+        .expect("the note field")
+        .emit_activate();
+    smoke.pump();
     let Effect::SendCallWhisper { ticket, text, .. } = smoke.take("SendCallWhisper") else {
         unreachable!()
     };
@@ -12322,6 +12357,16 @@ fn supervise_card(smoke: &Smoke) {
         update: LiveUpdate::Event(receipt),
     }));
     assert!(smoke.shows_text("Your receptionist used your note."));
+    smoke.type_into("supervise_whisper", "And Friday");
+    smoke.click("supervise_whisper_send");
+    let Effect::SendCallWhisper { ticket, text, .. } = smoke.take("SendCallWhisper") else {
+        unreachable!()
+    };
+    assert_eq!(text, "And Friday");
+    smoke.answer(Event::CallWhispered {
+        ticket,
+        result: Ok(fixture("district-call-whisper.json")),
+    });
 
     // The takeover: the listening room left once the grant lands, and "on
     // the call" only once the room is joined with the microphone.
