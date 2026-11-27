@@ -9023,6 +9023,13 @@ fn dialing(smoke: &Smoke) {
         );
         smoke.pump();
     }
+    // Enter then picks nothing: the button keeps its country.
+    search.emit_activate();
+    smoke.pump();
+    assert_eq!(
+        smoke.label("country_button_label"),
+        "\u{1f1e9}\u{1f1ea} +49"
+    );
     search.set_text("");
     smoke.pump();
     smoke
