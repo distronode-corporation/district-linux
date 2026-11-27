@@ -2531,18 +2531,6 @@ fn call_page() -> Vec<CallSummary> {
 fn calls_screens(smoke: &Smoke) {
     smoke.activate("sidebar-calls");
     smoke.script.pending.borrow_mut().clear();
-    // A log with no calls says so, with nothing to retry.
-    smoke.click("refresh_button");
-    let tk = smoke.ticket("LoadCalls");
-    smoke.answer(Event::CallsLoaded {
-        ticket: tk,
-        result: Ok(Vec::new()),
-    });
-    assert_eq!(smoke.count("call-row"), 0);
-    assert_ne!(
-        smoke.status_title("list_status"),
-        "Could not load the call log"
-    );
     smoke.click("refresh_button");
     let tk = smoke.ticket("LoadCalls");
     smoke.answer(Event::CallsLoaded {
@@ -2553,7 +2541,15 @@ fn calls_screens(smoke: &Smoke) {
         smoke.status_title("list_status"),
         "Could not load the call log"
     );
+    // Read again: a log with no calls says so, with nothing to retry.
     smoke.click("list_retry");
+    let tk = smoke.ticket("LoadCalls");
+    smoke.answer(Event::CallsLoaded {
+        ticket: tk,
+        result: Ok(Vec::new()),
+    });
+    assert_eq!(smoke.status_title("list_status"), "No calls yet");
+    smoke.click("refresh_button");
     let tk = smoke.ticket("LoadCalls");
     smoke.answer(Event::CallsLoaded {
         ticket: tk,
