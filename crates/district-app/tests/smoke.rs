@@ -1363,6 +1363,15 @@ fn account_security(smoke: &Smoke) {
     smoke.shot("12-two-step-scan");
     smoke.click("two_step_copy_key");
     assert_eq!(clipboard_text(smoke).as_deref(), Some("JBSWY3DPEHPK3PXP"));
+    // No authenticator app handles the link on this session, so opening it
+    // says so.
+    assert!(!smoke.shown("two_step_open_failed"));
+    smoke.click("two_step_open");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !smoke.shown("two_step_open_failed") {
+        assert!(Instant::now() < deadline, "the failed open was never said");
+        smoke.pump();
+    }
     smoke.click("two_step_confirm");
     assert!(
         !smoke.pending("ConfirmTwoStep"),
@@ -8845,6 +8854,68 @@ fn dialing(smoke: &Smoke) {
     assert_eq!(smoke.entry_text("number_entry"), "212");
     assert!(!smoke.sensitive("call_button"), "too few digits");
 
+    // Delete (forward, at the cursor) takes the digit after it; Backspace
+    // over punctuation takes the digit before it too; and the keypad's
+    // backspace at the start takes nothing.
+    entry.set_text("(212) 5");
+    smoke.pump();
+    entry.set_position(0);
+    let digits = |smoke: &Smoke| -> String {
+        smoke
+            .entry_text("number_entry")
+            .chars()
+            .filter(char::is_ascii_digit)
+            .collect()
+    };
+    entry.delete_text(1, 2);
+    smoke.pump();
+    assert_eq!(digits(smoke), "125", "Delete took the 2 after the cursor");
+    entry.set_text("(212) 5");
+    smoke.pump();
+    entry.set_position(5);
+    entry.delete_text(4, 5);
+    smoke.pump();
+    assert_eq!(
+        digits(smoke),
+        "215",
+        "Backspace over ) took the 2 before it"
+    );
+    entry.set_position(0);
+    entry.select_region(0, 0);
+    smoke.click("backspace_button");
+    assert_eq!(digits(smoke), "215", "nothing before the cursor");
+    // A press on Call while it is off (too few digits) says the length; a
+    // press beside it says nothing.
+    let call = smoke.mapped("call_button");
+    let row = call.parent().expect("Call has a parent");
+    let press = {
+        let controllers = row.observe_controllers();
+        (0..controllers.n_items())
+            .filter_map(|index| controllers.item(index).and_downcast::<gtk::GestureClick>())
+            .next()
+            .expect("the press beside Call")
+    };
+    let centre = call
+        .compute_point(
+            &row,
+            &gtk::graphene::Point::new(call.width() as f32 / 2.0, call.height() as f32 / 2.0),
+        )
+        .expect("Call inside its parent");
+    let said = "That is the wrong number of digits for a number in the country it rings. \
+                Check it before you call.";
+    press.emit_by_name::<()>("pressed", &[&1i32, &-1000.0f64, &-1000.0f64]);
+    smoke.pump();
+    assert!(!smoke.shows_text(said), "a press beside Call says nothing");
+    press.emit_by_name::<()>(
+        "pressed",
+        &[&1i32, &f64::from(centre.x()), &f64::from(centre.y())],
+    );
+    smoke.pump();
+    assert!(
+        smoke.shows_text(said),
+        "a press on the switched-off Call says the length"
+    );
+
     // A selection is deleted whole.
     entry.select_region(0, -1);
     smoke.click("backspace_button");
@@ -8871,6 +8942,29 @@ fn dialing(smoke: &Smoke) {
         smoke.pump();
     }
     smoke.shot("142b-dialer-countries-search");
+    // Enter in the search picks the first country it shows.
+    search.emit_activate();
+    smoke.pump();
+    assert_eq!(
+        smoke.label("country_button_label"),
+        "\u{1f1e9}\u{1f1ea} +49"
+    );
+    // A search that matches nothing says so.
+    search.set_text("zzzz");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !smoke.shows_text("No country matches.") {
+        assert!(
+            Instant::now() < deadline,
+            "the search never said it found nothing"
+        );
+        smoke.pump();
+    }
+    smoke
+        .mapped("country_button")
+        .downcast::<gtk::MenuButton>()
+        .unwrap()
+        .popup();
+    smoke.pump();
     search.set_text("");
     smoke.pump();
     smoke
