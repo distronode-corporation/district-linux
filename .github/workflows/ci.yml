@@ -7,7 +7,8 @@ name: CI
 # `rust` formats, lints and tests the whole workspace, the GTK app included (its
 # smoke test runs the real window under a virtual display), and measures line
 # coverage while the tests run, holding every crate to its floor in
-# coverage-floors.toml. `msrv` compiles it at the declared minimum Rust version,
+# coverage-floors.toml; `branches` measures branch coverage on a pinned nightly.
+# `msrv` compiles it at the declared minimum Rust version,
 # `repeatable` builds the workspace's crates twice and compares the bytes, and
 # `repo` runs the repository checks under scripts/ and validates the app's desktop
 # entry and AppStream metadata. `cargo-deny`,
@@ -157,6 +158,74 @@ jobs:
       # never pass as covered.
       - name: Line coverage meets every floor
         run: python3 scripts/check-coverage.py "$RUNNER_TEMP/coverage.json"
+
+  # Branch coverage, which only nightly Rust can measure (`-Z coverage-options=branch`,
+  # through `cargo llvm-cov --branch`). A pinned nightly, used for this measurement
+  # and nothing else: every build, test and release stays on stable. The same tests
+  # as `rust`, the app's smoke test under the same virtual display. Doctests are
+  # left out (on nightly they need --doctests, which instruments them too); the
+  # `rust` job still runs them. This job measures and reports: the per-crate branch
+  # floors come with the core's check-coverage.py that reads them (scripts/
+  # check-pins.py keeps this repository's copy equal to the core's at the pinned
+  # tag, and that tag predates the core's `--branches`).
+  branches:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Not the core's nightly-2026-11-01: that one cannot compile zbus 5.19
+      # (error E0391, a query cycle on zvariant_utils' Signature), which
+      # district-desktop needs. 2026-11-20 compiles it.
+      NIGHTLY: nightly-2026-11-20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned nightly toolchain
+        run: |
+          rustup toolchain install "$NIGHTLY" --profile minimal -c llvm-tools-preview
+          rustc "+$NIGHTLY" --version
+
+      - name: Install the GTK 4 and libadwaita development files
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2086 # deliberate word splitting into one package per arg
+          sudo apt-get install -y --no-install-recommends $LINUX_DEPS xvfb xauth dbus gettext locales
+          sudo localedef -i fr_CA -f UTF-8 fr_CA.UTF-8
+          sudo localedef -i en_US -f UTF-8 en_US.UTF-8
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: branches
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - uses: $/.github/actions/install-cargo-llvm-cov
+
+      - name: cargo test, measuring branch coverage
+        env:
+          GSK_RENDERER: cairo
+          GDK_BACKEND: x11
+          GTK_A11Y: none
+          GTK_MEDIA: none
+          GSETTINGS_BACKEND: memory
+        run: |
+          set -euo pipefail
+          cargo fetch --locked
+          cargo "+$NIGHTLY" llvm-cov --branch --workspace --exclude district-app --locked --no-report
+          xvfb-run -a -s "-screen 0 1280x1024x24" dbus-run-session -- \
+            cargo "+$NIGHTLY" llvm-cov --branch -p district-app --locked --features gtk-tests --no-report
+          cargo "+$NIGHTLY" llvm-cov report --branch --show-missing-lines
+          cargo "+$NIGHTLY" llvm-cov report --branch --json --summary-only --output-path "$RUNNER_TEMP/branches.json"
+          cargo "+$NIGHTLY" llvm-cov report --branch --lcov --output-path "$RUNNER_TEMP/branches.lcov"
+
+      # The lcov file names each branch and whether it ran (its BRDA records), which
+      # the summary above does not: the list of what is left to test.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: branches-lcov
+          path: ${{ runner.temp }}/branches.lcov
+          if-no-files-found: error
+          retention-days: 7
 
   # The declared Rust floor, compiled at the floor. Without this job `rust-version`
   # is a comment: `rust` builds on stable, so a feature stabilised after the declared
