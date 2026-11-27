@@ -8938,22 +8938,23 @@ fn dialing(smoke: &Smoke) {
     };
     entry.delete_text(1, 2);
     smoke.pump();
-    assert!(
-        digits(smoke).len() < 4,
-        "Delete took a digit: {}",
-        digits(smoke)
-    );
+    // The core keeps 125 and shows it in the local form, where a leading 1
+    // is North America's trunk prefix: 25.
+    assert_eq!(digits(smoke), "25", "Delete took the 2 after the cursor");
     entry.set_text("(212) 5");
     smoke.pump();
     entry.set_position(5);
     entry.delete_text(4, 5);
     smoke.pump();
-    let left = digits(smoke);
-    assert!(left.len() < 4, "Backspace over ) took a digit too: {left}");
+    assert_eq!(
+        digits(smoke),
+        "215",
+        "Backspace over ) took the 2 before it"
+    );
     entry.set_position(0);
     entry.select_region(0, 0);
     smoke.click("backspace_button");
-    assert_eq!(digits(smoke), left, "nothing before the cursor");
+    assert_eq!(digits(smoke), "215", "nothing before the cursor");
     // A press on Call while it is off (too few digits) says the length; a
     // press beside it says nothing.
     let call = smoke.mapped("call_button");
