@@ -37,4 +37,4 @@ reason = "Measured, not a target: the Secret Service and XDG portal calls need a
 
 [crates.district-app]
 floor = 98
-reason = "Measured, not a target: the smoke test drives the real window under Xvfb, but the start-up wiring (the keyring, the network, the runtime, logind's sleep signal) and the runner's thread run only in the real app."
+reason = "Measured, not a target (98.42% on 2026-11-27, 527 lines left): the smoke test drives the real window under Xvfb, and CI also runs the English-only build's unit tests, but the start-up wiring (startup.rs, background.rs, controller.rs, main.rs: the keyring, the network, the runtime, logind's sleep signal; issue #131) runs only in the real app, the `weak.upgrade() else return` guards in signal closures cannot fire once their page is gone, and the rest are a page's else paths no smoke step takes yet."

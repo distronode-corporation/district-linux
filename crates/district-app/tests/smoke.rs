@@ -4685,6 +4685,19 @@ fn registrations_tab(smoke: &Smoke) {
             }),
         ))),
     );
+    // A document that cannot be read is said to be.
+    let mut permissions = fs::metadata(&document).unwrap().permissions();
+    std::os::unix::fs::PermissionsExt::set_mode(&mut permissions, 0o000);
+    fs::set_permissions(&document, permissions).unwrap();
+    pick(smoke, "registration-upload", &document);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !smoke.shown("registrations-pick-failure") {
+        assert!(
+            Instant::now() < deadline,
+            "the unreadable document was never reported"
+        );
+        smoke.pump();
+    }
     fs::remove_file(&document).ok();
     assert!(call.contains("proof_of_address"), "{call}");
     assert!(call.contains("application/pdf"), "{call}");
