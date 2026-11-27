@@ -211,17 +211,22 @@ mod tests {
     #[test]
     fn each_state_of_an_audition_says_where_it_stands() {
         let idle = audition_shown(&PersonaPreview::Idle, None);
-        assert!(idle.start && !idle.stop && !idle.waiting);
+        assert!(idle.start);
+        assert!(!idle.stop);
+        assert!(!idle.waiting);
         assert_eq!((idle.state, idle.failure), (None, None));
 
         let minting = audition_shown(&PersonaPreview::Minting, None);
-        assert!(minting.stop && !minting.start && minting.waiting);
+        assert!(minting.stop);
+        assert!(!minting.start);
+        assert!(minting.waiting);
         assert_eq!(minting.state, Some("Starting the call."));
 
         let unavailable = failure(district_core::DisconnectReason::UNAVAILABLE, false);
         let failed = PersonaPreview::Failed(unavailable);
         let shown = audition_shown(&failed, None);
-        assert!(shown.start && !shown.stop);
+        assert!(shown.start);
+        assert!(!shown.stop);
         assert_eq!(
             shown.failure.as_deref(),
             Some(district_core::DisconnectReason::UNAVAILABLE)
@@ -238,7 +243,9 @@ mod tests {
         let ready = PersonaPreview::Ready(Box::new(credential));
         let joining = audition_shown(&ready, None);
         assert_eq!(joining.state, Some("Connecting to your receptionist."));
-        assert!(joining.stop && joining.waiting && !joining.start);
+        assert!(joining.stop);
+        assert!(joining.waiting);
+        assert!(!joining.start);
         assert_eq!(
             audition_shown(&ready, Some(MediaConnection::Connecting)).state,
             Some("Connecting to your receptionist.")

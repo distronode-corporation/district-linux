@@ -352,10 +352,8 @@ mod tests {
         let hostile = "<b>bold</b> & <span foreground=\"red\">red</span> \
             <a href=\"file:///etc/passwd\">x</a> &amp; '\"";
         let markup = to_markup(hostile);
-        assert!(
-            !markup.contains("<b>") && !markup.contains("<span"),
-            "{markup}"
-        );
+        assert!(!markup.contains("<b>"), "{markup}");
+        assert!(!markup.contains("<span"), "{markup}");
         assert_eq!(shown(&markup), hostile);
         for tricky in [
             "**<i>**",
@@ -371,10 +369,8 @@ mod tests {
         ] {
             let markup = to_markup(tricky);
             shown(&markup);
-            assert!(
-                !markup.contains("<u>") && !markup.contains("</tt><b>"),
-                "{markup}"
-            );
+            assert!(!markup.contains("<u>"), "{markup}");
+            assert!(!markup.contains("</tt><b>"), "{markup}");
         }
     }
 

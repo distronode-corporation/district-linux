@@ -284,8 +284,9 @@ mod tests {
         assert_eq!(shown(signed_in(&model)), Shown::Loading);
 
         let (model, _) = listed(Err(server_error()));
-        let Shown::Status { retry, .. } = shown(signed_in(&model)) else {
-            panic!("a status");
+        let retry = match shown(signed_in(&model)) {
+            Shown::Status { retry, .. } => retry,
+            _ => panic!("a status"),
         };
         assert!(retry, "a failed read can be tried again");
 
@@ -309,21 +310,23 @@ mod tests {
     fn the_overview_is_read_then_shown_or_its_failure_is() {
         let (mut model, effects) = listed(Ok(workspaces()));
         assert_eq!(shown(signed_in(&model)), Shown::Loading);
-        let Effect::LoadOverview {
-            ticket,
-            workspace_id,
-        } = find(&effects, |e| matches!(e, Effect::LoadOverview { .. }))
-        else {
-            unreachable!()
-        };
+        let (ticket, workspace_id) =
+            match find(&effects, |e| matches!(e, Effect::LoadOverview { .. })) {
+                Effect::LoadOverview {
+                    ticket,
+                    workspace_id,
+                } => (ticket, workspace_id),
+                _ => unreachable!(),
+            };
         let mut overview: OverviewResponse = fixture("district-overview.json");
         overview.workspace_id = Some(workspace_id.clone());
         model.update(district_core::Event::OverviewLoaded {
             ticket,
             result: Ok(overview),
         });
-        let Shown::Content { name, content } = shown(signed_in(&model)) else {
-            panic!("the overview");
+        let (name, content) = match shown(signed_in(&model)) {
+            Shown::Content { name, content } => (name, content),
+            _ => panic!("the overview"),
         };
         assert_eq!(name, "Alpha Client", "the account's default workspace");
         let figures = metrics(content);
@@ -336,17 +339,17 @@ mod tests {
         });
 
         let (mut model, effects) = listed(Ok(workspaces()));
-        let Effect::LoadOverview { ticket, .. } =
-            find(&effects, |e| matches!(e, Effect::LoadOverview { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::LoadOverview { .. })) {
+            Effect::LoadOverview { ticket, .. } => ticket,
+            _ => unreachable!(),
         };
         model.update(district_core::Event::OverviewLoaded {
             ticket,
             result: Err(server_error()),
         });
-        let Shown::Status { title, retry, .. } = shown(signed_in(&model)) else {
-            panic!("the failure");
+        let (title, retry) = match shown(signed_in(&model)) {
+            Shown::Status { title, retry, .. } => (title, retry),
+            _ => panic!("the failure"),
         };
         assert_eq!(title, text::overview_failed_title(lang()));
         assert!(retry);
