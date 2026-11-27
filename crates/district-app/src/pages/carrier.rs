@@ -733,9 +733,7 @@ mod tests {
             line.starts_with("Main \u{b7} Connected"),
             "the account, then its state"
         );
-        assert!(
-            line.contains("12.50") && line.contains('3'),
-            "the balance and the count"
-        );
+        assert!(line.contains("12.50"), "the balance and the count");
+        assert!(line.contains('3'), "the balance and the count");
     }
 }

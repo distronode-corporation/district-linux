@@ -950,7 +950,8 @@ mod tests {
             retryable: false,
         };
         let failed = notice_text(&StudioSaveState::Failed(failure.clone()), &studio).unwrap();
-        assert!(failed.starts_with(&studio.labels.save_failed) && failed.ends_with("Refused."));
+        assert!(failed.starts_with(&studio.labels.save_failed));
+        assert!(failed.ends_with("Refused."));
         let stale = notice_text(&StudioSaveState::SavedButStale(failure), &studio).unwrap();
         assert!(stale.starts_with(VoiceStudioSection::SAVED_STALE));
     }

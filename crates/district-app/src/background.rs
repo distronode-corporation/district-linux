@@ -331,10 +331,9 @@ mod tests {
             keeps_running(model.session()),
             "restoring: the session may open"
         );
-        let Effect::RestoreSession { ticket } =
-            find(&effects, |e| matches!(e, Effect::RestoreSession { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::RestoreSession { .. })) {
+            Effect::RestoreSession { ticket } => ticket,
+            _ => unreachable!(),
         };
         model.update(Event::SessionRestored {
             ticket,

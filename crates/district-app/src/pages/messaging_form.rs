@@ -424,6 +424,7 @@ mod tests {
         );
         let unreachable = CredentialTest::Unreachable(failure("Offline.", true));
         let (words, class) = test_words(&unreachable).unwrap();
-        assert!(words.ends_with("Offline.") && class == "error");
+        assert!(words.ends_with("Offline."));
+        assert!(class == "error");
     }
 }

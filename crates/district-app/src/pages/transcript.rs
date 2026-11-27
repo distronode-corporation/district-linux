@@ -371,9 +371,9 @@ mod tests {
         model.update(Event::Navigate(Route::Dialer));
         model.update(Event::Dialer(DialerEvent::Edit("+12125550142".to_owned())));
         let effects = model.update(Event::Dialer(DialerEvent::Dial));
-        let Effect::Dial { ticket, .. } = find(&effects, |e| matches!(e, Effect::Dial { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::Dial { .. })) {
+            Effect::Dial { ticket, .. } => ticket,
+            _ => unreachable!(),
         };
         model.update(Event::Dialled {
             ticket,
@@ -440,7 +440,8 @@ mod tests {
     fn a_placed_call_connects_its_transcript_then_shows_its_lines() {
         let connecting = shown(&placed());
         assert_eq!(connecting.status, LiveTranscript::CONNECTING);
-        assert!(connecting.lines.is_empty() && connecting.waiting.is_none());
+        assert!(connecting.lines.is_empty());
+        assert!(connecting.waiting.is_none());
         assert_eq!(connecting.full_note, None);
 
         let live = shown(&live());
@@ -476,7 +477,8 @@ mod tests {
                 ("Ava", "Of course. Morning or", false, None),
             ]
         );
-        assert!(live.waiting.is_none() && live.incomplete.is_none());
+        assert!(live.waiting.is_none());
+        assert!(live.incomplete.is_none());
     }
 
     #[test]
@@ -531,10 +533,9 @@ mod tests {
             })
             .flatten()
             .collect();
-        let Effect::LoadTranscript { ticket, .. } =
-            find(&effects, |e| matches!(e, Effect::LoadTranscript { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::LoadTranscript { .. })) {
+            Effect::LoadTranscript { ticket, .. } => ticket,
+            _ => unreachable!(),
         };
         (model, ticket)
     }
@@ -554,7 +555,8 @@ mod tests {
             result: Ok(fixture("district-call-transcript.json")),
         });
         let full = shown(&model);
-        assert!(!full.full_loading && full.full_note.is_none());
+        assert!(!full.full_loading);
+        assert!(full.full_note.is_none());
         assert_eq!(
             full.full_text.as_deref(),
             Some("Agent: Good afternoon. Caller: I would like to book an appointment.")
@@ -571,7 +573,8 @@ mod tests {
             )),
         });
         let failed = shown(&model);
-        assert!(!failed.full_loading && failed.full_text.is_none());
+        assert!(!failed.full_loading);
+        assert!(failed.full_text.is_none());
         assert!(failed.full_note.is_some());
     }
 
