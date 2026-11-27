@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The receptionist's persona: its three texts, editable once the settings
 //! are read; its language and answer length, editable only as the options read
 //! for the workspace's region offer them; the stored engine's name, with the

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' calendar section: the member's own calendars, as
 //! District AI for iPhone and iPad draws them. Drawn from
 //! `signed_in.scheduling_admin`; what the member does goes to the core as

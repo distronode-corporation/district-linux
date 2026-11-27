@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Line endings: every text file is LF in the repository and in every checkout,
 # Windows included, because tests and scripts compare committed files byte for
 # byte, and a CRLF checkout (Git for Windows' default) would change the bytes.

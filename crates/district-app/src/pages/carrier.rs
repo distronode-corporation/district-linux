@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The phone numbers screen's carrier tab, from the core's [`NumberAdmin`]:
 //! the carrier accounts' status, the SIP trunks (and a new one), the one-time
 //! passcode sender, the billed number lookup, and the A2P 10DLC and toll-free

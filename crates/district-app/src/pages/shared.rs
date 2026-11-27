@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the pages share: times as a person reads them, words for the
 //! service's status values and its failures, text fields that type ahead of
 //! the model, lines and spinners shown only when there is something to show,

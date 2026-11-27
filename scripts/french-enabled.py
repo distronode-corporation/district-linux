@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Whether this tree builds District AI for Linux in Canadian French: the
 `fr-ca` feature among district-app's default features. Exits 0 and prints
 "on" when it is, exits 1 and prints "off" when it is not.

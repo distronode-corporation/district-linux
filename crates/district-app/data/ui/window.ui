@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The main window: the session's own pages (restoring, signed out, signing
      in, signing out) and, once signed in, the sidebar and the page the route
      names, over the strip a call rings and runs in. src/window.rs fills it

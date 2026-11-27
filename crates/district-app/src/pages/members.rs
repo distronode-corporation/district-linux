@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The workspace's members and its name. Adding a member, changing a role and
 //! removing one (after a question) are for an agency member only; renaming
 //! the workspace is for an agency or a client member, and the name shown

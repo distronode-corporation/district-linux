@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the workspace settings sections share: the page a section's read
 //! decides (being read, failed, saved but not read back, or the form), boxes
 //! and sliders that type ahead of the model, and pickers whose choices come

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! `Oo7SessionStore::connect`, which talks to the session bus, run where it
 //! cannot reach the real user's keyring.
 //!

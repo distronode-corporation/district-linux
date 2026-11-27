@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The receptionist's persona: its texts from the settings read, its language
      and answer length only as the options offer them, a way to Voice Studio for
      the engine and the voice, the save, and the audition.

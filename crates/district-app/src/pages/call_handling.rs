@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Call handling and availability: who answers an incoming call, and how long
 //! the members' devices ring, for the whole workspace and saved with a button;
 //! and whether the member is rung, their own setting and sent at once. Each is

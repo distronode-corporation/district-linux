@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Reporting AI-generated content (a call's summary, an HQ answer) to
 //! Distronode, as District AI for Windows offers it: a Report button beside
 //! the content opens a dialog with an optional note, and Send raises a support

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Two-step verification for the account: whether it is on, since when and
 //! how many recovery codes are left, and turning it on or off, each after a
 //! fresh re-authentication (see [`crate::pages::reauth`]).

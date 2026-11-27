@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Voice Studio: the recipes on the Stable or Latest tier, the signal chain
 //! with an editor for the leg it is open on, the time-to-first-word meter, where
 //! the call is processed, and the save.

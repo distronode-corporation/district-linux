@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The inbox: the threads (or a search's matches) beside the open thread,
      folding to one pane at a time when narrow. src/pages/inbox.rs fills it. -->
 <interface>

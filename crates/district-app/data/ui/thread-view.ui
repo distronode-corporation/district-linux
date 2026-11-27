@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- One thread: its owner, its history, older messages on request, and the
      composer (its reply channel, and WhatsApp's templates once the window has
      closed), or why there is no composer. src/pages/thread.rs fills it from

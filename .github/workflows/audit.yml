@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Audit
 
 # A weekly re-check of the dependency tree against the RustSec advisory database,

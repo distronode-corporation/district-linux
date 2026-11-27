@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! One support request: where it stands, the conversation with Distronode,
 //! the reply, and marking it resolved, which asks first and is offered only
 //! when the service says it can be done.

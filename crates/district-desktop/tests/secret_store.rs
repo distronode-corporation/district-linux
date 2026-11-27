@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! `Oo7SessionStore` over oo7's own file backend: a keyring file in a temporary
 //! directory, with a random key.
 //!

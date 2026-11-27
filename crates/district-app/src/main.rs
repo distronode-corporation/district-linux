@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! `district-ai`: District AI for Linux. Everything is in the library; see
 //! `lib.rs`.
 

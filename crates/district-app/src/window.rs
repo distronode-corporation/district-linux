@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The main window: the session's own page, or the sidebar and the page the
 //! route names, drawn from the core's state, over the strip a call rings and
 //! runs in.

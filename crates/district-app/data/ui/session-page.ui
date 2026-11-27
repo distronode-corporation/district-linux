@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Everything before and after a session: looking for a stored one, signed
      out, signing in through the browser, and signing out. -->
 <interface>

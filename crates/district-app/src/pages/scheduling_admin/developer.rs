@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' developer section: the API keys, the apps connected
 //! with OAuth and the address an AI assistant reaches the bookings at, and
 //! the webhooks with their deliveries, as District AI for iPhone and iPad

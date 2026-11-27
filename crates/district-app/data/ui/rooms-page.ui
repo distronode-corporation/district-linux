@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The rooms lobby: starting or joining a room by its name, the room
      joined, and the meetings held, each opening its record over the lobby.
      src/pages/rooms.rs fills it. -->

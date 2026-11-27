@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! One thread: its owner, its history with older messages on request, and the
 //! composer.
 //!

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The receptionist's capabilities: a switch per tool, stored ids this build
      cannot name kept and shown, and the research switch, each saved apart.
      src/pages/tools.rs fills it. -->

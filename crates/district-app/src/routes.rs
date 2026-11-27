@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The sidebar, and each screen's title: presentation only. Which screens a
 //! member may open is the core's decision ([`Capabilities::allows`]).
 

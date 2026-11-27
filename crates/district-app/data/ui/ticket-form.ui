@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The form that raises a help desk ticket for a customer, or a support
      request with Distronode, as a dialog. Closing it asks the core, which
      keeps it open while the form is on its way. src/pages/ticket_form.rs

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The live transcript of the call on this desktop, under the call strip, as
 //! District AI for Windows shows it (its `TranscriptPanel`): the lines said so
 //! far with who said them, a line still being heard drawn as provisional,

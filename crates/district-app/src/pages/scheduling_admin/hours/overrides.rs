@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The dated overrides' editor, as a dialog: the days still to come (a run
 //! of days made together is one row, deleted whole), each with Delete, which
 //! the core asks about once more (the pane puts that question); Add override;

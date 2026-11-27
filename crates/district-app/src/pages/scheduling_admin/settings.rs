@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' settings section, as District AI for iPhone and iPad
 //! draws it: four tabs, the booking page, the booking assistant, the
 //! member's profile and their notifications. Drawn from

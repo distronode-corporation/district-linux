@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' sections, natively: one page for
 //! [`Route::SchedulingAdmin`](district_core::Route::SchedulingAdmin), holding
 //! a pane per area (the overview, the event types, the hours, the bookings,

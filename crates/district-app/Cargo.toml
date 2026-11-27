@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [package]
 name = "district-app"
 description = "District AI for Linux, the GTK 4 and libadwaita desktop application."

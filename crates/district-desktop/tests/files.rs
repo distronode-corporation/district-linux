@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The base directories, where district_host's files live in them, and the
 //! device name, all in temporary directories: no test here reads or writes the
 //! real user's XDG directories.

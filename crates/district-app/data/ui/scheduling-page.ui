@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Booking pages: where the workspace's booking pages stand, turning them
      on, and, once they are live, the list of their sections, each managed in
      the app. src/pages/scheduling.rs fills it. -->

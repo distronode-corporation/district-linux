@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Support: the workspace's requests to Distronode, open and resolved, beside
 //! the open one, and the form that raises one. In a narrow window one pane
 //! shows at a time. Closed to a viewer, so it is never drawn for one.

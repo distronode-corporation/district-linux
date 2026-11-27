@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The dialogs over the calendars, as District AI for iPhone and iPad draws
 //! them: one account's calendars (which are checked for conflicts, which
 //! receives new bookings, saved whole), and the CalDAV form (where the

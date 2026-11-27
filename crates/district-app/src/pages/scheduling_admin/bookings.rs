@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' bookings section: every booking a page at a time, and
 //! one booking, as District AI for iPhone and iPad draws them. Drawn from
 //! `signed_in.scheduling_admin`; what the member does goes to the core as

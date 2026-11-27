@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The account: this build and this computer, whether the app starts at
 //! login, whether it sends crash reports, whether calls ring here, the devices signed in,
 //! two-step verification, signing out, and deleting the account.

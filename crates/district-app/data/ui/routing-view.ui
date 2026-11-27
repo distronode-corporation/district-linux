@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The routing rules: each stored rule on a card of its own, edited one key
      at a time with the builder's choices and any stored value they do not
      list, and a save that asks first. src/pages/routing.rs fills it. -->

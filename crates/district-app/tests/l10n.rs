@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! French from a compiled catalog, the way the app reads it: a template's
 //! `translatable="yes" context="<key>"` string, built by GtkBuilder and as a
 //! composite template, and the language each side of the app resolves, which

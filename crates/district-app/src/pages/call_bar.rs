@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The strip under every signed-in screen while a call rings here or is under
 //! way. It sits outside the page stack, so it stays as the member moves about
 //! the app, and it is where the call is muted, hung up and timed.

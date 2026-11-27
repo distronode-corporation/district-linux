@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The booking pages' event types, as iOS draws them: the list (each event
 //! type's name, how long it runs and where, its state, and its booking
 //! page's address or Not public), with Create event type for a member who

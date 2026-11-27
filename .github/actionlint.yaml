@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # actionlint's configuration, for running it by hand (CI runs zizmor, not
 # actionlint):
 #

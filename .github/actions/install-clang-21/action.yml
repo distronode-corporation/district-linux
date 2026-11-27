@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Install clang 21 and the headers webrtc-sys compiles against
 description: >-
   clang 21 from the LLVM project's apt repository, the GTK 4, libadwaita and

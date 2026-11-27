@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The pages of the window. Each is a composite template with an `update`
 //! that draws it from the core's state, and sends what the user does through
 //! the window's [`EventSink`].

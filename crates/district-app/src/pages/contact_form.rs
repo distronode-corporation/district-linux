@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The form that adds a contact, or changes the open one, as a dialog.
 //!
 //! What is typed goes to the core as the whole form at every change, and the

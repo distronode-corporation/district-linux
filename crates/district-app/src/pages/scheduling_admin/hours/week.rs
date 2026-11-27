@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The week's editor, as a dialog: every day, Monday first, with its
 //! windows (each a time it opens and a time it closes, typed as `HH:MM`, and
 //! Remove), Add range, and Copy to all weekdays on a weekday with a window

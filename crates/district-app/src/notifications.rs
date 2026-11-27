@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The core's notifications as the desktop's, and their buttons back as events.
 //!
 //! A notification outlives the moment it was shown (the desktop keeps it, and

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! An event type's hosts and how its bookings are routed among them, as a
 //! dialog. The scheduler replaces the hosts whole, so the core reads them
 //! first and offers no save until they are read; the people who could be

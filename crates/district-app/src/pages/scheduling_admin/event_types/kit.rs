@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the event types' dialogs share: the dialog itself (a header with its
 //! way out, and a save where it has one), a row holding a number or a line
 //! typed beside its hint, the lines under a form, and sending to the core

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the working hours' two editors share: the dialog itself (a header
 //! with its way out, and a save where it has one), a time typed in a box,
 //! the line that says what the last write came to with its Dismiss, and

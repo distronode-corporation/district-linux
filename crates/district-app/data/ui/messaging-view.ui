@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The carrier accounts: each account with its default and removal, the
      numbers Distronode holds, each channel's sender, and the owner's mobile
      number, which is never shown. src/pages/messaging.rs fills it, and opens

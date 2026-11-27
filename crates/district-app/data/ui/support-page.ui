@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Support: the workspace's requests to Distronode beside the open one,
      folding to one pane at a time when narrow. src/pages/support.rs fills it,
      and opens the form that raises a request as a dialog. -->

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The carrier accounts: each account with its carrier, whose account it is
 //! and its numbers; the default sender and each channel's sender; removing
 //! one, after a question naming the numbers it releases; the numbers

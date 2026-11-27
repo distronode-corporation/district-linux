@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! District AI for Linux: the GTK 4 and libadwaita application.
 //!
 //! This is the only crate in the workspace that links GTK, and it is a thin

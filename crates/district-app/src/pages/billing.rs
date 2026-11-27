@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Billing, read only: the workspace's plan and its minutes from the
 //! service's own records, and the account's subscriptions and invoices from
 //! the payment processor. A processor that could not be reached is said to be

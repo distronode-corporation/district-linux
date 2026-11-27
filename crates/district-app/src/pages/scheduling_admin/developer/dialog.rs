@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The dialogs over Developer, as District AI for iPhone and iPad draws
 //! them: making an API key, and adding or changing a webhook (where its
 //! deliveries go, fixed once added; the events it sends; the parts of a

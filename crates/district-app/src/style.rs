@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The brand's colours over libadwaita's own.
 //!
 //! libadwaita keeps its neutrals (the window, the views, the text), so the app

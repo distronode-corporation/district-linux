@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The strip under every signed-in screen while a call is ringing or under
      way: the ring with Answer and Decline, the call with its duration, mute
      and hang up, the call's live transcript under it, and the call's

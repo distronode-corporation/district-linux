@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The event type's form, as a dialog: the short one that creates (a name,
 //! the booking page it makes, a duration, a location) from the list, and the
 //! whole one that edits from one event type, as iOS draws them.

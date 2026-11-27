@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! An event type's booking questions, as a dialog: the list in the order the
 //! booker sees it, each with Edit and Delete (asked once more, by the pane),
 //! Add question, and one question's form in place of the list while it is

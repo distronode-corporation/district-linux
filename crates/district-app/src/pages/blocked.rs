@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The callers the workspace has blocked. Each is unblocked after a question,
 //! one request per caller at a time.
 

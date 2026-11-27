@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The form adding or editing one carrier account, as a dialog. Its key
      boxes are built for the carrier chosen; what is typed in them goes to the
      core and is never written back into them, and they are emptied when the

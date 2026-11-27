@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The form that raises a help desk ticket for a customer, or a support
 //! request with Distronode, as a dialog.
 //!

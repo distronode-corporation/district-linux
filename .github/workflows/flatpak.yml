@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Flatpak
 
 # Builds District AI for Linux as a Flatpak bundle, with calls, from

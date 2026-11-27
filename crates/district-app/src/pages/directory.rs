@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The transfer directory: who the receptionist can put a live caller through
 //! to. Each stored entry is edited one key at a time and keeps every other key
 //! it holds; the entry being added needs a name and a number; and the save,

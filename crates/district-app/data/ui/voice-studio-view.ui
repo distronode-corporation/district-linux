@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Voice Studio: the recipes, the signal chain with an editor per leg, the
      time-to-first-word meter and where the call is processed, in the service's
      own words, and the save. src/pages/voice_studio.rs fills it, and builds the

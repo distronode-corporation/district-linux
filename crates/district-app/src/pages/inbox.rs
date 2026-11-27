@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The inbox: the workspace's threads, or the matches of a search, beside the
 //! open thread. In a narrow window one pane shows at a time.
 

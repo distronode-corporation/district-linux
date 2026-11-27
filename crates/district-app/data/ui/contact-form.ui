@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The form that adds a contact or changes one, as a dialog. Closing it
      asks the core, which keeps it open while a save is on its way.
      src/pages/contact_form.rs fills it. -->

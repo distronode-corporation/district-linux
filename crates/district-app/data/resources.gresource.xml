@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Everything the binary carries, compiled by build.rs. The prefix is the
      application's resource base path, so libadwaita loads style.css from it
      and GTK finds the icons under icons/ without installing them. The

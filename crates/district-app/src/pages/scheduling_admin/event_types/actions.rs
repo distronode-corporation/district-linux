@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! An event type's state actions, as a dialog: on or off, archive or
 //! restore, a test email of each kind sent to the member, and delete, which
 //! the core asks about once more (the pane puts that question). One action

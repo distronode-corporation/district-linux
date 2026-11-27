@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The open workspace's overview: the finish-setup card, the four figures,
      and the most recent calls. Or, while there is no overview to show, why. -->
 <interface>

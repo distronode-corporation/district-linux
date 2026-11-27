@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Starting a conversation from the inbox, as a dialog: a contact or a
      typed number or address, the channel, a subject for an email, and the
      message. Every word is the core's; src/pages/compose_form.rs sets them

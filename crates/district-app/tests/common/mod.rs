@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the smoke test and the store screenshots share: the ticket an effect
 //! carries, the widgets under a widget, and a main loop run until it is idle.
 

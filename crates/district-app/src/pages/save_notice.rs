@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! How the last save of a settings section ended, drawn from its
 //! [`SaveState`]: saved, or failed with the member's edits kept, each until it
 //! is dismissed or the form changes. The notice is always there; its card is

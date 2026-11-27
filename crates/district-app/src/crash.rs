@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Crash reports: off until the user says yes.
 //!
 //! The mechanism is `district_crash`, from District AI core for Rust: nothing

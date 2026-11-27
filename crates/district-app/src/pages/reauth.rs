@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Confirming it is you, before a change to two-step verification or the
 //! account's deletion: a fresh sign-in at Google, Microsoft or Apple in the
 //! browser, or the password with, once the service asks for it, the

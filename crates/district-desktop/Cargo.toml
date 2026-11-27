@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [package]
 name = "district-desktop"
 description = "Linux desktop adapters for District AI for Linux: secret storage, XDG directories, the device name and logind's sleep signal. GTK-free."

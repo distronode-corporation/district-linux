@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! `Logind`, the sleep signals on the system bus, against a private bus with a
 //! stand-in for logind on it: the inhibitor it asks for, released when the
 //! app lets go of it, and the announcements it reads, whatever else arrives.

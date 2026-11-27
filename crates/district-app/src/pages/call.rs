@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! One call: who, when, its summary and analysis, the follow-up the service
 //! sent, and its transcript.
 

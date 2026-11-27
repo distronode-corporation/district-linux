@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The store screenshots: the pictures the software centres show,
 //! drawn from the real window.
 //!

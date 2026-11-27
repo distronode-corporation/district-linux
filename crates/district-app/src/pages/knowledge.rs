@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The knowledge base: where the receptionist's answers come from, adding a
 //! document (billed by its length, sent once when Add is pressed), and the
 //! documents, each deleted only after a question. Switching to the linked

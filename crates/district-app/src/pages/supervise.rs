@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Supervising a call in progress from its screen, as the web dashboard's
 //! Live calls page does: Listen, a note to the receptionist (a whisper), and
 //! Take over, which asks first and then puts the member on the call with the

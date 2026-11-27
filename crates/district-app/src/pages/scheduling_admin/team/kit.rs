@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! What the team's dialogs share: the dialog itself (a header with its way
 //! out and its one action, each in the core's words), a line under a form,
 //! and sending to the core from a dialog through the pane that opened it.

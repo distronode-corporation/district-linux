@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' overview: the booking desk at a glance (the booking
      page's links, the calendars, the hours, the event types, the next
      booking), each row standing or failing alone, and what is coming up.

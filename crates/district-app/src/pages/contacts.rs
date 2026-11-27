@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! Contacts: the list beside the open contact or the blocked callers, and the
 //! form that adds a contact. The next page is read as the list nears its end;
 //! in a narrow window one pane shows at a time.

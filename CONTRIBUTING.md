@@ -7,6 +7,8 @@ Questions, build trouble and ideas go to
 [Discussions](https://github.com/distronode-corporation/district-linux/discussions);
 the issue tracker is for reproducible bugs.
 
+New here? Issues labelled [good first issue](https://github.com/distronode-corporation/district-linux/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) are small, well scoped and need no access beyond this repository.
+
 ## Layout
 
 ```

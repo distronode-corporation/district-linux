@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The installations signed in to the account, and signing them out. Each
      sign-out is asked about first, in a dialog src/pages/devices.rs opens. -->
 <interface>

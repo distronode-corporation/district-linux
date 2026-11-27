@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Distronode Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # OSV-Scanner's ignore list, read by OpenSSF Scorecard's Vulnerabilities check
 # and by `osv-scanner scan source -r .`. It MIRRORS deny.toml's [advisories]
 # `ignore`: the same four advisories, the same reasons, and the reasoning for

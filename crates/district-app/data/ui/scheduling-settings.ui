@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The booking pages' settings section: the booking page's branding, the
      booking assistant, the member's profile and their notifications, a tab
      each. What depends on what was read (the tabs' frames, their rows, the

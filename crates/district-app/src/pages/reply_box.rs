@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Distronode Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //! The box a reply is written in, under a help desk ticket or a support
 //! request. What is typed goes to the core as it is typed, and Send works only
 //! when the core says so; the reply is sent once, on the press.

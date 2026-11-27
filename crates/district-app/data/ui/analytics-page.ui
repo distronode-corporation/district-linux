@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- Analytics: call analytics over a window, with its trend, funnel and
      sentiment charts, this month's metered usage and the last few months.
      Each card reads apart and fails apart. src/pages/analytics.rs fills it

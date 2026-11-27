@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The box a reply is written in, under a help desk ticket or a support
      request: the text, Send, what it waits for and why it failed.
      src/pages/reply_box.rs fills it. -->

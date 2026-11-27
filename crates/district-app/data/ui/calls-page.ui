@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: Distronode Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <!-- The call log beside the open call, folding to one pane at a time when
      narrow. The next page is read as the list nears its end. src/pages/calls.rs
      fills it. -->
