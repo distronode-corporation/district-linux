@@ -197,6 +197,19 @@ mod tests {
         assert!(said.contains("writes in fr-CA"), "{said}");
     }
 
+    /// What start-up does, in either build: reads the desktop's language
+    /// (English, whatever it says, without the feature), binds the catalog
+    /// (nothing without the feature) and checks the two lookups agree. CI
+    /// runs these tests in both builds (ci.yml).
+    #[test]
+    fn start_up_reads_the_desktop_and_binds_the_catalog_only_with_french() {
+        let locale = desktop_locale();
+        assert!(FRENCH_ENABLED | (locale == Locale::En), "{locale:?}");
+        init();
+        report_disagreement();
+        assert_eq!(pgettext("no.such_key", "No such string"), "No such string");
+    }
+
     /// Without the feature nothing French is chosen, whatever the desktop
     /// says, and the process's language is English.
     #[test]

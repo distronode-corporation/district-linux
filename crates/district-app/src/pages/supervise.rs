@@ -729,10 +729,9 @@ mod tests {
     /// so the agency's is the one remembered.
     fn on_call(id: &str, status: &str) -> Model {
         let (mut model, effects) = restored_in(with_calls());
-        let Effect::LoadWorkspaces { ticket } =
-            find(&effects, |e| matches!(e, Effect::LoadWorkspaces { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::LoadWorkspaces { .. })) {
+            Effect::LoadWorkspaces { ticket } => ticket,
+            _ => unreachable!(),
         };
         let list: WorkspaceListResponse = fixture("district-workspace-list.json");
         model.update(Event::WorkspacesLoaded {
@@ -743,10 +742,9 @@ mod tests {
         let effects = model.update(Event::Navigate(Route::CallDetail {
             call_id: id.to_owned(),
         }));
-        let Effect::LoadCall { ticket, .. } =
-            find(&effects, |e| matches!(e, Effect::LoadCall { .. }))
-        else {
-            unreachable!()
+        let ticket = match find(&effects, |e| matches!(e, Effect::LoadCall { .. })) {
+            Effect::LoadCall { ticket, .. } => ticket,
+            _ => unreachable!(),
         };
         model.update(Event::CallLoaded {
             ticket,
@@ -798,15 +796,20 @@ mod tests {
     fn listening_is_said_only_once_the_room_is_joined() {
         let mut model = on_call(LIVE, "in-progress");
         let idle = card(&model);
-        assert!(idle.visible && idle.listen.shown && idle.listen.works);
-        assert!(idle.take_over.shown && !idle.hand_back.shown);
+        assert!(idle.visible);
+        assert!(idle.listen.shown);
+        assert!(idle.listen.works);
+        assert!(idle.take_over.shown);
+        assert!(!idle.hand_back.shown);
         assert_eq!(idle.status, None);
         assert_eq!(idle.lines, None);
         let effects = model.update(Event::Supervise(SuperviseEvent::Listen));
         let ticket = ticket_of(&effects, "RequestCallMonitor");
         let joining = card(&model);
         assert_eq!(joining.status, Some(("Connecting you to the call.", false)));
-        assert!(joining.busy && joining.stop_listening.shown && !joining.listen.shown);
+        assert!(joining.busy);
+        assert!(joining.stop_listening.shown);
+        assert!(!joining.listen.shown);
         let credential: CallMonitorTokenResponse = fixture("district-call-monitor-token.json");
         let effects = model.update(Event::CallMonitorIssued {
             ticket,
@@ -884,7 +887,8 @@ mod tests {
             unavailable.status,
             Some((core_text::media_microphone_unavailable(lang()), true))
         );
-        assert!(unavailable.hand_back.shown && unavailable.hand_back.works);
+        assert!(unavailable.hand_back.shown);
+        assert!(unavailable.hand_back.works);
         let whisper = unavailable.whisper.expect("the note field");
         assert!(!whisper.editable, "no note while on the call");
         assert_eq!(
@@ -980,7 +984,8 @@ mod tests {
         );
         let over = card(&model);
         assert!(!over.confirming, "so the question goes");
-        assert!(!over.visible && over.whisper.is_none());
+        assert!(!over.visible);
+        assert!(over.whisper.is_none());
     }
 
     #[test]
@@ -988,7 +993,8 @@ mod tests {
         let model = on_call("call_live_1", "in-progress");
         let refused = card(&model);
         assert!(!refused.visible);
-        assert!(!refused.listen.shown && !refused.take_over.shown);
+        assert!(!refused.listen.shown);
+        assert!(!refused.take_over.shown);
         assert_eq!(refused.whisper, None);
     }
 
@@ -1004,7 +1010,9 @@ mod tests {
             elsewhere.status,
             Some((core_text::media_joined_elsewhere(lang()), true))
         );
-        assert!(elsewhere.dismiss && elsewhere.listen.shown && elsewhere.listen.works);
+        assert!(elsewhere.dismiss);
+        assert!(elsewhere.listen.shown);
+        assert!(elsewhere.listen.works);
         assert_eq!(elsewhere.lines, None);
         model.update(Event::Supervise(SuperviseEvent::Dismiss));
         assert_eq!(card(&model).status, None);
@@ -1027,7 +1035,8 @@ mod tests {
     fn a_note_shows_its_draft_and_what_the_receptionist_did_with_it() {
         let mut model = on_call(LIVE, "in-progress");
         let idle = card(&model).whisper.expect("the note field");
-        assert!(idle.editable && !idle.send.works, "nothing typed");
+        assert!(idle.editable, "nothing typed");
+        assert!(!idle.send.works, "nothing typed");
         assert_eq!(
             idle.placeholder,
             "For example: Offer a 10% discount to book today."
@@ -1039,7 +1048,8 @@ mod tests {
         let effects = model.update(Event::Supervise(SuperviseEvent::SendWhisper));
         let ticket = ticket_of(&effects, "SendCallWhisper");
         let sending = card(&model).whisper.unwrap();
-        assert!(sending.sending && !sending.send.works, "one at a time");
+        assert!(sending.sending, "one at a time");
+        assert!(!sending.send.works, "one at a time");
         model.update(Event::CallWhispered {
             ticket,
             result: Ok(fixture("district-call-whisper.json")),

@@ -842,8 +842,9 @@ mod tests {
             RowNote::Nothing,
             "said above the tabs"
         );
-        let RowNote::Says(why) = row_note(managed, true) else {
-            panic!("a number Distronode holds says why");
+        let why = match row_note(managed, true) {
+            RowNote::Says(why) => why,
+            _ => panic!("a number Distronode holds says why"),
         };
         assert!(why.contains("held on Distronode's carrier account"));
         assert_eq!(row_note(managed, false), RowNote::Says(why));

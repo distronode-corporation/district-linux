@@ -1363,6 +1363,15 @@ fn account_security(smoke: &Smoke) {
     smoke.shot("12-two-step-scan");
     smoke.click("two_step_copy_key");
     assert_eq!(clipboard_text(smoke).as_deref(), Some("JBSWY3DPEHPK3PXP"));
+    // Opening the authenticator link: CI's session has no app for
+    // `otpauth:`, so the launch fails and the page says so; a host with one
+    // opens it instead, so the test waits for the answer without requiring one.
+    assert!(!smoke.shown("two_step_open_failed"));
+    smoke.click("two_step_open");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !smoke.shown("two_step_open_failed") && Instant::now() < deadline {
+        smoke.pump();
+    }
     smoke.click("two_step_confirm");
     assert!(
         !smoke.pending("ConfirmTwoStep"),
@@ -2430,6 +2439,19 @@ fn composing(smoke: &Smoke) {
     assert!(smoke.shows_part("You can still enter a number or an email address above."));
     smoke.click("cancel_button");
     assert!(!smoke.shown("to_row"), "the form closes");
+    // Escape (the dialog's close attempt) cancels it too.
+    smoke.click("new_button");
+    smoke.reply("LoadContacts", |ticket| Event::ContactsLoaded {
+        ticket,
+        result: Err(server_error()),
+    });
+    smoke
+        .mapped("to_row")
+        .ancestor(adw::Dialog::static_type())
+        .expect("the compose dialog")
+        .emit_by_name::<()>("close-attempt", &[]);
+    smoke.pump();
+    assert!(!smoke.shown("to_row"), "Escape closes the form");
     smoke.click("new_button");
     smoke.reply("LoadContacts", |ticket| Event::ContactsLoaded {
         ticket,
@@ -2455,7 +2477,11 @@ fn composing(smoke: &Smoke) {
     assert!(smoke.sensitive("send_button"));
     smoke.click("change_button");
     smoke.type_into("to_row", "+14165550199");
-    smoke.activate_nth("compose-typed", 0);
+    // Enter in the To box uses what is typed, as its row does.
+    smoke
+        .mapped("to_row")
+        .emit_by_name::<()>("entry-activated", &[]);
+    smoke.pump();
     assert!(
         !smoke.shown("subject_row"),
         "a number goes as a text message"
@@ -2515,7 +2541,15 @@ fn calls_screens(smoke: &Smoke) {
         smoke.status_title("list_status"),
         "Could not load the call log"
     );
+    // Read again: a log with no calls says so, with nothing to retry.
     smoke.click("list_retry");
+    let tk = smoke.ticket("LoadCalls");
+    smoke.answer(Event::CallsLoaded {
+        ticket: tk,
+        result: Ok(Vec::new()),
+    });
+    assert_eq!(smoke.status_title("list_status"), "No calls yet");
+    smoke.click("refresh_button");
     let tk = smoke.ticket("LoadCalls");
     smoke.answer(Event::CallsLoaded {
         ticket: tk,
@@ -3342,6 +3376,20 @@ fn hold_and_let_go(smoke: &Smoke, name: &str) {
 /// shows the microphone button and no Hold to talk.
 fn hq_push_to_talk(smoke: &Smoke) {
     smoke.activate("sidebar-hq");
+    smoke.forget();
+    // A session the service will not open says why, and can be started again.
+    smoke.click("voice_start");
+    if smoke.shown("voice_accept") {
+        smoke.click("voice_accept");
+    }
+    smoke.reply("RequestHqVoice", |ticket| Event::HqVoiceIssued {
+        ticket,
+        result: Err(server_error()),
+    });
+    assert!(
+        smoke.shown("voice_start"),
+        "a failed start can be tried again"
+    );
     smoke.forget();
     smoke.click("voice_start");
     if smoke.shown("voice_accept") {
@@ -4637,6 +4685,19 @@ fn registrations_tab(smoke: &Smoke) {
             }),
         ))),
     );
+    // A document that cannot be read is said to be.
+    let mut permissions = fs::metadata(&document).unwrap().permissions();
+    std::os::unix::fs::PermissionsExt::set_mode(&mut permissions, 0o000);
+    fs::set_permissions(&document, permissions).unwrap();
+    pick(smoke, "registration-upload", &document);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !smoke.shown("registrations-pick-failure") {
+        assert!(
+            Instant::now() < deadline,
+            "the unreadable document was never reported"
+        );
+        smoke.pump();
+    }
     fs::remove_file(&document).ok();
     assert!(call.contains("proof_of_address"), "{call}");
     assert!(call.contains("application/pdf"), "{call}");
@@ -5003,6 +5064,16 @@ fn carrier_tab(smoke: &Smoke) {
     number_call(smoke, Err(server_error()));
     assert!(smoke.shows_text("No carrier connected"));
     assert!(smoke.shown("sip-failure"));
+    // Once more, with the carrier's own read failing too.
+    smoke.click("refresh_button");
+    smoke.reply("LoadOwnedNumbers", |ticket| Event::OwnedNumbersLoaded {
+        ticket,
+        result: Ok(fixture("district-provider-numbers.json")),
+    });
+    number_call(smoke, Err(server_error()));
+    number_call(smoke, Err(server_error()));
+    number_call(smoke, Err(server_error()));
+    assert!(smoke.shown("carrier-failure"));
     smoke.click("owned_tab");
     smoke.forget();
 }
@@ -5591,6 +5662,13 @@ fn scheduling_bookings(smoke: &Smoke) {
         smoke.shown("booking-answers-loading"),
         "the answers are read again"
     );
+    // Read again with none: the booking says it asked nothing.
+    bookings_reply(
+        smoke,
+        |r| matches!(r, Request::BookingAnswers { .. }),
+        Ok(serde_json::json!({"ok": true, "data": {"items": []}})),
+    );
+    assert!(smoke.shown("booking-no-questions"));
     smoke.click("booking-cancel-keep");
     assert!(!smoke.shown("booking-cancel-dialog"));
     smoke.forget();
@@ -8845,6 +8923,70 @@ fn dialing(smoke: &Smoke) {
     assert_eq!(smoke.entry_text("number_entry"), "212");
     assert!(!smoke.sensitive("call_button"), "too few digits");
 
+    // Delete (forward, at the cursor) takes the digit after it; Backspace
+    // over punctuation takes the digit before it too; and the keypad's
+    // backspace at the start takes nothing.
+    entry.set_text("(212) 5");
+    smoke.pump();
+    entry.set_position(0);
+    let digits = |smoke: &Smoke| -> String {
+        smoke
+            .entry_text("number_entry")
+            .chars()
+            .filter(char::is_ascii_digit)
+            .collect()
+    };
+    entry.delete_text(1, 2);
+    smoke.pump();
+    // The core keeps 125 and shows it in the local form, where a leading 1
+    // is North America's trunk prefix: 25.
+    assert_eq!(digits(smoke), "25", "Delete took the 2 after the cursor");
+    entry.set_text("(212) 5");
+    smoke.pump();
+    entry.set_position(5);
+    entry.delete_text(4, 5);
+    smoke.pump();
+    assert_eq!(
+        digits(smoke),
+        "215",
+        "Backspace over ) took the 2 before it"
+    );
+    entry.set_position(0);
+    entry.select_region(0, 0);
+    smoke.click("backspace_button");
+    assert_eq!(digits(smoke), "215", "nothing before the cursor");
+    // A press on Call while it is off (too few digits) says the length; a
+    // press beside it says nothing.
+    let call = smoke.mapped("call_button");
+    let row = call.parent().expect("Call has a parent");
+    let press = {
+        let controllers = row.observe_controllers();
+        (0..controllers.n_items())
+            .filter_map(|index| controllers.item(index).and_downcast::<gtk::GestureClick>())
+            .next()
+            .expect("the press beside Call")
+    };
+    let centre = call
+        .compute_point(
+            &row,
+            &gtk::graphene::Point::new(call.width() as f32 / 2.0, call.height() as f32 / 2.0),
+        )
+        .expect("Call inside its parent");
+    let said = "That is the wrong number of digits for a number in the country it rings. \
+                Check it before you call.";
+    press.emit_by_name::<()>("pressed", &[&1i32, &-1000.0f64, &-1000.0f64]);
+    smoke.pump();
+    assert!(!smoke.shows_text(said), "a press beside Call says nothing");
+    press.emit_by_name::<()>(
+        "pressed",
+        &[&1i32, &f64::from(centre.x()), &f64::from(centre.y())],
+    );
+    smoke.pump();
+    assert!(
+        smoke.shows_text(said),
+        "a press on the switched-off Call says the length"
+    );
+
     // A selection is deleted whole.
     entry.select_region(0, -1);
     smoke.click("backspace_button");
@@ -8871,6 +9013,37 @@ fn dialing(smoke: &Smoke) {
         smoke.pump();
     }
     smoke.shot("142b-dialer-countries-search");
+    // Enter in the search picks the first country it shows.
+    search.emit_activate();
+    smoke.pump();
+    assert_eq!(
+        smoke.label("country_button_label"),
+        "\u{1f1e9}\u{1f1ea} +49"
+    );
+    // A search that matches nothing says so (the pick closed the list, so
+    // it opens again first).
+    smoke
+        .mapped("country_button")
+        .downcast::<gtk::MenuButton>()
+        .unwrap()
+        .popup();
+    smoke.pump();
+    search.set_text("zzzz");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !smoke.shows_text("No country matches.") {
+        assert!(
+            Instant::now() < deadline,
+            "the search never said it found nothing"
+        );
+        smoke.pump();
+    }
+    // Enter then picks nothing: the button keeps its country.
+    search.emit_activate();
+    smoke.pump();
+    assert_eq!(
+        smoke.label("country_button_label"),
+        "\u{1f1e9}\u{1f1ea} +49"
+    );
     search.set_text("");
     smoke.pump();
     smoke
@@ -9013,6 +9186,14 @@ fn dialing(smoke: &Smoke) {
     );
     assert_eq!(smoke.count("transcript-line"), 3);
     assert!(smoke.shows_text("Of course. Morning or"));
+    // The panel reads where the member is whenever its list moves.
+    descendants(&smoke.mapped("transcript"))
+        .into_iter()
+        .find_map(|widget| widget.downcast::<gtk::ScrolledWindow>().ok())
+        .expect("the transcript's scroller")
+        .vadjustment()
+        .emit_by_name::<()>("value-changed", &[]);
+    smoke.pump();
     smoke.shot("145a-call-transcript");
     let mute = smoke
         .mapped("call_mute_button")
@@ -12208,7 +12389,13 @@ fn supervise_card(smoke: &Smoke) {
     // A note: sent once, the field cleared when it is delivered, and what
     // the receptionist did with it.
     smoke.type_into("supervise_whisper", "Offer Thursday morning");
-    smoke.click("supervise_whisper_send");
+    // Enter in the field sends it, as Send does (below).
+    smoke
+        .mapped("supervise_whisper")
+        .downcast::<gtk::Entry>()
+        .expect("the note field")
+        .emit_activate();
+    smoke.pump();
     let Effect::SendCallWhisper { ticket, text, .. } = smoke.take("SendCallWhisper") else {
         unreachable!()
     };
@@ -12227,6 +12414,16 @@ fn supervise_card(smoke: &Smoke) {
         update: LiveUpdate::Event(receipt),
     }));
     assert!(smoke.shows_text("Your receptionist used your note."));
+    smoke.type_into("supervise_whisper", "And Friday");
+    smoke.click("supervise_whisper_send");
+    let Effect::SendCallWhisper { ticket, text, .. } = smoke.take("SendCallWhisper") else {
+        unreachable!()
+    };
+    assert_eq!(text, "And Friday");
+    smoke.answer(Event::CallWhispered {
+        ticket,
+        result: Ok(fixture("district-call-whisper.json")),
+    });
 
     // The takeover: the listening room left once the grant lands, and "on
     // the call" only once the room is joined with the microphone.
